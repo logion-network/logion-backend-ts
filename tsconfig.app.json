@@ -1,0 +1,11 @@
+{
+    "extends": "./tsconfig",
+    "compilerOptions": {
+        "inlineSourceMap": true,
+        "outDir": "./dist"
+    },
+    "exclude": [
+        "test/**/*.ts",
+        "node_modules"
+    ]
+}

@@ -1,0 +1,9 @@
+node_modules
+dist
+.project
+*.log
+/ormconfig.json
+.nyc_output/
+/coverage
+/.idea
+/calc/pkg

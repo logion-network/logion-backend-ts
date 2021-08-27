@@ -1,0 +1,15 @@
+{
+  "spec_dir": "test/integration",
+  "spec_files": [
+    "**/*.spec.ts"
+  ],
+  "helpers": [
+    "../helpers/helper.ts"
+  ],
+  "stopSpecOnExpectationFailure": false,
+  "reporters": [
+    {
+      "name": "jasmine-spec-reporter#SpecReporter"
+    }
+  ]
+}

@@ -1,0 +1,629 @@
+{
+    "openapi": "3.0.0",
+    "components": {
+        "schemas": {
+            "AcceptProtectionRequestView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer accepting the protection request"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": "AcceptProtectionRequestView",
+                "description": "The Protection Request to accept"
+            },
+            "AcceptTokenRequestView": {
+                "type": "object",
+                "properties": {
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": "AcceptTokenRequestView",
+                "description": "The Tokenization Request to accept"
+            },
+            "AssetDescriptionView": {
+                "type": "object",
+                "properties": {
+                    "assetId": {
+                        "type": "string",
+                        "description": "The ID (64-bits unsigned integer) of the asset"
+                    },
+                    "decimals": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The number of allowed decimals for token amounts"
+                    }
+                },
+                "title": "AssetDescriptionView",
+                "description": "The description of an asset created on-chain"
+            },
+            "CheckProtectionActivationView": {
+                "type": "object",
+                "properties": {
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    },
+                    "userAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the user, used only for signature. Can be either regular user or legal officer"
+                    }
+                },
+                "title": "CheckProtectionActivationView",
+                "description": "A Protection Request to check for protection"
+            },
+            "CheckProtectionResponseView": {
+                "type": "object",
+                "properties": {
+                    "protection": {
+                        "type": "boolean",
+                        "description": "<code>true</code> if and only if the user has submitted a protection request to the legal officer(s), and the legal officer(s) accepted. <code>false</code> in all other cases."
+                    }
+                },
+                "title": "CheckProtectionResponseView",
+                "description": "The response of the check protection"
+            },
+            "CheckProtectionSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficerAddresses": {
+                        "type": "array",
+                        "description": "The SS58 address of the legal officer",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "userAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the user"
+                    }
+                },
+                "title": "CheckProtectionSpecificationView",
+                "description": "The specification to check that a user is protected by legal officer(s)"
+            },
+            "CreateProtectionRequestView": {
+                "type": "object",
+                "properties": {
+                    "addressToRecover": {
+                        "type": "string",
+                        "description": "If this request is a recovery request, tells the address to recover"
+                    },
+                    "isRecovery": {
+                        "type": "boolean",
+                        "description": "True if the the protection request is also a recovery request"
+                    },
+                    "legalOfficerAddresses": {
+                        "type": "array",
+                        "description": "The list of legal officers (SS58 addresses) to whom protection is requested",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    },
+                    "userIdentity": {
+                        "description": "The identification data of the requester",
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "description": "The postal address of the requester",
+                        "$ref": "#/components/schemas/PostalAddressView"
+                    }
+                },
+                "title": "CreateProtectionRequestView",
+                "description": "A Protection Request to create"
+            },
+            "CreateTokenRequestView": {
+                "type": "object",
+                "properties": {
+                    "bars": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The number of gold bars serving as the underlying of the tokens to create"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will issue the tokens upon acceptance"
+                    },
+                    "requestedTokenName": {
+                        "type": "string",
+                        "description": "The name of the token to create"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the tokenization requester"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": "CreateTokenRequestView",
+                "description": "A Tokenization Request to create"
+            },
+            "FetchProtectionRequestsResponseView": {
+                "type": "object",
+                "properties": {
+                    "requests": {
+                        "type": "array",
+                        "description": "The Protection Requests matching provided specification",
+                        "items": {
+                            "$ref": "#/components/schemas/ProtectionRequestView"
+                        }
+                    }
+                },
+                "title": "FetchProtectionRequestsResponseView",
+                "description": "The fetched Protection Requests"
+            },
+            "FetchProtectionRequestsSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "decisionStatuses": {
+                        "type": "array",
+                        "description": "The statuses of decisions of expected Protection Requests",
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "ACCEPTED",
+                                "PENDING",
+                                "REJECTED"
+                            ]
+                        }
+                    },
+                    "kind": {
+                        "type": "string",
+                        "description": "The kind of protection request to be returned",
+                        "enum": [
+                            "ANY",
+                            "PROTECTION_ONLY",
+                            "RECOVERY"
+                        ]
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer in expected Protection Requests"
+                    },
+                    "protectionRequestStatus": {
+                        "type": "string",
+                        "description": "The status of expected Protection Requests",
+                        "enum": [
+                            "ACTIVATED",
+                            "PENDING"
+                        ]
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester in expected Protection Requests"
+                    }
+                },
+                "title": "FetchProtectionRequestsSpecificationView",
+                "description": "The specification for fetching Protection Requests"
+            },
+            "FetchRequestsResponseView": {
+                "type": "object",
+                "properties": {
+                    "requests": {
+                        "type": "array",
+                        "description": "The Tokenization Requests matching provided specification",
+                        "items": {
+                            "$ref": "#/components/schemas/TokenRequestView"
+                        }
+                    }
+                },
+                "title": "FetchRequestsResponseView",
+                "description": "The fetched Tokenization Requests"
+            },
+            "FetchRequestsSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer in expected Tokenization Requests"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester in expected Tokenization Requests"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The status in expected Tokenization Requests",
+                        "enum": [
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED"
+                        ]
+                    }
+                },
+                "title": "FetchRequestsSpecificationView",
+                "description": "The specification for fetching Tokenization Requests"
+            },
+            "FetchTransactionsResponseView": {
+                "type": "object",
+                "properties": {
+                    "transactions": {
+                        "type": "array",
+                        "description": "The transactions matching provided specification",
+                        "items": {
+                            "$ref": "#/components/schemas/TransactionView"
+                        }
+                    }
+                },
+                "title": "FetchTransactionsResponseView",
+                "description": "The fetched transactions"
+            },
+            "FetchTransactionsSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "The SS58 address of the account from or to which the expected transaction is done"
+                    }
+                },
+                "title": "FetchTransactionsSpecificationView",
+                "description": "The specification for fetching Tokenization Requests"
+            },
+            "LegalOfficerDecisionView": {
+                "type": "object",
+                "properties": {
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "decisionOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REJECTED', the reason of the rejection"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The decision status",
+                        "enum": [
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED"
+                        ]
+                    }
+                },
+                "title": "LegalOfficerDecisionView",
+                "description": "Legal Officer decision"
+            },
+            "PostalAddressView": {
+                "type": "object",
+                "properties": {
+                    "city": {
+                        "type": "string",
+                        "description": "City"
+                    },
+                    "country": {
+                        "type": "string",
+                        "description": "Country"
+                    },
+                    "line1": {
+                        "type": "string",
+                        "description": "First address line"
+                    },
+                    "line2": {
+                        "type": "string",
+                        "description": "Second address line"
+                    },
+                    "postalCode": {
+                        "type": "string",
+                        "description": "Postal code"
+                    }
+                },
+                "title": "PostalAddressView",
+                "description": "A postal address"
+            },
+            "ProtectionRequestView": {
+                "type": "object",
+                "properties": {
+                    "addressToRecover": {
+                        "type": "string",
+                        "description": "If this request is a recovery request, tells the address to recover"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "decisions": {
+                        "type": "array",
+                        "description": "The Legal Officer decisions",
+                        "items": {
+                            "$ref": "#/components/schemas/LegalOfficerDecisionView"
+                        }
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of created Protection Request"
+                    },
+                    "isRecovery": {
+                        "type": "boolean",
+                        "description": "True if the the protection request is also a recovery request"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The status (retrieved from chain)",
+                        "enum": [
+                            "ACTIVATED",
+                            "PENDING"
+                        ]
+                    },
+                    "userIdentity": {
+                        "description": "The identification data of the requester",
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "description": "The postal address of the requester",
+                        "$ref": "#/components/schemas/PostalAddressView"
+                    }
+                },
+                "title": "ProtectionRequestView",
+                "description": "Information about the created Protection Request"
+            },
+            "RecoveryInfoView": {
+                "type": "object",
+                "properties": {
+                    "accountToRecover": {
+                        "$ref": "#/components/schemas/ProtectionRequestView"
+                    },
+                    "recoveryAccount": {
+                        "$ref": "#/components/schemas/ProtectionRequestView"
+                    }
+                },
+                "title": "RecoveryInfoView",
+                "description": "The new (recovery) and old (to recover) account data"
+            },
+            "RejectProtectionRequestView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer rejecting the protection request"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": "RejectProtectionRequestView",
+                "description": "The Protection Request to reject"
+            },
+            "RejectTokenRequestView": {
+                "type": "object",
+                "properties": {
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    },
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": "RejectTokenRequestView",
+                "description": "The Tokenization Request to reject"
+            },
+            "SetAssetDescriptionView": {
+                "type": "object",
+                "properties": {
+                    "description": {
+                        "description": "The asset description",
+                        "$ref": "#/components/schemas/AssetDescriptionView"
+                    },
+                    "sessionToken": {
+                        "type": "string",
+                        "description": "The session token"
+                    }
+                },
+                "title": "SetAssetDescriptionView",
+                "description": "The asset description and session token"
+            },
+            "TokenRequestAcceptedView": {
+                "type": "object",
+                "properties": {
+                    "sessionToken": {
+                        "type": "string",
+                        "description": "The session token to provide when setting the asset description"
+                    }
+                },
+                "title": "TokenRequestAcceptedView",
+                "description": "The acceptance data"
+            },
+            "TokenRequestView": {
+                "type": "object",
+                "properties": {
+                    "assetDescription": {
+                        "description": "The created asset description (once created on-chain)",
+                        "$ref": "#/components/schemas/AssetDescriptionView"
+                    },
+                    "bars": {
+                        "type": "integer",
+                        "format": "int32",
+                        "description": "The number of gold bars serving as the underlying of the tokens to create"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "decisionOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of created tokenization request"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will issue the tokens upon acceptance"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REJECTED', the reason of the rejection"
+                    },
+                    "requestedTokenName": {
+                        "type": "string",
+                        "description": "The name of the token to create"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the tokenization requester"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The request's status",
+                        "enum": [
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED"
+                        ]
+                    }
+                },
+                "title": "TokenRequestView",
+                "description": "A description of the created Tokenization Request"
+            },
+            "TransactionView": {
+                "type": "object",
+                "properties": {
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The timestamp of the transaction"
+                    },
+                    "fee": {
+                        "type": "string",
+                        "description": "The fee of the transaction."
+                    },
+                    "from": {
+                        "type": "string",
+                        "description": "The SS58 address of the account from which the transaction is done"
+                    },
+                    "method": {
+                        "type": "string",
+                        "description": "The method that created the transaction."
+                    },
+                    "pallet": {
+                        "type": "string",
+                        "description": "The pallet that created the transaction."
+                    },
+                    "reserved": {
+                        "type": "string",
+                        "description": "The reserved amount of the transaction."
+                    },
+                    "tip": {
+                        "type": "string",
+                        "description": "The tip of the transaction."
+                    },
+                    "to": {
+                        "type": "string",
+                        "description": "The SS58address of the account to which the transaction is done. May be null."
+                    },
+                    "total": {
+                        "type": "string",
+                        "description": "The total amount of the transaction."
+                    },
+                    "transferValue": {
+                        "type": "string",
+                        "description": "The value of the transfer, iff the transaction is a transfer."
+                    }
+                },
+                "title": "TransactionView",
+                "description": "A transaction between 2 accounts"
+            },
+            "UserIdentityView": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "description": "E-mail"
+                    },
+                    "firstName": {
+                        "type": "string",
+                        "description": "First name"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "description": "Last name"
+                    },
+                    "phoneNumber": {
+                        "type": "string",
+                        "description": "Phone number"
+                    }
+                },
+                "title": "UserIdentityView",
+                "description": "Physical person identification data"
+            }
+        }
+    }
+}
