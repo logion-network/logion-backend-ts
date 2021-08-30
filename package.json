@@ -4,7 +4,7 @@
     "private": true,
     "scripts": {
         "build": "rimraf dist && yarn run generate-views && tsc --p ./tsconfig.app.json",
-        "generate-views": "npx openapi-typescript src/logion/schemas.json --output src/logion/controllers/components.ts",
+        "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
         "test": "yarn run unit-test && yarn run integration-test",
