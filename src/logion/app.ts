@@ -27,7 +27,7 @@ const app = express();
 expressOasGenerator.handleResponses(app, {
     predefinedSpec: function(spec: OpenAPIV3.Document) {
         setOpenApi3(spec);
-        loadSchemasIntoSpec(spec, "./src/logion/schemas.json");
+        loadSchemasIntoSpec(spec, "./resources/schemas.json");
 
         spec.info = {
             title: "Logion off-chain service API",
