@@ -6,8 +6,7 @@
         "pallet": "timestamp",
         "method": "set"
       },
-      "signature": null,
-      "nonce": null,
+      "signer": null,
       "args": {
         "now": "1627044708000"
       },
@@ -37,11 +36,7 @@
         "pallet": "balances",
         "method": "transferKeepAlive"
       },
-      "signature": {
-        "signature": "0x4ce37130bc092c7367f55c6740bde5dc34fdc62773d6e669f7bdc3ec08418f38ee49123c7527b82f1b50e1a9e9602c21921ad2999bcb3aa232892c1b1740688c",
-        "signer": "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"
-      },
-      "nonce": "4",
+      "signer": "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
       "args": {
         "dest": {
             "id": "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo"
@@ -50,11 +45,7 @@
       },
       "tip": "25000000",
       "hash": "0x6c503958480f15d3acb3df0a11486bd418378a7a86133a03d47250ea59dea412",
-      "info": {
-        "weight": "194407000",
-        "class": "Normal",
-        "partialFee": "125000152"
-      },
+      "partialFee": "125000152",
       "events": [
         {
           "method": {
