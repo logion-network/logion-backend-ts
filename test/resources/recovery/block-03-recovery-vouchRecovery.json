@@ -6,8 +6,7 @@
         "pallet": "timestamp",
         "method": "set"
       },
-      "signature": null,
-      "nonce": null,
+      "signer": null,
       "args": {
         "now": "1627402938000"
       },
@@ -37,22 +36,14 @@
         "pallet": "recovery",
         "method": "vouchRecovery"
       },
-      "signature": {
-        "signature": "0xe85475e34bbaaedb1dcb3c18e94cac7a95ab8428ab8a12e6944abe59858d2739f12d10315377cf68b53536e5a96fbc6badadc1c72eb284d7d837c1ec2458c480",
-        "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-      },
-      "nonce": "20",
+      "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
       "args": {
         "lost": "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo",
         "rescuer": "5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg"
       },
       "tip": "0",
       "hash": "0xccff10538f0a06476d82d0ca01e764fc8449fca87750a4ce6c3c6f9084d15a5f",
-      "info": {
-        "weight": "100000000",
-        "class": "Normal",
-        "partialFee": "125000171"
-      },
+      "partialFee": "125000171",
       "events": [
         {
           "method": {

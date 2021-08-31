@@ -22,6 +22,7 @@ import {
     fillInSpec as fillInSpecForTokenization
 } from './controllers/tokenizationrequest.controller';
 import { TransactionController } from "./controllers/transaction.controller";
+import { Scheduler } from "./scheduler/scheduler.service";
 
 const app = express();
 expressOasGenerator.handleResponses(app, {
@@ -83,6 +84,8 @@ createConnection()
         });
 
     dino.bind();
+
+    AppContainer.get(Scheduler).start();
 
     expressOasGenerator.handleRequests();
     app.listen(port, () => console.log(`Server started on port ${port}`));

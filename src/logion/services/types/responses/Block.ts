@@ -1,6 +1,6 @@
-import { IExtrinsic } from './Extrinsic';
+import { JsonExtrinsic } from './Extrinsic';
 
-export interface IBlock {
+export interface BlockExtrinsics {
     number: bigint;
-    extrinsics: IExtrinsic[];
+    extrinsics: JsonExtrinsic[];
 }

@@ -1,33 +1,17 @@
-export interface ExtrinsicInfo {
-    partialFee?: string;
-    error?: string;
-}
+import { JsonArgs, JsonMethod } from "../../call";
 
-export interface ISanitizedArgs {
-    [key: string]: any;
-}
-
-export interface IFrameMethod {
-    pallet: string;
-    method: string;
-}
-
-export interface ISanitizedEvent {
-    method: IFrameMethod;
-    data: string[];
-}
-
-export interface IExtrinsic {
-    method: IFrameMethod;
-    signature: ISignature | null;
-    args: ISanitizedArgs;
+export interface JsonExtrinsic {
+    method: JsonMethod;
+    signer: string | null;
+    args: JsonArgs;
     tip: string | null;
-    info: ExtrinsicInfo;
-    events: ISanitizedEvent[];
+    partialFee?: string;
+    events: JsonEvent[];
     success: boolean;
     paysFee: boolean;
 }
 
-export interface ISignature {
-    signer: string;
+export interface JsonEvent {
+    method: JsonMethod;
+    data: string[];
 }
