@@ -17,11 +17,6 @@ describe("TransactionExtractor", () => {
         expect(transactionExtractor.extractBlockWithTransactions(block)).toBeUndefined();
     });
 
-    it('does not find transaction in failed extrinsic', () => {
-        const block = givenBlock("recovery/block-06-recovery-asRecovered-failed.json");
-        expect(transactionExtractor.extractBlockWithTransactions(block)).toBeUndefined();
-    });
-
     it('finds recovery.createRecovery transactions', () => {
         const params = recoveryParams({
             fileName: "recovery/block-01-recovery-createRecovery.json",
