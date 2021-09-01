@@ -3,8 +3,9 @@
     "version": "0.0.0",
     "private": true,
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --p ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run build:calc && yarn run generate-views && tsc --p ./tsconfig.app.json",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
+        "build:calc": "rimraf calc/psk && rimraf calc/target && calc/build.sh",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
         "test": "yarn run unit-test && yarn run integration-test",
