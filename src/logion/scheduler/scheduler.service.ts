@@ -17,14 +17,29 @@ export class Scheduler {
     }
 
     private scheduler: ToadScheduler;
+    private running: boolean = false;
 
     start() {
         logger.info("Starting scheduler...");
-        const syncTransactions = () => this.transactionSync.syncTransactions(moment());
+        const syncTransactions = () => {
+            if (!this.running) {
+                this.running = true;
+                return this.transactionSync.syncTransactions(moment())
+                    .finally(() => {
+                        this.running = false;
+                        return Promise.resolve();
+                    })
+            } else {
+                return Promise.resolve();
+            }
+        };
         const task = new AsyncTask(
-            'transactions sync', 
+            'transactions sync',
             syncTransactions,
-            (err: Error) => { logger.error(err.message) }
+            (err: Error) => {
+                this.running = false;
+                logger.error(err.message)
+            }
         )
         const job = new SimpleIntervalJob({ seconds: 6 }, task);
         this.scheduler.addSimpleIntervalJob(job)

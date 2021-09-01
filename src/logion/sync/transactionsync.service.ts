@@ -39,7 +39,7 @@ export class TransactionSync {
 
         for (let blockNumber: bigint = lastSynced + 1n; blockNumber <= head; blockNumber++) {
             if ((blockNumber % 1000n) === 0n) {
-                logger.debug("Scanning block {}/{}", blockNumber, head);
+                logger.debug("Scanning block %d/%d", blockNumber, head);
             }
             await this.processBlock(blockNumber);
         }

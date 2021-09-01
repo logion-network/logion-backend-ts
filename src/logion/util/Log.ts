@@ -1,4 +1,4 @@
-import { createLogger, Logger, transports as winstonTransports } from 'winston';
+import { createLogger, format, Logger, transports as winstonTransports } from 'winston';
 
 const transports = [
     new (winstonTransports.Console)()
@@ -9,6 +9,10 @@ export class Log {
 
     private static create(): Logger {
         this._logger = createLogger({
+            format: format.combine(
+                format.splat(),
+                format.json(),
+            ),
             transports,
             exitOnError: false,
             exceptionHandlers: transports,

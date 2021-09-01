@@ -26,7 +26,7 @@ export class TransactionExtractor {
         }
         const blockBuilder = BlockWithTransactions.builder()
             .blockNumber(block.number);
-        logger.debug("Looking at block {}", block.number);
+        logger.debug("Looking at block %d", block.number);
         const transactions: Transaction[] = [];
         for (let index = 0; index < block.extrinsics.length; index++) {
             const extrinsic = block.extrinsics[index];
@@ -49,7 +49,7 @@ export class TransactionExtractor {
 
     private extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, blockNumber: bigint, index: number): Transaction | undefined {
         if (!extrinsic.success) {
-            logger.debug("Block {} - Extrinsic {} is not successful", blockNumber, index);
+            logger.debug("Block %d - Extrinsic %d is not successful", blockNumber, index);
             return undefined;
         }
         return new Transaction({
