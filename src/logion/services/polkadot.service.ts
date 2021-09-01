@@ -1,5 +1,8 @@
 import { injectable } from 'inversify';
 import { ApiPromise, WsProvider } from '@polkadot/api';
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 @injectable()
 export class PolkadotService {
@@ -14,7 +17,9 @@ export class PolkadotService {
     private _api: ApiPromise | null = null;
 
     private async _createApi(): Promise<ApiPromise> {
-        const wsProvider = new WsProvider('ws://localhost:9944');
+        const wsProviderUrl = process.env.WS_PROVIDER_URL || 'ws://localhost:9944';
+        logger.info("Connecting to node %s", wsProviderUrl);
+        const wsProvider = new WsProvider(wsProviderUrl);
         return await ApiPromise.create({
             provider: wsProvider,
             types: {
