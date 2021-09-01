@@ -12,8 +12,8 @@ import { AnyJson, Registry } from '@polkadot/types/types';
 import { BlockExtrinsics } from './types/responses/Block';
 import { JsonExtrinsic } from './types/responses/Extrinsic';
 import { PolkadotService } from "./polkadot.service";
-import { isJsonMethod, JsonArgs, JsonMethod, toJsonCall } from "./call";
-import { FeesService, WeightInfo } from "./fees.service";
+import { JsonArgs, JsonMethod, toJsonCall } from "./call";
+import { FeesCalculator, FeesService, WeightInfo } from "./fees.service";
 
 @injectable()
 export class BlockExtrinsicsService {
@@ -44,17 +44,10 @@ export class BlockExtrinsicsService {
         const api = await this.polkadotService.readyApi();
         const hash = await api.rpc.chain.getBlockHash(blockNumber);
         const { block, events } = await this.blockAndEvents(hash);
-
-        const extrinsicBuilders = this.mergeExtrinsicsAndEvents(block, events);
-        if (!this.isGenesisBlock(block)) {
-            await this.setFees(block, extrinsicBuilders);
-        }
-
+        const extrinsics = await this.successfulExtrinsics(block, events);
         return {
             number: BigInt(block.header.number.toString()),
-            extrinsics: extrinsicBuilders
-                .filter(builder => builder.successful)
-                .map(builder => builder.build()),
+            extrinsics
         };
     }
 
@@ -76,107 +69,81 @@ export class BlockExtrinsicsService {
         };
     }
 
-    private mergeExtrinsicsAndEvents(
+    private async successfulExtrinsics(
         block: Block,
-        events: Vec<EventRecord>
-    ): ExtrinsicBuilder[] {
-        const builders = this.createBuilders(block.extrinsics, events.registry);
-        this.mergeEvents(
-            builders,
-            events,
-        );
-        return builders;
-    }
-
-    private createBuilders(
-        extrinsics: Vec<GenericExtrinsic>,
-        registry: Registry,
-    ): ExtrinsicBuilder[] {
-        return extrinsics.map(extrinsic => {
-            const { method, signer, isSigned, tip } = extrinsic;
-            const call = registry.createType('Call', method);
-            const jsonCall = toJsonCall(call, registry);
-
-            return new ExtrinsicBuilder({
-                method: jsonCall.method,
-                args: jsonCall.args,
-                encodedLength: extrinsic.encodedLength,
-                signer: isSigned ? signer : null,
-                tip: isSigned ? tip : null,
-                paysFee: isSigned ? null : false,
-            });
-        });
-    }
-
-    private mergeEvents(
-        extrinsics: ExtrinsicBuilder[],
-        events: EventRecord[],
-    ): void {
+        events: Vec<EventRecord>,
+    ): Promise<JsonExtrinsic[]> {
+        const builders: ExtrinsicBuilder[] = new Array(block.extrinsics.length);
+        let feesCalculator: FeesCalculator | undefined = undefined;
+        const extrinsics = block.extrinsics;
         for (const record of events) {
             const { event, phase } = record;
 
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
-                const extrinsic = extrinsics[extrinsicIndex];
-                if (!extrinsic) {
-                    throw new Error(`Extrinsic #${extrinsicIndex} not found`);
+
+                builders[extrinsicIndex] ||= this.createBuilder(extrinsics[extrinsicIndex], events.registry);
+                const extrinsicBuilder = builders[extrinsicIndex];
+
+                const jsonData = event.data.toJSON() as AnyJson[];
+                for (const item of jsonData) {
+                    if (extrinsicBuilder.signer !== null && isPaysFee(item)) {
+                        extrinsicBuilder.paysFee = (item.paysFee === true || item.paysFee === 'Yes');
+                        break;
+                    }
                 }
 
+                const jsonEvent: JsonEvent = {
+                    method: {
+                        pallet: event.section,
+                        method: event.method,
+                    },
+                    data: jsonData,
+                };
+                extrinsicBuilder.events.push(jsonEvent);
+
                 if(event.method === Event.success) {
-                    extrinsic.successful = true;
-    
-                    const jsonData = event.data.toJSON() as AnyJson[];
-                    for (const item of jsonData) {
-                        if (extrinsic.signer !== null && isPaysFee(item)) {
-                            extrinsic.paysFee = (item.paysFee === true || item.paysFee === 'Yes');
-                            break;
+                    extrinsicBuilder.successful = true;
+                    if(!this.isGenesisBlock(block)) {
+                        feesCalculator ||= await this.feesService.buildFeesCalculator(block);
+
+                        const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
+                        if (!weightInfo.weight) {
+                            throw new Error('Success event does not specify weight');
                         }
+            
+                        const encodedLength = extrinsicBuilder.encodedLength;
+                        extrinsicBuilder.partialFee = (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
                     }
-    
-                    extrinsic.events.push({
-                        method: {
-                            pallet: event.section,
-                            method: event.method,
-                        },
-                        data: jsonData,
-                    });
-                } else {
-                    extrinsic.successful = false;
                 }
             }
         }
+        return builders
+            .filter(extrinsic => (extrinsic !== undefined && extrinsic.successful))
+            .map(builder => builder.build());
+    }
+
+    private createBuilder(
+        extrinsic: GenericExtrinsic,
+        registry: Registry,
+    ): ExtrinsicBuilder {
+        const { method, signer, isSigned, tip } = extrinsic;
+        const call = registry.createType('Call', method);
+        const jsonCall = toJsonCall(call, registry);
+
+        return new ExtrinsicBuilder({
+            method: jsonCall.method,
+            args: jsonCall.args,
+            encodedLength: extrinsic.encodedLength,
+            signer: isSigned ? signer : null,
+            tip: isSigned ? tip : null,
+            paysFee: isSigned ? null : false,
+        });
     }
 
     private isGenesisBlock(block: Block): boolean {
         const parentHash = block.header.parentHash;
         return parentHash.every((byte) => !byte);
-    }
-
-    private async setFees(
-        block: Block,
-        extrinsics: ExtrinsicBuilder[]
-    ): Promise<void> {
-        const feesCalculator = await this.feesService.buildFeesCalculator(block);
-
-        for (const extrinsic of extrinsics) {
-            if (!extrinsic.successful || !extrinsic.paysFee || extrinsic.signer === null) {
-                continue;
-            }
-
-            const successEvent = extrinsic.events.find(({ method }) =>
-                    isJsonMethod(method) && (method.method === Event.success));
-            if (!successEvent) {
-                throw new Error('Unable to find success event for extrinsic');
-            }
-
-            const weightInfo: WeightInfo = successEvent.data[successEvent.data.length - 1] as WeightInfo;
-            if (!weightInfo.weight) {
-                throw new Error('Success event does not specify weight');
-            }
-
-            const encodedLength = extrinsic.encodedLength;
-            extrinsic.partialFee = (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
-        }
     }
 }
 
@@ -204,7 +171,7 @@ class ExtrinsicBuilder {
         this.paysFee = params.paysFee;
         this.events = [];
         this.encodedLength = params.encodedLength;
-        this.successful = null;
+        this.successful = false;
     }
 
     public method: JsonMethod;
@@ -212,10 +179,10 @@ class ExtrinsicBuilder {
     public args: JsonArgs;
     public tip: Compact<Balance> | null;
     public partialFee: bigint;
-    public events: ExtrinsicEvent[];
+    public events: JsonEvent[];
     public paysFee: boolean | null;
     public encodedLength: number;
-    public successful: boolean | null;
+    public successful: boolean;
 
     build(): JsonExtrinsic {
         return {
@@ -228,13 +195,12 @@ class ExtrinsicBuilder {
             partialFee: this.partialFee.toString(),
             paysFee: this.paysFee === null ? false : this.paysFee,
             signer: this.signer ? this.signer.toString() : null,
-            success: true,
             tip: this.tip !== null ? this.tip.toString() : null
         };
     }
 }
 
-interface ExtrinsicEvent {
+interface JsonEvent {
     method: JsonMethod;
     data: any[];
 }

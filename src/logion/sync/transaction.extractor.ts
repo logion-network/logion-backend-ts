@@ -34,10 +34,8 @@ export class TransactionExtractor {
             if (type === ExtrinsicType.TIMESTAMP) {
                 blockBuilder.timestamp(this.extrinsicDataExtractor.getTimestamp(extrinsic))
             } else {
-                const transaction = this.extractTransaction(extrinsic, type, block.number, index);
-                if (transaction !== undefined) {
-                    transactions.push(transaction);
-                }
+                const transaction = this.extractTransaction(extrinsic, type, index);
+                transactions.push(transaction);
             }
         }
         if (transactions.length === 0) {
@@ -47,11 +45,7 @@ export class TransactionExtractor {
             .build()
     }
 
-    private extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, blockNumber: bigint, index: number): Transaction | undefined {
-        if (!extrinsic.success) {
-            logger.debug("Block %d - Extrinsic %d is not successful", blockNumber, index);
-            return undefined;
-        }
+    private extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Transaction {
         return new Transaction({
                 extrinsicIndex: index,
                 pallet: this.pallet(extrinsic),

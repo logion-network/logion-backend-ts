@@ -7,7 +7,6 @@ export interface JsonExtrinsic {
     tip: string | null;
     partialFee?: string;
     events: JsonEvent[];
-    success: boolean;
     paysFee: boolean;
 }
 

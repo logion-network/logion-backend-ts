@@ -17,13 +17,6 @@ export interface JsonArgs {
     [key: string]: any;
 }
 
-export function isJsonMethod(thing: unknown): thing is JsonMethod {
-    return (
-        typeof (thing as JsonMethod).pallet === 'string' &&
-        typeof (thing as JsonMethod).method === 'string'
-    );
-}
-
 export function toJsonCall(
     genericCall: GenericCall,
     registry: Registry

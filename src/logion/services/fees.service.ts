@@ -37,7 +37,7 @@ export class FeesService {
                 coeffInteger: c.coeffInteger.toString(10),
                 coeffFrac: c.coeffFrac.toNumber(),
                 degree: c.degree.toNumber(),
-                negative: c.negative,
+                negative: c.negative.isTrue,
             };
         });
 
