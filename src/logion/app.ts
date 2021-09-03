@@ -21,7 +21,8 @@ import {
     TokenizationRequestController,
     fillInSpec as fillInSpecForTokenization
 } from './controllers/tokenizationrequest.controller';
-import { TransactionController } from "./controllers/transaction.controller";
+import {
+    TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
 import { Scheduler } from "./scheduler/scheduler.service";
 
 const app = express();
@@ -49,6 +50,7 @@ expressOasGenerator.handleResponses(app, {
 
         fillInSpecForProtectionController(spec);
         fillInSpecForTokenization(spec);
+        fillInSpecForTransaction(spec);
 
         return spec;
     },
