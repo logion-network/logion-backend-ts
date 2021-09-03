@@ -1,22 +1,10 @@
 import { injectable } from 'inversify';
-import { ApiController, Controller, HttpPost, HttpPut, Async, BadRequestException } from 'dinoloop';
-import { v4 as uuid } from 'uuid';
-import moment from 'moment';
+import { ApiController, Controller, HttpPut, Async } from 'dinoloop';
 import { OpenAPIV3 } from 'express-oas-generator';
 
-import {
-    ProtectionRequestRepository,
-    FetchProtectionRequestsSpecification,
-    ProtectionRequestAggregateRoot,
-    ProtectionRequestFactory,
-} from '../model/protectionrequest.model';
-
 import { components } from './components';
-
-import { RecoveryService } from '../services/recovery.service';
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, addPathParameter } from './doc';
-import { SignatureService } from '../services/signature.service';
-import { requireDefined } from '../lib/assertions';
+import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from './doc';
+import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';
@@ -29,6 +17,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     TransactionController.fetchTransactions(spec);
 }
 
+type TransactionView = components["schemas"]["TransactionView"];
 type FetchTransactionsSpecificationView = components["schemas"]["FetchTransactionsSpecificationView"];
 type FetchTransactionsResponseView = components["schemas"]["FetchTransactionsResponseView"];
 
@@ -36,7 +25,8 @@ type FetchTransactionsResponseView = components["schemas"]["FetchTransactionsRes
 @Controller('/transaction')
 export class TransactionController extends ApiController {
 
-    constructor() {
+    constructor(
+        private transactionRepository: TransactionRepository) {
         super();
     }
 
@@ -54,8 +44,30 @@ export class TransactionController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchTransactions(body: FetchTransactionsSpecificationView): Promise<FetchTransactionsResponseView> {
+        const transactions = await this.transactionRepository.findByAddress(body.address!)
         return {
-            transactions: []
+            transactions: transactions.map(this.toView)
+        }
+    }
+
+    private toView(transaction: TransactionAggregateRoot): TransactionView {
+        const description = transaction.getDescription();
+        const total =
+            description.transferValue +
+            description.tip +
+            description.fee +
+            description.reserved;
+        return {
+            from: description.from,
+            to: description.to || undefined,
+            createdOn: description.createdOn,
+            pallet: description.pallet,
+            method: description.method,
+            transferValue: description.transferValue.toString(),
+            tip: description.tip.toString(),
+            fee: description.fee.toString(),
+            reserved: description.reserved.toString(),
+            total: total.toString()
         }
     }
 }
