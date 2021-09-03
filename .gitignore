@@ -3,6 +3,7 @@ dist
 .project
 *.log
 /ormconfig.json
+/.env
 .nyc_output/
 /coverage
 /.idea

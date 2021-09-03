@@ -1,5 +1,8 @@
 # Logion TypeScript backend
 
+The backend stores data which cannot be exposed publicly, or which wait legal officer's approval.
+It was initially written is [Java]((https://github.com/logion-network/logion-backend-java)) - now deprecated.
+
 This project was initially created from [this project](https://github.com/ParallelTask/dinoloop-inversify-starter)
 and features:
 
@@ -26,7 +29,6 @@ it as a path variable in the other queries.
 - Accept: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/accept -H "Content-Type: application/json" -d @sample-data/accept.json  | jq`
 - Check: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/check-activation -H "Content-Type: application/json" -d @sample-data/check.json  | jq`
 
-## Quick start
 
 ### Build
 
@@ -37,6 +39,35 @@ calc/build.sh
 yarn install
 yarn build
 ```
+## Quick start
+
+### DB
+First, run a PostgreSQL 12 server:
+
+`docker run --name logion-postgres -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:12`
+
+(or `docker start -a logion-postgres` if you already executed the above command).
+
+Then copy the file [`ormconfig.json.sample`](ormconfig.json.sample) to `ormconfig.json`, and adapt to your database setup if needed.
+
+### Connection to a node
+
+By default, the backend connects to `ws://localhost:9944`, i.e. a logion node running on your local machine.
+
+In order to change this behavior, copy the file [`.env.sample`](.env.sample) to `.env`, and adapt it to match your needs:
+* `WS_PROVIDER_URL`: the url to a logion node.
+* `NODE_TLS_REJECT_UNAUTHORIZED`: equals to 0 to disable certificate verification
+
+### Run
+`yarn start`
+
+## Tests
+Coverage report is generated using `yarn coverage` (all tests) or `yarn coverage-unit` (unit tests only).
+It's located under [`coverage/index.html`](coverage/index.html).
 
 
+## Logion Components
 
+* The [Node](https://github.com/logion-network/logion-node) is the implementation of the chain.
+* The [Typescript backend](https://github.com/logion-network/logion-backend-ts) stores data which cannot be exposed publicly, or which wait legal officer's approval.
+* The [Wallet](https://github.com/logion-network/logion-wallet) is the user application.
