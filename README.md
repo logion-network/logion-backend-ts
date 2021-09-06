@@ -1,10 +1,9 @@
 # Logion TypeScript backend
 
 The backend stores data which cannot be exposed publicly, or which wait legal officer's approval.
-It was initially written is [Java]((https://github.com/logion-network/logion-backend-java)) - now deprecated.
+It was initially written in [Java]((https://github.com/logion-network/logion-backend-java)) - now deprecated.
 
-This project was initially created from [this project](https://github.com/ParallelTask/dinoloop-inversify-starter)
-and features:
+This project features:
 
 - A Spring-like framework for Java-boys: [Dinoloop](https://github.com/ParallelTask/dinoloop)
 - Web framework: [Express](https://expressjs.com/)
