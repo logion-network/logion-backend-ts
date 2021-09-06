@@ -1,7 +1,13 @@
 {
     "name": "logion-backend-ts",
-    "version": "0.0.0",
+    "version": "0.1.0",
     "private": true,
+    "author": {
+        "name": "Logion Team",
+        "email": "info@logion.network",
+        "url": "https://logion.network/"
+    },
+    "license": "Apache-2.0",
     "scripts": {
         "build": "rimraf dist && yarn run generate-views && tsc --p ./tsconfig.app.json",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
