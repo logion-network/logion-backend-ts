@@ -52,7 +52,7 @@ logion_backend --> Alice: { \n \
     } \n \
   }
 
-Alice -> Alice: Store token on [TBD] Session or Local storage
+Alice -> Alice: Store token on Local storage
 ... later ...
 Alice -> logion_backend: **PUT /protection-request** \n \
 Authorization: Bearer <token> \n \

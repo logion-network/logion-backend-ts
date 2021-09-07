@@ -29,7 +29,7 @@ it as a path variable in the other queries.
 - Check: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/check-activation -H "Content-Type: application/json" -d @sample-data/check.json  | jq`
 
 ### Authentication
-Authentication is described [here](doc/Authentication.md).
+Authentication process is described [here](doc/Authentication.md).
 
 ### Build
 

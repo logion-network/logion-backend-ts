@@ -20,7 +20,7 @@ or [IntelliJ](https://plugins.jetbrains.com/plugin/7017-plantuml-integration)
   solution, the info could be stored locally (database), and later on the backend can query the chain to get this info.
 * Operations (Http method `POST`) can still be protected by the existing signature mechanism
 * Read access to resources (Http method `PUT` or `GET`) require authentication, 
-    * Some resources can be statically protected via annotation `@PreAuthorize("hasRole('LEGAL_OFFICER')")`
+    * If allowed by the framework, some resources can be statically protected via an annotation-like mechanism. 
     * Some resources require specific validations, for instance:
         * Fetching all protections requests of a requester is only possible by the requester him/herself.
         * Fetching all protections requests of a legal officer is only possible by the legal officer him/herself.
@@ -34,5 +34,3 @@ or [IntelliJ](https://plugins.jetbrains.com/plugin/7017-plantuml-integration)
 * Has the possibility to verify token's signature.
 * Has the possibility to access to token's content (token expiration date and roles).
 
-## Open issues
-* We have no classical user/password input screen - what about UX ?
