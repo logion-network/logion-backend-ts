@@ -1,5 +1,10 @@
 {
     "openapi": "3.0.0",
+    "info": {
+        "title": "logion backend REST API views definition",
+        "version": "0.1.0"
+    },
+    "paths": {},
     "components": {
         "schemas": {
             "AcceptProtectionRequestView": {
@@ -623,6 +628,76 @@
                 },
                 "title": "UserIdentityView",
                 "description": "Physical person identification data"
+            },
+            "SignInRequestView": {
+                "type": "object",
+                "properties": {
+                    "addresses": {
+                        "type": "array",
+                        "description": "Addresses of the accounts to be signed in",
+                        "items": {
+                            "type": "string",
+                            "description": "The SS58 address of the account to be signed in"
+                        }
+                    }
+                },
+                "title": "SignInRequestView",
+                "description": "the sign-in request"
+            },
+            "SignInResponseView": {
+                "type": "object",
+                "properties": {
+                    "sessionId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "Session identifier"
+                    }
+                },
+                "title": "SignInResponseView",
+                "description": "the sign-in response"
+            },
+            "SignatureView": {
+                "type": "object",
+                "properties": {
+                    "signature": {
+                        "type": "string",
+                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
+                    },
+                    "signedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The signature's timestamp"
+                    }
+                },
+                "title": ""
+            },
+            "AuthenticateRequestView": {
+                "type": "object",
+                "properties": {
+                    "signatures": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "$ref": "#/components/schemas/SignatureView"
+                        },
+                        "description": "A map of signatures, index by SS58 addresses of authentication requester"
+                    }
+                },
+                "title": "AuthenticateRequestView",
+                "description": "the authentication request"
+            },
+            "AuthenticateResponseView": {
+                "type": "object",
+                "properties": {
+                    "tokens": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "description": "A map of tokens, indexed by SS58 address of authentication requester"
+                    }
+                },
+                "title": "AuthenticateResponseView",
+                "description": "the authentication response"
             }
         }
     }

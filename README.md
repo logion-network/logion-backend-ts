@@ -28,6 +28,8 @@ it as a path variable in the other queries.
 - Accept: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/accept -H "Content-Type: application/json" -d @sample-data/accept.json  | jq`
 - Check: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/check-activation -H "Content-Type: application/json" -d @sample-data/check.json  | jq`
 
+### Authentication
+Authentication process is described [here](doc/Authentication.md).
 
 ### Build
 

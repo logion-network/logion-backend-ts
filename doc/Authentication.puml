@@ -1,0 +1,79 @@
+@startuml
+'https://plantuml.com/sequence-diagram
+
+actor Alice
+participant logion_backend as "logion-backend"
+database    session
+database    roles
+Alice -> logion_backend: **POST /auth/sign-in** \n \
+X-Forwarded-For: <ip> \n \
+{ \n \
+"addresses": [ \n \
+  "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY" \n \
+  "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"], \n \
+}
+logion_backend -> logion_backend: Extract IP address
+logion_backend -> session: create session (sessionId, address, ip)
+activate session
+logion_backend --> Alice: { \n "sessionId":  "9f2a616b-4791-4fd4-a573-51b3f3e897b0" \n }
+Alice -> Alice:  \n \n \n Generate signature using sessionId as single other attribute
+Alice -> logion_backend: \n \n \n **POST /auth/{sessionId}/authenticate** \n \
+X-Forwarded-For: <ip> \n \
+{ \n \
+  "signatures": { \n \
+    "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": { \n \
+      "signature": "signature-ALICE", \n \
+      "signedOn": "2021-06-10T16:25:23.668294" \n \
+    }, \n \
+    "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty": { \n \
+      "signature": "signature-BOB", \n \
+      "signedOn": "2021-06-10T16:25:23.668294" \n \
+    } \n \
+  } \n \
+}
+logion_backend -> logion_backend: Verify signature
+logion_backend -> session: load and delete session with (sessionId, ip)
+destroy session
+logion_backend -> roles: check if legal Officer / Black list / ...
+logion_backend -> logion_backend: Generate token (validity 1h) : \n \
+{ \n \
+  "iss": "www.example.org", \n \
+  "sub": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY", \n \
+  "iat": 1623674099, \n \
+  "exp": 1623677699, \n \
+  "legalOfficer": true \n \
+  "ip": "192.168.0.1" \n \
+}
+logion_backend -> logion_backend: Serialize and Sign token
+logion_backend --> Alice: { \n \
+    "tokens": { \n \
+      "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY": "token-ALICE", \n \
+      "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty": "token-BOB" \n \
+    } \n \
+  }
+
+Alice -> Alice: Store token on Local storage
+... later ...
+Alice -> logion_backend: **PUT /protection-request** \n \
+Authorization: Bearer <token> \n \
+X-Forwarded-For: <ip> \n \
+{}
+logion_backend -> logion_backend: Decode token and check signature (spring-security filter, lib)
+logion_backend -> logion_backend: Check issuer, expiration (spring-security filter, lib)
+logion_backend -> logion_backend: Check IP of token against value in X-Forwarded-For (spring-security filter)
+logion_backend -> logion_backend: Check authorisation using both "sub" and "legalOfficer" (end-point-specific)
+logion_backend --> Alice: 401 Unauthorized
+logion_backend --> Alice: 200 OK \n \
+{}
+... later ...
+Alice -> logion_backend: **PUT /auth/refresh** \n \
+Authorization: Bearer <token> \n \
+X-Forwarded-For: <ip> \n
+logion_backend -> logion_backend: All validations on token
+logion_backend -> roles: check if legal Officer / Black list / ...
+logion_backend -> logion_backend: Similar token generated with new expiration
+logion_backend --> Alice: { \n "token":  "eyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJk...KaOU8yJQ1A" \n }
+Alice -> Alice: Replace token on [TBD] Session or Local storage
+
+
+@enduml
