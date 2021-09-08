@@ -22,9 +22,13 @@ import { ExtrinsicDataExtractor } from '../services/extrinsic.data.extractor';
 import { TransactionExtractor } from '../sync/transaction.extractor';
 import { TransactionSync } from '../sync/transactionsync.service';
 import { Scheduler } from '../scheduler/scheduler.service';
+import { AuthenticationController } from "../controllers/authentication.controller";
+import { AuthenticationService } from "../services/authentication.service";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(ApplicationErrorController).toSelf();
+container.bind(AuthenticationController).toSelf();
+container.bind(AuthenticationService).toSelf();
 container.bind(JsonResponse).toSelf();
 container.bind(ProtectionRequestController).toSelf();
 container.bind(ProtectionRequestRepository).toSelf();

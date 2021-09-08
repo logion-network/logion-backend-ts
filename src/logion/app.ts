@@ -1,5 +1,4 @@
 // tslint:disable-next-line: no-require-imports no-var-requires
-require('source-map-support').install();
 import { createConnection } from "typeorm";
 import express from 'express';
 import bodyParser from 'body-parser';
@@ -21,9 +20,12 @@ import {
     TokenizationRequestController,
     fillInSpec as fillInSpecForTokenization
 } from './controllers/tokenizationrequest.controller';
-import {
-    TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
+import { TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
 import { Scheduler } from "./scheduler/scheduler.service";
+import { AuthenticationController } from "./controllers/authentication.controller";
+import { AuthenticationService } from "./services/authentication.service";
+
+require('source-map-support').install();
 
 const app = express();
 expressOasGenerator.handleResponses(app, {
@@ -74,6 +76,7 @@ createConnection()
     const dino = new Dino(app, '/api');
 
     dino.useRouter(() => express.Router());
+    dino.registerController(AuthenticationController);
     dino.registerController(ProtectionRequestController);
     dino.registerController(TokenizationRequestController);
     dino.registerController(TransactionController);
@@ -87,6 +90,7 @@ createConnection()
 
     dino.bind();
 
+    AppContainer.get(AuthenticationService).configureAuthentication(app);
     AppContainer.get(Scheduler).start();
 
     expressOasGenerator.handleRequests();
