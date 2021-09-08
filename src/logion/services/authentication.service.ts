@@ -9,6 +9,7 @@ const AUTH_SECRET = "secret-key-that-should-never-be-disclosed-to-anybody-especi
 const AUTH_ISSUER = "dev.logion.network";
 const TTL = 3600;
 const ALGORITHM: Algorithm = "HS384";
+const SECRET = Buffer.from(AUTH_SECRET, 'base64');
 
 const { logger } = Log;
 
@@ -19,6 +20,24 @@ interface LogionUser {
 
 @injectable()
 export class AuthenticationService {
+
+    createToken(address: string): string {
+        const now = Math.floor(Date.now() / 1000);
+        const payload = {
+            iat: now,
+            exp: now + TTL,
+            legalOfficer: true
+        };
+        return jwt.sign(payload, SECRET, {
+            algorithm: ALGORITHM,
+            issuer: AUTH_ISSUER,
+            subject: address
+        });
+    }
+}
+
+@injectable()
+export class AuthenticationConfigurationService {
 
     private configureEndpoints(app: Express, authenticate: any, authorizeForLegalOfficer: any): void {
 
@@ -34,24 +53,6 @@ export class AuthenticationService {
         app.all("/api/transaction/*", authenticate)
     }
 
-    createToken(address: string): string {
-        const now = Math.floor(Date.now() / 1000);
-        const payload = {
-            iat: now,
-            exp: now + TTL,
-            legalOfficer: true
-        };
-        return jwt.sign(payload, this.secret(), {
-            algorithm: ALGORITHM,
-            issuer: AUTH_ISSUER,
-            subject: address
-        });
-    }
-
-    private secret(): Buffer {
-        return Buffer.from(AUTH_SECRET, 'base64');
-    }
-
     configureAuthentication(app: Express): void {
 
         logger.info("Configuring authentication");
@@ -59,7 +60,7 @@ export class AuthenticationService {
         const options: StrategyOptions = {
             jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
             issuer: AUTH_ISSUER,
-            secretOrKey: this.secret(),
+            secretOrKey: SECRET
         }
 
         const jwtStrategy = new Strategy(options, ((payload, done) => {

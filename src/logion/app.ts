@@ -23,7 +23,7 @@ import {
 import { TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
 import { Scheduler } from "./scheduler/scheduler.service";
 import { AuthenticationController } from "./controllers/authentication.controller";
-import { AuthenticationService } from "./services/authentication.service";
+import { AuthenticationConfigurationService } from "./services/authentication.service";
 
 require('source-map-support').install();
 
@@ -90,7 +90,7 @@ createConnection()
 
     dino.bind();
 
-    AppContainer.get(AuthenticationService).configureAuthentication(app);
+    AppContainer.get(AuthenticationConfigurationService).configureAuthentication(app);
     AppContainer.get(Scheduler).start();
 
     expressOasGenerator.handleRequests();
