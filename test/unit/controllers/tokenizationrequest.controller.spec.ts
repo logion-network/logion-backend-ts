@@ -124,6 +124,24 @@ describe('TokenizationRequestController', () => {
                 expect(response.body.requests.length).toBe(1);
             });
     });
+
+    it('fetchProtectionRequests fails on authentication failure', async () => {
+        const requestBody: FetchRequestsSpecificationView = {
+            legalOfficerAddress: ALICE,
+            status: 'PENDING'
+        };
+        const specification: FetchRequestsSpecification = {
+            expectedLegalOfficer: ALICE,
+            expectedStatus: 'PENDING',
+        };
+
+        const app = setupApp(TokenizationRequestController, container => mockModelForFetch(container, specification), false);
+
+        await request(app)
+            .put('/api/token-request')
+            .send(requestBody)
+            .expect(401)
+    });
 });
 
 const TOKEN_NAME = "MYT";

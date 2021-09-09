@@ -33,7 +33,7 @@ export class AuthenticationController extends ApiController {
         for (let address in authenticateRequest.signatures) {
             const signature: SignatureView = authenticateRequest.signatures[address];
             // TODO Validate signature against session id
-            response.tokens![address] = this.authenticationService.createToken(address);
+            response.tokens![address] = this.authenticationService.createToken(address, Date.now());
         }
         return Promise.resolve(response);
     }

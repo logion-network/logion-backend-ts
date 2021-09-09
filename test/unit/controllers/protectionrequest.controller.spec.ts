@@ -190,6 +190,21 @@ describe('fetchProtectionRequests', () => {
                 expect(response.body.requests[0].status).toBe("PENDING");
             });
     });
+
+    it('fails on authentication failure', async  () => {
+        const app = setupApp(ProtectionRequestController, mockModelForFetch, false);
+
+        await request(app)
+            .put('/api/protection-request')
+            .send({
+                requesterAddress: "",
+                legalOfficerAddress: [ ALICE ],
+                decisionStatuses: ["ACCEPTEED", "REJECTED"]
+            })
+            .expect(401);
+
+    });
+
 });
 
 const REQUESTER_ADDRESS = "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY";

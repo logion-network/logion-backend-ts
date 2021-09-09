@@ -30,6 +30,16 @@ describe('TransactionController', () => {
                 expect(response.body.transactions[0].total).toBe("10");
             });
     });
+
+    it('fetchTransactions fails on authentication failure', async () => {
+        const app = setupApp(TransactionController, mockModelForFetch, false);
+
+        await request(app)
+            .put('/api/transaction')
+            .send({ address: ALICE })
+            .expect(401);
+
+    })
 });
 
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
@@ -39,15 +49,15 @@ function mockModelForFetch(container: Container): void {
     const transaction = new Mock<TransactionAggregateRoot>();
     transaction.setup(instance => instance.getDescription())
         .returns({
-            from: ALICE,
-            to: null,
-            createdOn: TIMESTAMP,
-            pallet: "pallet",
+                from: ALICE,
+                to: null,
+                createdOn: TIMESTAMP,
+                pallet: "pallet",
             method: "method",
             transferValue: 1n,
-            tip: 2n,
-            fee: 3n,
-            reserved: 4n,
+                tip: 2n,
+                fee: 3n,
+                reserved: 4n,
             }
         );
     const repository = new Mock<TransactionRepository>();
