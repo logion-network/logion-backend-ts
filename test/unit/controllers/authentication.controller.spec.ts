@@ -4,7 +4,7 @@ import request from "supertest";
 import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
 import { components } from "../../../src/logion/controllers/components";
 import { Container } from "inversify";
-import { Mock } from "moq.ts";
+import { Mock, It } from "moq.ts";
 import { AuthenticationService } from "../../../src/logion/services/authentication.service";
 import { Log } from "../../../src/logion/util/Log";
 
@@ -66,9 +66,9 @@ describe("AuthenticationController", () => {
 
 function mockDependencies(container: Container): void {
     const authenticationService = new Mock<AuthenticationService>();
-    container.bind(AuthenticationService).toConstantValue(authenticationService.object());
+    container.rebind(AuthenticationService).toConstantValue(authenticationService.object());
 
     authenticationService
-        .setup(instance => instance.createToken(ALICE)).returns(TOKEN_ALICE)
-        .setup(instance => instance.createToken(BOB)).returns(TOKEN_BOB);
+        .setup(instance => instance.createToken(ALICE, It.IsAny<number>())).returns(TOKEN_ALICE)
+        .setup(instance => instance.createToken(BOB, It.IsAny<number>())).returns(TOKEN_BOB);
 }

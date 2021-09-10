@@ -15,11 +15,19 @@ import {
 
 import { components } from './components';
 
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, addPathParameter, getDefaultResponsesNoContent } from './doc';
+import {
+    addTag,
+    setControllerTag,
+    getRequestBody,
+    getDefaultResponses,
+    addPathParameter,
+    getDefaultResponsesNoContent
+} from './doc';
 import { sha256 } from '../lib/crypto/hashing';
 import { SignatureService } from '../services/signature.service';
 import { randomAlphanumericString } from '../lib/random';
 import { requireDefined } from '../lib/assertions';
+import { AuthenticationService } from "../services/authentication.service";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Tokenization Requests';
@@ -55,7 +63,8 @@ export class TokenizationRequestController extends ApiController {
     constructor(
         private tokenizationRequestRepository: TokenizationRequestRepository,
         private tokenizationRequestFactory: TokenizationRequestFactory,
-        private signatureService: SignatureService) {
+        private signatureService: SignatureService,
+        private authenticationService: AuthenticationService) {
         super();
     }
 
@@ -73,6 +82,7 @@ export class TokenizationRequestController extends ApiController {
     @HttpPost('')
     @Async()
     async createTokenRequest(createTokenRequestView: CreateTokenRequestView): Promise<TokenRequestView> {
+        this.authenticationService.authenticatedUserIs(this.request, createTokenRequestView.requesterAddress);
         const description: TokenizationRequestDescription = {
             legalOfficerAddress: requireDefined(createTokenRequestView.legalOfficerAddress),
             requesterAddress: requireDefined(createTokenRequestView.requesterAddress),
@@ -147,7 +157,9 @@ export class TokenizationRequestController extends ApiController {
             rejectTokenRequestView: RejectTokenRequestView,
             requestId: string) {
 
-        var request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
+        const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
+            .requireLegalOfficer();
 
         if(! await this.signatureService.verify({
             signature: requireDefined(rejectTokenRequestView.signature),
@@ -186,6 +198,8 @@ export class TokenizationRequestController extends ApiController {
         requestId: string
     ): Promise<TokenRequestAcceptedView> {
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
+            .requireLegalOfficer();
 
         if(!await this.signatureService.verify({
             signature: requireDefined(acceptTokenRequestView.signature),
@@ -229,6 +243,8 @@ export class TokenizationRequestController extends ApiController {
             decimals: requireDefined(requestBody.description!.decimals),
         };
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
+            .requireLegalOfficer();
         request.setAssetDescription(sha256([sessionToken]), description);
         await this.tokenizationRequestRepository.save(request);
     }
@@ -248,6 +264,7 @@ export class TokenizationRequestController extends ApiController {
     @HttpPut('')
     @Async()
     async fetchRequests(specificationView: FetchRequestsSpecificationView): Promise<FetchRequestsResponseView> {
+        this.authenticationService.authenticatedUserIsOneOf(this.request, specificationView.requesterAddress, specificationView.legalOfficerAddress)
         const specification: FetchRequestsSpecification = {
             expectedLegalOfficer: specificationView.legalOfficerAddress,
             expectedRequesterAddress: specificationView.requesterAddress,

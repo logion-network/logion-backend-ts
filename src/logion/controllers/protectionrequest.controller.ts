@@ -17,6 +17,7 @@ import { RecoveryService } from '../services/recovery.service';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses, addPathParameter } from './doc';
 import { SignatureService } from '../services/signature.service';
 import { requireDefined } from '../lib/assertions';
+import { AuthenticationService } from "../services/authentication.service";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -56,7 +57,8 @@ export class ProtectionRequestController extends ApiController {
         private protectionRequestRepository: ProtectionRequestRepository,
         private protectionRequestFactory: ProtectionRequestFactory,
         private recoveryService: RecoveryService,
-        private signatureService: SignatureService) {
+        private signatureService: SignatureService,
+        private authenticationService: AuthenticationService) {
         super();
     }
 
@@ -74,6 +76,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('')
     async createProtectionRequests(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
+        this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
         if(!await this.signatureService.verify({
             signature: requireDefined(body.signature),
             address: requireDefined(body.requesterAddress),
@@ -120,9 +123,9 @@ export class ProtectionRequestController extends ApiController {
                 },
                 legalOfficerAddresses: body.legalOfficerAddresses!,
             });
-    
+
             await this.protectionRequestRepository.save(request);
-    
+
             return this.adapt(request);
         }
     }
@@ -141,6 +144,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
+        this.authenticationService.authenticatedUserIsOneOf(this.request, body.requesterAddress, body.legalOfficerAddress)
         const specification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: body.requesterAddress,
             expectedLegalOfficer: body.legalOfficerAddress,
@@ -200,6 +204,8 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
+        this.authenticationService.authenticatedUserIs(this.request, body.legalOfficerAddress)
+            .requireLegalOfficer()
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         if(!await this.signatureService.verify({
             signature: requireDefined(body.signature),
@@ -235,6 +241,8 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
+        this.authenticationService.authenticatedUserIs(this.request, body.legalOfficerAddress)
+            .requireLegalOfficer();
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         if(!await this.signatureService.verify({
             signature: requireDefined(body.signature),
@@ -308,6 +316,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/check-activation')
     async checkAndSetProtectionRequestActivation(body: CheckProtectionActivationView, id: string): Promise<ProtectionRequestView> {
+        this.authenticationService.authenticatedUserIs(this.request, body.userAddress)
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         if(!await this.signatureService.verify({
             signature: requireDefined(body.signature),
@@ -325,7 +334,6 @@ export class ProtectionRequestController extends ApiController {
                 request.setActivated();
                 await this.protectionRequestRepository.save(request);
             }
-    
             return this.adapt(request);
         }
     }
@@ -358,7 +366,12 @@ export class ProtectionRequestController extends ApiController {
         if (protectionRequests.length === 0) {
             throw new Error("Activated protection request to recover not found");
         }
-
+        let authorizeUsers = protectionRequests[0].decisions!
+            .map(decision => decision.legalOfficerAddress)
+        authorizeUsers.push(
+            protectionRequests[0].addressToRecover || undefined,
+            protectionRequests[0].requesterAddress);
+        this.authenticationService.authenticatedUserIsOneOf(this.request, ...authorizeUsers)
         return {
             recoveryAccount: this.adapt(recovery),
             accountToRecover: this.adapt(protectionRequests[0]),
