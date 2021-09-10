@@ -105,6 +105,24 @@ describe('ProtectionRequestRepositoryTest', () => {
 
         expect(results.length).toBe(4);
         expectStatus(results, 'PENDING');
+        results.forEach(request => {
+            expect(request.decisions!.length).toBe(2);
+        });
+    });
+
+    it("wallet user finds with one pending decision", async () => {
+        const specification = new FetchProtectionRequestsSpecification({
+            expectedRequesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+            expectedDecisionStatuses: ['PENDING'],
+        });
+
+        const results = await repository.findBy(specification);
+
+        expect(results.length).toBe(1);
+        expectStatus(results, 'PENDING');
+        results.forEach(request => {
+            expect(request.decisions!.length).toBe(2);
+        });
     });
 });
 

@@ -232,9 +232,11 @@ export class ProtectionRequestRepository {
         let builder = this.repository.createQueryBuilder("request")
             .innerJoinAndSelect("request.decisions", "decision");
 
+        let refetch = false;
         if(specification.expectedRequesterAddress !== null) {
             builder.where("request.requester_address = :expectedRequesterAddress", {expectedRequesterAddress: specification.expectedRequesterAddress});
         } else {
+            refetch = true;
             builder.where("decision.legal_officer_address = :expectedLegalOfficer", {expectedLegalOfficer: specification.expectedLegalOfficer});
         }
 
@@ -245,6 +247,7 @@ export class ProtectionRequestRepository {
         }
 
         if(specification.expectedDecisionStatuses.length > 0) {
+            refetch = true;
             builder.andWhere("decision.status IN (:...expectedDecisionStatuses)", {expectedDecisionStatuses: specification.expectedDecisionStatuses});
         }
 
@@ -253,11 +256,11 @@ export class ProtectionRequestRepository {
         }
 
         const requests = await builder.getMany();
-        if(specification.expectedRequesterAddress !== null) {
-            return requests;
-        } else {
+        if(refetch) {
             const promises = requests.map(request => this.repository.findOne(request.id!));
             return (await Promise.all(promises)).map(value => value!);
+        } else {
+            return requests;
         }
     }
 }
