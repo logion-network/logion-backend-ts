@@ -74,6 +74,9 @@ export class AuthenticationService {
     private readonly secret: Buffer;
 
     constructor() {
+        if(process.env.JWT_SECRET === undefined) {
+            throw Error("No JWT secret set");
+        }
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
     }
