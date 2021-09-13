@@ -3,6 +3,7 @@ import { injectable } from "inversify";
 import { Request } from "express";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { ALICE, BOB } from "../model/addresses.model";
+import moment, { Moment } from "moment";
 
 const ISSUER = "dev.logion.network";
 const TTL = 3600;
@@ -13,18 +14,28 @@ export interface LogionUser {
     legalOfficer: boolean;
 }
 
-export class LogionUserCheck {
-    constructor(private logionUser: LogionUser) {
+export class LogionUserCheck implements LogionUser {
+    constructor(logionUser: LogionUser) {
+        this.address = logionUser.address;
+        this.legalOfficer = logionUser.legalOfficer;
     }
 
     requireLegalOfficer(): void {
-        if (!this.logionUser.legalOfficer) {
+        if (!this.legalOfficer) {
             throw unauthorized("Reserved to legal officer")
         }
     }
+
+    readonly address: string;
+    readonly legalOfficer: boolean;
 }
 
-function unauthorized(error: string | VerifyErrors): UnauthorizedException<{ error: string | VerifyErrors }> {
+export interface Token {
+    value: string,
+    expiredOn: Moment
+}
+
+export function unauthorized(error: string): UnauthorizedException<{ error: string }> {
     return new UnauthorizedException({ error: error });
 }
 
@@ -61,7 +72,7 @@ export class AuthenticationService {
         const jwtToken = header.split(' ')[1].trim();
         jwt.verify(jwtToken, this.secret, { issuer: ISSUER }, err => {
             if (err) {
-                throw unauthorized(err)
+                throw this._unauthorized(err)
             }
         });
         const token = jwt.decode(jwtToken, { complete: true }) as Jwt;
@@ -74,29 +85,35 @@ export class AuthenticationService {
     private readonly secret: Buffer;
 
     constructor() {
-        if(process.env.JWT_SECRET === undefined) {
+        if (process.env.JWT_SECRET === undefined) {
             throw Error("No JWT secret set");
         }
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
     }
 
-    createToken(address: string, issuedAt: number, expiresIn?: number): string {
-        const now = Math.floor(issuedAt / 1000);
+    createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {
+        const now = Math.floor(issuedAt.unix());
+        const expiredOn = now + (expiresIn !== undefined ? expiresIn : TTL);
         const payload = {
             iat: now,
-            legalOfficer: this.isLegalOfficer(address)
+            legalOfficer: this.isLegalOfficer(address),
+            exp: expiredOn
         };
-        return jwt.sign(payload, this.secret, {
+        const encodedToken = jwt.sign(payload, this.secret, {
             algorithm: ALGORITHM,
-            expiresIn: expiresIn !== undefined ? expiresIn : TTL,
             issuer: ISSUER,
             subject: address
         });
+        return { value: encodedToken, expiredOn: moment.unix(expiredOn) };
     }
 
     private isLegalOfficer(address: string): boolean {
         return address === ALICE || address === BOB;
+    }
+
+    private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {
+        return new UnauthorizedException({ error: error.name + ": " + error.message });
     }
 }
 
