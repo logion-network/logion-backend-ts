@@ -7,5 +7,6 @@
     "database": "postgres",
     "entities": [
         "dist/model/*.model.js"
-    ]
+    ],
+    "synchronize": true
 }
