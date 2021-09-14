@@ -671,6 +671,20 @@
                 },
                 "title": ""
             },
+            "TokenView": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "description": "The encoded JWT token"
+                    },
+                    "expiredOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The token expiration timestamp"
+                    }
+                }
+            },
             "AuthenticateRequestView": {
                 "type": "object",
                 "properties": {
@@ -691,7 +705,7 @@
                     "tokens": {
                         "type": "object",
                         "additionalProperties": {
-                            "type": "string"
+                            "$ref": "#/components/schemas/TokenView"
                         },
                         "description": "A map of tokens, indexed by SS58 address of authentication requester"
                     }

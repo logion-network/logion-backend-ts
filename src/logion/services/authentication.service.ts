@@ -3,9 +3,8 @@ import { injectable } from "inversify";
 import { Request } from "express";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { ALICE, BOB } from "../model/addresses.model";
+import moment, { Moment } from "moment";
 
-const ISSUER = "dev.logion.network";
-const TTL = 3600;
 const ALGORITHM: Algorithm = "HS384";
 
 export interface LogionUser {
@@ -13,18 +12,28 @@ export interface LogionUser {
     legalOfficer: boolean;
 }
 
-export class LogionUserCheck {
-    constructor(private logionUser: LogionUser) {
+export class LogionUserCheck implements LogionUser {
+    constructor(logionUser: LogionUser) {
+        this.address = logionUser.address;
+        this.legalOfficer = logionUser.legalOfficer;
     }
 
     requireLegalOfficer(): void {
-        if (!this.logionUser.legalOfficer) {
+        if (!this.legalOfficer) {
             throw unauthorized("Reserved to legal officer")
         }
     }
+
+    readonly address: string;
+    readonly legalOfficer: boolean;
 }
 
-function unauthorized(error: string | VerifyErrors): UnauthorizedException<{ error: string | VerifyErrors }> {
+export interface Token {
+    value: string,
+    expiredOn: Moment
+}
+
+export function unauthorized(error: string): UnauthorizedException<{ error: string }> {
     return new UnauthorizedException({ error: error });
 }
 
@@ -59,9 +68,9 @@ export class AuthenticationService {
             throw unauthorized("Invalid Authorization header");
         }
         const jwtToken = header.split(' ')[1].trim();
-        jwt.verify(jwtToken, this.secret, { issuer: ISSUER }, err => {
+        jwt.verify(jwtToken, this.secret, { issuer: this.issuer }, err => {
             if (err) {
-                throw unauthorized(err)
+                throw this._unauthorized(err)
             }
         });
         const token = jwt.decode(jwtToken, { complete: true }) as Jwt;
@@ -72,31 +81,47 @@ export class AuthenticationService {
     }
 
     private readonly secret: Buffer;
+    private readonly issuer: string;
+    private readonly ttl: number;
 
     constructor() {
-        if(process.env.JWT_SECRET === undefined) {
-            throw Error("No JWT secret set");
+        if (process.env.JWT_SECRET === undefined) {
+            throw Error("No JWT secret set, please set var JWT_SECRET");
+        }
+        if (process.env.JWT_ISSUER === undefined) {
+            throw Error("No JWT issuer set, please set var JWT_ISSUER");
+        }
+        if (process.env.JWT_TTL_SEC === undefined) {
+            throw Error("No JWT Time-to-live set, please set var JWT_TTL_SEC");
         }
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
+        this.issuer = process.env.JWT_ISSUER;
+        this.ttl = process.env.JWT_TTL_SEC as unknown as number;
     }
 
-    createToken(address: string, issuedAt: number, expiresIn?: number): string {
-        const now = Math.floor(issuedAt / 1000);
+    createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {
+        const now = Math.floor(issuedAt.unix());
+        const expiredOn = now + (expiresIn !== undefined ? expiresIn : this.ttl);
         const payload = {
             iat: now,
-            legalOfficer: this.isLegalOfficer(address)
+            legalOfficer: this.isLegalOfficer(address),
+            exp: expiredOn
         };
-        return jwt.sign(payload, this.secret, {
+        const encodedToken = jwt.sign(payload, this.secret, {
             algorithm: ALGORITHM,
-            expiresIn: expiresIn !== undefined ? expiresIn : TTL,
-            issuer: ISSUER,
+            issuer: this.issuer,
             subject: address
         });
+        return { value: encodedToken, expiredOn: moment.unix(expiredOn) };
     }
 
     private isLegalOfficer(address: string): boolean {
         return address === ALICE || address === BOB;
+    }
+
+    private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {
+        return new UnauthorizedException({ error: error.name + ": " + error.message });
     }
 }
 
