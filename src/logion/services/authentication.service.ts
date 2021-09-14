@@ -97,7 +97,7 @@ export class AuthenticationService {
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
         this.issuer = process.env.JWT_ISSUER;
-        this.ttl = process.env.JWT_TTL_SEC as unknown as number;
+        this.ttl = parseInt(process.env.JWT_TTL_SEC);
     }
 
     createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {
