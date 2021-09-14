@@ -37,13 +37,13 @@ export class AuthenticationController extends ApiController {
         signInRequest.addresses?.forEach(address => {
                 const session = this.sessionFactory.newSession({
                     userAddress: address,
-                    sessionId: sessionId,
-                    createdOn: createdOn
+                    sessionId,
+                    createdOn
                 });
                 this.sessionRepository.save(session);
             }
         )
-        return Promise.resolve({ sessionId: sessionId });
+        return Promise.resolve({ sessionId });
     }
 
     @HttpPost('/:sessionId/authenticate')

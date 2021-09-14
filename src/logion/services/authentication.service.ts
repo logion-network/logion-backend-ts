@@ -5,8 +5,6 @@ import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/excep
 import { ALICE, BOB } from "../model/addresses.model";
 import moment, { Moment } from "moment";
 
-const ISSUER = "dev.logion.network";
-const TTL = 3600;
 const ALGORITHM: Algorithm = "HS384";
 
 export interface LogionUser {
@@ -70,7 +68,7 @@ export class AuthenticationService {
             throw unauthorized("Invalid Authorization header");
         }
         const jwtToken = header.split(' ')[1].trim();
-        jwt.verify(jwtToken, this.secret, { issuer: ISSUER }, err => {
+        jwt.verify(jwtToken, this.secret, { issuer: this.issuer }, err => {
             if (err) {
                 throw this._unauthorized(err)
             }
@@ -83,18 +81,28 @@ export class AuthenticationService {
     }
 
     private readonly secret: Buffer;
+    private readonly issuer: string;
+    private readonly ttl: number;
 
     constructor() {
         if (process.env.JWT_SECRET === undefined) {
-            throw Error("No JWT secret set");
+            throw Error("No JWT secret set, please set var JWT_SECRET");
+        }
+        if (process.env.JWT_ISSUER === undefined) {
+            throw Error("No JWT issuer set, please set var JWT_ISSUER");
+        }
+        if (process.env.JWT_TTL_SEC === undefined) {
+            throw Error("No JWT Time-to-live set, please set var JWT_TTL_SEC");
         }
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
+        this.issuer = process.env.JWT_ISSUER;
+        this.ttl = process.env.JWT_TTL_SEC as unknown as number;
     }
 
     createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {
         const now = Math.floor(issuedAt.unix());
-        const expiredOn = now + (expiresIn !== undefined ? expiresIn : TTL);
+        const expiredOn = now + (expiresIn !== undefined ? expiresIn : this.ttl);
         const payload = {
             iat: now,
             legalOfficer: this.isLegalOfficer(address),
@@ -102,7 +110,7 @@ export class AuthenticationService {
         };
         const encodedToken = jwt.sign(payload, this.secret, {
             algorithm: ALGORITHM,
-            issuer: ISSUER,
+            issuer: this.issuer,
             subject: address
         });
         return { value: encodedToken, expiredOn: moment.unix(expiredOn) };

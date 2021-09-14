@@ -57,7 +57,7 @@ describe("AuthenticationController", () => {
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,true, true));
         await request(app)
-            .post('/api/auth/' + SESSION_ID + '/authenticate')
+            .post(`/api/auth/${SESSION_ID}/authenticate`)
             .send(authenticateRequest)
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -83,7 +83,7 @@ describe("AuthenticationController", () => {
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,false, true));
         await request(app)
-            .post('/api/auth/' + SESSION_ID + '/authenticate')
+            .post(`/api/auth/${SESSION_ID}/authenticate`)
             .send(authenticateRequest)
             .expect(401)
             .expect('Content-Type', /application\/json/)
@@ -107,7 +107,7 @@ describe("AuthenticationController", () => {
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,true, false));
         await request(app)
-            .post('/api/auth/' + SESSION_ID + '/authenticate')
+            .post(`/api/auth/${SESSION_ID}/authenticate`)
             .send(authenticateRequest)
             .expect(401)
             .expect('Content-Type', /application\/json/)
