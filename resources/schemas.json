@@ -723,11 +723,11 @@
                         "example": {
                             "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": {
                                 "value": "eyJhbGciOiJIUzM4NCI....",
-                                "expiredOn": "2021-09-17T14:13:06.000Z"
+                                "expiredOn": "2021-09-17T14:13:06.000"
                             },
                             "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": {
                                 "value": "eyJhbGciOiJIUzM4NCI....",
-                                "expiredOn": "2021-09-17T14:13:06.000Z"
+                                "expiredOn": "2021-09-17T14:13:06.000"
                             }
                         }
                     }
