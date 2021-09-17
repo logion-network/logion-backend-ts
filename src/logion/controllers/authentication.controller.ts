@@ -7,13 +7,26 @@ import { SessionRepository, SessionFactory } from "../model/session.model";
 import moment from "moment";
 import { requireDefined } from "../lib/assertions";
 import { SignatureService } from "../services/signature.service";
+import { OpenAPIV3 } from "express-oas-generator";
+import { getRequestBody, getBodyContent, getDefaultResponses, addPathParameter, addTag, setControllerTag } from "./doc";
+
+export function fillInSpec(spec: OpenAPIV3.Document): void {
+    const tagName = 'Authentication';
+    addTag(spec, {
+        name: tagName,
+        description: "Handling of session authentication"
+    });
+    setControllerTag(spec, /^\/api\/auth.*/, tagName);
+
+    AuthenticationController.signIn(spec);
+    AuthenticationController.authenticate(spec);
+}
 
 type SignInRequestView = components["schemas"]["SignInRequestView"];
 type SignInResponseView = components["schemas"]["SignInResponseView"];
 type AuthenticateRequestView = components["schemas"]["AuthenticateRequestView"];
 type AuthenticateResponseView = components["schemas"]["AuthenticateResponseView"];
 type SignatureView = components["schemas"]["SignatureView"];
-
 
 @injectable()
 @Controller('/auth')
@@ -27,6 +40,20 @@ export class AuthenticationController extends ApiController {
         private signatureService: SignatureService,
         private authenticationService: AuthenticationService) {
         super();
+    }
+
+    static signIn(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/auth/sign-in"].post!;
+        operationObject.summary = "Sign-in for a new session";
+        operationObject.description = "No signature required";
+        operationObject.requestBody = getRequestBody({
+            description: "Session creation data",
+            view: "SignInRequestView"
+        })
+        operationObject.responses = {"200": {
+                description: "OK",
+                content: getBodyContent("SignInResponseView"),
+            }};
     }
 
     @HttpPost('/sign-in')
@@ -44,6 +71,18 @@ export class AuthenticationController extends ApiController {
             }
         )
         return Promise.resolve({ sessionId });
+    }
+
+    static authenticate(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/auth/{sessionId}/authenticate"].post!;
+        operationObject.summary = "Authenticate the given session";
+        operationObject.description = "<p>The signature's resource is <code>authentication</code>, the operation <code>login</code> and the additional field is <code>sessionId</code><p>";
+        operationObject.requestBody = getRequestBody({
+            description: "Authentication data",
+            view: "AuthenticateRequestView",
+        });
+        operationObject.responses = getDefaultResponses("AuthenticateResponseView");
+        addPathParameter(operationObject, 'sessionId', "The ID of the session to authenticate");
     }
 
     @HttpPost('/:sessionId/authenticate')

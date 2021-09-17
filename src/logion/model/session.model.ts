@@ -50,7 +50,7 @@ export interface NewSessionParameters {
 @injectable()
 export class SessionFactory {
 
-    newSession(params: NewSessionParameters) {
+    newSession(params: NewSessionParameters): SessionAggregateRoot {
         const root = new SessionAggregateRoot();
         root.userAddress = params.userAddress;
         root.sessionId = params.sessionId;
