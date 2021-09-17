@@ -25,7 +25,7 @@ describe('SessionRepository', () => {
         expect(session).toBeDefined();
     })
 
-    it("does not find unknown existingSessionId", async () => {
+    it("does not find unknown sessionId", async () => {
         const session = await repository.find(userAddress, unknownSessionId);
         expect(session).toBeUndefined();
     })
