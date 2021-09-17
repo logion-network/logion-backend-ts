@@ -23,7 +23,8 @@ export class SignatureService {
             this.sanitizeDateTime(params.timestamp)
         ];
         params.attributes.forEach(attribute => this.pushOrExpand(allAttributes, attribute));
-        const message = sha256(allAttributes);
+        const hash = sha256(allAttributes);
+        const message = `<Bytes>${hash}</Bytes>`;
 
         const {
             address,
