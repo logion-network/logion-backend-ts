@@ -637,7 +637,8 @@
                         "description": "Addresses of the accounts to be signed in",
                         "items": {
                             "type": "string",
-                            "description": "The SS58 address of the account to be signed in"
+                            "description": "The SS58 address of the account to be signed in",
+                            "example": "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb"
                         }
                     }
                 },
@@ -650,7 +651,8 @@
                     "sessionId": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "Session identifier"
+                        "description": "Session identifier",
+                        "example": "5e4ef4bb-8657-444c-9880-d89e9403fc85"
                     }
                 },
                 "title": "SignInResponseView",
@@ -693,7 +695,17 @@
                         "additionalProperties": {
                             "$ref": "#/components/schemas/SignatureView"
                         },
-                        "description": "A map of signatures, index by SS58 addresses of authentication requester"
+                        "description": "A map of signatures, index by SS58 addresses of authentication requester",
+                        "example": {
+                            "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": {
+                                "signature": "0xdc54e22464db114b570ea21ec499181fb1fb3c2582529....",
+                                "signedOn": "2021-09-17T13:13:05.833"
+                            },
+                            "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": {
+                                "signature": "0xdc54e22464db114b570ea21ec499181fb1fb3c2582529....",
+                                "signedOn": "2021-09-17T13:13:05.833"
+                            }
+                        }
                     }
                 },
                 "title": "AuthenticateRequestView",
@@ -707,7 +719,17 @@
                         "additionalProperties": {
                             "$ref": "#/components/schemas/TokenView"
                         },
-                        "description": "A map of tokens, indexed by SS58 address of authentication requester"
+                        "description": "A map of tokens, indexed by SS58 address of authentication requester",
+                        "example": {
+                            "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": {
+                                "value": "eyJhbGciOiJIUzM4NCI....",
+                                "expiredOn": "2021-09-17T14:13:06.000Z"
+                            },
+                            "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": {
+                                "value": "eyJhbGciOiJIUzM4NCI....",
+                                "expiredOn": "2021-09-17T14:13:06.000Z"
+                            }
+                        }
                     }
                 },
                 "title": "AuthenticateResponseView",

@@ -22,7 +22,10 @@ import {
 } from './controllers/tokenizationrequest.controller';
 import { TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
 import { Scheduler } from "./scheduler/scheduler.service";
-import { AuthenticationController } from "./controllers/authentication.controller";
+import {
+    AuthenticationController,
+    fillInSpec as fillInSpecForAuthentication
+} from "./controllers/authentication.controller";
 
 require('source-map-support').install();
 
@@ -52,6 +55,7 @@ expressOasGenerator.handleResponses(app, {
         fillInSpecForProtectionController(spec);
         fillInSpecForTokenization(spec);
         fillInSpecForTransaction(spec);
+        fillInSpecForAuthentication(spec);
 
         return spec;
     },
