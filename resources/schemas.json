@@ -734,6 +734,114 @@
                 },
                 "title": "AuthenticateResponseView",
                 "description": "the authentication response"
+            },
+            "CreateLocRequestView": {
+                "type": "object",
+                "properties": {
+                    "ownerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the LOC requester"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A description of the LOC"
+                    }
+                },
+                "title": "CreateLocRequestView",
+                "description": "A LOC Request to create"
+            },
+            "LocRequestView": {
+                "type": "object",
+                "properties": {
+                    "ownerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the LOC requester"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "A description of the LOC"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "decisionOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The decision timestamp (if status is 'STARTED' or 'REJECTED')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC request"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The request's status",
+                        "enum": [
+                            "STARTED",
+                            "PENDING",
+                            "REJECTED"
+                        ]
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REJECTED', the reason of the rejection"
+                    }
+                },
+                "title": "LocRequestView",
+                "description": "An existing LOC Request"
+            },
+            "FetchLocRequestsSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "ownerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the owner in expected LOC Requests"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester in expected LOC Requests"
+                    },
+                    "statuses": {
+                        "type": "array",
+                        "description": "The statuses of expected LOC Requests",
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "STARTED",
+                                "PENDING",
+                                "REJECTED"
+                            ]
+                        }
+                    }
+                },
+                "title": "FetchLocRequestsSpecificationView",
+                "description": "The specification for fetching LOC Requests"
+            },
+            "FetchLocRequestsResponseView": {
+                "type": "object",
+                "properties": {
+                    "requests": {
+                        "type": "array",
+                        "description": "The LOC Requests matching provided specification",
+                        "items": {
+                            "$ref": "#/components/schemas/LocRequestView"
+                        }
+                    }
+                },
+                "title": "FetchLocRequestsResponseView",
+                "description": "The fetched LOC Requests"
             }
         }
     }
