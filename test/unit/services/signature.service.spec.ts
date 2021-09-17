@@ -63,7 +63,7 @@ async function testVerify(params: {
 }) {
     const subkeyService = new Mock<SubkeyService>();
     const signature = "signature";
-    const expectedMessage = params.expectedMessage;
+    const expectedMessage = `<Bytes>${params.expectedMessage}</Bytes>`;
     subkeyService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
         params.signature === signature
         && params.address === BOB
