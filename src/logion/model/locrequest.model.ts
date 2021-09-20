@@ -1,7 +1,8 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 import { injectable } from "inversify";
+import { components } from "../controllers/components";
 
-export type LocRequestStatus = "REQUESTED" | "REJECTED" | "OPEN";
+export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
 export interface LocRequestDescription {
     readonly requesterAddress: string;
@@ -74,15 +75,15 @@ export class LocRequestRepository {
     public findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
         let builder = this.repository.createQueryBuilder("request");
 
-        if (specification.expectedRequesterAddress !== undefined) {
+        if (specification.expectedRequesterAddress) {
             builder.where("request.requester_address = :expectedRequesterAddress",
                 { expectedRequesterAddress: specification.expectedRequesterAddress });
-        } else if (specification.expectedOwnerAddress !== undefined) {
+        } else if (specification.expectedOwnerAddress) {
             builder.where("request.owner_address = :expectedOwnerAddress",
                 { expectedOwnerAddress: specification.expectedOwnerAddress });
         }
 
-        if (specification.expectedStatuses !== undefined) {
+        if (specification.expectedStatuses) {
             builder.andWhere("request.status IN (:...expectedStatuses)",
                 { expectedStatuses: specification.expectedStatuses });
         }

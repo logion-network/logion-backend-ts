@@ -735,6 +735,15 @@
                 "title": "AuthenticateResponseView",
                 "description": "the authentication response"
             },
+            "LocRequestStatus": {
+                "type": "string",
+                "description": "The request's status",
+                "enum": [
+                    "OPEN",
+                    "REQUESTED",
+                    "REJECTED"
+                ]
+            },
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
@@ -785,13 +794,7 @@
                         "description": "The ID of the LOC request"
                     },
                     "status": {
-                        "type": "string",
-                        "description": "The request's status",
-                        "enum": [
-                            "OPEN",
-                            "REQUESTED",
-                            "REJECTED"
-                        ]
+                        "$ref": "#/components/schemas/LocRequestStatus"
                     },
                     "rejectReason": {
                         "type": "string",
@@ -817,12 +820,7 @@
                         "description": "The statuses of expected LOC Requests",
                         "uniqueItems": true,
                         "items": {
-                            "type": "string",
-                            "enum": [
-                                "OPEN",
-                                "REQUESTED",
-                                "REJECTED"
-                            ]
+                            "$ref": "#/components/schemas/LocRequestStatus"
                         }
                     }
                 },
