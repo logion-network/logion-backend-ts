@@ -60,7 +60,7 @@ export class LocRequestController extends ApiController {
     static fetchRequests(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request"].put!;
         operationObject.summary = "Lists LOC Requests based on a given specification";
-        operationObject.description = "The authenticated user must be either expected requester or expected owner.  No signature required";
+        operationObject.description = "The authenticated user must be either expected requester or expected owner.";
         operationObject.requestBody = getRequestBody({
             description: "The specification for fetching LOC Requests",
             view: "FetchLocRequestsSpecificationView",
