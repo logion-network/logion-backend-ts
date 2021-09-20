@@ -258,7 +258,6 @@ export class TokenizationRequestController extends ApiController {
             view: "FetchRequestsSpecificationView",
         });
         operationObject.responses = getDefaultResponses("FetchRequestsResponseView");
-        addPathParameter(operationObject, 'requestId', "The ID of the request");
     }
 
     @HttpPut('')
