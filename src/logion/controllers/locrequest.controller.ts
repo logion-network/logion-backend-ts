@@ -43,7 +43,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('')
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
-        return this.fake(createLocRequestView, "PENDING");
+        return this.fake(createLocRequestView, "REQUESTED");
     }
 
     private fake(createLocRequestView: CreateLocRequestView, status: LocRequestStatus): LocRequestView {
@@ -72,7 +72,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async fetchRequests(specificationView: FetchLocRequestsSpecificationView): Promise<FetchLocRequestsResponseView> {
         const statuses = specificationView.statuses;
-        const status0:LocRequestStatus = statuses && statuses.length > 0 ? statuses[0] : "PENDING";
+        const status0:LocRequestStatus = statuses && statuses.length > 0 ? statuses[0] : "REQUESTED";
         const fake1 = this.fake({
             description: "some description of request 1",
             ownerAddress: specificationView.ownerAddress || ALICE,

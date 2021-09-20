@@ -23,7 +23,7 @@ describe('LocRequestRepository', () => {
     it("find by owner and status", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: ALICE,
-            expectedStatuses: [ "STARTED", "PENDING" ],
+            expectedStatuses: [ "OPEN", "REQUESTED" ],
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, "loc-1", "loc-2", "loc-4", "loc-5")

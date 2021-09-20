@@ -36,7 +36,7 @@ function givenLocDescription(value: LocRequestDescription) {
 let locDescription: LocRequestDescription;
 
 function whenCreatingLocRequest() {
-    createdLocRequest = factory.newPendingLocRequest({
+    createdLocRequest = factory.newLocRequest({
         id: requestId,
         description: locDescription
     });
@@ -48,6 +48,6 @@ let createdLocRequest: LocRequestAggregateRoot;
 
 function thenPendingRequestCreatedWithDescription(description: LocRequestDescription) {
     expect(createdLocRequest.id).toBe(requestId);
-    expect(createdLocRequest.status).toBe('PENDING');
+    expect(createdLocRequest.status).toBe('REQUESTED');
     expect(createdLocRequest.getDescription()).toEqual(description);
 }

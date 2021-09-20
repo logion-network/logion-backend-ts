@@ -777,7 +777,7 @@
                     "decisionOn": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "The decision timestamp (if status is 'STARTED' or 'REJECTED')"
+                        "description": "The decision timestamp (if status is 'OPEN' or 'REJECTED')"
                     },
                     "id": {
                         "type": "string",
@@ -788,8 +788,8 @@
                         "type": "string",
                         "description": "The request's status",
                         "enum": [
-                            "STARTED",
-                            "PENDING",
+                            "OPEN",
+                            "REQUESTED",
                             "REJECTED"
                         ]
                     },
@@ -819,8 +819,8 @@
                         "items": {
                             "type": "string",
                             "enum": [
-                                "STARTED",
-                                "PENDING",
+                                "OPEN",
+                                "REQUESTED",
                                 "REJECTED"
                             ]
                         }

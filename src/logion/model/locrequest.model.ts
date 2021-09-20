@@ -1,7 +1,7 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 import { injectable } from "inversify";
 
-export type LocRequestStatus = "PENDING" | "REJECTED" | "STARTED";
+export type LocRequestStatus = "REQUESTED" | "REJECTED" | "OPEN";
 
 export interface LocRequestDescription {
     readonly requesterAddress: string;
@@ -99,10 +99,10 @@ export interface NewLocRequestParameters {
 @injectable()
 export class LocRequestFactory {
 
-    public newPendingLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
+    public newLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
-        request.status = "PENDING";
+        request.status = "REQUESTED";
         request.requesterAddress = params.description.requesterAddress;
         request.ownerAddress = params.description.ownerAddress;
         request.description = params.description.description;
