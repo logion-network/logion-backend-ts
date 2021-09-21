@@ -11,7 +11,14 @@ import {
     FetchLocRequestsSpecification
 } from "../model/locrequest.model";
 import { OpenAPIV3 } from "express-oas-generator";
-import { getRequestBody, getDefaultResponses, addTag, setControllerTag } from "./doc";
+import {
+    getRequestBody,
+    getDefaultResponses,
+    addTag,
+    setControllerTag,
+    getDefaultResponsesNoContent,
+    addPathParameter
+} from "./doc";
 import { AuthenticationService } from "../services/authentication.service";
 import { requireDefined } from "../lib/assertions";
 
@@ -25,12 +32,15 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
     LocRequestController.createLocRequest(spec);
     LocRequestController.fetchRequests(spec);
+    LocRequestController.rejectLocRequest(spec);
+    LocRequestController.acceptLocRequest(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
 type LocRequestView = components["schemas"]["LocRequestView"];
 type FetchLocRequestsSpecificationView = components["schemas"]["FetchLocRequestsSpecificationView"];
 type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
+type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -109,4 +119,45 @@ export class LocRequestController extends ApiController {
         const requests = await this.locRequestRepository.findBy(specification);
         return { requests: requests.map(this.toView) }
     }
+
+    static rejectLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/reject"].post!;
+        operationObject.summary = "Rejects a LOC Request";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "The info for rejecting LOC Request",
+            view: "RejectLocRequestView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC request to reject");
+    }
+
+    @HttpPost('/:requestId/reject')
+    @Async()
+    async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+        request.reject(rejectLocRequestView.rejectReason!, moment());
+        await this.locRequestRepository.save(request)
+    }
+
+    static acceptLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/accept"].post!;
+        operationObject.summary = "Accepts a LOC Request";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC request to reject");
+    }
+
+    @HttpPost('/:requestId/accept')
+    @Async()
+    async acceptLocRequest(ignoredBody: any, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+        request.accept(moment());
+        await this.locRequestRepository.save(request)
+    }
+
 }

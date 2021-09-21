@@ -48,7 +48,7 @@ describe("TokenizationRequestAggregateRoot", () => {
     });
 
     it("fails accept given already REJECTED", () => {
-        givenRequestWithStatus('ACCEPTED');
+        givenRequestWithStatus('REJECTED');
         expect(() => whenAccepting(ACCEPTED_ON, SESSION_TOKEN)).toThrowError();
     });
 
@@ -75,7 +75,7 @@ describe("TokenizationRequestAggregateRoot", () => {
 
 const REJECT_REASON = "Illegal";
 const REJECTED_ON = moment();
-const ACCEPTED_ON = REJECTED_ON.add(1, "minute");
+const ACCEPTED_ON = moment().add(1, "minute");
 const SESSION_TOKEN = sha256(["token"]);
 
 function givenRequestWithStatus(status: TokenizationRequestStatus) {
