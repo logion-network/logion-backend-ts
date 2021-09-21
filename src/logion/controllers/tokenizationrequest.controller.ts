@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { ApiController, Controller, HttpPost, HttpPut, Async, BadRequestException } from 'dinoloop';
+import { ApiController, Controller, HttpPost, HttpPut, Async } from 'dinoloop';
 import { v4 as uuid } from 'uuid';
 import moment from 'moment';
 import { OpenAPIV3 } from 'express-oas-generator';
@@ -24,7 +24,6 @@ import {
     getDefaultResponsesNoContent
 } from './doc';
 import { sha256 } from '../lib/crypto/hashing';
-import { SignatureService } from '../services/signature.service';
 import { randomAlphanumericString } from '../lib/random';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
@@ -58,12 +57,9 @@ type FetchRequestsResponseView = components["schemas"]["FetchRequestsResponseVie
 @Controller('/token-request')
 export class TokenizationRequestController extends ApiController {
 
-    static readonly RESOURCE = "token-request";
-
     constructor(
         private tokenizationRequestRepository: TokenizationRequestRepository,
         private tokenizationRequestFactory: TokenizationRequestFactory,
-        private signatureService: SignatureService,
         private authenticationService: AuthenticationService) {
         super();
     }
@@ -71,7 +67,7 @@ export class TokenizationRequestController extends ApiController {
     static createTokenRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/token-request"].post!;
         operationObject.summary = "Creates a new Tokenization Request";
-        operationObject.description = "<p>The signature's resource is <code>token-request</code>, the operation <code>create</code> and the additional fields are:</p><ul><li><code>legalOfficerAddress</code></li><li><code>requestedTokenName</code></li><li><code>bars</code></li></ul><p>";
+        operationObject.description = "The authenticated user must be the tokenization requester";
         operationObject.requestBody = getRequestBody({
             description: "Tokenization Request creation data",
             view: "CreateTokenRequestView",
@@ -90,26 +86,10 @@ export class TokenizationRequestController extends ApiController {
             bars: requireDefined(createTokenRequestView.bars),
             createdOn: moment().toISOString()
         };
-
-        if(!await this.signatureService.verify({
-            signature: requireDefined(createTokenRequestView.signature),
-            address: requireDefined(createTokenRequestView.requesterAddress),
-            resource: TokenizationRequestController.RESOURCE,
-            operation: "create",
-            timestamp: requireDefined(createTokenRequestView.signedOn),
-            attributes: [
-                createTokenRequestView.legalOfficerAddress,
-                createTokenRequestView.requestedTokenName,
-                createTokenRequestView.bars
-            ]
-        })) {
-            throw new BadRequestException();
-        } else {
-            const id = uuid();
-            var request = this.tokenizationRequestFactory.newPendingTokenizationRequest({id, description});
-            await this.tokenizationRequestRepository.save(request);
-            return this.toView(request);
-        }
+        const id = uuid();
+        let request = this.tokenizationRequestFactory.newPendingTokenizationRequest({id, description});
+        await this.tokenizationRequestRepository.save(request);
+        return this.toView(request);
     }
 
     private toView(request: TokenizationRequestAggregateRoot): TokenRequestView {
@@ -142,7 +122,7 @@ export class TokenizationRequestController extends ApiController {
     static rejectTokenRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/token-request/{requestId}/reject"].post!;
         operationObject.summary = "Rejects a Tokenization Request";
-        operationObject.description = "<p>The signature's resource is <code>token-request</code>, the operation <code>reject</code> and the additional fields are:</p><ul><li><code>requestId</code></li><li><code>rejectReason</code></li></ul><p>";
+        operationObject.description = "The authenticated user must be the legal officer of the tokenization request";
         operationObject.requestBody = getRequestBody({
             description: "Tokenization Request rejection data",
             view: "RejectTokenRequestView",
@@ -160,29 +140,14 @@ export class TokenizationRequestController extends ApiController {
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
             .requireLegalOfficer();
-
-        if(! await this.signatureService.verify({
-            signature: requireDefined(rejectTokenRequestView.signature),
-            address: request.getDescription().legalOfficerAddress,
-            resource: TokenizationRequestController.RESOURCE,
-            operation: "reject",
-            timestamp: requireDefined(rejectTokenRequestView.signedOn),
-            attributes: [
-                requestId,
-                requireDefined(rejectTokenRequestView.rejectReason)
-            ]
-        })) {
-            throw new BadRequestException();
-        } else {
-            request.reject(rejectTokenRequestView.rejectReason!, moment());
-            await this.tokenizationRequestRepository.save(request);
-        }
+        request.reject(rejectTokenRequestView.rejectReason!, moment());
+        await this.tokenizationRequestRepository.save(request);
     }
 
     static acceptTokenRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/token-request/{requestId}/accept"].post!;
         operationObject.summary = "Accepts a Tokenization Request";
-        operationObject.description = "<p>The signature's resource is <code>token-request</code>, the operation <code>accept</code> and the additional field is the <code>requestId</code>.<p>";
+        operationObject.description = "The authenticated user must be the legal officer of the tokenization request";
         operationObject.requestBody = getRequestBody({
             description: "Tokenization Request acceptance data",
             view: "AcceptTokenRequestView",
@@ -200,24 +165,10 @@ export class TokenizationRequestController extends ApiController {
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
             .requireLegalOfficer();
-
-        if(!await this.signatureService.verify({
-            signature: requireDefined(acceptTokenRequestView.signature),
-            address: request.getDescription().legalOfficerAddress,
-            resource: TokenizationRequestController.RESOURCE,
-            operation: "accept",
-            timestamp: requireDefined(acceptTokenRequestView.signedOn),
-            attributes: [
-                requestId
-            ]
-        })) {
-            throw new BadRequestException();
-        } else {
-            const sessionToken = randomAlphanumericString(32);
-            request.accept(moment(), sha256([ sessionToken ]));
-            await this.tokenizationRequestRepository.save(request);
-            return { sessionToken };
-        }
+        const sessionToken = randomAlphanumericString(32);
+        request.accept(moment(), sha256([ sessionToken ]));
+        await this.tokenizationRequestRepository.save(request);
+        return { sessionToken };
     }
 
     static setAssetDescription(spec: OpenAPIV3.Document) {
@@ -252,7 +203,7 @@ export class TokenizationRequestController extends ApiController {
     static fetchRequests(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/token-request"].put!;
         operationObject.summary = "Lists Tokenization Requests based on a given specification";
-        operationObject.description = "No authentication required yet";
+        operationObject.description = "The authenticated user must be either the requester or the legal officers of the expected protection requests";
         operationObject.requestBody = getRequestBody({
             description: "The specification for fetching Tokenization Requests",
             view: "FetchRequestsSpecificationView",
