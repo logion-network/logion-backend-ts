@@ -8,15 +8,18 @@ import {
     LocRequestRepository,
     LocRequestFactory,
     LocRequestAggregateRoot,
-    NewLocRequestParameters
+    NewLocRequestParameters,
+    LocRequestStatus
 } from "../../../src/logion/model/locrequest.model";
-import moment from "moment";
+import moment, { Moment } from "moment";
 
 const testData = {
     requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
     ownerAddress: ALICE,
     description: "I want to open a case"
 };
+const REJECT_REASON = "Illegal";
+const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 
 describe('LocRequestController', () => {
 
@@ -45,11 +48,11 @@ describe('LocRequestController', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.requests.length).toBe(1);
-                expect(response.body.requests[0].id).toBeDefined()
+                expect(response.body.requests[0].id).toBe(REQUEST_ID)
                 expect(response.body.requests[0].requesterAddress).toBe(testData.requesterAddress)
                 expect(response.body.requests[0].ownerAddress).toBe(testData.ownerAddress)
-                expect(response.body.requests[0].status).toBe("OPEN")
-                expect(response.body.requests[0].rejectReason).toBe("Not valid")
+                expect(response.body.requests[0].status).toBe("REJECTED")
+                expect(response.body.requests[0].rejectReason).toBe(REJECT_REASON)
             });
     });
 
@@ -79,7 +82,53 @@ describe('LocRequestController', () => {
                 expect(response.body.requests).toBeUndefined();
             });
     });
+
+    it('rejects a requested loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForReject)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/reject`)
+            .send({
+                rejectReason: REJECT_REASON
+            })
+            .expect(200)
+    })
+
+    it('accepts a requested loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForAccept)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/accept`)
+            // .send({})
+            .expect(200)
+    })
 })
+
+function mockModelForReject(container: Container): void {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    const request = mockRequest("REQUESTED");
+    request.setup(instance => instance.reject(It.Is<string>(reason => reason === REJECT_REASON), It.IsAny<Moment>()))
+        .returns();
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
+        .returns(Promise.resolve());
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+}
+
+function mockModelForAccept(container: Container): void {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    const request = mockRequest("REQUESTED");
+    request.setup(instance => instance.accept(It.Is<string>(It.IsAny<Moment>())))
+        .returns();
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
+        .returns(Promise.resolve());
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+}
 
 function mockModelForCreation(container: Container): void {
 
@@ -89,40 +138,35 @@ function mockModelForCreation(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
-    const root = new Mock<LocRequestAggregateRoot>();
-    root.setup(instance => instance.id)
-        .returns("id");
-    root.setup(instance => instance.status)
-        .returns("REQUESTED");
-    root.setup(instance => instance.getDescription())
-        .returns({
-            ...testData,
-            createdOn: moment().toISOString()
-        })
+    const request = mockRequest("REQUESTED")
     factory.setup(instance => instance.newLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == testData.ownerAddress &&
         params.description.description == testData.description
     )))
-        .returns(root.object())
+        .returns(request.object())
     container.bind(LocRequestFactory).toConstantValue(factory.object());
 
 }
 
-function mockModelForFetch(container: Container): void {
-
+function mockRequest(status: LocRequestStatus): Mock<LocRequestAggregateRoot> {
     const request = new Mock<LocRequestAggregateRoot>();
-    request.setup(instance => instance.id)
-        .returns("id");
     request.setup(instance => instance.status)
-        .returns("OPEN");
-    request.setup(instance => instance.rejectReason)
-        .returns("Not valid");
+        .returns(status);
+    request.setup(instance => instance.id)
+        .returns(REQUEST_ID);
     request.setup(instance => instance.getDescription())
         .returns({
             ...testData,
             createdOn: moment().toISOString()
         })
+    return request;
+}
+
+function mockModelForFetch(container: Container): void {
+    const request = mockRequest("REJECTED")
+    request.setup(instance => instance.rejectReason)
+        .returns(REJECT_REASON);
     const requests: LocRequestAggregateRoot[] = [ request.object() ]
 
     const repository = new Mock<LocRequestRepository>();

@@ -840,6 +840,17 @@
                 },
                 "title": "FetchLocRequestsResponseView",
                 "description": "The fetched LOC Requests"
+            },
+            "RejectLocRequestView": {
+                "type": "object",
+                "properties": {
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    }
+                },
+                "title": "RejectLocRequestView",
+                "description": "The info to reject a LOC request"
             }
         }
     }

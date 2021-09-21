@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
+import { Moment } from "moment";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -13,6 +14,25 @@ export interface LocRequestDescription {
 
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
+
+    reject(reason: string, rejectedOn: Moment): void {
+        if(this.status != 'REQUESTED') {
+            throw new Error("Cannot reject already decided request");
+        }
+
+        this.status = 'REJECTED';
+        this.rejectReason = reason;
+        this.decisionOn = rejectedOn.toISOString();
+    }
+
+    accept(decisionOn: Moment): void {
+        if(this.status != 'REQUESTED') {
+            throw new Error("Cannot accept already decided request");
+        }
+
+        this.status = 'OPEN';
+        this.decisionOn = decisionOn.toISOString();
+    }
 
     public getDescription(): LocRequestDescription {
         return {
