@@ -3,10 +3,17 @@ import { Controller, ApiController, HttpPost, Async, HttpPut } from "dinoloop";
 import { components } from "./components";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
-import { LocRequestStatus } from "../model/locrequest.model";
-import { ALICE, BOB } from "../model/addresses.model";
+import {
+    LocRequestRepository,
+    LocRequestFactory,
+    LocRequestDescription,
+    LocRequestAggregateRoot,
+    FetchLocRequestsSpecification
+} from "../model/locrequest.model";
 import { OpenAPIV3 } from "express-oas-generator";
 import { getRequestBody, getDefaultResponses, addTag, setControllerTag } from "./doc";
+import { AuthenticationService } from "../services/authentication.service";
+import { requireDefined } from "../lib/assertions";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LOC Requests';
@@ -29,6 +36,13 @@ type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsRespo
 @Controller('/loc-request')
 export class LocRequestController extends ApiController {
 
+    constructor(
+        private locRequestRepository: LocRequestRepository,
+        private locRequestFactory: LocRequestFactory,
+        private authenticationService: AuthenticationService) {
+        super();
+    }
+
     static createLocRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request"].post!;
         operationObject.summary = "Creates a new LOC Request";
@@ -43,17 +57,32 @@ export class LocRequestController extends ApiController {
     @HttpPost('')
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
-        return this.fake(createLocRequestView, "REQUESTED");
+        this.authenticationService.authenticatedUserIs(this.request, createLocRequestView.requesterAddress);
+        const description: LocRequestDescription = {
+            requesterAddress: requireDefined(createLocRequestView.requesterAddress),
+            ownerAddress: requireDefined(createLocRequestView.ownerAddress),
+            description: requireDefined(createLocRequestView.description),
+            createdOn: moment().toISOString()
+        }
+        let request = this.locRequestFactory.newLocRequest({
+            id: uuid(),
+            description
+        });
+        await this.locRequestRepository.save(request);
+        return this.toView(request);
     }
 
-    private fake(createLocRequestView: CreateLocRequestView, status: LocRequestStatus): LocRequestView {
+    private toView(request: LocRequestAggregateRoot): LocRequestView {
+        const locDescription = request.getDescription();
         return {
-            description: createLocRequestView.description,
-            requesterAddress: createLocRequestView.requesterAddress,
-            ownerAddress: createLocRequestView.ownerAddress,
-            id: uuid(),
-            createdOn: moment().toISOString(),
-            status
+            id: request.id,
+            requesterAddress: locDescription.requesterAddress,
+            ownerAddress: locDescription.ownerAddress,
+            description: locDescription.description,
+            createdOn: locDescription.createdOn || undefined,
+            status: request.status,
+            rejectReason: request.rejectReason || undefined,
+            decisionOn: request.decisionOn || undefined
         }
     }
 
@@ -71,20 +100,13 @@ export class LocRequestController extends ApiController {
     @HttpPut('')
     @Async()
     async fetchRequests(specificationView: FetchLocRequestsSpecificationView): Promise<FetchLocRequestsResponseView> {
-        const statuses = specificationView.statuses;
-        const status0:LocRequestStatus = statuses && statuses.length > 0 ? statuses[0] : "REQUESTED";
-        const fake1 = this.fake({
-            description: "some description of request 1",
-            ownerAddress: specificationView.ownerAddress || ALICE,
-            requesterAddress: specificationView.requesterAddress || "5Eec8bb2sZZWUoHjf3N3mhpszL93DJVwHkG1PqHtsLqhecm6"
-        }, status0);
-        const fake2 = this.fake({
-            description: "some description of request 2",
-            ownerAddress: specificationView.ownerAddress || BOB,
-            requesterAddress: specificationView.requesterAddress || "5Eec8bb2sZZWUoHjf3N3mhpszL93DJVwHkG1PqHtsLqhecm6"
-        }, (statuses && statuses.length > 1 ? statuses[1] : status0))
-        return {
-            requests: [ fake1, fake2 ]
+        this.authenticationService.authenticatedUserIsOneOf(this.request, specificationView.requesterAddress, specificationView.ownerAddress)
+        const specification: FetchLocRequestsSpecification = {
+            expectedRequesterAddress: specificationView.requesterAddress,
+            expectedOwnerAddress: specificationView.ownerAddress,
+            expectedStatuses: requireDefined(specificationView.statuses),
         }
+        const requests = await this.locRequestRepository.findBy(specification);
+        return { requests: requests.map(this.toView) }
     }
 }
