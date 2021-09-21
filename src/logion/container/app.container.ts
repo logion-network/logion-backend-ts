@@ -25,6 +25,8 @@ import { Scheduler } from '../scheduler/scheduler.service';
 import { AuthenticationController } from "../controllers/authentication.controller";
 import { AuthenticationService, } from "../services/authentication.service";
 import { SessionRepository, SessionFactory } from "../model/session.model";
+import { LocRequestController } from "../controllers/locrequest.controller";
+import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.model";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(ApplicationErrorController).toSelf();
@@ -53,5 +55,8 @@ container.bind(TransactionRepository).toSelf();
 container.bind(TransactionFactory).toSelf();
 container.bind(SyncPointRepository).toSelf();
 container.bind(SyncPointFactory).toSelf();
+container.bind(LocRequestController).toSelf();
+container.bind(LocRequestRepository).toSelf();
+container.bind(LocRequestFactory).toSelf();
 
 export { container as AppContainer };
