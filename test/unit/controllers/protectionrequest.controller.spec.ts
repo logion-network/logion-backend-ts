@@ -230,7 +230,7 @@ function mockModelForFetch(container: Container): void {
 
 describe('acceptProtectionRequest', () => {
 
-    it('WithValidSignature', async () => {
+    it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true));
 
         await request(app)
@@ -269,7 +269,7 @@ const REQUEST_ID = "requestId";
 
 describe('rejectProtectionRequest', () => {
 
-    it('WithValidSignature', async () => {
+    it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true));
 
         await request(app)

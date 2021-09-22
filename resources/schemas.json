@@ -13,35 +13,10 @@
                     "legalOfficerAddress": {
                         "type": "string",
                         "description": "The SS58 address of the legal officer accepting the protection request"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
                     }
                 },
                 "title": "AcceptProtectionRequestView",
                 "description": "The Protection Request to accept"
-            },
-            "AcceptTokenRequestView": {
-                "type": "object",
-                "properties": {
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
-                    }
-                },
-                "title": "AcceptTokenRequestView",
-                "description": "The Tokenization Request to accept"
             },
             "AssetDescriptionView": {
                 "type": "object",
@@ -58,26 +33,6 @@
                 },
                 "title": "AssetDescriptionView",
                 "description": "The description of an asset created on-chain"
-            },
-            "CheckProtectionActivationView": {
-                "type": "object",
-                "properties": {
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
-                    },
-                    "userAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the user, used only for signature. Can be either regular user or legal officer"
-                    }
-                },
-                "title": "CheckProtectionActivationView",
-                "description": "A Protection Request to check for protection"
             },
             "CreateProtectionRequestView": {
                 "type": "object",
@@ -100,15 +55,6 @@
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the requester"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
                     },
                     "userIdentity": {
                         "description": "The identification data of the requester",
@@ -141,15 +87,6 @@
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the tokenization requester"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
                     }
                 },
                 "title": "CreateTokenRequestView",
@@ -413,15 +350,6 @@
                     "rejectReason": {
                         "type": "string",
                         "description": "The rejection reason"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
                     }
                 },
                 "title": "RejectProtectionRequestView",
@@ -433,15 +361,6 @@
                     "rejectReason": {
                         "type": "string",
                         "description": "The rejection reason"
-                    },
-                    "signature": {
-                        "type": "string",
-                        "description": "<p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol>"
-                    },
-                    "signedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The signature's timestamp"
                     }
                 },
                 "title": "RejectTokenRequestView",
@@ -453,25 +372,10 @@
                     "description": {
                         "description": "The asset description",
                         "$ref": "#/components/schemas/AssetDescriptionView"
-                    },
-                    "sessionToken": {
-                        "type": "string",
-                        "description": "The session token"
                     }
                 },
                 "title": "SetAssetDescriptionView",
-                "description": "The asset description and session token"
-            },
-            "TokenRequestAcceptedView": {
-                "type": "object",
-                "properties": {
-                    "sessionToken": {
-                        "type": "string",
-                        "description": "The session token to provide when setting the asset description"
-                    }
-                },
-                "title": "TokenRequestAcceptedView",
-                "description": "The acceptance data"
+                "description": "The asset description"
             },
             "TokenRequestView": {
                 "type": "object",

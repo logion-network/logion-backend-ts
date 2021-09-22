@@ -24,7 +24,6 @@ type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProt
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
 type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
-type CheckProtectionActivationView = components["schemas"]["CheckProtectionActivationView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -208,20 +207,16 @@ export class ProtectionRequestController extends ApiController {
         const operationObject = spec.paths["/api/protection-request/{id}/check-activation"].post!;
         operationObject.summary = "Checks if a Protection Request is activated on chain, and return the (possibly updated) protection request";
         operationObject.description = "The authenticated user must be the protection requester";
-        operationObject.requestBody = getRequestBody({
-            description: "The payload, used for signature",
-            view: "CheckProtectionActivationView",
-        });
         operationObject.responses = getDefaultResponses("ProtectionRequestView");
         addPathParameter(operationObject, 'id', "The ID of the request to check for activation");
     }
 
     @Async()
     @HttpPost('/:id/check-activation')
-    async checkAndSetProtectionRequestActivation(body: CheckProtectionActivationView, id: string): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.userAddress)
+    async checkAndSetProtectionRequestActivation(ignoredBody: any, id: string): Promise<ProtectionRequestView> {
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        if(await this.recoveryService.hasRecoveryConfig(body.userAddress!)) {
+        this.authenticationService.authenticatedUserIs(this.request, request.requesterAddress)
+        if(await this.recoveryService.hasRecoveryConfig(request.requesterAddress!)) {
             request.setActivated();
             await this.protectionRequestRepository.save(request);
         }

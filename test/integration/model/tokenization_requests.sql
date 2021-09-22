@@ -10,16 +10,14 @@ INSERT INTO tokenization_request (
     legal_officer_address,
     requester_address,
     bars,
-    status,
-    accept_session_token_hash
+    status
 ) VALUES (
     md5(random()::text || clock_timestamp()::text)::uuid,
     'MYT4',
     '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY',
     '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW',
     3,
-    'ACCEPTED',
-    'session-token'
+    'ACCEPTED'
 );
 INSERT INTO tokenization_request (
     id,

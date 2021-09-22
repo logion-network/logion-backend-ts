@@ -41,7 +41,6 @@ describe('TokenizationRequestRepository', () => {
 
         const request = requests[0];
         expect(request.getAssetDescription()).toBeUndefined();
-        expect(request.acceptSessionTokenHash).toBeDefined();
     });
 
     it("findAcceptedWithAssetDescription", async () => {
@@ -55,6 +54,5 @@ describe('TokenizationRequestRepository', () => {
 
         const request = requests[0];
         expect(request.getAssetDescription()).toBeDefined();
-        expect(request.acceptSessionTokenHash).toBe(null);
     });
 });
