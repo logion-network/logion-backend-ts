@@ -35,7 +35,7 @@ export class TransactionController extends ApiController {
     static fetchTransactions(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/transaction"].put!;
         operationObject.summary = "Lists Transactions based on a given specification";
-        operationObject.description = "The authenticated use must be participant (from/to) of the expected transactions";
+        operationObject.description = "The authenticated user must be participant (from/to) of the expected transactions";
         operationObject.requestBody = getRequestBody({
             description: "The specifications for the expected transactions",
             view: "FetchTransactionsSpecificationView",
