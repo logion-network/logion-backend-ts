@@ -47,6 +47,10 @@ export class PolkadotService {
                     name: "Vec<u8>",
                     symbol: "Vec<u8>",
                     decimals: "u8"
+                },
+                LocId: "u128",
+                LegalOfficerCaseOf: {
+                    owner: "AccountId"
                 }
             }
         });
