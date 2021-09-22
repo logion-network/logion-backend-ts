@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository, OneToMany, ManyToOne, JoinColumn } from "typeorm";
+import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 
@@ -71,13 +71,13 @@ export class TokenizationRequestAggregateRoot {
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
     decisionOn?: string | null;
 
-    @Column("varchar", { length: 255, name: "reject_reason", nullable: true }) 
+    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
     rejectReason?: string | null;
 
-    @Column({ length: 255, name: "requester_address" }) 
+    @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
-    @Column({ length: 255, name: "legal_officer_address" }) 
+    @Column({ length: 255, name: "legal_officer_address" })
     legalOfficerAddress?: string;
 
     @Column("integer")
@@ -154,7 +154,7 @@ export class TokenizationRequestRepository {
         if(specification.expectedStatus !== undefined) {
             builder.andWhere("request.status = :expectedStatus", {expectedStatus: specification.expectedStatus});
         }
-        
+
         if(specification.expectedTokenName !== undefined) {
             builder.andWhere("request.requested_token_name = :expectedTokenName", {expectedTokenName: specification.expectedTokenName});
         }

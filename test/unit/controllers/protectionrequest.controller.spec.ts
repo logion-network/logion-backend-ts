@@ -1,7 +1,6 @@
 import { Container } from 'inversify';
 import { Mock, It } from 'moq.ts';
 import request from 'supertest';
-import moment from 'moment';
 
 import { setupApp } from '../../helpers/testapp';
 
@@ -15,7 +14,6 @@ import {
 import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
 import { RecoveryService } from '../../../src/logion/services/recovery.service';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
-import { SignatureService, VerifyParams } from '../../../src/logion/services/signature.service';
 
 describe('createProtectionRequest', () => {
 
@@ -31,8 +29,6 @@ describe('createProtectionRequest', () => {
                 legalOfficerAddresses: LEGAL_OFFICERS,
                 isRecovery: false,
                 addressToRecover: null,
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -54,8 +50,6 @@ describe('createProtectionRequest', () => {
                 legalOfficerAddresses: LEGAL_OFFICERS,
                 isRecovery: true,
                 addressToRecover,
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -120,30 +114,6 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
 
     const recoveryService = new Mock<RecoveryService>();
     container.bind(RecoveryService).toConstantValue(recoveryService.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === REQUESTER_ADDRESS
-        && params.signature === SIGNATURE
-        && params.operation === "create"
-        && params.resource === ProtectionRequestController.RESOURCE
-        && params.attributes.length === 12
-        && params.attributes[0] === IDENTITY.firstName
-        && params.attributes[1] === IDENTITY.lastName
-        && params.attributes[2] === IDENTITY.email
-        && params.attributes[3] === IDENTITY.phoneNumber
-        && params.attributes[4] === POSTAL_ADDRESS.line1
-        && params.attributes[5] === POSTAL_ADDRESS.line2
-        && params.attributes[6] === POSTAL_ADDRESS.postalCode
-        && params.attributes[7] === POSTAL_ADDRESS.city
-        && params.attributes[8] === POSTAL_ADDRESS.country
-        && params.attributes[9] === isRecovery
-        && params.attributes[10] === addressToRecover
-        && params.attributes[11][0] === ALICE
-        && params.attributes[11][1] === BOB
-    )))
-        .returns(Promise.resolve(true));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -256,26 +226,9 @@ function mockModelForFetch(container: Container): void {
 
     const recoveryService = new Mock<RecoveryService>();
     container.bind(RecoveryService).toConstantValue(recoveryService.object());
-
-    const signatureService = new Mock<SignatureService>();
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
 describe('acceptProtectionRequest', () => {
-
-    it('WithWrongSignature', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, false));
-
-        await request(app)
-            .post('/api/protection-request/' + REQUEST_ID + "/accept")
-            .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
-                legalOfficerAddress: ALICE,
-            })
-            .expect(400)
-            .expect('Content-Type', /application\/json/);
-    });
 
     it('WithValidSignature', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true));
@@ -283,8 +236,6 @@ describe('acceptProtectionRequest', () => {
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/accept")
             .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
                 legalOfficerAddress: ALICE,
             })
             .expect(200)
@@ -312,40 +263,11 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const recoveryService = new Mock<RecoveryService>();
     container.bind(RecoveryService).toConstantValue(recoveryService.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === ALICE
-        && params.signature === SIGNATURE
-        && params.operation === "accept"
-        && params.resource === ProtectionRequestController.RESOURCE
-        && params.attributes.length === 1
-        && params.attributes[0] === REQUEST_ID
-    )))
-        .returns(Promise.resolve(verifies));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
 const REQUEST_ID = "requestId";
 
-const SIGNATURE = "signature";
-
 describe('rejectProtectionRequest', () => {
-
-    it('WithWrongSignature', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, false));
-
-        await request(app)
-            .post('/api/protection-request/' + REQUEST_ID + "/reject")
-            .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
-                legalOfficerAddress: ALICE,
-                rejectReason: REJECT_REASON,
-            })
-            .expect(400)
-            .expect('Content-Type', /application\/json/);
-    });
 
     it('WithValidSignature', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true));
@@ -353,8 +275,6 @@ describe('rejectProtectionRequest', () => {
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/reject")
             .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString(),
                 legalOfficerAddress: ALICE,
                 rejectReason: REJECT_REASON,
             })
@@ -383,17 +303,4 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const recoveryService = new Mock<RecoveryService>();
     container.bind(RecoveryService).toConstantValue(recoveryService.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === ALICE
-        && params.signature === SIGNATURE
-        && params.operation === "reject"
-        && params.resource === ProtectionRequestController.RESOURCE
-        && params.attributes.length === 2
-        && params.attributes[0] === REQUEST_ID
-        && params.attributes[1] === REJECT_REASON
-    )))
-        .returns(Promise.resolve(verifies));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }

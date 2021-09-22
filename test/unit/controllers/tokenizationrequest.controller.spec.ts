@@ -14,7 +14,6 @@ import {
 import { ALICE } from '../../../src/logion/model/addresses.model';
 import { TokenizationRequestController } from '../../../src/logion/controllers/tokenizationrequest.controller';
 import { components } from '../../../src/logion/controllers/components';
-import { SignatureService, VerifyParams } from '../../../src/logion/services/signature.service';
 
 describe('TokenizationRequestController', () => {
 
@@ -48,56 +47,46 @@ describe('TokenizationRequestController', () => {
             .expect('Content-Type', /application\/json/);
     });
 
-    it('rejectWithWrongSignature', async () => {
-        const app = setupApp(TokenizationRequestController, container => mockModelForReject(container, false));
+    it('rejectWithWrongAuthentication', async () => {
+        const app = setupApp(TokenizationRequestController, container => mockModelForReject(container), false);
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/reject")
             .send({
-                signature: SIGNATURE,
                 rejectReason: REJECT_REASON,
-                signedOn: moment().toISOString()
             })
-            .expect(400)
+            .expect(401)
             .expect('Content-Type', /application\/json/);
     });
 
     it('rejectWithValidSignature', async () => {
-        const app = setupApp(TokenizationRequestController, container => mockModelForReject(container, true));
+        const app = setupApp(TokenizationRequestController, container => mockModelForReject(container));
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/reject")
             .send({
-                signature: SIGNATURE,
                 rejectReason: REJECT_REASON,
-                signedOn: moment().toISOString()
             })
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });
 
-    it('acceptWithWrongSignature', async () => {
-        const app = setupApp(TokenizationRequestController, container => mockModelForAccept(container, false));
+    it('acceptWithWrongAuthentication', async () => {
+        const app = setupApp(TokenizationRequestController, container => mockModelForAccept(container), false);
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/accept")
-            .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString()
-            })
-            .expect(400)
+            .send({})
+            .expect(401)
             .expect('Content-Type', /application\/json/);
     });
 
     it('acceptWithValidSignature', async () => {
-        const app = setupApp(TokenizationRequestController, container => mockModelForAccept(container, true));
+        const app = setupApp(TokenizationRequestController, container => mockModelForAccept(container));
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/accept")
-            .send({
-                signature: SIGNATURE,
-                signedOn: moment().toISOString()
-            })
+            .send({})
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });
@@ -174,20 +163,6 @@ function mockModelForRequest(container: Container): void {
                 && params.description.requestedTokenName === TOKEN_NAME)))
         .returns(root.object());
     container.bind(TokenizationRequestFactory).toConstantValue(factory.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === REQUESTER_ADDRESS
-        && params.signature === SIGNATURE
-        && params.operation === "create"
-        && params.resource === TokenizationRequestController.RESOURCE
-        && params.attributes.length === 3
-        && params.attributes[0] === ALICE
-        && params.attributes[1] === TOKEN_NAME
-        && params.attributes[2] === 1
-    )))
-        .returns(Promise.resolve(true));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
 type FetchRequestsSpecificationView = components["schemas"]["FetchRequestsSpecificationView"];
@@ -222,12 +197,9 @@ function mockModelForFetch(container: Container, specification: FetchRequestsSpe
 
     const factory = new Mock<TokenizationRequestFactory>();
     container.bind(TokenizationRequestFactory).toConstantValue(factory.object());
-
-    const signatureService = new Mock<SignatureService>();
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
-function mockModelForReject(container: Container, verifies: boolean): void {
+function mockModelForReject(container: Container): void {
     const root = new Mock<TokenizationRequestAggregateRoot>();
     root.setup(instance => instance.getDescription())
         .returns({
@@ -249,28 +221,13 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<TokenizationRequestFactory>();
     container.bind(TokenizationRequestFactory).toConstantValue(factory.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === ALICE
-        && params.signature === SIGNATURE
-        && params.operation === "reject"
-        && params.resource === TokenizationRequestController.RESOURCE
-        && params.attributes.length === 2
-        && params.attributes[0] === REQUEST_ID
-        && params.attributes[1] === REJECT_REASON
-    )))
-        .returns(Promise.resolve(verifies));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }
 
 const REQUEST_ID = "requestId";
 
-const SIGNATURE = "signature";
-
 const REJECT_REASON = "reason";
 
-function mockModelForAccept(container: Container, verifies: boolean): void {
+function mockModelForAccept(container: Container): void {
     const root = new Mock<TokenizationRequestAggregateRoot>();
     root.setup(instance => instance.getDescription())
         .returns({
@@ -292,16 +249,4 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<TokenizationRequestFactory>();
     container.bind(TokenizationRequestFactory).toConstantValue(factory.object());
-
-    const signatureService = new Mock<SignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === ALICE
-        && params.signature === SIGNATURE
-        && params.operation === "accept"
-        && params.resource === TokenizationRequestController.RESOURCE
-        && params.attributes.length === 1
-        && params.attributes[0] === REQUEST_ID
-    )))
-        .returns(Promise.resolve(verifies));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
 }

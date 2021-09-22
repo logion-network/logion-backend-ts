@@ -79,35 +79,6 @@
                 "title": "CheckProtectionActivationView",
                 "description": "A Protection Request to check for protection"
             },
-            "CheckProtectionResponseView": {
-                "type": "object",
-                "properties": {
-                    "protection": {
-                        "type": "boolean",
-                        "description": "<code>true</code> if and only if the user has submitted a protection request to the legal officer(s), and the legal officer(s) accepted. <code>false</code> in all other cases."
-                    }
-                },
-                "title": "CheckProtectionResponseView",
-                "description": "The response of the check protection"
-            },
-            "CheckProtectionSpecificationView": {
-                "type": "object",
-                "properties": {
-                    "legalOfficerAddresses": {
-                        "type": "array",
-                        "description": "The SS58 address of the legal officer",
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "userAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the user"
-                    }
-                },
-                "title": "CheckProtectionSpecificationView",
-                "description": "The specification to check that a user is protected by legal officer(s)"
-            },
             "CreateProtectionRequestView": {
                 "type": "object",
                 "properties": {
