@@ -17,6 +17,7 @@ describe("LocRequestFactory", () => {
             ownerAddress: ALICE,
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
+            userIdentity: undefined
         };
         givenLocDescription(description);
         whenCreatingLocRequest();

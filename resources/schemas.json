@@ -633,6 +633,10 @@
                     "description": {
                         "type": "string",
                         "description": "A description of the LOC"
+                    },
+                    "userIdentity": {
+                        "description": "The identification data of the requester",
+                        "$ref": "#/components/schemas/UserIdentityView"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -652,6 +656,10 @@
                     "description": {
                         "type": "string",
                         "description": "A description of the LOC"
+                    },
+                    "userIdentity": {
+                        "description": "The identification data of the requester",
+                        "$ref": "#/components/schemas/UserIdentityView"
                     },
                     "createdOn": {
                         "type": "string",

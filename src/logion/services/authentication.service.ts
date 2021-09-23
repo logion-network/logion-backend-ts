@@ -2,7 +2,7 @@ import jwt, { Algorithm, Jwt, VerifyErrors } from "jsonwebtoken";
 import { injectable } from "inversify";
 import { Request } from "express";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
-import { ALICE, BOB } from "../model/addresses.model";
+import { ALICE, BOB, CHARLY } from "../model/addresses.model";
 import moment, { Moment } from "moment";
 
 const ALGORITHM: Algorithm = "HS384";
@@ -117,7 +117,7 @@ export class AuthenticationService {
     }
 
     private isLegalOfficer(address: string): boolean {
-        return address === ALICE || address === BOB;
+        return address === ALICE || address === BOB || address === CHARLY;
     }
 
     private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {

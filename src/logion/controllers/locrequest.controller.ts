@@ -21,6 +21,8 @@ import {
 } from "./doc";
 import { AuthenticationService } from "../services/authentication.service";
 import { requireDefined } from "../lib/assertions";
+import { UserIdentity } from "../model/useridentity";
+import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LOC Requests';
@@ -41,6 +43,7 @@ type LocRequestView = components["schemas"]["LocRequestView"];
 type FetchLocRequestsSpecificationView = components["schemas"]["FetchLocRequestsSpecificationView"];
 type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
+type UserIdentityView = components["schemas"]["UserIdentityView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -49,7 +52,8 @@ export class LocRequestController extends ApiController {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private locRequestFactory: LocRequestFactory,
-        private authenticationService: AuthenticationService) {
+        private authenticationService: AuthenticationService,
+        private protectionRequestRepository: ProtectionRequestRepository) {
         super();
     }
 
@@ -72,27 +76,54 @@ export class LocRequestController extends ApiController {
             requesterAddress: requireDefined(createLocRequestView.requesterAddress),
             ownerAddress: requireDefined(createLocRequestView.ownerAddress),
             description: requireDefined(createLocRequestView.description),
-            createdOn: moment().toISOString()
+            createdOn: moment().toISOString(),
+            userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
         let request = this.locRequestFactory.newLocRequest({
             id: uuid(),
             description
         });
         await this.locRequestRepository.save(request);
-        return this.toView(request);
+        const userIdentity = await this.findUserIdentity(request);
+        return this.toView(request, userIdentity);
     }
 
-    private toView(request: LocRequestAggregateRoot): LocRequestView {
+    private toView(request: LocRequestAggregateRoot, userIdentity: UserIdentity | undefined): LocRequestView {
         const locDescription = request.getDescription();
         return {
             id: request.id,
             requesterAddress: locDescription.requesterAddress,
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
+            userIdentity: this.toUserView(userIdentity),
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
             rejectReason: request.rejectReason || undefined,
             decisionOn: request.decisionOn || undefined
+        }
+    }
+
+    private toUserView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
+        if (userIdentity === undefined) {
+            return undefined;
+        }
+        return {
+            firstName: userIdentity.firstName,
+            lastName: userIdentity.lastName,
+            email: userIdentity.email,
+            phoneNumber: userIdentity.phoneNumber,
+        }
+    }
+
+    private fromUserView(userIdentityView: UserIdentityView | undefined): UserIdentity | undefined {
+        if (userIdentityView === undefined) {
+            return undefined;
+        }
+        return {
+            firstName: userIdentityView.firstName || "",
+            lastName: userIdentityView.lastName || "",
+            email: userIdentityView.email || "",
+            phoneNumber: userIdentityView.phoneNumber || "",
         }
     }
 
@@ -116,8 +147,26 @@ export class LocRequestController extends ApiController {
             expectedOwnerAddress: specificationView.ownerAddress,
             expectedStatuses: requireDefined(specificationView.statuses),
         }
-        const requests = await this.locRequestRepository.findBy(specification);
-        return { requests: requests.map(this.toView) }
+        const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
+            const userIdentity = await this.findUserIdentity(request);
+            return this.toView(request, userIdentity);
+        }));
+        return requests.then(requestViews => Promise.resolve({requests: requestViews}))
+    }
+
+    private async findUserIdentity(request: LocRequestAggregateRoot): Promise<UserIdentity | undefined> {
+        const description = request.getDescription();
+        const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
+            expectedDecisionStatuses: [ "ACCEPTED" ],
+            kind: "ANY",
+            expectedRequesterAddress: description.requesterAddress,
+            expectedLegalOfficer: description.ownerAddress
+        }));
+        if (protections.length > 0) {
+            return protections[0].getDescription().userIdentity;
+        } else {
+            return request.getDescription().userIdentity;
+        }
     }
 
     static rejectLocRequest(spec: OpenAPIV3.Document) {

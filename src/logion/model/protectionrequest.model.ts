@@ -1,6 +1,7 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
+import { UserIdentity } from "./useridentity";
 
 export type ProtectionRequestStatus = 'PENDING' | 'ACTIVATED';
 
@@ -45,16 +46,16 @@ export class ProtectionRequestAggregateRoot {
     @Column("timestamp without time zone", { name: "created_on", nullable: true })
     createdOn?: string;
 
-    @Column("boolean", {name: "is_recovery" }) 
+    @Column("boolean", {name: "is_recovery" })
     isRecovery?: boolean;
 
-    @Column({ length: 255, name: "requester_address", unique: true }) 
+    @Column({ length: 255, name: "requester_address", unique: true })
     requesterAddress?: string;
 
     @Column({ length: 255 })
     email?: string;
 
-    @Column({ length: 255, name: "first_name" }) 
+    @Column({ length: 255, name: "first_name" })
     firstName?: string;
 
     @Column({ length: 255, name: "last_name" })
@@ -73,7 +74,7 @@ export class ProtectionRequestAggregateRoot {
     line1?: string;
 
     @Column({ length: 255, nullable: true })
-    line2?: string; 
+    line2?: string;
 
     @Column({ length: 255, name: "postal_code" })
     postalCode?: string;
@@ -177,10 +178,10 @@ export class LegalOfficerDecision {
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
     decisionOn?: string;
 
-    @Column({ length: 255, name: "reject_reason", nullable: true }) 
+    @Column({ length: 255, name: "reject_reason", nullable: true })
     rejectReason?: string;
 
-    @Column({ length: 255 }) 
+    @Column({ length: 255 })
     status?: LegalOfficerDecisionStatus;
 
     @ManyToOne(() => ProtectionRequestAggregateRoot, request => request.decisions)
@@ -263,13 +264,6 @@ export class ProtectionRequestRepository {
             return requests;
         }
     }
-}
-
-export interface UserIdentity {
-    firstName: string,
-    lastName: string,
-    email: string,
-    phoneNumber: string,
 }
 
 export interface PostalAddress {
