@@ -2,6 +2,7 @@ import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeor
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import { Moment } from "moment";
+import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -10,6 +11,7 @@ export interface LocRequestDescription {
     readonly ownerAddress: string;
     readonly description: string;
     readonly createdOn: string;
+    readonly userIdentity: UserIdentity | undefined
 }
 
 @Entity("loc_request")
@@ -39,7 +41,13 @@ export class LocRequestAggregateRoot {
             requesterAddress: this.requesterAddress!,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
-            createdOn: this.createdOn!
+            createdOn: this.createdOn!,
+            userIdentity: this.userIdentity !== undefined ? {
+                firstName: this.userIdentity.firstName || "",
+                lastName: this.userIdentity.lastName || "",
+                email: this.userIdentity.email || "",
+                phoneNumber: this.userIdentity.phoneNumber || "",
+            } : undefined
         }
     }
 
@@ -66,6 +74,17 @@ export class LocRequestAggregateRoot {
 
     @Column("timestamp without time zone", { name: "created_on", nullable: true })
     createdOn?: string | null;
+
+    @Column(() => EmbeddableUserIdentity, { prefix: "" })
+    userIdentity?: EmbeddableUserIdentity;
+
+    setUserIdentity(userIdentity: UserIdentity) {
+        this.userIdentity = new EmbeddableUserIdentity();
+        this.userIdentity.firstName = userIdentity.firstName;
+        this.userIdentity.lastName = userIdentity.lastName;
+        this.userIdentity.email = userIdentity.email;
+        this.userIdentity.phoneNumber = userIdentity.phoneNumber;
+    }
 }
 
 export interface FetchLocRequestsSpecification {
@@ -128,6 +147,15 @@ export class LocRequestFactory {
         request.ownerAddress = params.description.ownerAddress;
         request.description = params.description.description;
         request.createdOn = params.description.createdOn;
+        const userIdentity = params.description.userIdentity;
+        if (userIdentity !== undefined) {
+            request.setUserIdentity({
+                firstName: userIdentity.firstName,
+                lastName: userIdentity.lastName,
+                email: userIdentity.email,
+                phoneNumber: userIdentity.phoneNumber,
+            })
+        }
         return request;
     }
 }

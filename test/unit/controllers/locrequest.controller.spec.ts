@@ -12,11 +12,18 @@ import {
     LocRequestStatus
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
+import { ProtectionRequestRepository } from "../../../src/logion/model/protectionrequest.model";
 
 const testData = {
     requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
     ownerAddress: ALICE,
-    description: "I want to open a case"
+    description: "I want to open a case",
+    userIdentity: {
+        firstName: "John",
+        lastName: "Doe",
+        email: "john.doe@logion.network",
+        phoneNumber: "+1234"
+    }
 };
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
@@ -33,6 +40,7 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.userIdentity.lastName).toBe("Doe");
             });
     });
 
@@ -53,6 +61,7 @@ describe('LocRequestController', () => {
                 expect(response.body.requests[0].ownerAddress).toBe(testData.ownerAddress)
                 expect(response.body.requests[0].status).toBe("REJECTED")
                 expect(response.body.requests[0].rejectReason).toBe(REJECT_REASON)
+                expect(response.body.requests[0].userIdentity.lastName).toBe("Doe");
             });
     });
 
@@ -114,6 +123,8 @@ function mockModelForReject(container: Container): void {
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 }
 
 function mockModelForAccept(container: Container): void {
@@ -128,6 +139,8 @@ function mockModelForAccept(container: Container): void {
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 }
 
 function mockModelForCreation(container: Container): void {
@@ -146,7 +159,9 @@ function mockModelForCreation(container: Container): void {
     )))
         .returns(request.object())
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+    protectionRepository.setup(instance => instance.findBy(It.IsAny())).returns(Promise.resolve([]))
 }
 
 function mockRequest(status: LocRequestStatus): Mock<LocRequestAggregateRoot> {
@@ -177,4 +192,7 @@ function mockModelForFetch(container: Container): void {
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
 
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+    protectionRepository.setup(instance => instance.findBy(It.IsAny())).returns(Promise.resolve([]))
 }
