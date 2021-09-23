@@ -26,9 +26,7 @@ describe('TokenizationRequestController', () => {
                 requestedTokenName: TOKEN_NAME,
                 legalOfficerAddress: ALICE,
                 requesterAddress: REQUESTER_ADDRESS,
-                bars: 1,
-                signature: "signature",
-                signedOn: moment().toISOString(),
+                bars: 1
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -59,7 +57,7 @@ describe('TokenizationRequestController', () => {
             .expect('Content-Type', /application\/json/);
     });
 
-    it('rejectWithValidSignature', async () => {
+    it('rejectWithValidAuthentication', async () => {
         const app = setupApp(TokenizationRequestController, container => mockModelForReject(container));
 
         await request(app)
@@ -76,17 +74,15 @@ describe('TokenizationRequestController', () => {
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/accept")
-            .send({})
             .expect(401)
             .expect('Content-Type', /application\/json/);
     });
 
-    it('acceptWithValidSignature', async () => {
+    it('acceptWithValidAuthentication', async () => {
         const app = setupApp(TokenizationRequestController, container => mockModelForAccept(container));
 
         await request(app)
             .post('/api/token-request/' + REQUEST_ID + "/accept")
-            .send({})
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });

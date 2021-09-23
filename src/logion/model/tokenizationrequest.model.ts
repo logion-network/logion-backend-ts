@@ -39,14 +39,13 @@ export class TokenizationRequestAggregateRoot {
         this.decisionOn = rejectedOn.toISOString();
     }
 
-    accept(decisionOn: Moment, sessionTokenHash: string): void {
+    accept(decisionOn: Moment): void {
         if(this.status != 'PENDING') {
             throw new Error("Cannot accept non-pending request");
         }
 
         this.status = 'ACCEPTED';
         this.decisionOn = decisionOn.toISOString();
-        this.acceptSessionTokenHash = sessionTokenHash;
     }
 
     public getDescription(): TokenizationRequestDescription {
@@ -86,12 +85,7 @@ export class TokenizationRequestAggregateRoot {
     @Column({ length: 255 })
     status?: TokenizationRequestStatus;
 
-    setAssetDescription(sessionToken: string, description: AssetDescription) {
-        if(this.acceptSessionTokenHash === undefined || this.acceptSessionTokenHash !== sessionToken) {
-            throw new Error("Invalid session token");
-        }
-
-        this.acceptSessionTokenHash = undefined;
+    setAssetDescription(description: AssetDescription) {
         this.assetDescription = new EmbeddableAssetDescription();
         this.assetDescription.assetId = description.assetId;
         this.assetDescription.decimals = description.decimals;
@@ -112,9 +106,6 @@ export class TokenizationRequestAggregateRoot {
             };
         }
     }
-
-    @Column("varchar", {name: "accept_session_token_hash", nullable: true})
-    acceptSessionTokenHash?: string | null;
 }
 
 export interface FetchRequestsSpecification {

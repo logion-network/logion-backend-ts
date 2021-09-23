@@ -1,6 +1,5 @@
 import moment, { Moment } from 'moment';
 import { v4 as uuid } from 'uuid';
-import { sha256 } from '../../../src/logion/lib/crypto/hashing';
 import { ALICE } from '../../../src/logion/model/addresses.model';
 
 import {
@@ -20,16 +19,14 @@ describe("TokenizationRequestAggregateRoot", () => {
         thenRequestStatusIs('REJECTED');
         thenRequestRejectReasonIs(REJECT_REASON);
         thenDecisionOnIs(REJECTED_ON);
-        thenAcceptSessionTokenIsAvailable(false);
     });
 
     it("accepts pending", () => {
         givenRequestWithStatus('PENDING');
-        whenAccepting(ACCEPTED_ON, SESSION_TOKEN);
+        whenAccepting(ACCEPTED_ON);
         thenRequestStatusIs('ACCEPTED');
         thenRequestRejectReasonIs(undefined);
         thenDecisionOnIs(ACCEPTED_ON);
-        thenAcceptSessionTokenIsAvailable(true);
     });
 
     it("fails reject given already accepted", () => {
@@ -39,7 +36,7 @@ describe("TokenizationRequestAggregateRoot", () => {
 
     it("fails accept given already accepted", () => {
         givenRequestWithStatus('ACCEPTED');
-        expect(() => whenAccepting(ACCEPTED_ON, SESSION_TOKEN)).toThrowError();
+        expect(() => whenAccepting(ACCEPTED_ON)).toThrowError();
     });
 
     it("fails reject given already rejected", () => {
@@ -49,7 +46,7 @@ describe("TokenizationRequestAggregateRoot", () => {
 
     it("fails accept given already REJECTED", () => {
         givenRequestWithStatus('REJECTED');
-        expect(() => whenAccepting(ACCEPTED_ON, SESSION_TOKEN)).toThrowError();
+        expect(() => whenAccepting(ACCEPTED_ON)).toThrowError();
     });
 
     it("returns undefined asset description given none", () => {
@@ -62,21 +59,22 @@ describe("TokenizationRequestAggregateRoot", () => {
         expect(request.getAssetDescription()).toBeUndefined();
     });
 
-    it("clears session token when setting asset description", () => {
+    it("gives correct asset description", () => {
         givenRequestWithStatus('ACCEPTED');
-        givenAcceptSessionToken("token");
-        whenSettingAssetDescription("token", {
+        whenSettingAssetDescription({
             assetId: "assetId",
             decimals: 10,
         });
-        expect(request.acceptSessionTokenHash).toBeUndefined();
+        const assetDescription = request.getAssetDescription();
+        expect(assetDescription).toBeDefined();
+        expect(assetDescription?.assetId).toBe("assetId")
+        expect(assetDescription?.decimals).toBe(10)
     });
 });
 
 const REJECT_REASON = "Illegal";
 const REJECTED_ON = moment();
 const ACCEPTED_ON = moment().add(1, "minute");
-const SESSION_TOKEN = sha256(["token"]);
 
 function givenRequestWithStatus(status: TokenizationRequestStatus) {
     request = new TokenizationRequestAggregateRoot();
@@ -89,8 +87,8 @@ function whenRejecting(rejectReason: string, rejectedOn: Moment) {
     request.reject(rejectReason, rejectedOn);
 }
 
-function whenAccepting(acceptedOn: Moment, sessionToken: string) {
-    request.accept(acceptedOn, sessionToken);
+function whenAccepting(acceptedOn: Moment) {
+    request.accept(acceptedOn);
 }
 
 function thenRequestStatusIs(expectedStatus: TokenizationRequestStatus) {
@@ -105,25 +103,13 @@ function thenDecisionOnIs(rejectedOn: Moment) {
     expect(request.decisionOn).toEqual(rejectedOn.toISOString());
 }
 
-function thenAcceptSessionTokenIsAvailable(expected: boolean) {
-    if(expected) {
-        expect(request.acceptSessionTokenHash).toBeDefined();
-    } else {
-        expect(request.acceptSessionTokenHash).not.toBeDefined();
-    }
-}
-
 function givenRequestWithEmbeddableAssetDescription(description: EmbeddableAssetDescription | undefined) {
     request = new TokenizationRequestAggregateRoot();
     request.assetDescription = description;
 }
 
-function givenAcceptSessionToken(token: string) {
-    request.acceptSessionTokenHash = sha256([token]);
-}
-
-function whenSettingAssetDescription(sessionToken: string, description: AssetDescription) {
-    request.setAssetDescription(sha256([sessionToken]), description);
+function whenSettingAssetDescription(description: AssetDescription) {
+    request.setAssetDescription(description);
 }
 
 describe("TokenizationRequestFactory", () => {
@@ -170,5 +156,4 @@ function thenPendingRequestCreatedWithDescription(description: TokenizationReque
     expect(createdTokenizationRequest.id).toBe(requestId);
     expect(createdTokenizationRequest.getDescription()).toEqual(description);
     expect(createdTokenizationRequest.getAssetDescription()).toBeUndefined();
-    expect(createdTokenizationRequest.acceptSessionTokenHash).toBeUndefined();
 }

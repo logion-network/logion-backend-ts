@@ -56,7 +56,7 @@ export class LocRequestController extends ApiController {
     static createLocRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request"].post!;
         operationObject.summary = "Creates a new LOC Request";
-        operationObject.description = "The authenticated user must be the requester. No signature required";
+        operationObject.description = "The authenticated user must be the requester";
         operationObject.requestBody = getRequestBody({
             description: "LOC Request creation data",
             view: "CreateLocRequestView",

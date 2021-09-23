@@ -23,8 +23,6 @@ import {
     addPathParameter,
     getDefaultResponsesNoContent
 } from './doc';
-import { sha256 } from '../lib/crypto/hashing';
-import { randomAlphanumericString } from '../lib/random';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
 
@@ -47,8 +45,6 @@ type CreateTokenRequestView = components["schemas"]["CreateTokenRequestView"];
 type TokenRequestView = components["schemas"]["TokenRequestView"];
 type AssetDescriptionView = components["schemas"]["AssetDescriptionView"];
 type RejectTokenRequestView = components["schemas"]["RejectTokenRequestView"];
-type AcceptTokenRequestView = components["schemas"]["AcceptTokenRequestView"];
-type TokenRequestAcceptedView = components["schemas"]["TokenRequestAcceptedView"];
 type SetAssetDescriptionView = components["schemas"]["SetAssetDescriptionView"];
 type FetchRequestsSpecificationView = components["schemas"]["FetchRequestsSpecificationView"];
 type FetchRequestsResponseView = components["schemas"]["FetchRequestsResponseView"];
@@ -159,16 +155,14 @@ export class TokenizationRequestController extends ApiController {
     @HttpPost('/:requestId/accept')
     @Async()
     async acceptTokenRequest(
-        acceptTokenRequestView: AcceptTokenRequestView,
+        ignoredBody: any,
         requestId: string
-    ): Promise<TokenRequestAcceptedView> {
+    ) {
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
             .requireLegalOfficer();
-        const sessionToken = randomAlphanumericString(32);
-        request.accept(moment(), sha256([ sessionToken ]));
+        request.accept(moment());
         await this.tokenizationRequestRepository.save(request);
-        return { sessionToken };
     }
 
     static setAssetDescription(spec: OpenAPIV3.Document) {
@@ -188,7 +182,6 @@ export class TokenizationRequestController extends ApiController {
     async setAssetDescription(
             requestBody: SetAssetDescriptionView,
             requestId: string) {
-        const sessionToken = requireDefined(requestBody.sessionToken);
         const description = {
             assetId: requireDefined(requestBody.description!.assetId),
             decimals: requireDefined(requestBody.description!.decimals),
@@ -196,7 +189,7 @@ export class TokenizationRequestController extends ApiController {
         const request = requireDefined(await this.tokenizationRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.legalOfficerAddress)
             .requireLegalOfficer();
-        request.setAssetDescription(sha256([sessionToken]), description);
+        request.setAssetDescription(description);
         await this.tokenizationRequestRepository.save(request);
     }
 
