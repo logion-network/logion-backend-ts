@@ -77,14 +77,6 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
-
-    setUserIdentity(userIdentity: UserIdentity) {
-        this.userIdentity = new EmbeddableUserIdentity();
-        this.userIdentity.firstName = userIdentity.firstName;
-        this.userIdentity.lastName = userIdentity.lastName;
-        this.userIdentity.email = userIdentity.email;
-        this.userIdentity.phoneNumber = userIdentity.phoneNumber;
-    }
 }
 
 export interface FetchLocRequestsSpecification {
@@ -149,12 +141,11 @@ export class LocRequestFactory {
         request.createdOn = params.description.createdOn;
         const userIdentity = params.description.userIdentity;
         if (userIdentity !== undefined) {
-            request.setUserIdentity({
-                firstName: userIdentity.firstName,
-                lastName: userIdentity.lastName,
-                email: userIdentity.email,
-                phoneNumber: userIdentity.phoneNumber,
-            })
+            request.userIdentity = new EmbeddableUserIdentity();
+            request.userIdentity.firstName = userIdentity.firstName;
+            request.userIdentity.lastName = userIdentity.lastName;
+            request.userIdentity.firstName = userIdentity.firstName;
+            request.userIdentity.firstName = userIdentity.firstName;
         }
         return request;
     }

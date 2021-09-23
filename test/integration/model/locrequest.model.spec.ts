@@ -39,6 +39,12 @@ describe('LocRequestRepository', () => {
 
         expect(requests[0].getDescription().requesterAddress).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
         expect(requests[0].getDescription().ownerAddress).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+        expect(requests[0].getDescription().userIdentity).toEqual({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john.doe@logion.network',
+            phoneNumber: '+123456'
+        });
         expect(requests[0].status).toBe("REJECTED");
     })
 })
