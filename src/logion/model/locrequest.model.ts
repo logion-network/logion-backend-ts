@@ -37,17 +37,20 @@ export class LocRequestAggregateRoot {
     }
 
     public getDescription(): LocRequestDescription {
+        const userIdentity = this.userIdentity &&
+            (this.userIdentity.firstName || this.userIdentity.lastName || this.userIdentity.email || this.userIdentity.phoneNumber) ?
+            {
+                firstName: this.userIdentity.firstName || "",
+                lastName: this.userIdentity.lastName || "",
+                email: this.userIdentity.email || "",
+                phoneNumber: this.userIdentity.phoneNumber || "",
+            } : undefined;
         return {
             requesterAddress: this.requesterAddress!,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
             createdOn: this.createdOn!,
-            userIdentity: this.userIdentity !== undefined ? {
-                firstName: this.userIdentity.firstName || "",
-                lastName: this.userIdentity.lastName || "",
-                email: this.userIdentity.email || "",
-                phoneNumber: this.userIdentity.phoneNumber || "",
-            } : undefined
+            userIdentity
         }
     }
 

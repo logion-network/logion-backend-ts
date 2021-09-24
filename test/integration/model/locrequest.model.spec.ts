@@ -27,6 +27,8 @@ describe('LocRequestRepository', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, "loc-1", "loc-2", "loc-4", "loc-5")
+
+        expect(requests[0].getDescription().userIdentity).toBeUndefined();
     })
 
     it("find by requester and status", async () => {
