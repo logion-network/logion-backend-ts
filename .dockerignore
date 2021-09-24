@@ -1,0 +1,9 @@
+node_modules
+.github
+.settings
+dist
+coverage
+.project
+.env
+calc/pkg
+calc/target
