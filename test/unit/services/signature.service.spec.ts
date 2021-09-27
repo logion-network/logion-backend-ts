@@ -1,7 +1,6 @@
 import { It, Mock } from 'moq.ts';
 import { BOB } from '../../../src/logion/model/addresses.model';
-import { SignatureService } from '../../../src/logion/services/signature.service';
-import { SubkeyService, VerifyParams } from '../../../src/logion/services/subkey.service';
+import { SignatureService, VerifyFunction, VerifyFunctionParams } from '../../../src/logion/services/signature.service';
 
 describe('SignatureService', () => {
 
@@ -61,15 +60,16 @@ async function testVerify(params: {
     expectedMessage: string;
     attributes: any[];
 }) {
-    const subkeyService = new Mock<SubkeyService>();
+    const verifier = new Mock<VerifyFunction>();
     const signature = "signature";
-    const expectedMessage = `<Bytes>${params.expectedMessage}</Bytes>`;
-    subkeyService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.signature === signature
-        && params.address === BOB
-        && params.message === expectedMessage
-    ))).returns(Promise.resolve(true));
-    const service = new SignatureService(subkeyService.object());
+    const expectedMessage = `<Bytes>${ params.expectedMessage }</Bytes>`;
+    verifier.setup(instance => instance(It.Is<VerifyFunctionParams>(params =>
+            params.signature === signature
+            && params.address === BOB
+            && params.message === expectedMessage
+        )
+    )).returns(Promise.resolve(true));
+    const service = SignatureService.of(verifier.object());
 
     const result = await service.verify({
         signature,

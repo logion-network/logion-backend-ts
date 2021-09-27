@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { sha256 } from '../lib/crypto/hashing';
-import { SubkeyService } from './subkey.service';
+import { signatureVerify } from "@polkadot/util-crypto";
+import { waitReady } from "@polkadot/wasm-crypto";
 
 export interface VerifyParams {
     signature: string;
@@ -11,12 +12,33 @@ export interface VerifyParams {
     attributes: any[];
 }
 
+export interface VerifyFunctionParams {
+    signature: string;
+    address: string;
+    message: string;
+}
+
+export type VerifyFunction = (params: VerifyFunctionParams) => Promise<boolean>;
+
 @injectable()
 export class SignatureService {
 
-    constructor(private subkeyService: SubkeyService) {}
+    private verifier: VerifyFunction;
 
-    verify(params: VerifyParams): Promise<boolean> {
+    constructor() {
+        this.verifier = async (params: VerifyFunctionParams) => {
+            await waitReady();
+            return signatureVerify(params.message, params.signature, params.address).isValid;
+        }
+    }
+
+    static of(verifier: VerifyFunction): SignatureService {
+        const signatureService = new SignatureService();
+        signatureService.verifier = verifier;
+        return signatureService;
+    }
+
+    async verify(params: VerifyParams): Promise<boolean> {
         const allAttributes = [
             params.resource,
             params.operation,
@@ -24,17 +46,14 @@ export class SignatureService {
         ];
         params.attributes.forEach(attribute => this.pushOrExpand(allAttributes, attribute));
         const hash = sha256(allAttributes);
-        const message = `<Bytes>${hash}</Bytes>`;
+        const message = `<Bytes>${ hash }</Bytes>`;
 
         const {
             address,
             signature,
         } = params;
-        return this.subkeyService.verify({
-            address,
-            signature,
-            message,
-        });
+
+        return this.verifier({ message, signature, address })
     }
 
     private sanitizeDateTime(dateTime: string): string {
