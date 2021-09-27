@@ -1,6 +1,11 @@
 import { signatureVerify } from "@polkadot/util-crypto";
+import { waitReady } from '@polkadot/wasm-crypto';
 
 describe('util-crypto', () => {
+
+    beforeEach(async (): Promise<void> => {
+        await waitReady();
+    });
 
     it('fails with invalid input', () => {
         const result = signatureVerify(ANOTHER_MESSAGE, HEX_PREFIXED_SIGNATURE, THE_ADDRESS);
