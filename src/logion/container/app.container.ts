@@ -16,7 +16,6 @@ import { TransactionRepository, TransactionFactory } from '../model/transaction.
 import { SyncPointRepository, SyncPointFactory } from '../model/syncpoint.model';
 import { BlockExtrinsicsService } from "../services/block.service";
 import { FeesService } from "../services/fees.service";
-import { SubkeyService } from '../services/subkey.service';
 import { SignatureService } from '../services/signature.service';
 import { ExtrinsicDataExtractor } from '../services/extrinsic.data.extractor';
 import { TransactionExtractor } from '../sync/transaction.extractor';
@@ -45,7 +44,6 @@ container.bind(TokenizationRequestRepository).toSelf();
 container.bind(TokenizationRequestFactory).toSelf();
 container.bind(BlockExtrinsicsService).toSelf();
 container.bind(FeesService).toSelf();
-container.bind(SubkeyService).toSelf();
 container.bind(SignatureService).toSelf();
 container.bind(ExtrinsicDataExtractor).toSelf();
 container.bind(TransactionExtractor).toSelf();

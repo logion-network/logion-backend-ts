@@ -9,13 +9,11 @@ describe('util-crypto', () => {
 
     it('fails with invalid input', () => {
         const result = signatureVerify(ANOTHER_MESSAGE, HEX_PREFIXED_SIGNATURE, THE_ADDRESS);
-        console.log("FAILS:" + result.crypto + " " + result.publicKey)
         expect(result.isValid).toBe(false);
     });
 
     it('verifies with hex prefixed signature', () => {
         const result = signatureVerify(THE_MESSAGE, HEX_PREFIXED_SIGNATURE, THE_ADDRESS);
-        console.log("OK:" + result.crypto + " " + result.publicKey)
         expect(result.isValid).toBe(true);
     });
 });
