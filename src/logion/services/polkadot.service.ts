@@ -50,7 +50,14 @@ export class PolkadotService {
                 },
                 LocId: "u128",
                 LegalOfficerCaseOf: {
-                    owner: "AccountId"
+                    owner: "AccountId",
+                    requester: "AccountId",
+                    metadata: "Vec<MetadataItem>",
+                    hashes: "Vec<Hash>"
+                },
+                MetadataItem: {
+                    name: "Vec<u8>",
+                    value: "Vec<u8>"
                 }
             }
         });
