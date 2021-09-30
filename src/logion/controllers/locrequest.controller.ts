@@ -1,8 +1,11 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, HttpPost, Async, HttpPut } from "dinoloop";
-import { components } from "./components";
+import fileUpload from 'express-fileupload';
+import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
+
+import { components } from "./components";
 import {
     LocRequestRepository,
     LocRequestFactory,
@@ -10,7 +13,6 @@ import {
     LocRequestAggregateRoot,
     FetchLocRequestsSpecification
 } from "../model/locrequest.model";
-import { OpenAPIV3 } from "express-oas-generator";
 import {
     getRequestBody,
     getDefaultResponses,
@@ -23,6 +25,8 @@ import { AuthenticationService } from "../services/authentication.service";
 import { requireDefined } from "../lib/assertions";
 import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
+import { sha256File } from "../lib/crypto/hashing";
+import { FileImportService } from "../services/fileimport.service";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LOC Requests';
@@ -36,6 +40,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.fetchRequests(spec);
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
+    LocRequestController.addFile(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -44,6 +49,7 @@ type FetchLocRequestsSpecificationView = components["schemas"]["FetchLocRequests
 type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
+type AddFileResultView = components["schemas"]["AddFileResultView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -53,7 +59,8 @@ export class LocRequestController extends ApiController {
         private locRequestRepository: LocRequestRepository,
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
-        private protectionRequestRepository: ProtectionRequestRepository) {
+        private protectionRequestRepository: ProtectionRequestRepository,
+        private fileImportService: FileImportService) {
         super();
     }
 
@@ -201,7 +208,7 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/accept')
     @Async()
-    async acceptLocRequest(ignoredBody: any, requestId: string) {
+    async acceptLocRequest(_ignoredBody: any, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
             .requireLegalOfficer();
@@ -209,4 +216,38 @@ export class LocRequestController extends ApiController {
         await this.locRequestRepository.save(request)
     }
 
+    static addFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files"].post!;
+        operationObject.summary = "Adds a file to the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponses("AddFileResultView");
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+    }
+
+    @HttpPost('/:requestId/files')
+    @Async()
+    async addFile(_body: any, requestId: string): Promise<AddFileResultView> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+
+        const files: fileUpload.FileArray = this.request.files;
+        if(files === undefined || files === null) {
+            throw new Error("No file detected");
+        }
+        const uploadedFiles: fileUpload.UploadedFile | fileUpload.UploadedFile[] = files['file'];
+        let file: fileUpload.UploadedFile;
+        if(uploadedFiles instanceof Array) {
+            file = uploadedFiles[0];
+        } else {
+            file = uploadedFiles;
+        }
+
+        let hash = await sha256File(file.tempFilePath);
+        await this.fileImportService.importFile(file.tempFilePath, hash);
+
+        // TODO add hash and OID to LOC request in order to enable later download
+
+        return { hash };
+    }
 }

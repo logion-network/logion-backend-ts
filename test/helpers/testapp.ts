@@ -1,6 +1,7 @@
 import '../../src/logion/container/inversify.decorate';
 import express, { Express } from 'express';
 import bodyParser from 'body-parser';
+import fileUpload from 'express-fileupload';
 import { Dino } from 'dinoloop';
 import { Container } from 'inversify';
 import { ApplicationErrorController } from '../../src/logion/controllers/application.error.controller';
@@ -13,6 +14,11 @@ import { ALICE } from "../../src/logion/model/addresses.model";
 export function setupApp<T>(controller: Function & { prototype: T; }, mockBinder: (container: Container) => void, authSucceed: boolean = true): Express {
     const app = express();
     app.use(bodyParser.json());
+    app.use(fileUpload({
+        limits: { fileSize: 50 * 1024 * 1024 },
+        useTempFiles : true,
+        tempFileDir : '/tmp/',
+    }));
 
     const dino = new Dino(app, '/api');
 

@@ -16,6 +16,7 @@ import {
     ProtectionRequestRepository,
     ProtectionRequestAggregateRoot
 } from "../../../src/logion/model/protectionrequest.model";
+import { FileImportService } from "../../../src/logion/services/fileimport.service";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -171,8 +172,20 @@ describe('LocRequestController', () => {
         const app = setupApp(LocRequestController, mockModelForAccept)
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/accept`)
-            // .send({})
             .expect(200)
+    })
+
+    it('adds file to loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForAddFile)
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/files`)
+            .attach('file', buffer, 'a-file.pdf')
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.hash).toBe(SOME_DATA_HASH);
+            });
     })
 })
 
@@ -190,6 +203,9 @@ function mockModelForReject(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
     const protectionRepository = new Mock<ProtectionRequestRepository>();
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+
+    const fileImportService = new Mock<FileImportService>();
+    container.bind(FileImportService).toConstantValue(fileImportService.object());
 }
 
 function mockModelForAccept(container: Container): void {
@@ -206,6 +222,9 @@ function mockModelForAccept(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
     const protectionRepository = new Mock<ProtectionRequestRepository>();
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+
+    const fileImportService = new Mock<FileImportService>();
+    container.bind(FileImportService).toConstantValue(fileImportService.object());
 }
 
 function mockModelForCreation(container: Container, hasProtection: boolean = false): void {
@@ -225,6 +244,9 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
         .returns(request.object())
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
+
+    const fileImportService = new Mock<FileImportService>();
+    container.bind(FileImportService).toConstantValue(fileImportService.object());
 }
 
 function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepository {
@@ -282,4 +304,31 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
+
+    const fileImportService = new Mock<FileImportService>();
+    container.bind(FileImportService).toConstantValue(fileImportService.object());
+}
+
+const SOME_DATA = 'some data';
+const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
+
+function mockModelForAddFile(container: Container): void {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
+        .returns(Promise.resolve());
+    const request = mockRequest("OPEN", testData);
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+
+    const fileImportService = new Mock<FileImportService>();
+    fileImportService.setup(instance => instance.importFile(It.IsAny<string>(), SOME_DATA_HASH))
+        .returns(Promise.resolve(42));
+    container.bind(FileImportService).toConstantValue(fileImportService.object());
 }
