@@ -1,4 +1,4 @@
-import { sha256 } from '../../../../src/logion/lib/crypto/hashing';
+import { sha256, sha256File } from '../../../../src/logion/lib/crypto/hashing';
 
 describe('HashingTest', () => {
 
@@ -16,6 +16,11 @@ describe('HashingTest', () => {
 
     it("hashes mixed attributes", () => {
         sha256HashTest("L1IAt8dg2CXiUjCoVZ3wf4uIJWocNgsmhmswXmH0oAU=", ["ABC", 123, true]);
+    });
+
+    it("hashes file", async () => {
+        const hash = await sha256File("test/unit/lib/crypto/file.txt");
+        expect(hash).toBe("0x0ba904eae8773b70c75333db4de2f3ac45a8ad4ddba1b242f0b3cfc199391dd8");
     });
 });
 

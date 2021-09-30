@@ -734,6 +734,17 @@
                 },
                 "title": "RejectLocRequestView",
                 "description": "The info to reject a LOC request"
+            },
+            "AddFileResultView": {
+                "type": "object",
+                "properties": {
+                    "hash": {
+                        "type": "string",
+                        "description": "Hex-encoded SHA256 hash of added file"
+                    }
+                },
+                "title": "AddFileResultView",
+                "description": "The result of adding a file to a LOC"
             }
         }
     }
