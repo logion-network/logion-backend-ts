@@ -243,10 +243,14 @@ export class LocRequestController extends ApiController {
             file = uploadedFiles;
         }
 
-        let hash = await sha256File(file.tempFilePath);
-        await this.fileImportService.importFile(file.tempFilePath, hash);
-
-        // TODO add hash and OID to LOC request in order to enable later download
+        const hash = await sha256File(file.tempFilePath);
+        const oid = await this.fileImportService.importFile(file.tempFilePath, hash);
+        request.addFile({
+            name: file.name,
+            hash,
+            oid
+        });
+        this.locRequestRepository.save(request);
 
         return { hash };
     }

@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, getRepository, Repository, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import { Moment } from "moment";
@@ -12,6 +12,12 @@ export interface LocRequestDescription {
     readonly description: string;
     readonly createdOn: string;
     readonly userIdentity: UserIdentity | undefined
+}
+
+export interface FileDescription {
+    name: string;
+    hash: string;
+    oid: number;
 }
 
 @Entity("loc_request")
@@ -36,7 +42,7 @@ export class LocRequestAggregateRoot {
         this.decisionOn = decisionOn.toISOString();
     }
 
-    public getDescription(): LocRequestDescription {
+    getDescription(): LocRequestDescription {
         const userIdentity = this.userIdentity &&
             (this.userIdentity.firstName || this.userIdentity.lastName || this.userIdentity.email || this.userIdentity.phoneNumber) ?
             {
@@ -52,6 +58,28 @@ export class LocRequestAggregateRoot {
             createdOn: this.createdOn!,
             userIdentity
         }
+    }
+
+    addFile(fileDescription: FileDescription) {
+        const file = new LocFile();
+        file.request = this;
+        file.requestId = this.id;
+        file.hash! = fileDescription.hash;
+        file.oid = fileDescription.oid;
+        this.files!.push(file);
+    }
+
+    hasFile(hash: string): boolean {
+        return this.files!.find(file => file.hash === hash) !== undefined;
+    }
+
+    getFile(hash: string): FileDescription {
+        const file = this.files!.find(file => file.hash === hash);
+        return {
+            name: file!.name!,
+            hash: file!.hash!,
+            oid: file!.oid!,
+        };
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -80,6 +108,35 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
+
+    @OneToMany(() => LocFile, file => file.request, {
+        eager: true,
+        cascade: true
+    })
+    files?: LocFile[];
+}
+
+@Entity("loc_request_file")
+export class LocFile {
+
+    @PrimaryColumn({ type: "uuid", name: "request_id" })
+    requestId?: string;
+
+    @PrimaryColumn({name: "hash"})
+    hash?: string;
+
+    @Column("timestamp without time zone", { name: "added_on", nullable: true })
+    addedOn?: string;
+
+    @Column({ length: 255 })
+    name?: string;
+
+    @Column("int4")
+    oid?: number;
+
+    @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
+    @JoinColumn({ name: "request_id" })
+    request?: LocRequestAggregateRoot;
 }
 
 export interface FetchLocRequestsSpecification {
@@ -150,7 +207,7 @@ export class LocRequestFactory {
             request.userIdentity.firstName = userIdentity.firstName;
             request.userIdentity.firstName = userIdentity.firstName;
         }
+        request.files = [];
         return request;
     }
 }
-

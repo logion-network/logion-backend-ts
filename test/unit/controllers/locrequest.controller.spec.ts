@@ -9,7 +9,8 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     NewLocRequestParameters,
-    LocRequestStatus
+    LocRequestStatus,
+    FileDescription
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import {
@@ -176,11 +177,13 @@ describe('LocRequestController', () => {
     })
 
     it('adds file to loc', async () => {
-        const app = setupApp(LocRequestController, mockModelForAddFile)
+        const app = setupApp(LocRequestController, mockModelForAddFile);
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
-            .attach('file', buffer, 'a-file.pdf')
+            .attach('file', buffer, {
+                filename: FILE_NAME
+            })
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -311,6 +314,7 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
 
 const SOME_DATA = 'some data';
 const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
+const FILE_NAME = "'a-file.pdf'";
 
 function mockModelForAddFile(container: Container): void {
     const factory = new Mock<LocRequestFactory>();
@@ -320,8 +324,11 @@ function mockModelForAddFile(container: Container): void {
     repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
         .returns(Promise.resolve());
     const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.addFile).returns(() => {});
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const protectionRepository = new Mock<ProtectionRequestRepository>();
