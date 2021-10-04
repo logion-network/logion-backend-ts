@@ -52,3 +52,21 @@ async function buildLargeObjectIdPromise(path: string, comment: string, process:
     });
     return promise;
 }
+
+export async function exportFile(oid: number, path: string) {
+    const process = await callPsql();
+    return buildExportLargeObjectPromise(oid, path, process);
+}
+
+async function buildExportLargeObjectPromise(oid: number, path: string, process: ChildProcess): Promise<void> {
+    const promise = new Promise<void>((success, error) => {
+        process.on('exit', () => {
+            success();
+        });
+        process.on('error', error);
+
+        process.stdin!.write(Buffer.from(`\\lo_export ${oid} '${path}'`, "utf-8"));
+        process.stdin!.end();
+    });
+    return promise;
+}

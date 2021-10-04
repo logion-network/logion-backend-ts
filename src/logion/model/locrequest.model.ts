@@ -15,9 +15,10 @@ export interface LocRequestDescription {
 }
 
 export interface FileDescription {
-    name: string;
-    hash: string;
-    oid: number;
+    readonly name: string;
+    readonly hash: string;
+    readonly oid: number;
+    readonly contentType: string;
 }
 
 @Entity("loc_request")
@@ -66,6 +67,7 @@ export class LocRequestAggregateRoot {
         file.requestId = this.id;
         file.hash! = fileDescription.hash;
         file.oid = fileDescription.oid;
+        file.contentType = fileDescription.contentType;
         this.files!.push(file);
     }
 
@@ -77,6 +79,7 @@ export class LocRequestAggregateRoot {
         const file = this.files!.find(file => file.hash === hash);
         return {
             name: file!.name!,
+            contentType: file!.contentType!,
             hash: file!.hash!,
             oid: file!.oid!,
         };
@@ -133,6 +136,9 @@ export class LocFile {
 
     @Column("int4")
     oid?: number;
+
+    @Column({ length: 255, name: "content_type" })
+    contentType?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id" })

@@ -22,5 +22,5 @@ VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUi
 -- Loc with files
 INSERT INTO loc_request (id, owner_address, requester_address, description, status)
 VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'loc-10', 'OPEN');
-INSERT INTO loc_request_file (request_id, hash, name, oid)
-VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', 'a file', 123456);
+INSERT INTO loc_request_file (request_id, hash, name, oid, content_type)
+VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', 'a file', 123456, 'text/plain');
