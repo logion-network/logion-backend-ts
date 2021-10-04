@@ -1,9 +1,10 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, HttpPost, Async, HttpPut } from "dinoloop";
+import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse } from "dinoloop";
 import fileUpload from 'express-fileupload';
 import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
+import { rm } from 'fs/promises';
 
 import { components } from "./components";
 import {
@@ -26,7 +27,10 @@ import { requireDefined } from "../lib/assertions";
 import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
-import { FileImportService } from "../services/fileimport.service";
+import { FileDbService } from "../services/filedb.service";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LOC Requests';
@@ -60,7 +64,7 @@ export class LocRequestController extends ApiController {
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
         private protectionRequestRepository: ProtectionRequestRepository,
-        private fileImportService: FileImportService) {
+        private fileDbService: FileDbService) {
         super();
     }
 
@@ -243,11 +247,35 @@ export class LocRequestController extends ApiController {
             file = uploadedFiles;
         }
 
-        let hash = await sha256File(file.tempFilePath);
-        await this.fileImportService.importFile(file.tempFilePath, hash);
-
-        // TODO add hash and OID to LOC request in order to enable later download
+        const hash = await sha256File(file.tempFilePath);
+        const oid = await this.fileDbService.importFile(file.tempFilePath, hash);
+        request.addFile({
+            name: file.name,
+            contentType: file.mimetype,
+            hash,
+            oid,
+        });
+        this.locRequestRepository.save(request);
 
         return { hash };
+    }
+
+    @HttpGet('/:requestId/files/:hash')
+    @Async()
+    @SendsResponse()
+    async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+
+        const file = request.getFile(hash);
+        const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
+        await this.fileDbService.exportFile(file.oid, tempFilePath);
+        this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (error: any) => {
+            rm(tempFilePath);
+            if(error) {
+                logger.error("Download failed: %s", error);
+            }
+        });
     }
 }
