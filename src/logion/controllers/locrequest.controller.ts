@@ -28,6 +28,9 @@ import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileDbService } from "../services/filedb.service";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LOC Requests';
@@ -268,8 +271,11 @@ export class LocRequestController extends ApiController {
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
         await this.fileDbService.exportFile(file.oid, tempFilePath);
-        this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (_error: any) => {
+        this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (error: any) => {
             rm(tempFilePath);
+            if(error) {
+                logger.error("Download failed: %s", error);
+            }
         });
     }
 }
