@@ -616,7 +616,8 @@
                 "enum": [
                     "OPEN",
                     "REQUESTED",
-                    "REJECTED"
+                    "REJECTED",
+                    "CLOSED"
                 ]
             },
             "CreateLocRequestView": {
