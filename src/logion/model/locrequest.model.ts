@@ -96,7 +96,7 @@ export class LocRequestAggregateRoot {
             contentType: file!.contentType!,
             hash: file!.hash!,
             oid: file!.oid!,
-            addedOn: moment(file!.addedOn) || undefined
+            addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
         };
     }
 

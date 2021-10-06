@@ -83,7 +83,9 @@ describe("LocRequestAggregateRoot", () => {
         ];
         whenAddingFiles(files);
         thenExposesFiles(files);
+        thenExposesFileByHash("hash1", files[0]);
         thenExposesFileByHash("hash2", files[1]);
+        thenHasFile("hash1");
         thenHasFile("hash2");
     });
 

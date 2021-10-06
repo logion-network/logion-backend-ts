@@ -110,7 +110,17 @@ export class LocRequestController extends ApiController {
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
             rejectReason: request.rejectReason || undefined,
-            decisionOn: request.decisionOn || undefined
+            decisionOn: request.decisionOn || undefined,
+            files: request.getFiles().map(file => ({
+                name: file.name,
+                hash: file.hash,
+                addedOn: file.addedOn!.toISOString() || undefined,
+            })),
+            metadata: request.getMetadataItems().map(item => ({
+                name: item.name,
+                value: item.value,
+                addedOn: item.addedOn.toISOString(),
+            }))
         }
     }
 
