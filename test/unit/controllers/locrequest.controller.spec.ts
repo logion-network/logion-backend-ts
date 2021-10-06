@@ -310,7 +310,9 @@ function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggreg
         .returns({
             ...data,
             createdOn: moment().toISOString()
-        })
+        });
+    request.setup(instance => instance.getFiles()).returns([]);
+    request.setup(instance => instance.getMetadataItems()).returns([]);
     return request;
 }
 

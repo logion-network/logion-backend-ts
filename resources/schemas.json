@@ -675,7 +675,7 @@
                     "id": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of the LOC request"
+                        "description": "The ID of the LOC request, which is also the ID of the LOC"
                     },
                     "status": {
                         "$ref": "#/components/schemas/LocRequestStatus"
@@ -683,6 +683,50 @@
                     "rejectReason": {
                         "type": "string",
                         "description": "If status is 'REJECTED', the reason of the rejection"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The file's name"
+                                },
+                                "hash": {
+                                    "type": "string",
+                                    "description": "The file's hash"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "array",
+                        "description": "The metadata attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The item's name"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "The item's value"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
                     }
                 },
                 "title": "LocRequestView",

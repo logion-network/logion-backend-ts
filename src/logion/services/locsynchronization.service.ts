@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { LocRequestRepository } from '../model/locrequest.model';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
 
 import { BlockExtrinsics } from './types/responses/Block';
@@ -19,19 +19,42 @@ export class LocSynchronizer {
         }
         for(let i = 0; i < block.extrinsics.length; ++i) {
             const extrinsic = block.extrinsics[i];
-            if(extrinsic.method.pallet === "logionLoc" && extrinsic.method.method === "close") {
-                const locId = extrinsic.args['locId'];
-                const loc = await this.locRequestRepository.findById(locId);
-                if(loc === undefined) {
-                    throw Error(`No LOC with ID ${locId}`);
+            if(extrinsic.method.pallet === "logionLoc") {
+                 if(extrinsic.method.method === "createLoc") {
+                    const locId = extrinsic.args['locId'];
+                    this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
+                } else if(extrinsic.method.method === "addMetadata") {
+                    const locId = extrinsic.args['locId'];
+                    const item = {
+                        name: extrinsic.args['item'].name.toUtf8(),
+                        value: extrinsic.args['item'].value.toUtf8(),
+                        addedOn: timestamp,
+                    };
+                    this.mutateLoc(locId, loc => loc.addMetadataItem(item));
+                } else if(extrinsic.method.method === "addHash") {
+                    const locId = extrinsic.args['locId'];
+                    const hash = extrinsic.args['hash'].toHex();
+                    this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
+                } else if(extrinsic.method.method === "close") {
+                    const locId = extrinsic.args['locId'];
+                    this.mutateLoc(locId, loc => loc.close(timestamp));
                 }
-                loc.close(timestamp);
-                await this.locRequestRepository.save(loc);
             }
         }
     }
 
+    private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
+        const loc = await this.locRequestRepository.findById(locId);
+        if(loc === undefined) {
+            throw Error(`No LOC with ID ${locId}`);
+        }
+        mutator(loc);
+        await this.locRequestRepository.save(loc);
+    }
+
     async reset() {
-        await this.locRequestRepository.deleteAll();
+        // There seem to be no good approach in this case for LOC requests. Deleting everything is dangerous because
+        // LOC requests contain data that cannot be rebuilt from the chain. Altering their state is dangerous as well
+        // for the same reason. As a result, this is a no-op and it is up to the ops to decide what to do in this case.
     }
 }

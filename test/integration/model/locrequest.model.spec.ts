@@ -1,16 +1,18 @@
+import moment from "moment";
 import { connect, executeScript, disconnect } from "../../helpers/testdb";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
     FetchLocRequestsSpecification,
-    LocFile
+    LocFile,
+    LocMetadataItem
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE } from "../../../src/logion/model/addresses.model";
 
 describe('LocRequestRepository', () => {
 
     beforeAll(async () => {
-        await connect([ LocRequestAggregateRoot, LocFile ]);
+        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem ]);
         await executeScript("test/integration/model/loc_requests.sql");
         repository = new LocRequestRepository();
     });
@@ -51,15 +53,23 @@ describe('LocRequestRepository', () => {
         expect(requests[0].status).toBe("REJECTED");
     })
 
-    it("finds loc with files", async () => {
+    it("finds loc with files and metadata", async () => {
         const request = await repository.findById(LOC_WITH_FILES);
         checkDescription([request!], "loc-10");
+
         const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
         expect(request!.hasFile(hash)).toBe(true);
         const file = request!.getFile(hash);
         expect(file.name).toBe("a file");
         expect(file.hash).toBe(hash);
         expect(file.oid).toBe(123456);
+        expect(file.addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
+
+        const metadata = request!.getMetadataItems();
+        expect(metadata.length).toBe(1);
+        expect(metadata[0].name).toBe("a name");
+        expect(metadata[0].value).toBe("a value");
+        expect(metadata[0].addedOn.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
     })
 })
 
