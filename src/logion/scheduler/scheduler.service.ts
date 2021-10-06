@@ -3,7 +3,7 @@ import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 import moment from 'moment';
 
 import { Log } from '../util/Log';
-import { TransactionSync } from "../sync/transactionsync.service";
+import { BlockConsumer } from "../services/blockconsumption.service";
 
 const { logger } = Log;
 
@@ -11,7 +11,7 @@ const { logger } = Log;
 export class Scheduler {
 
     constructor(
-        private transactionSync: TransactionSync
+        private blockConsumer: BlockConsumer
     ) {
         this.scheduler = new ToadScheduler()
     }
@@ -24,11 +24,11 @@ export class Scheduler {
         const syncTransactions = () => {
             if (!this.running) {
                 this.running = true;
-                return this.transactionSync.syncTransactions(moment())
+                return this.blockConsumer.consumeNewBlocks(moment())
                     .finally(() => {
                         this.running = false;
                         return Promise.resolve();
-                    })
+                    });
             } else {
                 return Promise.resolve();
             }

@@ -85,6 +85,14 @@ export class LocRequestAggregateRoot {
         };
     }
 
+    close(timestamp: Moment) {
+        if(this.closedOn !== undefined && this.closedOn !== null) {
+            throw new Error("LOC is already closed");
+        }
+        this.closedOn = timestamp.toISOString();
+        this.status = 'CLOSED';
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -108,6 +116,9 @@ export class LocRequestAggregateRoot {
 
     @Column("timestamp without time zone", { name: "created_on", nullable: true })
     createdOn?: string | null;
+
+    @Column("timestamp without time zone", { name: "closed_on", nullable: true })
+    closedOn?: string | null;
 
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
@@ -149,7 +160,7 @@ export interface FetchLocRequestsSpecification {
 
     readonly expectedRequesterAddress?: string;
     readonly expectedOwnerAddress?: string;
-    readonly expectedStatuses: LocRequestStatus[];
+    readonly expectedStatuses?: LocRequestStatus[];
 }
 
 @injectable()
@@ -169,7 +180,7 @@ export class LocRequestRepository {
         await this.repository.save(root);
     }
 
-    public findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
+    public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
         let builder = this.repository.createQueryBuilder("request");
 
         if (specification.expectedRequesterAddress) {
@@ -186,6 +197,11 @@ export class LocRequestRepository {
         }
 
         return builder.getMany();
+    }
+
+    async deleteAll() {
+        const all = await this.findBy({});
+        await this.repository.remove(all);
     }
 }
 
@@ -210,8 +226,8 @@ export class LocRequestFactory {
             request.userIdentity = new EmbeddableUserIdentity();
             request.userIdentity.firstName = userIdentity.firstName;
             request.userIdentity.lastName = userIdentity.lastName;
-            request.userIdentity.firstName = userIdentity.firstName;
-            request.userIdentity.firstName = userIdentity.firstName;
+            request.userIdentity.email = userIdentity.email;
+            request.userIdentity.phoneNumber = userIdentity.phoneNumber;
         }
         request.files = [];
         return request;
