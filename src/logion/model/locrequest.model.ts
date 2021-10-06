@@ -101,7 +101,7 @@ export class LocRequestAggregateRoot {
     }
 
     getFiles(): FileDescription[] {
-        return order(this.files!, file => this.toFileDescription(file));
+        return order(this.files, file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -135,7 +135,7 @@ export class LocRequestAggregateRoot {
     }
 
     getMetadataItems(): MetadataItemDescription[] {
-        return order(this.metadata!, item => ({
+        return order(this.metadata, item => ({
             name: item.name!,
             value: item.value!,
             addedOn: moment(item.addedOn!),
