@@ -3,7 +3,7 @@ import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
-import { list } from "../lib/db/collections";
+import { order } from "../lib/db/collections";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -101,7 +101,7 @@ export class LocRequestAggregateRoot {
     }
 
     getFiles(): FileDescription[] {
-        return list(this.files!, file => this.toFileDescription(file));
+        return order(this.files!, file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -135,7 +135,7 @@ export class LocRequestAggregateRoot {
     }
 
     getMetadataItems(): MetadataItemDescription[] {
-        return list(this.metadata!, item => ({
+        return order(this.metadata!, item => ({
             name: item.name!,
             value: item.value!,
             addedOn: moment(item.addedOn!),
