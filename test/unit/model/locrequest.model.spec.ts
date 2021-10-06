@@ -5,7 +5,9 @@ import {
     LocRequestDescription,
     LocRequestFactory,
     LocRequestAggregateRoot,
-    LocRequestStatus
+    LocRequestStatus,
+    FileDescription,
+    MetadataItemDescription
 } from "../../../src/logion/model/locrequest.model";
 
 describe("LocRequestFactory", () => {
@@ -62,6 +64,53 @@ describe("LocRequestAggregateRoot", () => {
         givenRequestWithStatus('REJECTED');
         expect(() => whenAccepting(ACCEPTED_ON)).toThrowError();
     });
+
+    it("adds and exposes files", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234
+            },
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567
+            }
+        ];
+        whenAddingFiles(files);
+        thenExposesFiles(files);
+        thenExposesFileByHash("hash2", files[1]);
+        thenHasFile("hash2");
+    });
+
+    it("adds and exposes metadata", () => {
+        givenRequestWithStatus('OPEN');
+        const metadata: MetadataItemDescription[] = [
+            {
+                name: "name1",
+                value: "value1",
+                addedOn: moment(),
+            },
+            {
+                name: "name2",
+                value: "value2",
+                addedOn: moment(),
+            }
+        ];
+        whenAddingMetadata(metadata);
+        thenExposesMetadata(metadata);
+    });
+
+    it("sets LOC created date", () => {
+        givenRequestWithStatus('OPEN');
+        const locCreatedDate = moment();
+        whenSettingLocCreatedDate(locCreatedDate);
+        thenExposesLocCreatedDate(locCreatedDate);
+    });
 });
 
 const REJECT_REASON = "Illegal";
@@ -71,6 +120,8 @@ const ACCEPTED_ON = moment().add(1, "minute");
 function givenRequestWithStatus(status: LocRequestStatus) {
     request = new LocRequestAggregateRoot();
     request.status = status;
+    request.files = [];
+    request.metadata = [];
 }
 
 let request: LocRequestAggregateRoot;
@@ -123,4 +174,54 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription) {
     expect(createdLocRequest.status).toBe('REQUESTED');
     expect(createdLocRequest.getDescription()).toEqual(description);
     expect(createdLocRequest.decisionOn).toBeUndefined();
+}
+
+function whenAddingFiles(files: FileDescription[]) {
+    files.forEach(file => request.addFile(file));
+}
+
+function thenExposesFiles(expectedFiles: FileDescription[]) {
+    request.getFiles().forEach((file, index) => {
+        expectSameFiles(file, expectedFiles[index]);
+    });
+}
+
+function expectSameFiles(f1: FileDescription, f2: FileDescription) {
+    expect(f1.hash).toEqual(f2.hash);
+    expect(f1.name).toEqual(f2.name);
+    expect(f1.oid).toEqual(f2.oid);
+    expect(f1.contentType).toEqual(f2.contentType);
+    if(f1.addedOn === undefined) {
+        expect(f2.addedOn).not.toBeDefined();
+    } else {
+        expect(f1.addedOn.isSame(f2.addedOn!)).toBe(true);
+    }
+}
+
+function thenExposesFileByHash(hash: string, expectedFile: FileDescription) {
+    expectSameFiles(request.getFile(hash), expectedFile);
+}
+
+function thenHasFile(hash: string) {
+    expect(request.hasFile(hash)).toBe(true);
+}
+
+function whenAddingMetadata(metadata: MetadataItemDescription[]) {
+    metadata.forEach(item => request.addMetadataItem(item));
+}
+
+function thenExposesMetadata(expectedMetadata: MetadataItemDescription[]) {
+    request.getMetadataItems().forEach((item, index) => {
+        expect(item.name).toBe(expectedMetadata[index].name);
+        expect(item.value).toBe(expectedMetadata[index].value);
+        expect(item.addedOn.isSame(expectedMetadata[index].addedOn)).toBe(true);
+    });
+}
+
+function whenSettingLocCreatedDate(locCreatedDate: Moment) {
+    request.setLocCreatedDate(locCreatedDate);
+}
+
+function thenExposesLocCreatedDate(expectedDate: Moment) {
+    expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
 }

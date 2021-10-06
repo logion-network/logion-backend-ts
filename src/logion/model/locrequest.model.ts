@@ -1,8 +1,9 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository, ManyToOne, JoinColumn, OneToMany } from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
-import { Moment } from "moment";
+import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
+import { list } from "../lib/db/collections";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -19,6 +20,13 @@ export interface FileDescription {
     readonly hash: string;
     readonly oid: number;
     readonly contentType: string;
+    readonly addedOn?: Moment;
+}
+
+export interface MetadataItemDescription {
+    readonly name: string;
+    readonly value: string;
+    readonly addedOn: Moment;
 }
 
 @Entity("loc_request")
@@ -65,6 +73,8 @@ export class LocRequestAggregateRoot {
         const file = new LocFile();
         file.request = this;
         file.requestId = this.id;
+        file.index = this.files!.length;
+        file.name = fileDescription.name;
         file.hash! = fileDescription.hash;
         file.oid = fileDescription.oid;
         file.contentType = fileDescription.contentType;
@@ -77,12 +87,32 @@ export class LocRequestAggregateRoot {
 
     getFile(hash: string): FileDescription {
         const file = this.files!.find(file => file.hash === hash);
+        return this.toFileDescription(file!);
+    }
+    
+    private toFileDescription(file: LocFile): FileDescription {
         return {
             name: file!.name!,
             contentType: file!.contentType!,
             hash: file!.hash!,
             oid: file!.oid!,
+            addedOn: moment(file!.addedOn) || undefined
         };
+    }
+
+    getFiles(): FileDescription[] {
+        return list(this.files!, file => this.toFileDescription(file));
+    }
+
+    setLocCreatedDate(timestamp: Moment) {
+        if(this.locCreatedOn !== undefined && this.locCreatedOn !== null) {
+            throw new Error("LOC created date is already set");
+        }
+        this.locCreatedOn = timestamp.toISOString();
+    }
+
+    getLocCreatedDate(): Moment {
+        return moment(this.locCreatedOn!);
     }
 
     close(timestamp: Moment) {
@@ -91,6 +121,36 @@ export class LocRequestAggregateRoot {
         }
         this.closedOn = timestamp.toISOString();
         this.status = 'CLOSED';
+    }
+
+    addMetadataItem(itemDescription: MetadataItemDescription) {
+        const item = new LocMetadataItem();
+        item.request = this;
+        item.requestId = this.id;
+        item.index = this.metadata!.length;
+        item.name = itemDescription.name;
+        item.value = itemDescription.value;
+        item.addedOn = itemDescription.addedOn.toDate();
+        this.metadata!.push(item);
+    }
+
+    getMetadataItems(): MetadataItemDescription[] {
+        return list(this.metadata!, item => ({
+            name: item.name!,
+            value: item.value!,
+            addedOn: moment(item.addedOn!),
+        }));
+    }
+
+    setFileAddedOn(hash: string, addedOn: Moment) {
+        const file = this.files!.find(file => file.hash === hash);
+        if(file === undefined) {
+            throw new Error(`File with hash ${hash} not found`);
+        }
+        if(file!.addedOn !== undefined) {
+            throw new Error("File added on date is already set");
+        }
+        file!.addedOn = addedOn.toDate();
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -120,6 +180,9 @@ export class LocRequestAggregateRoot {
     @Column("timestamp without time zone", { name: "closed_on", nullable: true })
     closedOn?: string | null;
 
+    @Column("timestamp without time zone", { name: "loc_created_on", nullable: true })
+    locCreatedOn?: string | null;
+
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
 
@@ -128,6 +191,12 @@ export class LocRequestAggregateRoot {
         cascade: true
     })
     files?: LocFile[];
+
+    @OneToMany(() => LocMetadataItem, item => item.request, {
+        eager: true,
+        cascade: true
+    })
+    metadata?: LocMetadataItem[];
 }
 
 @Entity("loc_request_file")
@@ -139,8 +208,11 @@ export class LocFile {
     @PrimaryColumn({name: "hash"})
     hash?: string;
 
+    @PrimaryColumn({name: "index"})
+    index?: number;
+
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: string;
+    addedOn?: Date;
 
     @Column({ length: 255 })
     name?: string;
@@ -152,6 +224,29 @@ export class LocFile {
     contentType?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
+    @JoinColumn({ name: "request_id" })
+    request?: LocRequestAggregateRoot;
+}
+
+@Entity("loc_metadata_item")
+export class LocMetadataItem {
+
+    @PrimaryColumn({ type: "uuid", name: "request_id" })
+    requestId?: string;
+
+    @PrimaryColumn({name: "index"})
+    index?: number;
+
+    @Column("timestamp without time zone", { name: "added_on", nullable: true })
+    addedOn?: Date;
+
+    @Column({ length: 255 })
+    name?: string;
+
+    @Column({ length: 255 })
+    value?: string;
+
+    @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
 }
@@ -230,6 +325,7 @@ export class LocRequestFactory {
             request.userIdentity.phoneNumber = userIdentity.phoneNumber;
         }
         request.files = [];
+        request.metadata = [];
         return request;
     }
 }
