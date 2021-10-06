@@ -111,6 +111,7 @@ export class LocRequestController extends ApiController {
             status: request.status,
             rejectReason: request.rejectReason || undefined,
             decisionOn: request.decisionOn || undefined,
+            closedOn: request.closedOn || undefined,
             files: request.getFiles().map(file => ({
                 name: file.name,
                 hash: file.hash,
