@@ -211,6 +211,17 @@ describe('LocRequestController', () => {
             expect(true).toBe(false);
         }
     })
+
+    it('succeeds to get single loc request', async () => {
+        const app = setupApp(LocRequestController, mockModelForGetSingle)
+        await request(app)
+            .get(`/api/loc-request/${REQUEST_ID}`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBe(REQUEST_ID);
+            });
+    });
 })
 
 function mockModelForReject(container: Container): void {
@@ -400,4 +411,20 @@ async function fileExists(filePath: string): Promise<boolean> {
     } catch {
         return false;
     }
+}
+
+function mockModelForGetSingle(container: Container): void {
+    const request = mockRequest("OPEN", testData);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
 }
