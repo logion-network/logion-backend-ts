@@ -266,7 +266,7 @@ export class LocRequestController extends ApiController {
             hash,
             oid,
         });
-        this.locRequestRepository.save(request);
+        await this.locRequestRepository.save(request);
 
         return { hash };
     }
