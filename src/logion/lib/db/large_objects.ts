@@ -70,3 +70,21 @@ async function buildExportLargeObjectPromise(oid: number, path: string, process:
     });
     return promise;
 }
+
+export async function deleteFile(oid: number) {
+    const process = await callPsql();
+    return buildDeleteLargeObjectPromise(oid, process);
+}
+
+async function buildDeleteLargeObjectPromise(oid: number, process: ChildProcess): Promise<void> {
+    const promise = new Promise<void>((success, error) => {
+        process.on('exit', () => {
+            success();
+        });
+        process.on('error', error);
+
+        process.stdin!.write(Buffer.from(`\\lo_unlink ${oid}`, "utf-8"));
+        process.stdin!.end();
+    });
+    return promise;
+}

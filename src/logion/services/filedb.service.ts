@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { importFile, exportFile } from '../lib/db/large_objects';
+import { importFile, exportFile, deleteFile } from '../lib/db/large_objects';
 
 @injectable()
 export class FileDbService {
@@ -10,5 +10,9 @@ export class FileDbService {
 
     async exportFile(oid: number, path: string) {
         return await exportFile(oid, path);
+    }
+
+    async deleteFile(oid: number) {
+        return await deleteFile(oid);
     }
 }

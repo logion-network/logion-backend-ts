@@ -1,9 +1,9 @@
-import { importFile, exportFile } from "../../../../src/logion/lib/db/large_objects";
+import { importFile, exportFile, deleteFile } from "../../../../src/logion/lib/db/large_objects";
 import { readFile, rm } from 'fs/promises';
 
 describe("Large Objects module", () => {
 
-    it("imports and exports local file", async () => {
+    it("imports, exports and deletes local file", async () => {
         const importedFile = 'test/integration/lib/db/file.txt';
         const id = await importFile(importedFile, "a short description of the file");
         expect(id).toBeInstanceOf(Number);
@@ -13,5 +13,6 @@ describe("Large Objects module", () => {
         const exportedContent = await readFile(tempFile);
         await rm(tempFile);
         expect(exportedContent).toEqual(importedContent);
+        await deleteFile(id);
     })
 });

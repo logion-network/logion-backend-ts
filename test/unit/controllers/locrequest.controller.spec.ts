@@ -222,6 +222,20 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBe(REQUEST_ID);
             });
     });
+
+    it('deletes a file', async () => {
+        const app = setupApp(LocRequestController, mockModelForDeleteFile)
+        await request(app)
+            .delete(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}`)
+            .expect(200);
+    });
+
+    it('confirms a file', async () => {
+        const app = setupApp(LocRequestController, mockModelForConfirmFile)
+        await request(app)
+            .put(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}/confirm`)
+            .expect(204);
+    });
 })
 
 function mockModelForReject(container: Container): void {
@@ -383,13 +397,7 @@ function mockModelForDownloadFile(container: Container): void {
         .returns(Promise.resolve());
     const request = mockRequest("OPEN", testData);
     const hash = SOME_DATA_HASH;
-    const oid = 123456;
-    request.setup(instance => instance.getFile(hash)).returns({
-        name: "file-name",
-        contentType: "text/plain",
-        hash,
-        oid
-    });
+    request.setup(instance => instance.getFile(hash)).returns(SOME_FILE);
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
@@ -399,10 +407,19 @@ function mockModelForDownloadFile(container: Container): void {
 
     const fileDbService = new Mock<FileDbService>();
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash;
-    fileDbService.setup(instance => instance.exportFile(oid, filePath))
+    fileDbService.setup(instance => instance.exportFile(SOME_OID, filePath))
         .returns(Promise.resolve());
     container.bind(FileDbService).toConstantValue(fileDbService.object());
 }
+
+const SOME_OID = 123456;
+
+const SOME_FILE = {
+    name: "file-name",
+    contentType: "text/plain",
+    hash: SOME_DATA_HASH,
+    oid: SOME_OID
+};
 
 async function fileExists(filePath: string): Promise<boolean> {
     try {
@@ -415,6 +432,41 @@ async function fileExists(filePath: string): Promise<boolean> {
 
 function mockModelForGetSingle(container: Container): void {
     const request = mockRequest("OPEN", testData);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForDeleteFile(container: Container) {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.removeFile(SOME_DATA_HASH)).returns(SOME_FILE);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    fileDbService.setup(instance => instance.deleteFile(SOME_OID)).returns(Promise.resolve());
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForConfirmFile(container: Container) {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.confirmFile(SOME_DATA_HASH)).returns(undefined);
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))

@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse } from "dinoloop";
+import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse, HttpDelete } from "dinoloop";
 import fileUpload from 'express-fileupload';
 import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
@@ -20,7 +20,8 @@ import {
     addTag,
     setControllerTag,
     getDefaultResponsesNoContent,
-    addPathParameter
+    addPathParameter,
+    getDefaultResponsesWithAnyBody
 } from "./doc";
 import { AuthenticationService } from "../services/authentication.service";
 import { requireDefined } from "../lib/assertions";
@@ -46,6 +47,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
     LocRequestController.addFile(spec);
+    LocRequestController.downloadFile(spec);
+    LocRequestController.deleteFile(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -289,6 +292,15 @@ export class LocRequestController extends ApiController {
         return { hash };
     }
 
+    static downloadFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}"].get!;
+        operationObject.summary = "Downloads a file of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+    }
+
     @HttpGet('/:requestId/files/:hash')
     @Async()
     @SendsResponse()
@@ -306,5 +318,45 @@ export class LocRequestController extends ApiController {
                 logger.error("Download failed: %s", error);
             }
         });
+    }
+
+    static deleteFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}"].delete!;
+        operationObject.summary = "Deletes a file of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. The file's hash must not yet have been published in the blockchain.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+    }
+
+    @HttpDelete('/:requestId/files/:hash')
+    @Async()
+    async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+
+        const file = request.removeFile(hash);
+        await this.fileDbService.deleteFile(file.oid);
+    }
+
+    static confirmFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/confirm"].put!;
+        operationObject.summary = "Confirms a file of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a file is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+    }
+
+    @HttpPut('/:requestId/files/:hash/confirm')
+    @Async()
+    @SendsResponse()
+    async confirmFile(_body: any, requestId: string, hash: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+        request.confirmFile(hash);
+        this.response.sendStatus(204);
     }
 }

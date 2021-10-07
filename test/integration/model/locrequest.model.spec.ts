@@ -64,6 +64,7 @@ describe('LocRequestRepository', () => {
         expect(file.hash).toBe(hash);
         expect(file.oid).toBe(123456);
         expect(file.addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
+        expect(request!.files![0].draft).toBe(true);
 
         const metadata = request!.getMetadataItems();
         expect(metadata.length).toBe(1);

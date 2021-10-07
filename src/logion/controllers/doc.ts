@@ -125,3 +125,17 @@ export function addPathParameter(operationObject: OpenAPIV3.OperationObject, par
         schema: {type: "string"}
     });
 }
+
+export function getDefaultResponsesWithAnyBody(): OpenAPIV3.ResponsesObject {
+    return {
+        "200": {
+            description: "OK"
+        },
+        "401": {
+            description: "Unauthorized"
+        },
+        "403": {
+            description: "Forbidden"
+        }
+    };
+}
