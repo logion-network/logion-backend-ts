@@ -113,6 +113,40 @@ describe("LocRequestAggregateRoot", () => {
         whenSettingLocCreatedDate(locCreatedDate);
         thenExposesLocCreatedDate(locCreatedDate);
     });
+
+    it("removes previously added files", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234
+            },
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567
+            }
+        ];
+        whenAddingFiles(files);
+        whenRemovingFile("hash1");
+        thenReturnedRemovedFile(files[0]);
+
+        const newFiles: FileDescription[] = [
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567
+            }
+        ];
+        thenExposesFiles(newFiles);
+        thenExposesFileByHash("hash2", newFiles[0]);
+        thenHasFile("hash2");
+        thenHasExpectedFileIndices();
+    });
 });
 
 const REJECT_REASON = "Illegal";
@@ -226,4 +260,20 @@ function whenSettingLocCreatedDate(locCreatedDate: Moment) {
 
 function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
+}
+
+function whenRemovingFile(hash: string) {
+    removedFile = request.removeFile(hash);
+}
+
+let removedFile: FileDescription;
+
+function thenReturnedRemovedFile(expectedFile: FileDescription) {
+    expectSameFiles(removedFile, expectedFile);
+}
+
+function thenHasExpectedFileIndices() {
+    for(let i = 0; i < request.files!.length; ++i) {
+        expect(request.files![i].index).toBe(i);
+    }
 }

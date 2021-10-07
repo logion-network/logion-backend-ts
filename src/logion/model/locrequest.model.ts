@@ -79,7 +79,13 @@ export class LocRequestAggregateRoot {
         file.hash! = fileDescription.hash;
         file.oid = fileDescription.oid;
         file.contentType = fileDescription.contentType;
+        file.draft = true;
         this.files!.push(file);
+    }
+
+    confirmFile(hash: string) {
+        const file = this.files!.find(file => file.hash === hash);
+        file!.draft = false;
     }
 
     private ensureOpen() {
@@ -159,6 +165,29 @@ export class LocRequestAggregateRoot {
             throw new Error("File added on date is already set");
         }
         file!.addedOn = addedOn.toDate();
+        file!.draft = false;
+    }
+
+    removeFile(hash: string): FileDescription {
+        this.ensureOpen();
+        const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
+        if(removedFileIndex === -1) {
+            throw new Error("No file with given hash");
+        }
+        const removedFile: LocFile = this.files![removedFileIndex];
+        if(!removedFile.draft) {
+            throw new Error("Only draft files can be removed");
+        }
+        this.files!.splice(removedFileIndex!, 1);
+        this.reindexFiles(removedFileIndex!);
+        return this.toFileDescription(removedFile);
+    }
+
+    private reindexFiles(removedFileIndex: number) {
+        for(let i = removedFileIndex; i < this.files!.length; ++i) {
+            const file = this.files![i];
+            file.index = file.index! - 1;
+        }
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -231,6 +260,9 @@ export class LocFile {
 
     @Column({ length: 255, name: "content_type" })
     contentType?: string;
+
+    @Column("boolean")
+    draft?: boolean;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id" })
