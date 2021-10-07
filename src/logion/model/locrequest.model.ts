@@ -70,6 +70,7 @@ export class LocRequestAggregateRoot {
     }
 
     addFile(fileDescription: FileDescription) {
+        this.ensureOpen();
         const file = new LocFile();
         file.request = this;
         file.requestId = this.id;
@@ -79,6 +80,12 @@ export class LocRequestAggregateRoot {
         file.oid = fileDescription.oid;
         file.contentType = fileDescription.contentType;
         this.files!.push(file);
+    }
+
+    private ensureOpen() {
+        if(this.status !== "OPEN") {
+            throw new Error("LOC is not open");
+        }
     }
 
     hasFile(hash: string): boolean {
@@ -124,6 +131,7 @@ export class LocRequestAggregateRoot {
     }
 
     addMetadataItem(itemDescription: MetadataItemDescription) {
+        this.ensureOpen();
         const item = new LocMetadataItem();
         item.request = this;
         item.requestId = this.id;

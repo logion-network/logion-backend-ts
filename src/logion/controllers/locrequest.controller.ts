@@ -42,6 +42,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
     LocRequestController.createLocRequest(spec);
     LocRequestController.fetchRequests(spec);
+    LocRequestController.getLocRequest(spec);
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
     LocRequestController.addFile(spec);
@@ -189,6 +190,23 @@ export class LocRequestController extends ApiController {
         } else {
             return request.getDescription().userIdentity;
         }
+    }
+
+    static getLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}"].get!;
+        operationObject.summary = "Gets a single LOC Request";
+        operationObject.description = "The authenticated user must be either expected requester or expected owner.";
+        operationObject.responses = getDefaultResponses("LocRequestView");
+    }
+
+    @HttpGet('/:requestId')
+    @Async()
+    async getLocRequest(_body: any, requestId: string): Promise<LocRequestView> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIsOneOf(this.request,
+            request.requesterAddress, request.ownerAddress);
+        const userIdentity = await this.findUserIdentity(request);
+        return this.toView(request, userIdentity);
     }
 
     static rejectLocRequest(spec: OpenAPIV3.Document) {
