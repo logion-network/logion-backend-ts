@@ -89,7 +89,7 @@ export class LocRequestAggregateRoot {
         const file = this.files!.find(file => file.hash === hash);
         return this.toFileDescription(file!);
     }
-    
+
     private toFileDescription(file: LocFile): FileDescription {
         return {
             name: file!.name!,
@@ -188,7 +188,8 @@ export class LocRequestAggregateRoot {
 
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,
-        cascade: true
+        cascade: true,
+        orphanedRowAction: "delete"
     })
     files?: LocFile[];
 
@@ -272,6 +273,8 @@ export class LocRequestRepository {
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
+        this.repository.createQueryBuilder().delete().from(LocFile).where("request_id = :id", {id: root.id}).execute();
+        this.repository.createQueryBuilder().delete().from(LocMetadataItem).where("request_id = :id", {id: root.id}).execute();
         await this.repository.save(root);
     }
 
