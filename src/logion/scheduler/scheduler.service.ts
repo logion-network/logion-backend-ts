@@ -25,9 +25,11 @@ export class Scheduler {
             if (!this.running) {
                 this.running = true;
                 return this.blockConsumer.consumeNewBlocks(moment())
+                    .catch(e => {
+                        logger.error(e.message);
+                    })
                     .finally(() => {
                         this.running = false;
-                        return Promise.resolve();
                     });
             } else {
                 return Promise.resolve();
