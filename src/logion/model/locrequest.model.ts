@@ -119,6 +119,7 @@ export class LocRequestAggregateRoot {
 
     setLocCreatedDate(timestamp: Moment) {
         if(this.locCreatedOn !== undefined && this.locCreatedOn !== null) {
+            console.log(this.locCreatedOn);
             throw new Error("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
@@ -161,7 +162,7 @@ export class LocRequestAggregateRoot {
         if(file === undefined) {
             throw new Error(`File with hash ${hash} not found`);
         }
-        if(file!.addedOn !== undefined) {
+        if(file!.addedOn !== undefined && file!.addedOn !== null) {
             throw new Error("File added on date is already set");
         }
         file!.addedOn = addedOn.toDate();
@@ -225,14 +226,13 @@ export class LocRequestAggregateRoot {
 
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,
-        cascade: true,
-        orphanedRowAction: "delete"
+        cascade: ["insert", "update"],
     })
     files?: LocFile[];
 
     @OneToMany(() => LocMetadataItem, item => item.request, {
         eager: true,
-        cascade: true
+        cascade: ["insert", "update"],
     })
     metadata?: LocMetadataItem[];
 }

@@ -337,6 +337,8 @@ export class LocRequestController extends ApiController {
             .requireLegalOfficer();
 
         const file = request.removeFile(hash);
+        await this.locRequestRepository.save(request);
+
         await this.fileDbService.deleteFile(file.oid);
     }
 
@@ -356,7 +358,10 @@ export class LocRequestController extends ApiController {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
             .requireLegalOfficer();
+
         request.confirmFile(hash);
+        await this.locRequestRepository.save(request);
+
         this.response.sendStatus(204);
     }
 }

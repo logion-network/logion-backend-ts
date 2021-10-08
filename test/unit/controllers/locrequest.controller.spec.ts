@@ -453,6 +453,8 @@ function mockModelForDeleteFile(container: Container) {
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
         .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
@@ -471,6 +473,8 @@ function mockModelForConfirmFile(container: Container) {
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
         .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
