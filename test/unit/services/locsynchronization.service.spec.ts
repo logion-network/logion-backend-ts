@@ -7,6 +7,7 @@ import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.d
 import { LocRequestAggregateRoot, LocRequestRepository, MetadataItemDescription } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
+import { decimalToUuid } from '../../../src/logion/lib/uuid';
 
 describe("LocSynchronizer", () => {
 
@@ -16,7 +17,7 @@ describe("LocSynchronizer", () => {
     });
 
     it("sets LOC created date", async () => {
-        givenLocExtrinsic("createLoc", { locId });
+        givenLocExtrinsic("createLoc", { loc_id: locId });
         givenBlock();
         givenLocRequest();
         givenLocRequestExpectsLocCreationDate();
@@ -27,7 +28,7 @@ describe("LocSynchronizer", () => {
 
     it("adds metadata", async () => {
         givenLocExtrinsic("addMetadata", {
-            locId,
+            loc_id: locId,
             item: {
                 name: {
                     toUtf8: () => METADATA_ITEM_NAME
@@ -46,7 +47,7 @@ describe("LocSynchronizer", () => {
     });
 
     it("closes LOC", async () => {
-        givenLocExtrinsic("close", { locId });
+        givenLocExtrinsic("close", { loc_id: locId });
         givenBlock();
         givenLocRequest();
         givenLocRequestExpectsClose();
@@ -56,7 +57,10 @@ describe("LocSynchronizer", () => {
     });
 });
 
-const locId = "locId";
+const locId = {
+    toString: () => locDecimalUuid
+};
+const locDecimalUuid = "130084474896785895402627605545662412605";
 const blockTimestamp = moment();
 let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
 let locRequestRepository: Mock<LocRequestRepository>;
@@ -83,7 +87,7 @@ let block: Mock<BlockExtrinsics>;
 
 function givenLocRequest() {
     locRequest = new Mock<LocRequestAggregateRoot>();
-    locRequestRepository.setup(instance => instance.findById(locId)).returns(Promise.resolve(locRequest.object()));
+    locRequestRepository.setup(instance => instance.findById(decimalToUuid(locDecimalUuid))).returns(Promise.resolve(locRequest.object()));
     locRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 }
 

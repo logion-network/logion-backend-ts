@@ -123,7 +123,6 @@ export class LocRequestAggregateRoot {
 
     setLocCreatedDate(timestamp: Moment) {
         if(this.locCreatedOn !== undefined && this.locCreatedOn !== null) {
-            console.log(this.locCreatedOn);
             throw new Error("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
