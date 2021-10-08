@@ -1,8 +1,11 @@
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
+import { Log } from '../util/Log';
 
 import { BlockExtrinsics } from './types/responses/Block';
+
+const { logger } = Log;
 
 @injectable()
 export class LocSynchronizer {
@@ -22,6 +25,7 @@ export class LocSynchronizer {
             if(extrinsic.method.pallet === "logionLoc") {
                  if(extrinsic.method.method === "createLoc") {
                     const locId = extrinsic.args['locId'];
+                    logger.info(`Block ${block.number}, extrinsic ${i} -> setLocCreatedDate LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
                 } else if(extrinsic.method.method === "addMetadata") {
                     const locId = extrinsic.args['locId'];
@@ -30,13 +34,16 @@ export class LocSynchronizer {
                         value: extrinsic.args['item'].value.toUtf8(),
                         addedOn: timestamp,
                     };
+                    logger.info(`Block ${block.number}, extrinsic ${i} -> addMetadataItem LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.addMetadataItem(item));
                 } else if(extrinsic.method.method === "addHash") {
                     const locId = extrinsic.args['locId'];
                     const hash = extrinsic.args['hash'].toHex();
+                    logger.info(`Block ${block.number}, extrinsic ${i} -> setFileAddedOn LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                 } else if(extrinsic.method.method === "close") {
                     const locId = extrinsic.args['locId'];
+                    logger.info(`Block ${block.number}, extrinsic ${i} -> close LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.close(timestamp));
                 }
             }
