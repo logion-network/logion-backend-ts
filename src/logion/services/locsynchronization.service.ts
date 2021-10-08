@@ -2,10 +2,10 @@ import { injectable } from 'inversify';
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
 import { Log } from '../util/Log';
+import { decimalToUuid } from '../lib/uuid';
 
 import { BlockExtrinsics } from './types/responses/Block';
-
-const { logger } = Log;
+import { JsonArgs } from './call';
 
 @injectable()
 export class LocSynchronizer {
@@ -24,30 +24,30 @@ export class LocSynchronizer {
             const extrinsic = block.extrinsics[i];
             if(extrinsic.method.pallet === "logionLoc") {
                  if(extrinsic.method.method === "createLoc") {
-                    const locId = extrinsic.args['locId'];
-                    logger.info(`Block ${block.number}, extrinsic ${i} -> setLocCreatedDate LOC ${locId}`);
+                    const locId = this.extractLocId(extrinsic.args);
                     this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
                 } else if(extrinsic.method.method === "addMetadata") {
-                    const locId = extrinsic.args['locId'];
+                    const locId = this.extractLocId(extrinsic.args);
                     const item = {
                         name: extrinsic.args['item'].name.toUtf8(),
                         value: extrinsic.args['item'].value.toUtf8(),
                         addedOn: timestamp,
                     };
-                    logger.info(`Block ${block.number}, extrinsic ${i} -> addMetadataItem LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.addMetadataItem(item));
                 } else if(extrinsic.method.method === "addHash") {
-                    const locId = extrinsic.args['locId'];
+                    const locId = this.extractLocId(extrinsic.args);
                     const hash = extrinsic.args['hash'].toHex();
-                    logger.info(`Block ${block.number}, extrinsic ${i} -> setFileAddedOn LOC ${locId}`);
                     this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                 } else if(extrinsic.method.method === "close") {
-                    const locId = extrinsic.args['locId'];
-                    logger.info(`Block ${block.number}, extrinsic ${i} -> close LOC ${locId}`);
+                    const locId = this.extractLocId(extrinsic.args);
                     this.mutateLoc(locId, loc => loc.close(timestamp));
                 }
             }
         }
+    }
+
+    private extractLocId(args: JsonArgs): string {
+        return decimalToUuid(args['loc_id'].toString());
     }
 
     private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
