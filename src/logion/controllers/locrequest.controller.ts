@@ -287,6 +287,7 @@ export class LocRequestController extends ApiController {
             hash,
             oid,
         });
+        //await this.locRequestRepository.clearFiles(request);
         await this.locRequestRepository.save(request);
 
         return { hash };
@@ -360,6 +361,20 @@ export class LocRequestController extends ApiController {
             .requireLegalOfficer();
 
         request.confirmFile(hash);
+        await this.locRequestRepository.save(request);
+
+        this.response.sendStatus(204);
+    }
+
+    @HttpPost('/:requestId/close')
+    @Async()
+    @SendsResponse()
+    async closeLoc(_body: any, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
+            .requireLegalOfficer();
+
+        request.preClose();
         await this.locRequestRepository.save(request);
 
         this.response.sendStatus(204);
