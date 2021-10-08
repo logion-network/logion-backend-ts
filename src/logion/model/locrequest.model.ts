@@ -4,6 +4,9 @@ import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { order } from "../lib/db/collections";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -80,6 +83,7 @@ export class LocRequestAggregateRoot {
         file.oid = fileDescription.oid;
         file.contentType = fileDescription.contentType;
         file.draft = true;
+        file._toAdd = true;
         this.files!.push(file);
     }
 
@@ -129,6 +133,11 @@ export class LocRequestAggregateRoot {
         return moment(this.locCreatedOn!);
     }
 
+    preClose() {
+        this.ensureOpen();
+        this.status = 'CLOSED';
+    }
+
     close(timestamp: Moment) {
         if(this.closedOn !== undefined && this.closedOn !== null) {
             throw new Error("LOC is already closed");
@@ -167,6 +176,7 @@ export class LocRequestAggregateRoot {
         }
         file!.addedOn = addedOn.toDate();
         file!.draft = false;
+        file!._toUpdate = true;
     }
 
     removeFile(hash: string): FileDescription {
@@ -179,7 +189,8 @@ export class LocRequestAggregateRoot {
         if(!removedFile.draft) {
             throw new Error("Only draft files can be removed");
         }
-        this.files!.splice(removedFileIndex!, 1);
+        this._filesToDelete.push(removedFile);
+        this.files!.splice(removedFileIndex, 1);
         this.reindexFiles(removedFileIndex!);
         return this.toFileDescription(removedFile);
     }
@@ -188,6 +199,7 @@ export class LocRequestAggregateRoot {
         for(let i = removedFileIndex; i < this.files!.length; ++i) {
             const file = this.files![i];
             file.index = file.index! - 1;
+            file._toUpdate = true;
         }
     }
 
@@ -224,17 +236,16 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
 
-    @OneToMany(() => LocFile, file => file.request, {
-        eager: true,
-        cascade: ["insert", "update"],
-    })
+    @OneToMany(() => LocFile, file => file.request, { eager: true, cascade: false, persistence: false })
     files?: LocFile[];
 
     @OneToMany(() => LocMetadataItem, item => item.request, {
         eager: true,
-        cascade: ["insert", "update"],
+        cascade: true
     })
     metadata?: LocMetadataItem[];
+
+    _filesToDelete: LocFile[] = [];
 }
 
 @Entity("loc_request_file")
@@ -265,8 +276,11 @@ export class LocFile {
     draft?: boolean;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
-    @JoinColumn({ name: "request_id" })
+    @JoinColumn({ name: "request_id", referencedColumnName: "id" })
     request?: LocRequestAggregateRoot;
+
+    _toAdd?: boolean;
+    _toUpdate?: boolean;
 }
 
 @Entity("loc_metadata_item")
@@ -313,9 +327,36 @@ export class LocRequestRepository {
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
-        this.repository.createQueryBuilder().delete().from(LocFile).where("request_id = :id", {id: root.id}).execute();
-        this.repository.createQueryBuilder().delete().from(LocMetadataItem).where("request_id = :id", {id: root.id}).execute();
         await this.repository.save(root);
+        for(const i in root._filesToDelete) {
+            const file = root._filesToDelete[i];
+            logger.info("Deleting file %s", file.hash);
+            await this.repository.createQueryBuilder().delete().from(LocFile)
+                .where("request_id = :id", {id: root.id})
+                .andWhere("hash = :hash", {hash: file.hash})
+                .execute();
+        }
+        for(const i in root.files!) {
+            const file = root.files![i];
+            if(file._toAdd) {
+                logger.info("Adding file %s", file.hash);
+                delete file._toAdd;
+                await this.repository.createQueryBuilder().insert().into(LocFile).values(file).execute();
+            } else if(file._toUpdate) {
+                logger.info("Updating file %s", file.hash);
+                delete file._toUpdate;
+                await this.repository.manager.createQueryBuilder(LocFile, "file")
+                    .update()
+                    .where("request_id = :id", {id: root.id})
+                    .andWhere("hash = :hash", {hash: file.hash})
+                    .set(file)
+                    .execute();
+            }
+        }
+    }
+
+    public async clearFiles(root: LocRequestAggregateRoot): Promise<void> {
+        await this.repository.createQueryBuilder().delete().from(LocFile).where("request_id = :id", {id: root.id}).execute();
     }
 
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
