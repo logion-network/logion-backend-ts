@@ -4,9 +4,8 @@ import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { order } from "../lib/db/collections";
-import { Log } from "../util/Log";
-
-const { logger } = Log;
+import { Child, saveChildren } from "./child";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 
@@ -154,6 +153,7 @@ export class LocRequestAggregateRoot {
         item.name = itemDescription.name;
         item.value = itemDescription.value;
         item.addedOn = itemDescription.addedOn.toDate();
+        item._toAdd = true;
         this.metadata!.push(item);
     }
 
@@ -235,12 +235,16 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
 
-    @OneToMany(() => LocFile, file => file.request, { eager: true, cascade: false, persistence: false })
+    @OneToMany(() => LocFile, file => file.request, {
+        eager: true,
+        cascade: false,
+        persistence: false })
     files?: LocFile[];
 
     @OneToMany(() => LocMetadataItem, item => item.request, {
         eager: true,
-        cascade: true
+        cascade: false,
+        persistence: false
     })
     metadata?: LocMetadataItem[];
 
@@ -248,15 +252,15 @@ export class LocRequestAggregateRoot {
 }
 
 @Entity("loc_request_file")
-export class LocFile {
+export class LocFile extends Child {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
 
-    @PrimaryColumn({name: "hash"})
+    @PrimaryColumn({ name: "hash" })
     hash?: string;
 
-    @PrimaryColumn({name: "index"})
+    @PrimaryColumn({ name: "index" })
     index?: number;
 
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
@@ -278,17 +282,15 @@ export class LocFile {
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
     request?: LocRequestAggregateRoot;
 
-    _toAdd?: boolean;
-    _toUpdate?: boolean;
 }
 
 @Entity("loc_metadata_item")
-export class LocMetadataItem {
+export class LocMetadataItem extends Child {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
 
-    @PrimaryColumn({name: "index"})
+    @PrimaryColumn({ name: "index" })
     index?: number;
 
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
@@ -327,35 +329,29 @@ export class LocRequestRepository {
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
         await this.repository.save(root);
-        for(const i in root._filesToDelete) {
-            const file = root._filesToDelete[i];
-            logger.info("Deleting file %s", file.hash);
-            await this.repository.createQueryBuilder().delete().from(LocFile)
-                .where("request_id = :id", {id: root.id})
-                .andWhere("hash = :hash", {hash: file.hash})
-                .execute();
-        }
-        for(const i in root.files!) {
-            const file = root.files![i];
-            if(file._toAdd) {
-                logger.info("Adding file %s", file.hash);
-                delete file._toAdd;
-                await this.repository.createQueryBuilder().insert().into(LocFile).values(file).execute();
-            } else if(file._toUpdate) {
-                logger.info("Updating file %s", file.hash);
-                delete file._toUpdate;
-                await this.repository.manager.createQueryBuilder(LocFile, "file")
-                    .update()
-                    .where("request_id = :id", {id: root.id})
-                    .andWhere("hash = :hash", {hash: file.hash})
-                    .set(file)
-                    .execute();
-            }
-        }
+        await this.saveFiles(root)
+        await this.saveMetadata(root)
     }
 
-    public async clearFiles(root: LocRequestAggregateRoot): Promise<void> {
-        await this.repository.createQueryBuilder().delete().from(LocFile).where("request_id = :id", {id: root.id}).execute();
+    private async saveFiles(root: LocRequestAggregateRoot): Promise<void> {
+        const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: LocFile) => E = (sql, file) => sql
+            .where("request_id = :id", { id: root.id })
+            .andWhere("hash = :hash", { hash: file.hash })
+        await saveChildren({
+            children: root.files!,
+            repository: this.repository,
+            entityClass: LocFile,
+            whereExpression,
+            childrenToDelete: root._filesToDelete
+        })
+    }
+
+    private async saveMetadata(root: LocRequestAggregateRoot): Promise<void> {
+        await saveChildren({
+            children: root.metadata!,
+            repository: this.repository,
+            entityClass: LocMetadataItem
+        })
     }
 
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
