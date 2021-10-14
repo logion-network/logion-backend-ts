@@ -75,7 +75,7 @@ export class LocRequestController extends ApiController {
     static createLocRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request"].post!;
         operationObject.summary = "Creates a new LOC Request";
-        operationObject.description = "The authenticated user must be the requester";
+        operationObject.description = "The authenticated user must be either the requester or the owner";
         operationObject.requestBody = getRequestBody({
             description: "LOC Request creation data",
             view: "CreateLocRequestView",
@@ -86,7 +86,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('')
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, createLocRequestView.requesterAddress);
+        const authenticatedUser = this.authenticationService.authenticatedUserIsOneOf(this.request, createLocRequestView.requesterAddress, createLocRequestView.ownerAddress);
         const description: LocRequestDescription = {
             requesterAddress: requireDefined(createLocRequestView.requesterAddress),
             ownerAddress: requireDefined(createLocRequestView.ownerAddress),
@@ -94,10 +94,19 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
-        let request = this.locRequestFactory.newLocRequest({
-            id: uuid(),
-            description
-        });
+        let request: LocRequestAggregateRoot;
+        if (authenticatedUser.address === createLocRequestView.ownerAddress) {
+            authenticatedUser.requireLegalOfficer();
+            request = this.locRequestFactory.newOpenLoc({
+                id: uuid(),
+                description
+            });
+        } else {
+            request = this.locRequestFactory.newLocRequest({
+                id: uuid(),
+                description
+            });
+        }
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
         return this.toView(request, userIdentity);

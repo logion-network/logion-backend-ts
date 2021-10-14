@@ -387,6 +387,12 @@ export interface NewLocRequestParameters {
 @injectable()
 export class LocRequestFactory {
 
+    public newOpenLoc(params: NewLocRequestParameters): LocRequestAggregateRoot {
+        const request = this.newLocRequest(params);
+        request.accept(moment())
+        return request
+    }
+
     public newLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
         const request = new LocRequestAggregateRoot();
         request.id = params.id;

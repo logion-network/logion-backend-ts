@@ -48,7 +48,12 @@ const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 describe('LocRequestController', () => {
 
     it('succeeds to create loc request with embedded user identity', async () => {
-        const app = setupApp(LocRequestController, mockModelForCreation)
+        const app = setupApp(
+            LocRequestController,
+            mockModelForCreation,
+            true,
+            { address: testData.requesterAddress, legalOfficer: false }
+        )
         await request(app)
             .post('/api/loc-request')
             .send(testDataWithUserIdentity)
@@ -65,8 +70,59 @@ describe('LocRequestController', () => {
             });
     });
 
+    it('succeeds to create open loc with existing protection request', async () => {
+        const app = setupApp(
+            LocRequestController,
+            container => mockModelForCreation(container, true),
+            true,
+            { address: testData.ownerAddress, legalOfficer: true }
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send(testData)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBeDefined();
+                expect(response.body.status).toBe("OPEN");
+                const userIdentity = response.body.userIdentity;
+                expect(userIdentity.firstName).toBe("Scott");
+                expect(userIdentity.lastName).toBe("Tiger");
+                expect(userIdentity.email).toBe("scott.tiger@logion.network");
+                expect(userIdentity.phoneNumber).toBe("+6789");
+            });
+    });
+
+    it('succeeds to create open loc with embedded user identity', async () => {
+        const app = setupApp(
+            LocRequestController,
+            mockModelForCreation,
+            true,
+            { address: testData.ownerAddress, legalOfficer: true }
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send(testDataWithUserIdentity)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBeDefined();
+                expect(response.body.status).toBe("OPEN");
+                const userIdentity = response.body.userIdentity;
+                expect(userIdentity.firstName).toBe("John");
+                expect(userIdentity.lastName).toBe("Doe");
+                expect(userIdentity.email).toBe("john.doe@logion.network");
+                expect(userIdentity.phoneNumber).toBe("+1234");
+            });
+    });
+
     it('succeeds to create loc request with existing protection request', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForCreation(container, true))
+        const app = setupApp(
+            LocRequestController,
+            container => mockModelForCreation(container, true),
+            true,
+            { address: testData.requesterAddress, legalOfficer: false }
+        )
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -125,6 +181,23 @@ describe('LocRequestController', () => {
 
     it('fails to create loc request - authentication failure', async () => {
         const app = setupApp(LocRequestController, mockModelForCreation, false)
+        await request(app)
+            .post('/api/loc-request')
+            .send(testData)
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBeUndefined();
+            });
+    });
+
+    it('fails to create open loc - expected owner is not legal officer', async () => {
+        const app = setupApp(
+            LocRequestController,
+            mockModelForCreation,
+            true,
+            { address: testData.ownerAddress, legalOfficer: false }
+        )
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -291,6 +364,13 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
         params.description.description == testData.description
     )))
         .returns(request.object())
+    const openLoc = mockRequest("OPEN", hasProtection ? testData : testDataWithUserIdentity)
+    factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
+        params.description.requesterAddress == testData.requesterAddress &&
+        params.description.ownerAddress == testData.ownerAddress &&
+        params.description.description == testData.description
+    )))
+        .returns(openLoc.object())
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
 
