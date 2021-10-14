@@ -14,7 +14,7 @@ RUN yarn build
 
 # Backend image
 FROM node:14
-RUN apt-get -y --no-install-recommends install postgresql-client ; rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client ; rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/share/logion-backend
 COPY --from=build-backend /tmp/logion-backend/dist dist
