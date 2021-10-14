@@ -191,6 +191,23 @@ describe('LocRequestController', () => {
             });
     });
 
+    it('fails to create open loc - expected owner is not legal officer', async () => {
+        const app = setupApp(
+            LocRequestController,
+            mockModelForCreation,
+            true,
+            { address: testData.ownerAddress, legalOfficer: false }
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send(testData)
+            .expect(401)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBeUndefined();
+            });
+    });
+
     function checkResponse(response: Response) {
         expect(response.body.requests.length).toBe(1);
         expect(response.body.requests[0].id).toBe(REQUEST_ID)
