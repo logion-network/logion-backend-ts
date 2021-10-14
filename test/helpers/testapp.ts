@@ -7,11 +7,19 @@ import { Container } from 'inversify';
 import { ApplicationErrorController } from '../../src/logion/controllers/application.error.controller';
 import { JsonResponse } from '../../src/logion/middlewares/json.response';
 import { Mock } from "moq.ts";
-import { AuthenticationService, LogionUserCheck } from "../../src/logion/services/authentication.service";
+import { AuthenticationService, LogionUserCheck, LogionUser } from "../../src/logion/services/authentication.service";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { ALICE } from "../../src/logion/model/addresses.model";
 
-export function setupApp<T>(controller: Function & { prototype: T; }, mockBinder: (container: Container) => void, authSucceed: boolean = true): Express {
+const DEFAULT_AUTHENTICATED_USER = { address: ALICE, legalOfficer: true };
+
+export function setupApp<T>(
+    controller: Function & { prototype: T; },
+    mockBinder: (container: Container) => void,
+    authSucceed: boolean = true,
+    authUser?: LogionUser
+): Express {
+
     const app = express();
     app.use(bodyParser.json());
     app.use(fileUpload({
@@ -29,8 +37,9 @@ export function setupApp<T>(controller: Function & { prototype: T; }, mockBinder
 
     let container = new Container({ defaultScope: "Singleton" });
 
+    const logionUser = authUser? authUser : DEFAULT_AUTHENTICATED_USER;
     container.bind(AuthenticationService)
-        .toConstantValue(authSucceed ? mockAuthenticationSuccess() : mockAuthenticationFailure());
+        .toConstantValue(authSucceed ? mockAuthenticationSuccess(logionUser) : mockAuthenticationFailure());
 
     mockBinder(container);
 
@@ -44,15 +53,15 @@ export function setupApp<T>(controller: Function & { prototype: T; }, mockBinder
     return app;
 }
 
-function mockAuthenticationSuccess(): AuthenticationService {
+function mockAuthenticationSuccess(logionUser: LogionUser): AuthenticationService {
 
-    const legalOfficer = new LogionUserCheck({ address: ALICE, legalOfficer: true })
+    const logionUserCheck = new LogionUserCheck(logionUser)
 
     const authenticationService = new Mock<AuthenticationService>();
     authenticationService.setup(instance => instance.authenticatedUserIs)
-        .returns(() => legalOfficer);
+        .returns(() => logionUserCheck);
     authenticationService.setup(instance => instance.authenticatedUserIsOneOf)
-        .returns(() => legalOfficer);
+        .returns(() => logionUserCheck);
     return authenticationService.object();
 }
 

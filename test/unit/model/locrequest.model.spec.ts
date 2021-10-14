@@ -25,6 +25,20 @@ describe("LocRequestFactory", () => {
         whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
     });
+
+    it("creates an open LOC", () => {
+        givenRequestId(uuid());
+        const description = {
+            requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+            ownerAddress: ALICE,
+            description: "Mrs ALice, I want to sell my last art work",
+            createdOn: moment().toISOString(),
+            userIdentity: undefined
+        };
+        givenLocDescription(description);
+        whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description)
+    });
 });
 
 describe("LocRequestAggregateRoot", () => {
@@ -201,6 +215,13 @@ function whenCreatingLocRequest() {
     });
 }
 
+function whenCreatingOpenLoc() {
+    createdLocRequest = factory.newOpenLoc({
+        id: requestId,
+        description: locDescription
+    });
+}
+
 const factory = new LocRequestFactory();
 
 let createdLocRequest: LocRequestAggregateRoot;
@@ -210,6 +231,13 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription) {
     expect(createdLocRequest.status).toBe('REQUESTED');
     expect(createdLocRequest.getDescription()).toEqual(description);
     expect(createdLocRequest.decisionOn).toBeUndefined();
+}
+
+function thenOpenLocCreatedWithDescription(description: LocRequestDescription) {
+    expect(createdLocRequest.id).toBe(requestId);
+    expect(createdLocRequest.status).toBe('OPEN');
+    expect(createdLocRequest.getDescription()).toEqual(description);
+    expect(createdLocRequest.decisionOn).toBeDefined();
 }
 
 function whenAddingFiles(files: FileDescription[]) {
