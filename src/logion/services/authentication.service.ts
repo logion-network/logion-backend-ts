@@ -7,21 +7,57 @@ import moment, { Moment } from "moment";
 
 const ALGORITHM: Algorithm = "HS384";
 
-export interface LogionUser {
+export interface AuthenticatedUser {
     address: string,
     legalOfficer: boolean;
 }
 
-export class LogionUserCheck implements LogionUser {
-    constructor(logionUser: LogionUser) {
+export class LogionUserCheck implements AuthenticatedUser {
+    constructor(
+        logionUser: AuthenticatedUser,
+        nodeOwner: string,
+    ) {
         this.address = logionUser.address;
         this.legalOfficer = logionUser.legalOfficer;
+        this.nodeOwner = nodeOwner;
     }
 
+    private nodeOwner: string;
+
     requireLegalOfficer(): void {
-        if (!this.legalOfficer) {
-            throw unauthorized("Reserved to legal officer")
+        this.require(user => user.legalOfficer, "Reserved to legal officer");
+    }
+
+    requireNodeOwner(): void {
+        this.require(user => user.isNodeOwner(this.address), "Reserved to node owner");
+    }
+
+    isNodeOwner(address?: string | null): boolean {
+        if(address === undefined) {
+            return this.nodeOwner === this.address;
+        } else {
+            return this.nodeOwner === address;
         }
+    }
+
+    requireIs(address: string | undefined | null): void {
+        this.require(user => user.is(address), "User has not access to this resource");
+    }
+
+    is(address: string | undefined | null): boolean {
+        return address !== undefined
+            && address !== null
+            && address === this.address;
+    }
+
+    require(predicate: (check: LogionUserCheck) => boolean, message?: string): void {
+        if(!predicate(this)) {
+            throw unauthorized(message || "Unauthorized");
+        }
+    }
+
+    isOneOf(addresses: (string | undefined | null)[]): boolean {
+        return addresses.some(address => this.is(address));
     }
 
     readonly address: string;
@@ -40,29 +76,28 @@ export function unauthorized(error: string): UnauthorizedException<{ error: stri
 @injectable()
 export class AuthenticationService {
 
-    authenticatedUserIs(request: Request, address: string | undefined | null): LogionUserCheck {
+    authenticatedUser(request: Request) {
         const user = this.extractLogionUser(request);
-        if (this.equal(user, address)) {
-            return new LogionUserCheck(user);
+        return new LogionUserCheck(user, this.nodeOwner);
+    }
+
+    authenticatedUserIs(request: Request, address: string | undefined | null): LogionUserCheck {
+        const user = this.authenticatedUser(request);
+        if (user.is(address)) {
+            return new LogionUserCheck(user, this.nodeOwner);
         }
         throw unauthorized("User has not access to this resource");
     }
 
     authenticatedUserIsOneOf(request: Request, ...addresses: (string | undefined | null)[]): LogionUserCheck {
-        const user = this.extractLogionUser(request);
-        if (addresses.some(address => this.equal(user, address))) {
-            return new LogionUserCheck(user);
+        const user = this.authenticatedUser(request);
+        if (user.isOneOf(addresses)) {
+            return new LogionUserCheck(user, this.nodeOwner);
         }
         throw unauthorized("User has not access to this resource");
     }
 
-    private equal(user: LogionUser, address: string | undefined | null): boolean {
-        return address !== undefined
-            && address !== null
-            && address === user.address;
-    }
-
-    private extractLogionUser(request: Request): LogionUser {
+    private extractLogionUser(request: Request): AuthenticatedUser {
         const header = request.header("Authorization");
         if (header === undefined || !header.startsWith("Bearer ")) {
             throw unauthorized("Invalid Authorization header");
@@ -83,6 +118,7 @@ export class AuthenticationService {
     private readonly secret: Buffer;
     private readonly issuer: string;
     private readonly ttl: number;
+    readonly nodeOwner: string;
 
     constructor() {
         if (process.env.JWT_SECRET === undefined) {
@@ -94,10 +130,14 @@ export class AuthenticationService {
         if (process.env.JWT_TTL_SEC === undefined) {
             throw Error("No JWT Time-to-live set, please set var JWT_TTL_SEC");
         }
+        if (process.env.OWNER === undefined) {
+            throw Error("No node owner set, please set var OWNER");
+        }
         const bas64EncodedSecret = process.env.JWT_SECRET as string;
         this.secret = Buffer.from(bas64EncodedSecret, 'base64')
         this.issuer = process.env.JWT_ISSUER;
         this.ttl = parseInt(process.env.JWT_TTL_SEC);
+        this.nodeOwner = process.env.OWNER;
     }
 
     createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {

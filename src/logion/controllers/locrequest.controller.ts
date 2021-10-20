@@ -86,17 +86,17 @@ export class LocRequestController extends ApiController {
     @HttpPost('')
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
-        const authenticatedUser = this.authenticationService.authenticatedUserIsOneOf(this.request, createLocRequestView.requesterAddress, createLocRequestView.ownerAddress);
+        const authenticatedUser = this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.is(createLocRequestView.requesterAddress) || user.isNodeOwner());
         const description: LocRequestDescription = {
             requesterAddress: requireDefined(createLocRequestView.requesterAddress),
-            ownerAddress: requireDefined(createLocRequestView.ownerAddress),
+            ownerAddress: this.authenticationService.nodeOwner,
             description: requireDefined(createLocRequestView.description),
             createdOn: moment().toISOString(),
             userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
         let request: LocRequestAggregateRoot;
-        if (authenticatedUser.address === createLocRequestView.ownerAddress) {
-            authenticatedUser.requireLegalOfficer();
+        if (authenticatedUser.isNodeOwner()) {
             request = this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description
@@ -237,8 +237,8 @@ export class LocRequestController extends ApiController {
     @Async()
     async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
         request.reject(rejectLocRequestView.rejectReason!, moment());
         await this.locRequestRepository.save(request)
     }
@@ -255,8 +255,8 @@ export class LocRequestController extends ApiController {
     @Async()
     async acceptLocRequest(_ignoredBody: any, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
         request.accept(moment());
         await this.locRequestRepository.save(request)
     }
@@ -273,8 +273,8 @@ export class LocRequestController extends ApiController {
     @Async()
     async addFile(_body: any, requestId: string): Promise<AddFileResultView> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
 
         const files: fileUpload.FileArray = this.request.files;
         if(files === undefined || files === null) {
@@ -316,8 +316,8 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
 
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
@@ -343,8 +343,8 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
 
         const file = request.removeFile(hash);
         await this.locRequestRepository.save(request);
@@ -366,8 +366,8 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
 
         request.confirmFile(hash);
         await this.locRequestRepository.save(request);
@@ -380,8 +380,8 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async closeLoc(_body: any, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIs(this.request, request.ownerAddress)
-            .requireLegalOfficer();
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
 
         request.preClose();
         await this.locRequestRepository.save(request);
