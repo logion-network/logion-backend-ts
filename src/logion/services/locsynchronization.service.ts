@@ -52,11 +52,10 @@ export class LocSynchronizer {
 
     private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
         const loc = await this.locRequestRepository.findById(locId);
-        if(loc === undefined) {
-            throw Error(`No LOC with ID ${locId}`);
+        if(loc !== undefined) {
+            mutator(loc);
+            await this.locRequestRepository.save(loc);
         }
-        mutator(loc);
-        await this.locRequestRepository.save(loc);
     }
 
     async reset() {
