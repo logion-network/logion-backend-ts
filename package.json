@@ -24,6 +24,7 @@
     "dependencies": {
         "@polkadot/api": "^5.4.1",
         "@substrate/calc": "^0.2.2",
+        "ansi-regex": "^5.0.1",
         "body-parser": "^1.19.0",
         "bson": "^4.4.1",
         "cors": "^2.8.5",
