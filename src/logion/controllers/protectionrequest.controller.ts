@@ -23,7 +23,6 @@ type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
 type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProtectionRequestsSpecificationView"];
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
-type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -90,7 +89,7 @@ export class ProtectionRequestController extends ApiController {
                 isRecovery: body.isRecovery!,
                 addressToRecover: body.addressToRecover!,
             },
-            legalOfficerAddresses: body.legalOfficerAddresses!,
+            legalOfficerAddress: this.authenticationService.nodeOwner,
         });
 
         await this.protectionRequestRepository.save(request);
@@ -172,10 +171,10 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.legalOfficerAddress)
-            .requireLegalOfficer()
+        this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.isNodeOwner());
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.reject(body.legalOfficerAddress!, body.rejectReason!, moment());
+        request.reject(this.authenticationService.nodeOwner, body.rejectReason!, moment());
         await this.protectionRequestRepository.save(request);
         return this.adapt(request);
     }
@@ -194,11 +193,11 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/accept')
-    async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.legalOfficerAddress)
-            .requireLegalOfficer();
+    async acceptProtectionRequest(_body: any, id: string): Promise<ProtectionRequestView> {
+        this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.isNodeOwner());
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.accept(body.legalOfficerAddress!, moment());
+        request.accept(this.authenticationService.nodeOwner, moment());
         await this.protectionRequestRepository.save(request);
         return this.adapt(request);
     }
@@ -213,7 +212,7 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/check-activation')
-    async checkAndSetProtectionRequestActivation(ignoredBody: any, id: string): Promise<ProtectionRequestView> {
+    async checkAndSetProtectionRequestActivation(_body: any, id: string): Promise<ProtectionRequestView> {
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         this.authenticationService.authenticatedUserIs(this.request, request.requesterAddress)
         if(await this.recoveryService.hasRecoveryConfig(request.requesterAddress!)) {
@@ -233,7 +232,7 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPut('/:id/recovery-info')
-    async fetchRecoveryInfo(body: any, id: string): Promise<RecoveryInfoView> {
+    async fetchRecoveryInfo(_body: any, id: string): Promise<RecoveryInfoView> {
         const recovery = await this.protectionRequestRepository.findById(id);
         if(recovery === undefined
             || !recovery.isRecovery

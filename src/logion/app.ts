@@ -1,6 +1,7 @@
 // tslint:disable-next-line: no-require-imports no-var-requires
 import { createConnection } from "typeorm";
 import express from 'express';
+import cors from 'cors';
 import bodyParser from 'body-parser';
 import fileUpload from 'express-fileupload';
 import { Container } from 'inversify';
@@ -77,6 +78,7 @@ createConnection()
         useTempFiles : true,
         tempFileDir : '/tmp/',
     }));
+    app.use(cors());
 
     const dino = new Dino(app, '/api');
 

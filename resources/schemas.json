@@ -7,17 +7,6 @@
     "paths": {},
     "components": {
         "schemas": {
-            "AcceptProtectionRequestView": {
-                "type": "object",
-                "properties": {
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer accepting the protection request"
-                    }
-                },
-                "title": "AcceptProtectionRequestView",
-                "description": "The Protection Request to accept"
-            },
             "AssetDescriptionView": {
                 "type": "object",
                 "properties": {
@@ -44,13 +33,6 @@
                     "isRecovery": {
                         "type": "boolean",
                         "description": "True if the the protection request is also a recovery request"
-                    },
-                    "legalOfficerAddresses": {
-                        "type": "array",
-                        "description": "The list of legal officers (SS58 addresses) to whom protection is requested",
-                        "items": {
-                            "type": "string"
-                        }
                     },
                     "requesterAddress": {
                         "type": "string",
@@ -343,10 +325,6 @@
             "RejectProtectionRequestView": {
                 "type": "object",
                 "properties": {
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer rejecting the protection request"
-                    },
                     "rejectReason": {
                         "type": "string",
                         "description": "The rejection reason"
@@ -623,10 +601,6 @@
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
-                    "ownerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
-                    },
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the LOC requester"

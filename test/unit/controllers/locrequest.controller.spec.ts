@@ -28,7 +28,6 @@ const testUserIdentity = {
 
 const testData = {
     requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
-    ownerAddress: ALICE,
     description: "I want to open a case"
 };
 
@@ -52,7 +51,6 @@ describe('LocRequestController', () => {
             LocRequestController,
             mockModelForCreation,
             true,
-            { address: testData.requesterAddress, legalOfficer: false }
         )
         await request(app)
             .post('/api/loc-request')
@@ -75,7 +73,7 @@ describe('LocRequestController', () => {
             LocRequestController,
             container => mockModelForCreation(container, true),
             true,
-            { address: testData.ownerAddress, legalOfficer: true }
+            true,
         )
         await request(app)
             .post('/api/loc-request')
@@ -98,7 +96,7 @@ describe('LocRequestController', () => {
             LocRequestController,
             mockModelForCreation,
             true,
-            { address: testData.ownerAddress, legalOfficer: true }
+            true,
         )
         await request(app)
             .post('/api/loc-request')
@@ -121,7 +119,6 @@ describe('LocRequestController', () => {
             LocRequestController,
             container => mockModelForCreation(container, true),
             true,
-            { address: testData.requesterAddress, legalOfficer: false }
         )
         await request(app)
             .post('/api/loc-request')
@@ -191,28 +188,11 @@ describe('LocRequestController', () => {
             });
     });
 
-    it('fails to create open loc - expected owner is not legal officer', async () => {
-        const app = setupApp(
-            LocRequestController,
-            mockModelForCreation,
-            true,
-            { address: testData.ownerAddress, legalOfficer: false }
-        )
-        await request(app)
-            .post('/api/loc-request')
-            .send(testData)
-            .expect(401)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                expect(response.body.id).toBeUndefined();
-            });
-    });
-
     function checkResponse(response: Response) {
         expect(response.body.requests.length).toBe(1);
         expect(response.body.requests[0].id).toBe(REQUEST_ID)
         expect(response.body.requests[0].requesterAddress).toBe(testData.requesterAddress)
-        expect(response.body.requests[0].ownerAddress).toBe(testData.ownerAddress)
+        expect(response.body.requests[0].ownerAddress).toBe(ALICE)
         expect(response.body.requests[0].status).toBe("REJECTED")
         expect(response.body.requests[0].rejectReason).toBe(REJECT_REASON)
     }
@@ -360,14 +340,14 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
     const request = mockRequest("REQUESTED", hasProtection ? testData : testDataWithUserIdentity)
     factory.setup(instance => instance.newLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
-        params.description.ownerAddress == testData.ownerAddress &&
+        params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
         .returns(request.object())
     const openLoc = mockRequest("OPEN", hasProtection ? testData : testDataWithUserIdentity)
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
-        params.description.ownerAddress == testData.ownerAddress &&
+        params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
         .returns(openLoc.object())
@@ -414,7 +394,8 @@ function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggreg
     request.setup(instance => instance.getDescription())
         .returns({
             ...data,
-            createdOn: moment().toISOString()
+            createdOn: moment().toISOString(),
+            ownerAddress: ALICE
         });
     request.setup(instance => instance.getFiles()).returns([]);
     request.setup(instance => instance.getMetadataItems()).returns([]);

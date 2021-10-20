@@ -286,7 +286,7 @@ export interface ProtectionRequestDescription {
 export interface NewProtectionRequestParameters {
     id: string;
     description: ProtectionRequestDescription;
-    legalOfficerAddresses: string[];
+    legalOfficerAddress: string;
 }
 
 @injectable()
@@ -298,7 +298,7 @@ export class ProtectionRequestFactory {
         root.status = 'PENDING';
 
         root.setDescription(params.description);
-        root.setPendingDecisions(params.legalOfficerAddresses);
+        root.setPendingDecisions([params.legalOfficerAddress]);
 
         return root;
     }

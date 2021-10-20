@@ -26,7 +26,6 @@ describe('createProtectionRequest', () => {
                 requesterAddress: REQUESTER_ADDRESS,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
-                legalOfficerAddresses: LEGAL_OFFICERS,
                 isRecovery: false,
                 addressToRecover: null,
             })
@@ -47,7 +46,6 @@ describe('createProtectionRequest', () => {
                 requesterAddress: REQUESTER_ADDRESS,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
-                legalOfficerAddresses: LEGAL_OFFICERS,
                 isRecovery: true,
                 addressToRecover,
             })
@@ -84,8 +82,6 @@ const POSTAL_ADDRESS = {
     country: "Belgium"
 };
 
-const LEGAL_OFFICERS = [ALICE, BOB];
-
 function mockModelForRequest(container: Container): void {
     mockProtectionRequestModel(container, false, null);
 }
@@ -104,8 +100,7 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
         .returns("id");
     factory.setup(instance => instance.newProtectionRequest(
             It.Is<NewProtectionRequestParameters>(params =>
-                params.legalOfficerAddresses.includes(ALICE)
-                && params.legalOfficerAddresses.includes(BOB)
+                params.legalOfficerAddress === ALICE
                 && params.description.addressToRecover === addressToRecover
                 && params.description.isRecovery === isRecovery
                 && params.description.requesterAddress === REQUESTER_ADDRESS)))
@@ -235,9 +230,7 @@ describe('acceptProtectionRequest', () => {
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/accept")
-            .send({
-                legalOfficerAddress: ALICE,
-            })
+            .send({})
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });
