@@ -30,6 +30,7 @@ import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } fro
 import { sha256File } from "../lib/crypto/hashing";
 import { FileDbService } from "../services/filedb.service";
 import { Log } from "../util/Log";
+import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 
 const { logger } = Log;
 
@@ -53,6 +54,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
 type LocRequestView = components["schemas"]["LocRequestView"];
+type LocPublicView = components["schemas"]["LocPublicView"];
 type FetchLocRequestsSpecificationView = components["schemas"]["FetchLocRequestsSpecificationView"];
 type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
@@ -219,6 +221,43 @@ export class LocRequestController extends ApiController {
             request.requesterAddress, request.ownerAddress);
         const userIdentity = await this.findUserIdentity(request);
         return this.toView(request, userIdentity);
+    }
+
+    static getPublicLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/public"].get!;
+        operationObject.summary = "Gets the published attributes of a single LOC";
+        operationObject.description = "No authentication required.";
+        operationObject.responses = getDefaultResponses("LocPublicView");
+    }
+
+    @HttpGet('/:requestId/public')
+    @Async()
+    async getPublicLoc(_body: any, requestId: string): Promise<LocPublicView> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        if (request.status === 'OPEN' || request.status === 'CLOSED') {
+            return this.toPublicView(request);
+        }
+        throw new ForbiddenException();
+    }
+
+    private toPublicView(request: LocRequestAggregateRoot): LocPublicView {
+        const locDescription = request.getDescription();
+        return {
+            id: request.id,
+            requesterAddress: locDescription.requesterAddress,
+            ownerAddress: locDescription.ownerAddress,
+            createdOn: locDescription.createdOn || undefined,
+            closedOn: request.closedOn || undefined,
+            files: request.getFiles().map(file => ({
+                hash: file.hash,
+                addedOn: file.addedOn!.toISOString() || undefined,
+            })),
+            metadata: request.getMetadataItems().map(item => ({
+                name: item.name,
+                value: item.value,
+                addedOn: item.addedOn.toISOString(),
+            }))
+        }
     }
 
     static rejectLocRequest(spec: OpenAPIV3.Document) {
