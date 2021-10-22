@@ -711,6 +711,76 @@
                 "title": "LocRequestView",
                 "description": "An existing LOC Request"
             },
+            "LocPublicView": {
+                "type": "object",
+                "properties": {
+                    "ownerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the LOC requester"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "closedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The closing timestamp (if status is 'CLOSED')"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC request, which is also the ID of the LOC"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "hash": {
+                                    "type": "string",
+                                    "description": "The file's hash"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
+                    },
+                    "metadata": {
+                        "type": "array",
+                        "description": "The metadata attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string",
+                                    "description": "The item's name"
+                                },
+                                "value": {
+                                    "type": "string",
+                                    "description": "The item's value"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
+                    }
+                },
+                "title": "LocPublicView",
+                "description": "The published attributes of an existing LOC"
+            },
             "FetchLocRequestsSpecificationView": {
                 "type": "object",
                 "properties": {
