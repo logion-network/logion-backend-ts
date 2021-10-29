@@ -17,10 +17,6 @@ import { AppContainer } from './container/app.container';
 import { JsonResponse } from './middlewares/json.response';
 import { ApplicationErrorController } from './controllers/application.error.controller';
 import { setOpenApi3, loadSchemasIntoSpec } from './controllers/doc';
-import {
-    TokenizationRequestController,
-    fillInSpec as fillInSpecForTokenization
-} from './controllers/tokenizationrequest.controller';
 import { TransactionController, fillInSpec as fillInSpecForTransaction } from "./controllers/transaction.controller";
 import { Scheduler } from "./scheduler/scheduler.service";
 import {
@@ -55,7 +51,6 @@ expressOasGenerator.handleResponses(app, {
         };
 
         fillInSpecForProtectionController(spec);
-        fillInSpecForTokenization(spec);
         fillInSpecForTransaction(spec);
         fillInSpecForAuthentication(spec);
         fillInSpecForLoc(spec);
@@ -84,7 +79,6 @@ createConnection()
     dino.useRouter(() => express.Router());
     dino.registerController(AuthenticationController);
     dino.registerController(ProtectionRequestController);
-    dino.registerController(TokenizationRequestController);
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
     dino.registerApplicationError(ApplicationErrorController);

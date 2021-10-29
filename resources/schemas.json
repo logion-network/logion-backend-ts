@@ -259,17 +259,6 @@
                 "title": "RejectTokenRequestView",
                 "description": "The Tokenization Request to reject"
             },
-            "SetAssetDescriptionView": {
-                "type": "object",
-                "properties": {
-                    "description": {
-                        "description": "The asset description",
-                        "$ref": "#/components/schemas/AssetDescriptionView"
-                    }
-                },
-                "title": "SetAssetDescriptionView",
-                "description": "The asset description"
-            },
             "TransactionView": {
                 "type": "object",
                 "properties": {
