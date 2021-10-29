@@ -6,7 +6,6 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot,
 } from '../../../src/logion/model/protectionrequest.model';
-import { ALICE } from '../../../src/logion/model/addresses.model';
 
 describe('ProtectionRequestFactoryTest', () => {
 
@@ -16,9 +15,6 @@ describe('ProtectionRequestFactoryTest', () => {
         expect(result.id!).toBe(id);
         expect(result.getDescription()).toEqual(description);
         expect(result.status).toBe('PENDING');
-        expect(result.decisions!.length).toBe(1);
-        expect(result.decisions![0].status).toBe('PENDING');
-        expect(result.decisions![0].legalOfficerAddress).toBe(ALICE);
     });
 });
 
@@ -27,12 +23,13 @@ describe('ProtectionRequestAggregateRootTest', () => {
     it('accepts', async () => {
         const request = newProtectionRequestUsingFactory();
         const decisionOn = moment();
+        const locId = "locId";
 
-        request.accept(ALICE, decisionOn);
+        request.accept(decisionOn, locId);
 
-        const aliceDecision = request.decisions!.find(decision => decision.legalOfficerAddress === ALICE)!;
-        expect(aliceDecision.decisionOn).toBe(decisionOn.toISOString());
-        expect(aliceDecision.status).toBe('ACCEPTED');
+        expect(request.status).toBe('ACCEPTED');
+        expect(request.decision!.decisionOn).toBe(decisionOn.toISOString());
+        expect(request.decision!.locId).toBe(locId);
     });
 
     it('rejects', async () => {
@@ -40,27 +37,27 @@ describe('ProtectionRequestAggregateRootTest', () => {
         const decisionOn = moment();
         const reason = "Because.";
 
-        request.reject(ALICE, reason, decisionOn);
+        request.reject(reason, decisionOn);
 
-        const aliceDecision = request.decisions!.find(decision => decision.legalOfficerAddress === ALICE)!;
-        expect(aliceDecision.decisionOn).toBe(decisionOn.toISOString());
-        expect(aliceDecision.status).toBe('REJECTED');
+        expect(request.status).toBe('REJECTED');
+        expect(request.decision!.decisionOn).toBe(decisionOn.toISOString());
     });
 
     it('fails on re-accept', async () => {
         const request = newProtectionRequestUsingFactory();
         const decisionOn = moment();
-        request.accept(ALICE, decisionOn);
+        const locId = "locId";
+        request.accept(decisionOn, locId);
 
-        expect(() => request.accept(ALICE, decisionOn)).toThrowError();
+        expect(() => request.accept(decisionOn, locId)).toThrowError();
     });
 
     it('fails on re-reject', async () => {
         const request = newProtectionRequestUsingFactory();
         const decisionOn = moment();
-        request.reject(ALICE, "", decisionOn);
+        request.reject("", decisionOn);
 
-        expect(() => request.reject(ALICE, "", decisionOn)).toThrowError();
+        expect(() => request.reject("", decisionOn)).toThrowError();
     });
 });
 
@@ -85,13 +82,11 @@ const description: ProtectionRequestDescription = {
     isRecovery: false,
     addressToRecover: null,
 };
-const legalOfficerAddress = ALICE;
 
 function newProtectionRequestUsingFactory(): ProtectionRequestAggregateRoot {
     const factory = new ProtectionRequestFactory();
     return factory.newProtectionRequest({
         id,
         description,
-        legalOfficerAddress
     });
 }

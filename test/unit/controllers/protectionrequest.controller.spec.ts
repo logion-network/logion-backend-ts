@@ -12,7 +12,6 @@ import {
     LegalOfficerDecision,
 } from '../../../src/logion/model/protectionrequest.model';
 import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
-import { RecoveryService } from '../../../src/logion/services/recovery.service';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
 
 describe('createProtectionRequest', () => {
@@ -94,21 +93,17 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
 
     const factory = new Mock<ProtectionRequestFactory>();
     const root = new Mock<ProtectionRequestAggregateRoot>();
-    root.setup(instance => instance.decisions)
-        .returns([]);
+    const decision = new Mock<LegalOfficerDecision>();
+    root.setup(instance => instance.decision).returns(decision.object());
     root.setup(instance => instance.id)
         .returns("id");
     factory.setup(instance => instance.newProtectionRequest(
             It.Is<NewProtectionRequestParameters>(params =>
-                params.legalOfficerAddress === ALICE
-                && params.description.addressToRecover === addressToRecover
+                params.description.addressToRecover === addressToRecover
                 && params.description.isRecovery === isRecovery
                 && params.description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-
-    const recoveryService = new Mock<RecoveryService>();
-    container.bind(RecoveryService).toConstantValue(recoveryService.object());
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -125,7 +120,7 @@ describe('fetchProtectionRequests', () => {
             .send({
                 requesterAddress: "",
                 legalOfficerAddress: [ ALICE ],
-                decisionStatuses: ["ACCEPTEED", "REJECTED"]
+                decisionStatuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -142,17 +137,11 @@ describe('fetchProtectionRequests', () => {
                 expect(response.body.requests[0].userPostalAddress.postalCode).toBe("4000");
                 expect(response.body.requests[0].userPostalAddress.city).toBe("Liège");
                 expect(response.body.requests[0].userPostalAddress.country).toBe("Belgium");
-                expect(response.body.requests[0].decisions[0].legalOfficerAddress).toBe(ALICE);
-                expect(response.body.requests[0].decisions[0].status).toBe("PENDING");
-                expect(response.body.requests[0].decisions[0].createdOn).toBe(TIMESTAMP);
-                expect(response.body.requests[0].decisions[1].legalOfficerAddress).toBe(BOB);
-                expect(response.body.requests[0].decisions[1].status).toBe("REJECTED");
-                expect(response.body.requests[0].decisions[1].rejectReason).toBe(REJECT_REASON);
-                expect(response.body.requests[0].decisions[1].createdOn).toBe(TIMESTAMP);
-                expect(response.body.requests[0].decisions[1].decisionOn).toBe(TIMESTAMP);
+                expect(response.body.requests[0].decision.rejectReason).toBe(REJECT_REASON);
+                expect(response.body.requests[0].decision.decisionOn).toBe(TIMESTAMP);
                 expect(response.body.requests[0].createdOn).toBe(TIMESTAMP);
                 expect(response.body.requests[0].isRecovery).toBe(false);
-                expect(response.body.requests[0].status).toBe("PENDING");
+                expect(response.body.requests[0].status).toBe("REJECTED");
             });
     });
 
@@ -193,23 +182,15 @@ function mockModelForFetch(container: Container): void {
     protectionRequest.setup(instance => instance.city).returns("Liège");
     protectionRequest.setup(instance => instance.country).returns("Belgium");
 
-    const decisionAlice = new Mock<LegalOfficerDecision>();
-    decisionAlice.setup(instance => instance.legalOfficerAddress).returns(ALICE);
-    decisionAlice.setup(instance => instance.status).returns('PENDING');
-    decisionAlice.setup(instance => instance.createdOn).returns(TIMESTAMP);
+    const decision = new Mock<LegalOfficerDecision>();
+    decision.setup(instance => instance.rejectReason).returns(REJECT_REASON);
+    decision.setup(instance => instance.decisionOn).returns(TIMESTAMP);
 
-    const decisionBob = new Mock<LegalOfficerDecision>();
-    decisionBob.setup(instance => instance.legalOfficerAddress).returns(BOB);
-    decisionBob.setup(instance => instance.status).returns('REJECTED');
-    decisionBob.setup(instance => instance.rejectReason).returns(REJECT_REASON);
-    decisionBob.setup(instance => instance.createdOn).returns(TIMESTAMP);
-    decisionBob.setup(instance => instance.decisionOn).returns(TIMESTAMP);
-
-    protectionRequest.setup(instance => instance.decisions).returns([ decisionAlice.object(), decisionBob.object() ]);
+    protectionRequest.setup(instance => instance.decision).returns(decision.object());
     protectionRequest.setup(instance => instance.createdOn).returns(TIMESTAMP);
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
-    protectionRequest.setup(instance => instance.status).returns('PENDING');
+    protectionRequest.setup(instance => instance.status).returns('REJECTED');
 
     const requests: ProtectionRequestAggregateRoot[] = [ protectionRequest.object() ];
     repository.setup(instance => instance.findBy)
@@ -218,9 +199,6 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-
-    const recoveryService = new Mock<RecoveryService>();
-    container.bind(RecoveryService).toConstantValue(recoveryService.object());
 }
 
 describe('acceptProtectionRequest', () => {
@@ -240,7 +218,8 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
     protectionRequest.setup(instance => instance.id).returns(REQUEST_ID);
     protectionRequest.setup(instance => instance.accept).returns(() => {});
-    protectionRequest.setup(instance => instance.decisions).returns([]);
+    const decision = new Mock<LegalOfficerDecision>();
+    protectionRequest.setup(instance => instance.decision).returns(decision.object());
 
     const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
@@ -253,9 +232,6 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-
-    const recoveryService = new Mock<RecoveryService>();
-    container.bind(RecoveryService).toConstantValue(recoveryService.object());
 }
 
 const REQUEST_ID = "requestId";
@@ -280,7 +256,8 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
     protectionRequest.setup(instance => instance.id).returns(REQUEST_ID);
     protectionRequest.setup(instance => instance.reject).returns(() => {});
-    protectionRequest.setup(instance => instance.decisions).returns([]);
+    const decision = new Mock<LegalOfficerDecision>();
+    protectionRequest.setup(instance => instance.decision).returns(decision.object());
 
     const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
@@ -293,7 +270,4 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-
-    const recoveryService = new Mock<RecoveryService>();
-    container.bind(RecoveryService).toConstantValue(recoveryService.object());
 }

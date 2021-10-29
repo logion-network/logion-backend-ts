@@ -7,21 +7,16 @@
     "paths": {},
     "components": {
         "schemas": {
-            "AssetDescriptionView": {
+            "AcceptProtectionRequestView": {
                 "type": "object",
                 "properties": {
-                    "assetId": {
+                    "locId": {
                         "type": "string",
-                        "description": "The ID (64-bits unsigned integer) of the asset"
-                    },
-                    "decimals": {
-                        "type": "integer",
-                        "format": "int32",
-                        "description": "The number of allowed decimals for token amounts"
+                        "description": "ID of the Identity LOC to associate with the protection request"
                     }
                 },
-                "title": "AssetDescriptionView",
-                "description": "The description of an asset created on-chain"
+                "title": "AcceptProtectionRequestView",
+                "description": "Parameters for Protection Request's acceptance"
             },
             "CreateProtectionRequestView": {
                 "type": "object",
@@ -50,30 +45,6 @@
                 "title": "CreateProtectionRequestView",
                 "description": "A Protection Request to create"
             },
-            "CreateTokenRequestView": {
-                "type": "object",
-                "properties": {
-                    "bars": {
-                        "type": "integer",
-                        "format": "int32",
-                        "description": "The number of gold bars serving as the underlying of the tokens to create"
-                    },
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer that will issue the tokens upon acceptance"
-                    },
-                    "requestedTokenName": {
-                        "type": "string",
-                        "description": "The name of the token to create"
-                    },
-                    "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the tokenization requester"
-                    }
-                },
-                "title": "CreateTokenRequestView",
-                "description": "A Tokenization Request to create"
-            },
             "FetchProtectionRequestsResponseView": {
                 "type": "object",
                 "properties": {
@@ -91,16 +62,17 @@
             "FetchProtectionRequestsSpecificationView": {
                 "type": "object",
                 "properties": {
-                    "decisionStatuses": {
+                    "statuses": {
                         "type": "array",
-                        "description": "The statuses of decisions of expected Protection Requests",
+                        "description": "The statuses of expected Protection Requests",
                         "uniqueItems": true,
                         "items": {
                             "type": "string",
                             "enum": [
                                 "ACCEPTED",
                                 "PENDING",
-                                "REJECTED"
+                                "REJECTED",
+                                "ACTIVATED"
                             ]
                         }
                     },
@@ -113,18 +85,6 @@
                             "RECOVERY"
                         ]
                     },
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer in expected Protection Requests"
-                    },
-                    "protectionRequestStatus": {
-                        "type": "string",
-                        "description": "The status of expected Protection Requests",
-                        "enum": [
-                            "ACTIVATED",
-                            "PENDING"
-                        ]
-                    },
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the requester in expected Protection Requests"
@@ -132,44 +92,6 @@
                 },
                 "title": "FetchProtectionRequestsSpecificationView",
                 "description": "The specification for fetching Protection Requests"
-            },
-            "FetchRequestsResponseView": {
-                "type": "object",
-                "properties": {
-                    "requests": {
-                        "type": "array",
-                        "description": "The Tokenization Requests matching provided specification",
-                        "items": {
-                            "$ref": "#/components/schemas/TokenRequestView"
-                        }
-                    }
-                },
-                "title": "FetchRequestsResponseView",
-                "description": "The fetched Tokenization Requests"
-            },
-            "FetchRequestsSpecificationView": {
-                "type": "object",
-                "properties": {
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer in expected Tokenization Requests"
-                    },
-                    "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the requester in expected Tokenization Requests"
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "The status in expected Tokenization Requests",
-                        "enum": [
-                            "ACCEPTED",
-                            "PENDING",
-                            "REJECTED"
-                        ]
-                    }
-                },
-                "title": "FetchRequestsSpecificationView",
-                "description": "The specification for fetching Tokenization Requests"
             },
             "FetchTransactionsResponseView": {
                 "type": "object",
@@ -199,19 +121,10 @@
             "LegalOfficerDecisionView": {
                 "type": "object",
                 "properties": {
-                    "createdOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The creation timestamp"
-                    },
                     "decisionOn": {
                         "type": "string",
                         "format": "date-time",
                         "description": "The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')"
-                    },
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer"
                     },
                     "rejectReason": {
                         "type": "string",
@@ -225,6 +138,10 @@
                             "PENDING",
                             "REJECTED"
                         ]
+                    },
+                    "locId": {
+                        "type": "string",
+                        "description": "ID of the Identity LOC linked to an accepted protection request."
                     }
                 },
                 "title": "LegalOfficerDecisionView",
@@ -269,12 +186,8 @@
                         "format": "date-time",
                         "description": "The creation timestamp"
                     },
-                    "decisions": {
-                        "type": "array",
-                        "description": "The Legal Officer decisions",
-                        "items": {
-                            "$ref": "#/components/schemas/LegalOfficerDecisionView"
-                        }
+                    "decision": {
+                        "$ref": "#/components/schemas/LegalOfficerDecisionView"
                     },
                     "id": {
                         "type": "string",
@@ -293,8 +206,10 @@
                         "type": "string",
                         "description": "The status (retrieved from chain)",
                         "enum": [
-                            "ACTIVATED",
-                            "PENDING"
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED",
+                            "ACTIVATED"
                         ]
                     },
                     "userIdentity": {
@@ -354,62 +269,6 @@
                 },
                 "title": "SetAssetDescriptionView",
                 "description": "The asset description"
-            },
-            "TokenRequestView": {
-                "type": "object",
-                "properties": {
-                    "assetDescription": {
-                        "description": "The created asset description (once created on-chain)",
-                        "$ref": "#/components/schemas/AssetDescriptionView"
-                    },
-                    "bars": {
-                        "type": "integer",
-                        "format": "int32",
-                        "description": "The number of gold bars serving as the underlying of the tokens to create"
-                    },
-                    "createdOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The creation timestamp"
-                    },
-                    "decisionOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')"
-                    },
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The ID of created tokenization request"
-                    },
-                    "legalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the legal officer that will issue the tokens upon acceptance"
-                    },
-                    "rejectReason": {
-                        "type": "string",
-                        "description": "If status is 'REJECTED', the reason of the rejection"
-                    },
-                    "requestedTokenName": {
-                        "type": "string",
-                        "description": "The name of the token to create"
-                    },
-                    "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the tokenization requester"
-                    },
-                    "status": {
-                        "type": "string",
-                        "description": "The request's status",
-                        "enum": [
-                            "ACCEPTED",
-                            "PENDING",
-                            "REJECTED"
-                        ]
-                    }
-                },
-                "title": "TokenRequestView",
-                "description": "A description of the created Tokenization Request"
             },
             "TransactionView": {
                 "type": "object",
