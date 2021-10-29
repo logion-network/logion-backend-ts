@@ -53,11 +53,19 @@ export class PolkadotService {
                     owner: "AccountId",
                     requester: "AccountId",
                     metadata: "Vec<MetadataItem>",
-                    hashes: "Vec<Hash>"
+                    hashes: "Vec<Hash>",
+                    closed: "bool",
+                    loc_type: "LocType",
                 },
                 MetadataItem: {
                     name: "Vec<u8>",
                     value: "Vec<u8>"
+                },
+                LocType: {
+                    _enum: [
+                        "Transaction",
+                        "Identity"
+                    ]
                 }
             }
         });

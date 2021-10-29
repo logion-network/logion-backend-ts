@@ -194,10 +194,9 @@ export class LocRequestController extends ApiController {
     private async findUserIdentity(request: LocRequestAggregateRoot): Promise<UserIdentity | undefined> {
         const description = request.getDescription();
         const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-            expectedDecisionStatuses: [ "ACCEPTED" ],
+            expectedStatuses: [ "ACCEPTED", "ACTIVATED" ],
             kind: "ANY",
             expectedRequesterAddress: description.requesterAddress,
-            expectedLegalOfficer: description.ownerAddress
         }));
         if (protections.length > 0) {
             return protections[0].getDescription().userIdentity;

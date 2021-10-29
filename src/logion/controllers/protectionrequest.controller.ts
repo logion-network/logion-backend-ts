@@ -13,7 +13,6 @@ import {
 
 import { components } from './components';
 
-import { RecoveryService } from '../services/recovery.service';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses, addPathParameter } from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
@@ -23,6 +22,7 @@ type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
 type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProtectionRequestsSpecificationView"];
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
+type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -37,7 +37,6 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     ProtectionRequestController.fetchProtectionRequests(spec);
     ProtectionRequestController.rejectProtectionRequest(spec);
     ProtectionRequestController.acceptProtectionRequest(spec);
-    ProtectionRequestController.checkAndSetProtectionRequestActivation(spec);
     ProtectionRequestController.fetchRecoveryInfo(spec);
 }
 
@@ -48,7 +47,6 @@ export class ProtectionRequestController extends ApiController {
     constructor(
         private protectionRequestRepository: ProtectionRequestRepository,
         private protectionRequestFactory: ProtectionRequestFactory,
-        private recoveryService: RecoveryService,
         private authenticationService: AuthenticationService) {
         super();
     }
@@ -89,7 +87,6 @@ export class ProtectionRequestController extends ApiController {
                 isRecovery: body.isRecovery!,
                 addressToRecover: body.addressToRecover!,
             },
-            legalOfficerAddress: this.authenticationService.nodeOwner,
         });
 
         await this.protectionRequestRepository.save(request);
@@ -111,12 +108,10 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
-        this.authenticationService.authenticatedUserIsOneOf(this.request, body.requesterAddress, body.legalOfficerAddress)
+        this.authenticationService.authenticatedUserIsOneOf(this.request, body.requesterAddress)
         const specification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: body.requesterAddress,
-            expectedLegalOfficer: body.legalOfficerAddress,
-            expectedDecisionStatuses: body.decisionStatuses,
-            expectedProtectionRequestStatus: body.protectionRequestStatus,
+            expectedStatuses: body.statuses,
             kind: body.kind,
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(specification);
@@ -142,13 +137,11 @@ export class ProtectionRequestController extends ApiController {
                 city: request.city || "",
                 country: request.country || "",
             },
-            decisions: request.decisions!.map(decision => ({
-                legalOfficerAddress: decision.legalOfficerAddress || "",
-                status: decision.status!,
-                rejectReason: decision.rejectReason || "",
-                createdOn: decision.createdOn!,
-                decisionOn: decision.decisionOn || undefined,
-            })),
+            decision: {
+                rejectReason: request.decision!.rejectReason || "",
+                decisionOn: request.decision!.decisionOn || undefined,
+                locId: request.decision!.locId,
+            },
             createdOn: request.createdOn!,
             isRecovery: request.isRecovery || false,
             addressToRecover: request.addressToRecover || undefined,
@@ -174,7 +167,7 @@ export class ProtectionRequestController extends ApiController {
         this.authenticationService.authenticatedUser(this.request)
             .require(user => user.isNodeOwner());
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.reject(this.authenticationService.nodeOwner, body.rejectReason!, moment());
+        request.reject(body.rejectReason!, moment());
         await this.protectionRequestRepository.save(request);
         return this.adapt(request);
     }
@@ -193,32 +186,12 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/accept')
-    async acceptProtectionRequest(_body: any, id: string): Promise<ProtectionRequestView> {
+    async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
         this.authenticationService.authenticatedUser(this.request)
             .require(user => user.isNodeOwner());
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.accept(this.authenticationService.nodeOwner, moment());
+        request.accept(moment(), body.locId!);
         await this.protectionRequestRepository.save(request);
-        return this.adapt(request);
-    }
-
-    static checkAndSetProtectionRequestActivation(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/protection-request/{id}/check-activation"].post!;
-        operationObject.summary = "Checks if a Protection Request is activated on chain, and return the (possibly updated) protection request";
-        operationObject.description = "The authenticated user must be the protection requester";
-        operationObject.responses = getDefaultResponses("ProtectionRequestView");
-        addPathParameter(operationObject, 'id', "The ID of the request to check for activation");
-    }
-
-    @Async()
-    @HttpPost('/:id/check-activation')
-    async checkAndSetProtectionRequestActivation(_body: any, id: string): Promise<ProtectionRequestView> {
-        const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        this.authenticationService.authenticatedUserIs(this.request, request.requesterAddress)
-        if(await this.recoveryService.hasRecoveryConfig(request.requesterAddress!)) {
-            request.setActivated();
-            await this.protectionRequestRepository.save(request);
-        }
         return this.adapt(request);
     }
 
@@ -244,17 +217,17 @@ export class ProtectionRequestController extends ApiController {
         const addressToRecover = recovery.getDescription().addressToRecover!;
         const querySpecification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: addressToRecover,
-            expectedProtectionRequestStatus: 'ACTIVATED'
+            expectedStatuses: [ 'ACTIVATED' ]
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(querySpecification);
         if (protectionRequests.length === 0) {
             throw new Error("Activated protection request to recover not found");
         }
-        let authorizeUsers = protectionRequests[0].decisions!
-            .map(decision => decision.legalOfficerAddress)
-        authorizeUsers.push(
-            protectionRequests[0].addressToRecover || undefined,
-            protectionRequests[0].requesterAddress);
+        let authorizeUsers = [ this.authenticationService.nodeOwner ];
+        if(protectionRequests[0].addressToRecover) {
+            authorizeUsers.push(protectionRequests[0].addressToRecover);
+        }
+        authorizeUsers.push(protectionRequests[0].requesterAddress!);
         this.authenticationService.authenticatedUserIsOneOf(this.request, ...authorizeUsers)
         return {
             recoveryAccount: this.adapt(recovery),

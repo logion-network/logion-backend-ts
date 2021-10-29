@@ -1,7 +1,6 @@
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
-import { Log } from '../util/Log';
 import { decimalToUuid } from '../lib/uuid';
 
 import { BlockExtrinsics } from './types/responses/Block';
@@ -56,11 +55,5 @@ export class LocSynchronizer {
             mutator(loc);
             await this.locRequestRepository.save(loc);
         }
-    }
-
-    async reset() {
-        // There seem to be no good approach in this case for LOC requests. Deleting everything is dangerous because
-        // LOC requests contain data that cannot be rebuilt from the chain. Altering their state is dangerous as well
-        // for the same reason. As a result, this is a no-op and it is up to the ops to decide what to do in this case.
     }
 }

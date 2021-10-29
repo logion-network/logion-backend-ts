@@ -5,6 +5,7 @@ import { BlockExtrinsicsService } from "../services/block.service";
 import { LocSynchronizer } from "../services/locsynchronization.service";
 import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
+import { ProtectionSynchronizer } from "../services/protectionsynchronization.service";
 
 const { logger } = Log;
 
@@ -17,6 +18,7 @@ export class BlockConsumer {
         private syncPointFactory: SyncPointFactory,
         private transactionSynchronizer: TransactionSynchronizer,
         private locSynchronizer: LocSynchronizer,
+        private protectionSynchronizer: ProtectionSynchronizer,
     ) {}
 
     async consumeNewBlocks(now: Moment): Promise<void> {
@@ -31,7 +33,6 @@ export class BlockConsumer {
             logger.warn("Out-of-sync error: last synced block number greater than head number. Transaction cache will be erased and rebuilt from block #1");
 
             await this.transactionSynchronizer.reset();
-            await this.locSynchronizer.reset();
 
             await this.syncPointRepository.delete(lastSyncPoint!);
             lastSynced = 0n;
@@ -62,5 +63,6 @@ export class BlockConsumer {
         const block = await this.blockService.getBlockExtrinsics(blockNumber);
         await this.transactionSynchronizer.addTransactions(block);
         await this.locSynchronizer.updateLocRequests(block);
+        await this.protectionSynchronizer.updateProtectionRequests(block);
     }
 }

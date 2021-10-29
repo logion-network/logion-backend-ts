@@ -7,6 +7,7 @@ import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Bl
 import { BlockConsumer } from "../../../src/logion/services/blockconsumption.service";
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service";
+import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service";
 
 describe("BlockConsumer", () => {
 
@@ -16,6 +17,7 @@ describe("BlockConsumer", () => {
         syncPointFactory = new Mock<SyncPointFactory>();
         transactionSynchronizer = new Mock<TransactionSynchronizer>();
         locSynchronizer = new Mock<LocSynchronizer>();
+        protectionSynchronizer = new Mock<ProtectionSynchronizer>();
     });
 
     let blockService: Mock<BlockExtrinsicsService>;
@@ -23,6 +25,7 @@ describe("BlockConsumer", () => {
     let syncPointFactory: Mock<SyncPointFactory>;
     let transactionSynchronizer: Mock<TransactionSynchronizer>;
     let locSynchronizer: Mock<LocSynchronizer>;
+    let protectionSynchronizer: Mock<ProtectionSynchronizer>;
 
     it("does nothing given up to date", async () => {
        // Given
@@ -41,7 +44,6 @@ describe("BlockConsumer", () => {
         transactionSynchronizer.verify(instance => instance.addTransactions, Times.Never());
         locSynchronizer.verify(instance => instance.updateLocRequests, Times.Never());
         transactionSynchronizer.verify(instance => instance.reset, Times.Never());
-        locSynchronizer.verify(instance => instance.reset, Times.Never());
         syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
     });
 
@@ -52,6 +54,7 @@ describe("BlockConsumer", () => {
             syncPointFactory.object(),
             transactionSynchronizer.object(),
             locSynchronizer.object(),
+            protectionSynchronizer.object(),
         );
         await transactionSync.consumeNewBlocks(moment());
     }
@@ -76,6 +79,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(block.object())).returns(Promise.resolve());
+        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(block.object())).returns(Promise.resolve());
 
         // When
         await consumeNewBlocks();
@@ -90,6 +94,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(5));
         locSynchronizer.verify(instance => instance.updateLocRequests(block.object()), Times.Exactly(5));
+        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(block.object()), Times.Exactly(5));
     });
 
     it("deletes all and restarts given out of sync", async () => {
@@ -116,8 +121,8 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.setup(instance => instance.reset()).returns(Promise.resolve());
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
-        locSynchronizer.setup(instance => instance.reset()).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(block.object())).returns(Promise.resolve());
+        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(block.object())).returns(Promise.resolve());
 
         // When
         await consumeNewBlocks();
@@ -130,6 +135,5 @@ describe("BlockConsumer", () => {
         syncPointRepository.verify(instance => instance.save(newSyncPoint.object()));
 
         transactionSynchronizer.verify(instance => instance.reset());
-        locSynchronizer.verify(instance => instance.reset());
     });
 });
