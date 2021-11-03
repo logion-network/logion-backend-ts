@@ -8,13 +8,15 @@ import { Child, saveChildren } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
+export type LocType = components["schemas"]["LocType"];
 
 export interface LocRequestDescription {
     readonly requesterAddress: string;
     readonly ownerAddress: string;
     readonly description: string;
     readonly createdOn: string;
-    readonly userIdentity: UserIdentity | undefined
+    readonly userIdentity: UserIdentity | undefined;
+    readonly locType: LocType;
 }
 
 export interface FileDescription {
@@ -67,7 +69,8 @@ export class LocRequestAggregateRoot {
             ownerAddress: this.ownerAddress!,
             description: this.description!,
             createdOn: this.createdOn!,
-            userIdentity
+            userIdentity,
+            locType: this.locType === 'Identity' ? this.locType : 'Transaction',
         }
     }
 
@@ -217,6 +220,9 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "description" })
     description?: string;
 
+    @Column({ length: 255, name: "loc_type" })
+    locType?: string;
+
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
     decisionOn?: string | null;
 
@@ -312,6 +318,7 @@ export interface FetchLocRequestsSpecification {
     readonly expectedRequesterAddress?: string;
     readonly expectedOwnerAddress?: string;
     readonly expectedStatuses?: LocRequestStatus[];
+    readonly expectedLocTypes?: LocType[];
 }
 
 @injectable()
@@ -365,9 +372,14 @@ export class LocRequestRepository {
                 { expectedOwnerAddress: specification.expectedOwnerAddress });
         }
 
-        if (specification.expectedStatuses) {
+        if (specification.expectedStatuses && specification.expectedStatuses.length > 0) {
             builder.andWhere("request.status IN (:...expectedStatuses)",
                 { expectedStatuses: specification.expectedStatuses });
+        }
+
+        if (specification.expectedLocTypes && specification.expectedLocTypes.length > 0) {
+            builder.andWhere("request.loc_type IN (:...expectedLocTypes)",
+                { expectedLocTypes: specification.expectedLocTypes });
         }
 
         return builder.getMany();
@@ -400,6 +412,7 @@ export class LocRequestFactory {
         request.requesterAddress = params.description.requesterAddress;
         request.ownerAddress = params.description.ownerAddress;
         request.description = params.description.description;
+        request.locType = params.description.locType;
         request.createdOn = params.description.createdOn;
         const userIdentity = params.description.userIdentity;
         if (userIdentity !== undefined) {

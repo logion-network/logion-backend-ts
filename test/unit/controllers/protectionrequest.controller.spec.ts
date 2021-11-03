@@ -13,6 +13,7 @@ import {
 } from '../../../src/logion/model/protectionrequest.model';
 import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
+import { AuthenticationService } from '../../../src/logion/services/authentication.service';
 
 describe('createProtectionRequest', () => {
 
@@ -119,8 +120,7 @@ describe('fetchProtectionRequests', () => {
             .put('/api/protection-request')
             .send({
                 requesterAddress: "",
-                legalOfficerAddress: [ ALICE ],
-                decisionStatuses: ["ACCEPTED", "REJECTED"]
+                statuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -128,6 +128,7 @@ describe('fetchProtectionRequests', () => {
                 expect(response.body.requests).toBeDefined();
                 expect(response.body.requests.length).toBe(1);
                 expect(response.body.requests[0].requesterAddress).toBe(REQUESTER_ADDRESS);
+                expect(response.body.requests[0].legalOfficerAddress).toBe(ALICE);
                 expect(response.body.requests[0].userIdentity.firstName).toBe("John");
                 expect(response.body.requests[0].userIdentity.lastName).toBe("Doe");
                 expect(response.body.requests[0].userIdentity.email).toBe("john.doe@logion.network");
@@ -208,7 +209,9 @@ describe('acceptProtectionRequest', () => {
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/accept")
-            .send({})
+            .send({
+                locId: "locId"
+            })
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });
@@ -217,7 +220,8 @@ describe('acceptProtectionRequest', () => {
 function mockModelForAccept(container: Container, verifies: boolean): void {
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
     protectionRequest.setup(instance => instance.id).returns(REQUEST_ID);
-    protectionRequest.setup(instance => instance.accept).returns(() => {});
+    protectionRequest.setup(instance => instance.accept(
+        It.IsAny(), It.Is<string>(locId => locId !== undefined && locId !== null))).returns(undefined);
     const decision = new Mock<LegalOfficerDecision>();
     protectionRequest.setup(instance => instance.decision).returns(decision.object());
 

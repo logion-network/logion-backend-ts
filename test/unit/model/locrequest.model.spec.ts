@@ -14,12 +14,13 @@ describe("LocRequestFactory", () => {
 
     it("creates LOC request", () => {
         givenRequestId(uuid());
-        const description = {
+        const description: LocRequestDescription = {
             requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
             ownerAddress: ALICE,
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
-            userIdentity: undefined
+            userIdentity: undefined,
+            locType: 'Transaction'
         };
         givenLocDescription(description);
         whenCreatingLocRequest();
@@ -28,12 +29,13 @@ describe("LocRequestFactory", () => {
 
     it("creates an open LOC", () => {
         givenRequestId(uuid());
-        const description = {
+        const description: LocRequestDescription = {
             requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
             ownerAddress: ALICE,
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
-            userIdentity: undefined
+            userIdentity: undefined,
+            locType: 'Transaction'
         };
         givenLocDescription(description);
         whenCreatingOpenLoc();
