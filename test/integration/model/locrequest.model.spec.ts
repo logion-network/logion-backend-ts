@@ -5,14 +5,15 @@ import {
     LocRequestRepository,
     FetchLocRequestsSpecification,
     LocFile,
-    LocMetadataItem
+    LocMetadataItem,
+    LocLink
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE } from "../../../src/logion/model/addresses.model";
 
 describe('LocRequestRepository', () => {
 
     beforeAll(async () => {
-        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem ]);
+        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
         await executeScript("test/integration/model/loc_requests.sql");
         repository = new LocRequestRepository();
     });
@@ -53,7 +54,7 @@ describe('LocRequestRepository', () => {
         expect(requests[0].status).toBe("REJECTED");
     })
 
-    it("finds loc with files and metadata", async () => {
+    it("finds loc with files, metadata and links", async () => {
         const request = await repository.findById(LOC_WITH_FILES);
         checkDescription([request!], "loc-10");
 
@@ -71,6 +72,11 @@ describe('LocRequestRepository', () => {
         expect(metadata[0].name).toBe("a name");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
+
+        const links = request!.getLinks();
+        expect(links.length).toBe(1);
+        expect(links[0].target).toBe("ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d");
+        expect(links[0].addedOn.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
     })
 })
 

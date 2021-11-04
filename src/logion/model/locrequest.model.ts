@@ -33,6 +33,11 @@ export interface MetadataItemDescription {
     readonly addedOn: Moment;
 }
 
+export interface LinkDescription {
+    readonly target: string;
+    readonly addedOn: Moment;
+}
+
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
@@ -205,6 +210,25 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    addLink(itemDescription: LinkDescription) {
+        this.ensureOpen();
+        const item = new LocLink();
+        item.request = this;
+        item.requestId = this.id;
+        item.index = this.links!.length;
+        item.target = itemDescription.target;
+        item.addedOn = itemDescription.addedOn.toDate();
+        item._toAdd = true;
+        this.links!.push(item);
+    }
+
+    getLinks(): LinkDescription[] {
+        return order(this.links, item => ({
+            target: item.target!,
+            addedOn: moment(item.addedOn!),
+        }));
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -253,6 +277,13 @@ export class LocRequestAggregateRoot {
         persistence: false
     })
     metadata?: LocMetadataItem[];
+
+    @OneToMany(() => LocLink, item => item.request, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    links?: LocLink[];
 
     _filesToDelete: LocFile[] = [];
 }
@@ -313,6 +344,26 @@ export class LocMetadataItem extends Child {
     request?: LocRequestAggregateRoot;
 }
 
+@Entity("loc_link")
+export class LocLink extends Child {
+
+    @PrimaryColumn({ type: "uuid", name: "request_id" })
+    requestId?: string;
+
+    @PrimaryColumn({ name: "index" })
+    index?: number;
+
+    @Column("timestamp without time zone", { name: "added_on" })
+    addedOn?: Date;
+
+    @Column({ type: "uuid" })
+    target?: string;
+
+    @ManyToOne(() => LocRequestAggregateRoot, request => request.links)
+    @JoinColumn({ name: "request_id" })
+    request?: LocRequestAggregateRoot;
+}
+
 export interface FetchLocRequestsSpecification {
 
     readonly expectedRequesterAddress?: string;
@@ -338,6 +389,7 @@ export class LocRequestRepository {
         await this.repository.save(root);
         await this.saveFiles(root)
         await this.saveMetadata(root)
+        await this.saveLinks(root)
     }
 
     private async saveFiles(root: LocRequestAggregateRoot): Promise<void> {
@@ -358,6 +410,14 @@ export class LocRequestRepository {
             children: root.metadata!,
             repository: this.repository,
             entityClass: LocMetadataItem
+        })
+    }
+
+    private async saveLinks(root: LocRequestAggregateRoot): Promise<void> {
+        await saveChildren({
+            children: root.links!,
+            repository: this.repository,
+            entityClass: LocLink
         })
     }
 
@@ -424,6 +484,7 @@ export class LocRequestFactory {
         }
         request.files = [];
         request.metadata = [];
+        request.links = [];
         return request;
     }
 }

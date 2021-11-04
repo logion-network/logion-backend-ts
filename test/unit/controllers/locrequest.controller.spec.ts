@@ -405,6 +405,7 @@ function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggreg
         });
     request.setup(instance => instance.getFiles()).returns([]);
     request.setup(instance => instance.getMetadataItems()).returns([]);
+    request.setup(instance => instance.getLinks()).returns([]);
     return request;
 }
 
