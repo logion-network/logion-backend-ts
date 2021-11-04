@@ -138,6 +138,10 @@ export class LocRequestController extends ApiController {
                 name: item.name,
                 value: item.value,
                 addedOn: item.addedOn.toISOString(),
+            })),
+            links: request.getLinks().map(link => ({
+                target: link.target,
+                addedOn: link.addedOn.toISOString(),
             }))
         }
     }

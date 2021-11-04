@@ -7,7 +7,8 @@ import {
     LocRequestAggregateRoot,
     LocRequestStatus,
     FileDescription,
-    MetadataItemDescription
+    MetadataItemDescription,
+    LinkDescription
 } from "../../../src/logion/model/locrequest.model";
 
 describe("LocRequestFactory", () => {
@@ -163,6 +164,22 @@ describe("LocRequestAggregateRoot", () => {
         thenHasFile("hash2");
         thenHasExpectedFileIndices();
     });
+
+    it("adds and exposes links", () => {
+        givenRequestWithStatus('OPEN');
+        const links: LinkDescription[] = [
+            {
+                target: "value1",
+                addedOn: moment(),
+            },
+            {
+                target: "value2",
+                addedOn: moment(),
+            }
+        ];
+        whenAddingLinks(links);
+        thenExposesLinks(links);
+    });
 });
 
 const REJECT_REASON = "Illegal";
@@ -174,6 +191,7 @@ function givenRequestWithStatus(status: LocRequestStatus) {
     request.status = status;
     request.files = [];
     request.metadata = [];
+    request.links = [];
 }
 
 let request: LocRequestAggregateRoot;
@@ -306,4 +324,15 @@ function thenHasExpectedFileIndices() {
     for(let i = 0; i < request.files!.length; ++i) {
         expect(request.files![i].index).toBe(i);
     }
+}
+
+function whenAddingLinks(links: LinkDescription[]) {
+    links.forEach(link => request.addLink(link));
+}
+
+function thenExposesLinks(expectedLinks: LinkDescription[]) {
+    request.getLinks().forEach((link, index) => {
+        expect(link.target).toBe(expectedLinks[index].target);
+        expect(link.addedOn.isSame(expectedLinks[index].addedOn)).toBe(true);
+    });
 }

@@ -557,6 +557,24 @@
                             }
                         }
                     },
+                    "links": {
+                        "type": "array",
+                        "description": "The links attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "target": {
+                                    "type": "string",
+                                    "description": "The link's target"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
+                    },
                     "locType": {
                         "description": "The type of the LOC to create",
                         "$ref": "#/components/schemas/LocType"

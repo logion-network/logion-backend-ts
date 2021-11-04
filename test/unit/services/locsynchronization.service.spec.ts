@@ -4,7 +4,7 @@ import { It, Mock } from 'moq.ts';
 import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
-import { LocRequestAggregateRoot, LocRequestRepository, MetadataItemDescription } from '../../../src/logion/model/locrequest.model';
+import { LinkDescription, LocRequestAggregateRoot, LocRequestRepository, MetadataItemDescription } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
@@ -53,6 +53,26 @@ describe("LocSynchronizer", () => {
         givenLocRequestExpectsClose();
         await whenConsumingBlock();
         thenLocClosed();
+        thenLocIsSaved();
+    });
+
+    it("adds link", async () => {
+        givenLocExtrinsic("addLink", {
+            loc_id: locId,
+            link: {
+                id: {
+                    toString: () => LINK_TARGET
+                },
+                nature: {
+                    toUtf8: () => LINK_NATURE
+                },
+            }
+        });
+        givenBlock();
+        givenLocRequest();
+        givenLocRequestExpectsLink();
+        await whenConsumingBlock();
+        thenLinkAdded();
         thenLocIsSaved();
     });
 });
@@ -141,4 +161,19 @@ function givenLocRequestExpectsClose() {
 
 function thenLocClosed() {
     locRequest.verify(instance => instance.close(IS_BLOCK_TIME));
+}
+
+const LINK_TARGET = "130084474896785895402627605545662412605";
+const LINK_TARGET_UUID = decimalToUuid(LINK_TARGET);
+const LINK_NATURE = "nature";
+const IS_EXPECTED_LINK = It.Is<LinkDescription>(link =>
+            link.target === LINK_TARGET_UUID
+            && link.addedOn.isSame(blockTimestamp));
+
+function givenLocRequestExpectsLink() {
+    locRequest.setup(instance => instance.addLink(IS_EXPECTED_LINK)).returns(undefined);
+}
+
+function thenLinkAdded() {
+    locRequest.verify(instance => instance.addLink(IS_EXPECTED_LINK));
 }

@@ -33,10 +33,17 @@ export class LocSynchronizer {
                         addedOn: timestamp,
                     };
                     this.mutateLoc(locId, loc => loc.addMetadataItem(item));
-                } else if(extrinsic.method.method === "addHash") {
+                } else if(extrinsic.method.method === "addFile") {
                     const locId = this.extractLocId(extrinsic.args);
-                    const hash = extrinsic.args['hash'].toHex();
+                    const hash = extrinsic.args['file'].hash.toHex();
                     this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
+                } else if(extrinsic.method.method === "addLink") {
+                    const locId = this.extractLocId(extrinsic.args);
+                    const link = {
+                        target: decimalToUuid(extrinsic.args['link'].id.toString()),
+                        addedOn: timestamp,
+                    };
+                    this.mutateLoc(locId, loc => loc.addLink(link));
                 } else if(extrinsic.method.method === "close") {
                     const locId = this.extractLocId(extrinsic.args);
                     this.mutateLoc(locId, loc => loc.close(timestamp));
