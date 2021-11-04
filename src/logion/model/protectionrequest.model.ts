@@ -103,8 +103,12 @@ export class ProtectionRequestAggregateRoot {
     @Column(() => LegalOfficerDecision, {prefix: ""})
     decision?: LegalOfficerDecision;
 
+    @Column({ length: 255, name: "other_legal_officer_address" })
+    otherLegalOfficerAddress?: string;
+
     setDescription(description: ProtectionRequestDescription): void {
         this.requesterAddress = description.requesterAddress;
+        this.otherLegalOfficerAddress = description.otherLegalOfficerAddress;
 
         this.firstName = description.userIdentity.firstName;
         this.lastName = description.userIdentity.lastName;
@@ -127,6 +131,7 @@ export class ProtectionRequestAggregateRoot {
     getDescription(): ProtectionRequestDescription {
         return {
             requesterAddress: this.requesterAddress || "",
+            otherLegalOfficerAddress: this.otherLegalOfficerAddress || "",
             userIdentity: {
                 firstName: this.firstName || "",
                 lastName: this.lastName || "",
@@ -218,6 +223,7 @@ export interface PostalAddress {
 
 export interface ProtectionRequestDescription {
     readonly requesterAddress: string,
+    readonly otherLegalOfficerAddress: string,
     readonly userIdentity: UserIdentity,
     readonly userPostalAddress: PostalAddress,
     readonly createdOn: string,

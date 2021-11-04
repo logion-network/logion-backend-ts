@@ -6,6 +6,7 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot,
 } from '../../../src/logion/model/protectionrequest.model';
+import { BOB } from '../../../src/logion/model/addresses.model';
 
 describe('ProtectionRequestFactoryTest', () => {
 
@@ -65,6 +66,7 @@ describe('ProtectionRequestAggregateRootTest', () => {
 const id = uuid();
 const description: ProtectionRequestDescription = {
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    otherLegalOfficerAddress: BOB,
     userIdentity: {
         email: "john.doe@logion.network",
         firstName: "John",

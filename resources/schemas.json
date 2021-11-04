@@ -29,6 +29,10 @@
                         "type": "boolean",
                         "description": "True if the the protection request is also a recovery request"
                     },
+                    "otherLegalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the other legal officer the request was submitted to"
+                    },
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the requester"
@@ -197,6 +201,14 @@
                     "isRecovery": {
                         "type": "boolean",
                         "description": "True if the the protection request is also a recovery request"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer the request was submitted to"
+                    },
+                    "otherLegalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the other legal officer the request was submitted to"
                     },
                     "requesterAddress": {
                         "type": "string",
@@ -446,6 +458,14 @@
                     "CLOSED"
                 ]
             },
+            "LocType": {
+                "type": "string",
+                "description": "The LOC's type",
+                "enum": [
+                    "Identity",
+                    "Transaction"
+                ]
+            },
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
@@ -456,6 +476,10 @@
                     "description": {
                         "type": "string",
                         "description": "A description of the LOC"
+                    },
+                    "locType": {
+                        "description": "The type of the LOC to create",
+                        "$ref": "#/components/schemas/LocType"
                     },
                     "userIdentity": {
                         "description": "The identification data of the requester",
@@ -533,6 +557,10 @@
                             }
                         }
                     },
+                    "locType": {
+                        "description": "The type of the LOC to create",
+                        "$ref": "#/components/schemas/LocType"
+                    },
                     "metadata": {
                         "type": "array",
                         "description": "The metadata attached to this request's LOC",
@@ -603,6 +631,10 @@
                             }
                         }
                     },
+                    "locType": {
+                        "description": "The type of the LOC to create",
+                        "$ref": "#/components/schemas/LocType"
+                    },
                     "metadata": {
                         "type": "array",
                         "description": "The metadata attached to this request's LOC",
@@ -646,6 +678,14 @@
                         "uniqueItems": true,
                         "items": {
                             "$ref": "#/components/schemas/LocRequestStatus"
+                        }
+                    },
+                    "locTypes": {
+                        "type": "array",
+                        "description": "The type of the LOC to fetch",
+                        "uniqueItems": true,
+                        "items": {
+                            "$ref": "#/components/schemas/LocType"
                         }
                     }
                 },

@@ -94,6 +94,7 @@ export class LocRequestController extends ApiController {
             requesterAddress: requireDefined(createLocRequestView.requesterAddress),
             ownerAddress: this.authenticationService.nodeOwner,
             description: requireDefined(createLocRequestView.description),
+            locType: requireDefined(createLocRequestView.locType),
             createdOn: moment().toISOString(),
             userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
@@ -101,7 +102,7 @@ export class LocRequestController extends ApiController {
         if (authenticatedUser.isNodeOwner()) {
             request = this.locRequestFactory.newOpenLoc({
                 id: uuid(),
-                description
+                description,
             });
         } else {
             request = this.locRequestFactory.newLocRequest({
@@ -121,6 +122,7 @@ export class LocRequestController extends ApiController {
             requesterAddress: locDescription.requesterAddress,
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
+            locType: locDescription.locType,
             userIdentity: this.toUserView(userIdentity),
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
@@ -183,6 +185,7 @@ export class LocRequestController extends ApiController {
             expectedRequesterAddress: specificationView.requesterAddress,
             expectedOwnerAddress: specificationView.ownerAddress,
             expectedStatuses: requireDefined(specificationView.statuses),
+            expectedLocTypes: specificationView.locTypes,
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
             const userIdentity = await this.findUserIdentity(request);

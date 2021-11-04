@@ -79,6 +79,7 @@ function checkDescription(requests: LocRequestAggregateRoot[], ...descriptions: 
     descriptions.forEach(description => {
         const matchingRequests = requests.filter(request => request.getDescription().description === description);
         expect(matchingRequests.length).withContext(`loc with description ${description} not returned by query`).toBe(1);
+        expect(matchingRequests[0].locType).toBe('Transaction');
     })
 }
 

@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
 import request, { Response } from "supertest";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -28,7 +28,8 @@ const testUserIdentity = {
 
 const testData = {
     requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
-    description: "I want to open a case"
+    description: "I want to open a case",
+    locType: "Transaction"
 };
 
 const testDataWithUserIdentity = {
@@ -60,6 +61,7 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.locType).toBe("Transaction");
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("John");
                 expect(userIdentity.lastName).toBe("Doe");
@@ -83,6 +85,7 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
+                expect(response.body.locType).toBe("Transaction");
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("Scott");
                 expect(userIdentity.lastName).toBe("Tiger");
@@ -106,6 +109,7 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
+                expect(response.body.locType).toBe("Transaction");
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("John");
                 expect(userIdentity.lastName).toBe("Doe");
@@ -128,6 +132,7 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.locType).toBe("Transaction");
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("Scott");
                 expect(userIdentity.lastName).toBe("Tiger");
@@ -363,6 +368,7 @@ function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepo
     if (hasProtection) {
         const protection = new Mock<ProtectionRequestAggregateRoot>()
         protection.setup(instance => instance.getDescription()).returns({
+            otherLegalOfficerAddress: BOB,
             userIdentity: testUserIdentity,
             userPostalAddress: {
                 line1: "",
