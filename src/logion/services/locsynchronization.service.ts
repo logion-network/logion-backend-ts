@@ -35,7 +35,7 @@ export class LocSynchronizer {
                     this.mutateLoc(locId, loc => loc.addMetadataItem(item));
                 } else if(extrinsic.method.method === "addFile") {
                     const locId = this.extractLocId(extrinsic.args);
-                    const hash = extrinsic.args['file'].hash.toHex();
+                    const hash = extrinsic.args['file'].get('hash').toHex();
                     this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                 } else if(extrinsic.method.method === "addLink") {
                     const locId = this.extractLocId(extrinsic.args);
