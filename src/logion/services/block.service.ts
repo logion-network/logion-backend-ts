@@ -109,11 +109,11 @@ export class BlockExtrinsicsService {
 
                         const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
                         if (!weightInfo.weight) {
-                            throw new Error('Success event does not specify weight');
+                            extrinsicBuilder.partialFee = 0n;
+                        } else {
+                            const encodedLength = extrinsicBuilder.encodedLength;
+                            extrinsicBuilder.partialFee = (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
                         }
-            
-                        const encodedLength = extrinsicBuilder.encodedLength;
-                        extrinsicBuilder.partialFee = (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
                     }
                 }
             }
