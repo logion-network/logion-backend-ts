@@ -53,9 +53,10 @@ export class PolkadotService {
                     owner: "AccountId",
                     requester: "AccountId",
                     metadata: "Vec<MetadataItem>",
-                    hashes: "Vec<Hash>",
+                    files: "Vec<File>",
                     closed: "bool",
                     loc_type: "LocType",
+                    links:"Vec<LocLink>",
                 },
                 MetadataItem: {
                     name: "Vec<u8>",
@@ -66,6 +67,14 @@ export class PolkadotService {
                         "Transaction",
                         "Identity"
                     ]
+                },
+                File: {
+                    hash: "Hash",
+                    nature: "Vec<u8>",
+                },
+                LocLink: {
+                    id: "LocId",
+                    nature: "Vec<u8>",
                 }
             }
         });
