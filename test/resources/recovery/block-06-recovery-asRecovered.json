@@ -41,15 +41,14 @@
         "account": "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
         "call": {
           "method": {
-            "pallet": "assets",
+            "pallet": "balances",
             "method": "transfer"
           },
           "args": {
-            "id": "1517196953831172556",
-            "target": {
-              "id": "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"
+            "dest": {
+              "id": "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"
             },
-            "amount": "1000000000000000000"
+            "value": "200000000000000000"
           }
         }
       },
@@ -59,14 +58,13 @@
       "events": [
         {
           "method": {
-            "pallet": "assets",
-            "method": "Transferred"
+            "pallet": "balances",
+            "method": "Transfer"
           },
           "data": [
-            "1517196953831172556",
             "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-            "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
-            "1000000000000000000"
+            "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+            "200000000000000000"
           ]
         },
         {

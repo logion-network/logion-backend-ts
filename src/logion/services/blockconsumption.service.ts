@@ -1,11 +1,11 @@
 import { injectable } from "inversify";
 import { Moment } from "moment";
 import { SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
-import { BlockExtrinsicsService } from "../services/block.service";
-import { LocSynchronizer } from "../services/locsynchronization.service";
+import { BlockExtrinsicsService } from "./block.service";
+import { LocSynchronizer } from "./locsynchronization.service";
 import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
-import { ProtectionSynchronizer } from "../services/protectionsynchronization.service";
+import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 
 const { logger } = Log;
 
@@ -60,9 +60,9 @@ export class BlockConsumer {
     }
 
     private async processBlock(blockNumber: bigint): Promise<void> {
-        const block = await this.blockService.getBlockExtrinsics(blockNumber);
-        await this.transactionSynchronizer.addTransactions(block);
-        await this.locSynchronizer.updateLocRequests(block);
-        await this.protectionSynchronizer.updateProtectionRequests(block);
+            const block = await this.blockService.getBlockExtrinsics(blockNumber);
+            await this.transactionSynchronizer.addTransactions(block);
+            await this.locSynchronizer.updateLocRequests(block);
+            await this.protectionSynchronizer.updateProtectionRequests(block);
     }
 }

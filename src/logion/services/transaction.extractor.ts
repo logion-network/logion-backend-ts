@@ -1,16 +1,17 @@
 import { injectable } from "inversify";
 
 import { BlockWithTransactions, Transaction } from "./transaction.vo";
-import { BlockExtrinsics } from "../services/types/responses/Block";
-import { JsonExtrinsic } from "../services/types/responses/Extrinsic";
-import { JsonMethod } from "../services/call";
-import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
+import { BlockExtrinsics } from "./types/responses/Block";
+import { JsonExtrinsic } from "./types/responses/Extrinsic";
+import { JsonMethod, JsonArgs } from "./call";
+import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { Log } from "../util/Log";
 
 enum ExtrinsicType {
     TIMESTAMP,
     TRANSFER,
-    GENERIC_TRANSACTION
+    GENERIC_TRANSACTION,
+    TRANSFER_FROM_RECOVERED
 }
 
 const { logger } = Log;
@@ -46,6 +47,26 @@ export class TransactionExtractor {
     }
 
     private extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Transaction {
+        let from: string = this.from(extrinsic);
+        let transferValue: bigint = 0n;
+        let to: string | undefined = undefined;
+
+        switch (type) {
+            case ExtrinsicType.TRANSFER:
+                transferValue = this.transferValue(extrinsic)
+                to = this.to(extrinsic)
+                break
+            case ExtrinsicType.TRANSFER_FROM_RECOVERED:
+                const account = this.extrinsicDataExtractor.getAccount(extrinsic);
+                if (account) {
+                    from = account
+                }
+                const call = this.extrinsicDataExtractor.getCall(extrinsic)
+                transferValue = this.transferValue(call)
+                to = this.to(call)
+                break
+        }
+
         return new Transaction({
                 extrinsicIndex: index,
                 pallet: this.pallet(extrinsic),
@@ -53,9 +74,9 @@ export class TransactionExtractor {
                 tip: this.tip(extrinsic),
                 fee: this.fee(extrinsic),
                 reserved: this.reserved(extrinsic),
-                from: this.from(extrinsic),
-                transferValue: type === ExtrinsicType.TRANSFER ? this.transferValue(extrinsic) : 0n,
-                to: type === ExtrinsicType.TRANSFER ? this.to(extrinsic) : undefined,
+                from,
+                transferValue,
+                to,
             }
         )
     }
@@ -89,12 +110,12 @@ export class TransactionExtractor {
         return extrinsic.signer || "";
     }
 
-    private to(extrinsic: JsonExtrinsic): string | undefined {
-        return this.extrinsicDataExtractor.getDest(extrinsic);
+    private to(extrinsicOrCall: { args: JsonArgs } ): string | undefined {
+        return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsic: JsonExtrinsic): bigint {
-        return BigInt(this.extrinsicDataExtractor.getValue(extrinsic)).valueOf();
+    private transferValue(extrinsicOrCall: { args: JsonArgs } ): bigint {
+        return BigInt(this.extrinsicDataExtractor.getValue(extrinsicOrCall)).valueOf();
     }
 
     private findEventData(extrinsic: JsonExtrinsic, method: JsonMethod): string[] | undefined {
@@ -119,6 +140,15 @@ export class TransactionExtractor {
 
             case "balances":
                 return ExtrinsicType.TRANSFER
+
+            case "recovery":
+                if (method.method === "asRecovered") {
+                    const call = this.extrinsicDataExtractor.getCall(extrinsic)
+                    if (call.method.pallet === "balances") {
+                        return ExtrinsicType.TRANSFER_FROM_RECOVERED
+                    }
+                }
+                return ExtrinsicType.GENERIC_TRANSACTION
 
             default:
                 return ExtrinsicType.GENERIC_TRANSACTION
