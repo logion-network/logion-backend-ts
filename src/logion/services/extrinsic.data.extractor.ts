@@ -3,6 +3,7 @@ import moment, { Moment } from "moment";
 import { BlockExtrinsics } from "./types/responses/Block";
 
 import { JsonExtrinsic } from "./types/responses/Extrinsic";
+import { JsonCall, JsonArgs } from "./call";
 
 @injectable()
 export class ExtrinsicDataExtractor {
@@ -22,15 +23,27 @@ export class ExtrinsicDataExtractor {
         return moment.unix(epochSec);
     }
 
-    getDest(extrinsic: JsonExtrinsic): string | undefined {
-        if(!('dest' in extrinsic.args)) {
+    getDest(extrinsicOrCall: { args: JsonArgs } ): string | undefined {
+        if(!('dest' in extrinsicOrCall.args)) {
             return undefined;
         } else {
-            return extrinsic.args['dest'].toJSON().id;
+            return extrinsicOrCall.args['dest'].toJSON().id;
         }
     }
 
-    getValue(extrinsic: JsonExtrinsic): string {
-        return extrinsic.args['value'] as string;
+    getValue(extrinsicOrCall: { args: JsonArgs } ): string {
+        return extrinsicOrCall.args['value'] as string;
+    }
+
+    getCall(extrinsic: JsonExtrinsic): JsonCall {
+        return extrinsic.args['call'] as JsonCall;
+    }
+
+    getAccount(extrinsic: JsonExtrinsic): string | undefined {
+        if(!('account' in extrinsic.args)) {
+            return undefined;
+        } else {
+            return extrinsic.args['account'].toString()
+        }
     }
 }
