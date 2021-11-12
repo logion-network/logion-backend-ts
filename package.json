@@ -19,7 +19,8 @@
         "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:12",
         "teardown-test-db": "docker stop logion-test-db",
         "coverage-unit": "nyc yarn run unit-test",
-        "coverage": "nyc yarn run test"
+        "coverage": "nyc yarn run test",
+        "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js"
     },
     "dependencies": {
         "@polkadot/api": "^5.4.1",
