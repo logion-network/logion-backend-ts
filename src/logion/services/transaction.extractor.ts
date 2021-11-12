@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 
-import { BlockWithTransactions, Transaction } from "./transaction.vo";
+import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo";
 import { BlockExtrinsics } from "./types/responses/Block";
 import { JsonExtrinsic } from "./types/responses/Extrinsic";
 import { JsonMethod, JsonArgs } from "./call";
@@ -77,6 +77,7 @@ export class TransactionExtractor {
                 from,
                 transferValue,
                 to,
+                error: this.error(extrinsic)
             }
         )
     }
@@ -110,12 +111,19 @@ export class TransactionExtractor {
         return extrinsic.signer || "";
     }
 
-    private to(extrinsicOrCall: { args: JsonArgs } ): string | undefined {
+    private to(extrinsicOrCall: { args: JsonArgs }): string | undefined {
         return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsicOrCall: { args: JsonArgs } ): bigint {
+    private transferValue(extrinsicOrCall: { args: JsonArgs }): bigint {
         return BigInt(this.extrinsicDataExtractor.getValue(extrinsicOrCall)).valueOf();
+    }
+
+    private error(extrinsic: JsonExtrinsic): TransactionError | undefined {
+        if (extrinsic.error) {
+            return { ...extrinsic.error }
+        }
+        return undefined;
     }
 
     private findEventData(extrinsic: JsonExtrinsic, method: JsonMethod): string[] | undefined {

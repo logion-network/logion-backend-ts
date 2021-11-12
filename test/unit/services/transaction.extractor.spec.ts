@@ -2,6 +2,7 @@ import { readFileSync } from 'fs';
 import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Block";
 import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
+import { TransactionError } from "../../../src/logion/services/transaction.vo";
 
 let transactionExtractor: TransactionExtractor;
 
@@ -157,6 +158,25 @@ describe("TransactionExtractor", () => {
         expectTransaction(params);
     });
 
+    it('finds balances.transferKeepAlive failed transactions', () => {
+        const params = balancesParams({
+            fileName: "transfer/block-transferKeepAliveFailed.json",
+            method: "transferKeepAlive",
+            blockNumber: 10534n,
+            fee: 125000149n,
+            tip: 0n,
+            transferValue: 540000000000000000n,
+            from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
+            to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+            error: {
+                section: "balances",
+                name: "ExistentialDeposit",
+                details: "Value too low to create account due to existential deposit"
+            }
+        });
+        expectTransaction(params);
+    });
+
     it('finds balances.transferKeepAlive2 transactions', () => {
         const params = balancesParams({
             fileName: "transfer/block-transferKeepAlive2.json",
@@ -221,6 +241,7 @@ interface ExpectTransactionParams {
     transferValue: bigint,
     from: string,
     to: string | null,
+    error?: TransactionError,
 }
 
 function expectTransaction(params: ExpectTransactionParams) {
@@ -239,6 +260,7 @@ function expectTransaction(params: ExpectTransactionParams) {
     expect(transaction.transferValue).toBe(params.transferValue);
     expect(transaction.from).toBe(params.from);
     expect(transaction.to).toBe(params.to);
+    expect(transaction.error).toEqual(params.error);
 }
 
 function assetsParams(params: {
@@ -267,6 +289,7 @@ function balancesParams(params: {
     transferValue: bigint,
     from: string,
     to: string,
+    error?: TransactionError,
 }): ExpectTransactionParams {
     return {
         ...params,

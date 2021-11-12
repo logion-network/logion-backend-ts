@@ -314,6 +314,27 @@
                     "transferValue": {
                         "type": "string",
                         "description": "The value of the transfer, iff the transaction is a transfer."
+                    },
+                    "successful": {
+                        "type": "boolean",
+                        "description": "Indicates if the transaction was successful."
+                    },
+                    "error": {
+                        "type": "object",
+                        "properties": {
+                            "section": {
+                                "type": "string",
+                                "description": "The error section, typically equal to the pallet."
+                            },
+                            "name": {
+                                "type": "string",
+                                "description": "The error name."
+                            },
+                            "details": {
+                                "type": "string",
+                                "description": "Some details about the error."
+                            }
+                        }
                     }
                 },
                 "title": "TransactionView",

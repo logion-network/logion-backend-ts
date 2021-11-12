@@ -34,6 +34,12 @@ export class BlockWithTransactionsBuilder {
     }
 }
 
+export interface TransactionError {
+    readonly section: string
+    readonly name: string
+    readonly details: string
+}
+
 export class Transaction {
 
     constructor(builder: {
@@ -46,6 +52,7 @@ export class Transaction {
         reserved: bigint,
         pallet: string,
         method: string,
+        error?: TransactionError,
     }) {
         this.extrinsicIndex = builder.extrinsicIndex;
         this.from = builder.from;
@@ -56,6 +63,7 @@ export class Transaction {
         this.reserved = builder.reserved || 0n;
         this.pallet = builder.pallet;
         this.method = builder.method;
+        this.error = builder.error;
     }
     readonly extrinsicIndex: number;
     readonly from: string;
@@ -66,4 +74,5 @@ export class Transaction {
     readonly reserved: bigint;
     readonly pallet: string;
     readonly method: string;
+    readonly error?: TransactionError;
 }

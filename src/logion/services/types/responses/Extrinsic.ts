@@ -8,9 +8,16 @@ export interface JsonExtrinsic {
     partialFee?: string;
     events: JsonEvent[];
     paysFee: boolean;
+    error: ExtrinsicError | null;
 }
 
 export interface JsonEvent {
     method: JsonMethod;
     data: string[];
+}
+
+export interface ExtrinsicError {
+    section: string
+    name: string
+    details: string
 }

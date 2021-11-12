@@ -55,11 +55,14 @@ export class TransactionController extends ApiController {
 
     private toView(transaction: TransactionAggregateRoot): TransactionView {
         const description = transaction.getDescription();
-        const total =
-            description.transferValue +
-            description.tip +
+        const successful = description.error === undefined;
+        let total =
             description.fee +
+            description.tip +
             description.reserved;
+        if (successful) {
+            total += description.transferValue ;
+        }
         return {
             from: description.from,
             to: description.to || undefined,
@@ -70,7 +73,9 @@ export class TransactionController extends ApiController {
             tip: description.tip.toString(),
             fee: description.fee.toString(),
             reserved: description.reserved.toString(),
-            total: total.toString()
+            total: total.toString(),
+            successful,
+            error: description.error
         }
     }
 }

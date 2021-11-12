@@ -1,19 +1,14 @@
 import { injectable } from "inversify";
 import { Vec, Compact, GenericExtrinsic } from '@polkadot/types';
-import {
-    Address,
-    Balance,
-    Block,
-    EventRecord,
-    Hash,
-} from '@polkadot/types/interfaces';
+import { Address, Balance, Block, EventRecord, Hash, } from '@polkadot/types/interfaces';
 import { AnyJson, Registry } from '@polkadot/types/types';
 
 import { BlockExtrinsics } from './types/responses/Block';
-import { JsonExtrinsic } from './types/responses/Extrinsic';
+import { JsonExtrinsic, ExtrinsicError } from './types/responses/Extrinsic';
 import { PolkadotService } from "./polkadot.service";
 import { JsonArgs, JsonMethod, toJsonCall } from "./call";
 import { FeesCalculator, FeesService, WeightInfo } from "./fees.service";
+import { ErrorService, Module } from "./error.service";
 
 @injectable()
 export class BlockExtrinsicsService {
@@ -21,6 +16,7 @@ export class BlockExtrinsicsService {
     constructor(
         private polkadotService: PolkadotService,
         private feesService: FeesService,
+        private errorService: ErrorService
     ) {}
 
     async getHeadBlockNumber(): Promise<bigint> {
@@ -83,7 +79,7 @@ export class BlockExtrinsicsService {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
                 builders[extrinsicIndex] ||= this.createBuilder(extrinsics[extrinsicIndex], events.registry);
-                const extrinsicBuilder = builders[extrinsicIndex];
+                const extrinsicBuilder: ExtrinsicBuilder = builders[extrinsicIndex];
 
                 const jsonData = event.data.toJSON() as AnyJson[];
                 for (const item of jsonData) {
@@ -102,25 +98,29 @@ export class BlockExtrinsicsService {
                 };
                 extrinsicBuilder.events.push(jsonEvent);
 
-                if(event.method === Event.success) {
-                    extrinsicBuilder.successful = true;
-                    if(!this.isGenesisBlock(block)) {
-                        feesCalculator ||= await this.feesService.buildFeesCalculator(block);
-
-                        const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
-                        if (!weightInfo.weight) {
-                            extrinsicBuilder.partialFee = 0n;
-                        } else {
-                            const encodedLength = extrinsicBuilder.encodedLength;
-                            extrinsicBuilder.partialFee = (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
-                        }
+                if (!this.isGenesisBlock(block)) {
+                    if (event.method === Event.failure) {
+                        const module: Module = jsonEvent.data[0]['module']
+                        extrinsicBuilder.error = await this.errorService.findError(module)
                     }
+                    feesCalculator ||= await this.feesService.buildFeesCalculator(block);
+                    extrinsicBuilder.partialFee = await this.calculatePartialFee(feesCalculator, extrinsicBuilder, jsonEvent)
                 }
             }
         }
         return builders
-            .filter(extrinsic => (extrinsic !== undefined && extrinsic.successful))
+            .filter(extrinsic => extrinsic !== undefined)
             .map(builder => builder.build());
+    }
+
+    private async calculatePartialFee(feesCalculator: FeesCalculator, extrinsicBuilder: ExtrinsicBuilder, jsonEvent: JsonEvent): Promise<bigint> {
+        const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
+        if (!weightInfo.weight) {
+            return 0n;
+        } else {
+            const encodedLength = extrinsicBuilder.encodedLength;
+            return (await feesCalculator.getPartialFees(weightInfo, encodedLength)).valueOf();
+        }
     }
 
     private createBuilder(
@@ -171,7 +171,7 @@ class ExtrinsicBuilder {
         this.paysFee = params.paysFee;
         this.events = [];
         this.encodedLength = params.encodedLength;
-        this.successful = false;
+        this.error = null;
     }
 
     public method: JsonMethod;
@@ -182,7 +182,7 @@ class ExtrinsicBuilder {
     public events: JsonEvent[];
     public paysFee: boolean | null;
     public encodedLength: number;
-    public successful: boolean;
+    public error: ExtrinsicError | null;
 
     build(): JsonExtrinsic {
         return {
@@ -195,7 +195,8 @@ class ExtrinsicBuilder {
             partialFee: this.partialFee.toString(),
             paysFee: this.paysFee === null ? false : this.paysFee,
             signer: this.signer ? this.signer.toString() : null,
-            tip: this.tip !== null ? this.tip.toString() : null
+            tip: this.tip !== null ? this.tip.toString() : null,
+            error: this.error,
         };
     }
 }

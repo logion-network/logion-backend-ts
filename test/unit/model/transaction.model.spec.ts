@@ -1,20 +1,50 @@
 import moment from 'moment';
-import { TransactionAggregateRoot, TransactionFactory, TransactionDescription } from "../../../src/logion/model/transaction.model";
+import {
+    TransactionAggregateRoot,
+    TransactionFactory,
+    TransactionDescription
+} from "../../../src/logion/model/transaction.model";
 
 describe("TransactionAggregateRoot", () => {
 
-    it("provides expected description", () => {
-        const transaction = aTransaction();
+    it("provides expected description when successful", () => {
+        const transaction = aSuccessfulTransaction();
         const description = transaction.getDescription();
         expect(description.from).toBe(transaction.from!);
         expect(description.to).toBe(transaction.to!);
         expect(description.createdOn).toBe(transaction.createdOn!);
         expect(description.transferValue.toString()).toBe(transaction.transferValue!);
+        expect(description.error).toBeUndefined()
+    });
+
+    it("provides expected description when not successful", () => {
+        const transaction = aNotSuccessfulTransaction();
+        const description = transaction.getDescription();
+        expect(description.from).toBe(transaction.from!);
+        expect(description.to).toBe(transaction.to!);
+        expect(description.createdOn).toBe(transaction.createdOn!);
+        expect(description.transferValue.toString()).toBe(transaction.transferValue!);
+        expect(description.error).toEqual({ section: "aSection", name: "aName", details: "someDetails" })
     });
 });
 
+function aSuccessfulTransaction(): TransactionAggregateRoot {
+    let transaction = aTransaction();
+    transaction.successful = true;
+    return transaction;
+}
+
+function aNotSuccessfulTransaction(): TransactionAggregateRoot {
+    let transaction = aTransaction();
+    transaction.successful = false;
+    transaction.errorSection = "aSection";
+    transaction.errorName = "aName";
+    transaction.errorDetails = "someDetails";
+    return transaction;
+}
+
 function aTransaction(): TransactionAggregateRoot {
-    var transaction = new TransactionAggregateRoot();
+    let transaction = new TransactionAggregateRoot();
     transaction.blockNumber = "1";
     transaction.extrinsicIndex = 1;
     transaction.from = "from";
@@ -26,27 +56,57 @@ function aTransaction(): TransactionAggregateRoot {
 
 describe("TransactionFactory", () => {
 
-    it("creates expected root", () => {
+    const description: TransactionDescription = {
+        from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+        to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+        fee: 12n,
+        transferValue: 34n,
+        tip: 56n,
+        reserved: 78n,
+        pallet: "recovery",
+        method: "createRecovery",
+        createdOn: moment().toISOString()
+    };
+
+    it("creates expected successful root", () => {
         const blockNumber = 123456n;
         const extrinsicIndex = 5;
-        const description: TransactionDescription = {
-            from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-            to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
-            fee: 12n,
-            transferValue: 34n,
-            tip: 56n,
-            reserved: 78n,
-            pallet: "recovery",
-            method: "createRecovery",
-            createdOn: moment().toISOString()
+
+        const successfulDescription = {
+            ...description,
+            error: undefined
         };
         const transaction = new TransactionFactory().newTransaction({
             blockNumber,
             extrinsicIndex,
-            description
+            description: successfulDescription
         });
-        expect(transaction.getDescription()).toEqual(description);
+        expect(transaction.getDescription()).toEqual(successfulDescription);
         expect(transaction.blockNumber).toBe(blockNumber.toString());
         expect(transaction.extrinsicIndex).toBe(extrinsicIndex);
+        expect(transaction.successful).toBeTrue();
+        expect(transaction.errorName).toBeUndefined();
+    });
+
+    it("creates expected not successful root", () => {
+        const blockNumber = 123456n;
+        const extrinsicIndex = 5;
+
+        const notSuccessfulDescription = {
+            ...description,
+            error: { section: "aSection", name: "aName", details: "someDetails" }
+        };
+        const transaction = new TransactionFactory().newTransaction({
+            blockNumber,
+            extrinsicIndex,
+            description: notSuccessfulDescription
+        });
+        expect(transaction.getDescription()).toEqual(notSuccessfulDescription);
+        expect(transaction.blockNumber).toBe(blockNumber.toString());
+        expect(transaction.extrinsicIndex).toBe(extrinsicIndex);
+        expect(transaction.successful).toBeFalse();
+        expect(transaction.errorSection).toEqual(notSuccessfulDescription.error.section)
+        expect(transaction.errorName).toEqual(notSuccessfulDescription.error.name)
+        expect(transaction.errorDetails).toEqual(notSuccessfulDescription.error.details)
     });
 });
