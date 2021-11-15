@@ -9,8 +9,5 @@
         "dist/model/*.model.js"
     ],
     "synchronize": false,
-    "migrations": ["dist/migration/*.js"],
-    "cli": {
-        "migrationsDir": "src/logion/migration"
-    }
+    "migrations": ["dist/migration/*.js"]
 }

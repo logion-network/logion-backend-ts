@@ -45,11 +45,13 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.createLocRequest(spec);
     LocRequestController.fetchRequests(spec);
     LocRequestController.getLocRequest(spec);
+    LocRequestController.getPublicLoc(spec);
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
     LocRequestController.addFile(spec);
     LocRequestController.downloadFile(spec);
     LocRequestController.deleteFile(spec);
+    LocRequestController.confirmFile(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
