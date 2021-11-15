@@ -14,11 +14,11 @@ function hash(algorithm: string, attributes: any[]): string {
 
 export function sha256File(fileName: string): Promise<string> {
     var hash = crypto.createHash("sha256");
-    const stream = fs.createReadStream(fileName, "binary");
+    const stream = fs.createReadStream(fileName);
     const hasherStream = new Stream.Writable();
     hasherStream._write = (chunk, _encoding, next) => {
-      hash.update(chunk);
-      next();
+        hash.update(chunk);
+        next();
     }
     const promise = new Promise<string>((success, error) => {
         stream.on('end', function() {
