@@ -8,5 +8,9 @@
     "entities": [
         "dist/model/*.model.js"
     ],
-    "synchronize": true
+    "synchronize": false,
+    "migrations": ["src/logion/migration/*.ts"],
+    "cli": {
+        "migrationsDir": "src/logion/migration"
+    }
 }

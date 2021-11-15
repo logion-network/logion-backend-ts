@@ -51,6 +51,8 @@ First, run a PostgreSQL 12 server:
 
 Then copy the file [`ormconfig.json.sample`](ormconfig.json.sample) to `ormconfig.json`, and adapt to your database setup if needed.
 
+Create the database schema using `yarn typeorm migration:run`. More info about [DB migrations](doc/DbMigration.md).
+
 ### Connection to a node
 
 By default, the backend connects to `ws://localhost:9944`, i.e. a logion node running on your local machine.
