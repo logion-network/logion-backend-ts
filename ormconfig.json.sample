@@ -9,7 +9,7 @@
         "dist/model/*.model.js"
     ],
     "synchronize": false,
-    "migrations": ["src/logion/migration/*.ts"],
+    "migrations": ["dist/migration/*.js"],
     "cli": {
         "migrationsDir": "src/logion/migration"
     }
