@@ -12,7 +12,7 @@ const migrationConfig: ConnectionOptions = {
         "src/logion/migration/*.ts"
     ],
     cli: {
-        "migrationsDir": "src/logion/migration"
+        migrationsDir: "src/logion/migration"
     },
     namingStrategy: new LogionNamingStrategy()
 }
