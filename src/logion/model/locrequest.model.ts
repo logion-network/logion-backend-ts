@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository, ManyToOne, JoinColumn, OneToMany } from "typeorm";
+import { Entity, PrimaryColumn, Column, getRepository, Repository, ManyToOne, JoinColumn, OneToMany, Unique } from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
@@ -81,6 +81,9 @@ export class LocRequestAggregateRoot {
 
     addFile(fileDescription: FileDescription) {
         this.ensureOpen();
+        if(this.isFileAlreadyPresent(fileDescription.hash)) {
+            throw new Error("A file with given hash was already added to this LOC");
+        }
         const file = new LocFile();
         file.request = this;
         file.requestId = this.id;
@@ -92,6 +95,10 @@ export class LocRequestAggregateRoot {
         file.draft = true;
         file._toAdd = true;
         this.files!.push(file);
+    }
+
+    isFileAlreadyPresent(hash: string): boolean {
+        return this.files!.find(file => file.hash === hash) !== undefined;
     }
 
     confirmFile(hash: string) {
@@ -289,6 +296,7 @@ export class LocRequestAggregateRoot {
 }
 
 @Entity("loc_request_file")
+@Unique(["requestId", "index"])
 export class LocFile extends Child {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
@@ -297,7 +305,7 @@ export class LocFile extends Child {
     @PrimaryColumn({ name: "hash" })
     hash?: string;
 
-    @PrimaryColumn({ name: "index" })
+    @Column({ name: "index" })
     index?: number;
 
     @Column("timestamp without time zone", { name: "added_on", nullable: true })

@@ -336,6 +336,10 @@ export class LocRequestController extends ApiController {
         }
 
         const hash = await sha256File(file.tempFilePath);
+        if(request.isFileAlreadyPresent(hash)) {
+            throw new Error("File already present");
+        }
+
         const oid = await this.fileDbService.importFile(file.tempFilePath, hash);
         request.addFile({
             name: file.name,
@@ -343,7 +347,6 @@ export class LocRequestController extends ApiController {
             hash,
             oid,
         });
-        //await this.locRequestRepository.clearFiles(request);
         await this.locRequestRepository.save(request);
 
         return { hash };

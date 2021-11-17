@@ -106,6 +106,25 @@ describe("LocRequestAggregateRoot", () => {
         thenHasFile("hash2");
     });
 
+    it("does not accept several files with same hash", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234
+            },
+            {
+                hash: "hash1",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567
+            }
+        ];
+        expect(() => whenAddingFiles(files)).toThrowError();
+    });
+
     it("adds and exposes metadata", () => {
         givenRequestWithStatus('OPEN');
         const metadata: MetadataItemDescription[] = [
