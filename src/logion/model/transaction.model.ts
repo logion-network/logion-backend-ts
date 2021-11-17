@@ -11,6 +11,13 @@ export interface TransactionDescription {
     readonly pallet: string;
     readonly method: string;
     readonly createdOn: string;
+    readonly error?: TransactionDescriptionError;
+}
+
+export interface TransactionDescriptionError {
+    readonly section: string
+    readonly name: string
+    readonly details: string
 }
 
 const AMOUNT_PRECISION = 50;
@@ -19,6 +26,12 @@ const AMOUNT_PRECISION = 50;
 export class TransactionAggregateRoot {
 
     getDescription(): TransactionDescription {
+
+        let error: TransactionDescriptionError | undefined = undefined;
+        if (this.errorSection && this.errorName && this.errorDetails) {
+            error = { section: this.errorSection, name: this.errorName, details: this.errorDetails }
+        }
+
         return {
             from: this.from!,
             to: this.to || null,
@@ -29,6 +42,7 @@ export class TransactionAggregateRoot {
             pallet: this.pallet!,
             method: this.method!,
             createdOn: this.createdOn!,
+            error
         };
     }
 
@@ -62,8 +76,21 @@ export class TransactionAggregateRoot {
     @Column()
     method?: string;
 
-    @Column({name: "created_on"})
+    @Column({ name: "created_on" })
     createdOn?: string;
+
+    @Column("boolean", { default: true })
+    successful?: boolean = true;
+
+    @Column({ name: "error_section", nullable: true })
+    errorSection?: string;
+
+    @Column({ name: "error_name", nullable: true })
+    errorName?: string;
+
+    @Column({ name: "error_details", nullable: true })
+    errorDetails?: string;
+
 }
 
 @injectable()
@@ -106,7 +133,7 @@ export class TransactionFactory {
         description: TransactionDescription
     }): TransactionAggregateRoot {
         const { blockNumber, extrinsicIndex } = params;
-        var transaction = new TransactionAggregateRoot();
+        let transaction = new TransactionAggregateRoot();
         transaction.blockNumber = blockNumber.toString();
         transaction.extrinsicIndex = extrinsicIndex;
 
@@ -121,6 +148,14 @@ export class TransactionFactory {
         transaction.method = description.method;
         transaction.createdOn = description.createdOn;
 
+        if (!description.error) {
+            transaction.successful = true;
+        } else {
+            transaction.successful = false;
+            transaction.errorSection = description.error.section;
+            transaction.errorName = description.error.name;
+            transaction.errorDetails = description.error.details;
+        }
         return transaction;
     }
 }

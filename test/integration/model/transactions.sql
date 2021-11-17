@@ -8,7 +8,8 @@ INSERT INTO transaction (block_number,
                          fee,
                          reserved,
                          pallet,
-                         method)
+                         method,
+                         successful)
 VALUES (1,
         1,
         '2021-07-19 15:17:11.000000',
@@ -19,7 +20,8 @@ VALUES (1,
         125000149,
         0,
         'balances',
-        'transfer');
+        'transfer',
+        true);
 
 INSERT INTO transaction (block_number,
                          extrinsic_index,
@@ -31,7 +33,11 @@ INSERT INTO transaction (block_number,
                          fee,
                          reserved,
                          pallet,
-                         method)
+                         method,
+                         successful,
+                         error_section,
+                         error_name,
+                         error_details)
 VALUES (2,
         1,
         '2021-07-20 15:17:11.000000',
@@ -42,4 +48,8 @@ VALUES (2,
         125000141,
         23,
         'assets',
-        'setMetadata');
+        'setMetadata',
+        false,
+        'balances',
+        'SomeError',
+        'with many details');

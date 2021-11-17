@@ -6,6 +6,7 @@
     },
     "exclude": [
         "test/**/*.ts",
-        "node_modules"
+        "node_modules",
+        "db-tools"
     ]
 }
