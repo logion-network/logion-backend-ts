@@ -18,9 +18,14 @@ describe('TransactionRepository', () => {
         await disconnect();
     });
 
-    it("finds transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", async () => {
+    it("finds failed transaction of when 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg when sender", async () => {
+        const transactions = await repository.findByAddress("5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg");
+        expect(transactions.length).toBe(1);
+    });
+
+    it("finds only successful transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY when recipient", async () => {
         const transactions = await repository.findByAddress("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
-        expect(transactions.length).toBe(2);
+        expect(transactions.length).toBe(1);
     });
 
     it("finds transactions of 5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", async () => {
