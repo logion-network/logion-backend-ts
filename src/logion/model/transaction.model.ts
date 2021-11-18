@@ -113,7 +113,7 @@ export class TransactionRepository {
     async findByAddress(address: string): Promise<TransactionAggregateRoot[]> {
         let builder = this.repository.createQueryBuilder("transaction");
         builder.where("transaction.from_address = :address", { address });
-        builder.orWhere("transaction.to_address = :address", { address });
+        builder.orWhere("(transaction.to_address = :address AND transaction.successful is true)", { address });
         builder.orderBy("transaction.block_number", "DESC");
         builder.addOrderBy("transaction.extrinsic_index", "DESC");
         return builder.getMany();
