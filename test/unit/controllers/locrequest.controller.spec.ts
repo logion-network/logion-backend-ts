@@ -439,8 +439,11 @@ function mockModelForAddFile(container: Container): void {
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
         .returns(Promise.resolve());
+
     const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.isFileAlreadyPresent(SOME_DATA_HASH)).returns(false);
     request.setup(instance => instance.addFile).returns(() => {});
+
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     repository.setup(instance => instance.save(request.object()))
