@@ -1,4 +1,15 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository, ManyToOne, JoinColumn, OneToMany, Unique } from "typeorm";
+import {
+    Entity,
+    PrimaryColumn,
+    Column,
+    getRepository,
+    Repository,
+    ManyToOne,
+    JoinColumn,
+    OneToMany,
+    Unique,
+    getManager
+} from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
@@ -6,6 +17,7 @@ import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { order } from "../lib/db/collections";
 import { Child, saveChildren } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
+import { EntityManager } from "typeorm/entity-manager/EntityManager";
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
@@ -394,37 +406,44 @@ export class LocRequestRepository {
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
-        await this.repository.save(root);
-        await this.saveFiles(root)
-        await this.saveMetadata(root)
-        await this.saveLinks(root)
+
+        return await getManager().transaction(async entityManager => {
+            try {
+                await entityManager.save(root);
+                await this.saveFiles(entityManager, root)
+                await this.saveMetadata(entityManager, root)
+                await this.saveLinks(entityManager, root)
+            } catch (error) {
+                return Promise.reject(error)
+            }
+        })
     }
 
-    private async saveFiles(root: LocRequestAggregateRoot): Promise<void> {
+    private async saveFiles(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
         const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: LocFile) => E = (sql, file) => sql
             .where("request_id = :id", { id: root.id })
             .andWhere("hash = :hash", { hash: file.hash })
         await saveChildren({
             children: root.files!,
-            repository: this.repository,
+            entityManager,
             entityClass: LocFile,
             whereExpression,
             childrenToDelete: root._filesToDelete
         })
     }
 
-    private async saveMetadata(root: LocRequestAggregateRoot): Promise<void> {
+    private async saveMetadata(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
         await saveChildren({
             children: root.metadata!,
-            repository: this.repository,
+            entityManager,
             entityClass: LocMetadataItem
         })
     }
 
-    private async saveLinks(root: LocRequestAggregateRoot): Promise<void> {
+    private async saveLinks(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
         await saveChildren({
             children: root.links!,
-            repository: this.repository,
+            entityManager,
             entityClass: LocLink
         })
     }
@@ -451,11 +470,6 @@ export class LocRequestRepository {
         }
 
         return builder.getMany();
-    }
-
-    async deleteAll() {
-        const all = await this.findBy({});
-        await this.repository.remove(all);
     }
 }
 

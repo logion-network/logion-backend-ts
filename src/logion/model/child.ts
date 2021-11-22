@@ -1,8 +1,8 @@
-import { Repository } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityTarget } from "typeorm/common/EntityTarget";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { Log } from "../util/Log";
+import { EntityManager } from "typeorm/entity-manager/EntityManager";
 
 const { logger } = Log;
 
@@ -15,14 +15,14 @@ export abstract class Child {
 export interface Parameters<T> {
     children: T[],
     entityClass: EntityTarget<T>,
-    repository: Repository<any>,
+    entityManager: EntityManager,
     whereExpression?: <E extends WhereExpressionBuilder>(sql: E, child: T) => E,
     childrenToDelete?: T[]
 }
 
 export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
 
-    const { children, entityClass, repository, whereExpression, childrenToDelete } = parameters;
+    const { children, entityClass, entityManager, whereExpression, childrenToDelete } = parameters;
 
     if (childrenToDelete) {
 
@@ -33,7 +33,7 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
         for (const i in childrenToDelete) {
             const child = childrenToDelete[i];
             logger.debug("Deleting child %s", entityClass);
-            const deleteQuery = repository.createQueryBuilder()
+            const deleteQuery = entityManager.createQueryBuilder()
                 .delete()
                 .from(entityClass)
             await whereExpression(deleteQuery, child).execute();
@@ -45,7 +45,7 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
         if (child._toAdd) {
             delete child._toAdd
             logger.debug("Inserting child %s", entityClass);
-            await repository.createQueryBuilder()
+            await entityManager.createQueryBuilder()
                 .insert()
                 .into(entityClass)
                 .values(child as QueryDeepPartialEntity<T>)
@@ -56,7 +56,7 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
             }
             delete child._toUpdate;
             logger.debug("Updating child %s", entityClass);
-            const update = repository.manager.createQueryBuilder(entityClass, "some-alias")
+            const update = entityManager.createQueryBuilder(entityClass, "some-alias")
                 .update()
                 .set(child as QueryDeepPartialEntity<T>)
             await whereExpression(update, child).execute();
