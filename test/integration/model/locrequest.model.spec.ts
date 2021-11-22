@@ -1,5 +1,5 @@
 import moment from "moment";
-import { connect, executeScript, disconnect, query } from "../../helpers/testdb";
+import { connect, executeScript, disconnect, checkNumOfRows } from "../../helpers/testdb";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
@@ -8,7 +8,7 @@ import {
     LocMetadataItem,
     LocLink
 } from "../../../src/logion/model/locrequest.model";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
 import { v4 as uuid } from "uuid";
 
 describe('LocRequestRepository - read accesses', () => {
@@ -124,7 +124,7 @@ function givenOpenLoc(id: string): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
     locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
-    locRequest.ownerAddress = ALICE
+    locRequest.ownerAddress = BOB
     locRequest.description = "I want to open a case"
     locRequest.locType = "Transaction"
     locRequest.createdOn = moment().toISOString()
@@ -153,16 +153,16 @@ function givenOpenLoc(id: string): LocRequestAggregateRoot {
 }
 
 async function checkAggregate(id: string, numOfRows: number) {
-    await checkDbContent(`SELECT *
+    await checkNumOfRows(`SELECT *
                           FROM loc_request
                           WHERE id = '${ id }'`, numOfRows)
-    await checkDbContent(`SELECT *
+    await checkNumOfRows(`SELECT *
                           FROM loc_link
                           WHERE request_id = '${ id }'`, numOfRows)
-    await checkDbContent(`SELECT *
+    await checkNumOfRows(`SELECT *
                           FROM loc_metadata_item
                           WHERE request_id = '${ id }'`, numOfRows)
-    await checkDbContent(`SELECT *
+    await checkNumOfRows(`SELECT *
                           FROM loc_request_file
                           WHERE request_id = '${ id }'`, numOfRows)
 }
@@ -174,12 +174,6 @@ function checkDescription(requests: LocRequestAggregateRoot[], ...descriptions: 
         expect(matchingRequests.length).withContext(`loc with description ${ description } not returned by query`).toBe(1);
         expect(matchingRequests[0].locType).toBe('Transaction');
     })
-}
-
-async function checkDbContent(sql: string, numOfRows: number) {
-    const rawData: any[] | undefined = await query(sql)
-    expect(rawData).toBeDefined()
-    expect(rawData!.length).toBe(numOfRows)
 }
 
 const LOC_WITH_FILES = "2b287596-f9d5-8030-b606-d1da538cb37f";

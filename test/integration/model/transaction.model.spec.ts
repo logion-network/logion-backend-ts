@@ -1,8 +1,9 @@
-import { connect, disconnect, executeScript } from '../../helpers/testdb';
+import { connect, disconnect, executeScript, checkNumOfRows } from '../../helpers/testdb';
 import {
     TransactionAggregateRoot,
     TransactionRepository,
 } from "../../../src/logion/model/transaction.model";
+import moment from "moment";
 
 describe('TransactionRepository', () => {
 
@@ -37,4 +38,27 @@ describe('TransactionRepository', () => {
         const transactions = await repository.findByAddress("Unknown");
         expect(transactions.length).toBe(0);
     });
+
+    it("saves transaction", async () => {
+        // Given
+        const transaction = new TransactionAggregateRoot();
+        transaction.blockNumber = "3";
+        transaction.extrinsicIndex = 1;
+        transaction.from = "from-address";
+        transaction.transferValue = "1";
+        transaction.tip = "1";
+        transaction.fee = "1";
+        transaction.reserved = "1";
+        transaction.pallet = "balances";
+        transaction.method = "transfer";
+        transaction.createdOn = moment().toISOString()
+        transaction.successful = true;
+        // When
+        await repository.save(transaction)
+        // Then
+        await checkNumOfRows(`SELECT *
+                              FROM transaction
+                              WHERE block_number = ${ transaction.blockNumber }
+                                AND extrinsic_index = ${ transaction.extrinsicIndex }`, 1)
+    })
 });

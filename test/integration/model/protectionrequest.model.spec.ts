@@ -1,4 +1,4 @@
-import { connect, disconnect, executeScript } from '../../helpers/testdb';
+import { connect, disconnect, executeScript, checkNumOfRows } from '../../helpers/testdb';
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
@@ -6,11 +6,12 @@ import {
     ProtectionRequestKind,
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model";
+import { ALICE } from "../../../src/logion/model/addresses.model";
 
 describe('ProtectionRequestRepositoryTest', () => {
 
     beforeAll(async () => {
-        await connect([ProtectionRequestAggregateRoot]);
+        await connect([ ProtectionRequestAggregateRoot ]);
         await executeScript("test/integration/model/protection_requests.sql");
         repository = new ProtectionRequestRepository();
     });
@@ -90,6 +91,44 @@ describe('ProtectionRequestRepositoryTest', () => {
         expect(results.length).toBe(1);
         expectStatus(results, 'PENDING');
     });
+});
+
+describe('ProtectionRequestRepositoryTest', () => {
+
+    beforeAll(async () => {
+        await connect([ ProtectionRequestAggregateRoot ]);
+        repository = new ProtectionRequestRepository();
+    });
+
+    let repository: ProtectionRequestRepository;
+
+    afterAll(async () => {
+        await disconnect();
+    });
+
+    it("saves protection request", async () => {
+        // Given
+        const protectionRequest = new ProtectionRequestAggregateRoot()
+        protectionRequest.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639'
+        protectionRequest.isRecovery = false
+        protectionRequest.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'
+        protectionRequest.email = 'john.doe@logion.network'
+        protectionRequest.phoneNumber = '+1234897'
+        protectionRequest.firstName = 'John'
+        protectionRequest.lastName = 'Doe'
+        protectionRequest.line1 = '15 Rue du Bois'
+        protectionRequest.postalCode = '75000'
+        protectionRequest.city = 'Paris'
+        protectionRequest.country = 'France'
+        protectionRequest.status = 'PENDING'
+        protectionRequest.otherLegalOfficerAddress = ALICE
+        // When
+        await repository.save(protectionRequest)
+        // Then
+        await checkNumOfRows(`SELECT *
+                              FROM protection_request
+                              WHERE id = '${ protectionRequest.id }'`, 1)
+    })
 });
 
 function expectAcceptedOrRejected(results: ProtectionRequestAggregateRoot[]) {
