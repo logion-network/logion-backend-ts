@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { connect, disconnect, executeScript } from '../../helpers/testdb';
+import { connect, disconnect, executeScript, query } from '../../helpers/testdb';
 import {
     SyncPointAggregateRoot,
     SyncPointRepository,
@@ -26,4 +26,18 @@ describe('SyncPointRepository', () => {
         expect(syncPoint!.latestHeadBlockNumber).toBe("89964");
         expect(syncPoint!.updatedOn).toEqual(moment("2021-08-25T14:38:09.514126").toDate());
     });
+
+    it("saves new sync point", async () => {
+        // Given
+        const syncPoint = new SyncPointAggregateRoot();
+        syncPoint.name = 'AnotherSyncPoint'
+        syncPoint.latestHeadBlockNumber = "123"
+        syncPoint.updatedOn = moment().toDate()
+        // When
+        await repository.save(syncPoint)
+        // Then
+        const rawData:any[] | undefined = await query(`SELECT * FROM sync_point  WHERE name = '${syncPoint.name}'`);
+        expect(rawData).toBeDefined()
+        expect(rawData!.length).toBe(1)
+    })
 });

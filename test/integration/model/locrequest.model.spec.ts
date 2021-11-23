@@ -1,5 +1,5 @@
 import moment from "moment";
-import { connect, executeScript, disconnect } from "../../helpers/testdb";
+import { connect, executeScript, disconnect, checkNumOfRows } from "../../helpers/testdb";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
@@ -8,9 +8,10 @@ import {
     LocMetadataItem,
     LocLink
 } from "../../../src/logion/model/locrequest.model";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
+import { v4 as uuid } from "uuid";
 
-describe('LocRequestRepository', () => {
+describe('LocRequestRepository - read accesses', () => {
 
     beforeAll(async () => {
         await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
@@ -78,13 +79,99 @@ describe('LocRequestRepository', () => {
         expect(links[0].target).toBe("ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d");
         expect(links[0].addedOn.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
     })
+
 })
+
+describe('LocRequestRepository.save()', () => {
+
+    beforeAll(async () => {
+        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
+        repository = new LocRequestRepository();
+    });
+
+    let repository: LocRequestRepository;
+
+    afterAll(async () => {
+        await disconnect();
+    });
+
+    it("saves a LocRequest aggregate", async () => {
+        const id = '57104fa2-18b2-4a0a-a23b-f907deadc2de'
+        const locRequest = givenOpenLoc(id)
+
+        await repository.save(locRequest)
+
+        await checkAggregate(id, 1)
+    })
+
+    it("rollbacks when trying to add invalid link", async () => {
+        const id = '12940aa1-12f5-463f-b39c-c2902ccdfd25'
+        const locRequest = givenOpenLoc(id)
+
+        locRequest.links![0].target = undefined;
+
+        const result: string = await repository.save(locRequest)
+            .catch((reason => {
+                return reason.toString()
+            }))
+        expect(result).toBe("QueryFailedError: null value in column \"target\" violates not-null constraint")
+
+        await checkAggregate(id, 0)
+    })
+})
+
+function givenOpenLoc(id: string): LocRequestAggregateRoot {
+    const locRequest = new LocRequestAggregateRoot();
+    locRequest.id = id;
+    locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
+    locRequest.ownerAddress = BOB
+    locRequest.description = "I want to open a case"
+    locRequest.locType = "Transaction"
+    locRequest.createdOn = moment().toISOString()
+    locRequest.status = 'OPEN'
+
+    locRequest.links = []
+    locRequest.addLink({
+        target: uuid(),
+        addedOn: moment()
+    })
+    locRequest.files = []
+    locRequest.addFile({
+        name: "fileName",
+        addedOn: moment(),
+        hash: "hash",
+        oid: 123,
+        contentType: "content/type"
+    })
+    locRequest.metadata = []
+    locRequest.addMetadataItem({
+        name: "itemName",
+        addedOn: moment(),
+        value: "something valuable"
+    })
+    return locRequest;
+}
+
+async function checkAggregate(id: string, numOfRows: number) {
+    await checkNumOfRows(`SELECT *
+                          FROM loc_request
+                          WHERE id = '${ id }'`, numOfRows)
+    await checkNumOfRows(`SELECT *
+                          FROM loc_link
+                          WHERE request_id = '${ id }'`, numOfRows)
+    await checkNumOfRows(`SELECT *
+                          FROM loc_metadata_item
+                          WHERE request_id = '${ id }'`, numOfRows)
+    await checkNumOfRows(`SELECT *
+                          FROM loc_request_file
+                          WHERE request_id = '${ id }'`, numOfRows)
+}
 
 function checkDescription(requests: LocRequestAggregateRoot[], ...descriptions: string[]) {
     expect(requests.length).toBe(descriptions.length);
     descriptions.forEach(description => {
         const matchingRequests = requests.filter(request => request.getDescription().description === description);
-        expect(matchingRequests.length).withContext(`loc with description ${description} not returned by query`).toBe(1);
+        expect(matchingRequests.length).withContext(`loc with description ${ description } not returned by query`).toBe(1);
         expect(matchingRequests[0].locType).toBe('Transaction');
     })
 }

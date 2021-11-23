@@ -39,3 +39,11 @@ export async function executeScript(fileName: string): Promise<void> {
     const fileContent = await fs.promises.readFile(fileName);
     await query(fileContent.toString("utf-8"));
 }
+
+export async function checkNumOfRows(sql: string, numOfRows: number) {
+    const rawData: any[] | undefined = await query(sql)
+    expect(rawData).toBeDefined()
+    expect(rawData!.length).toBe(numOfRows)
+}
+
+
