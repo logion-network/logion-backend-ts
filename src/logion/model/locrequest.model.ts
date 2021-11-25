@@ -344,7 +344,10 @@ export class LocMetadataItem extends Child {
     @Column({ length: 255 })
     name?: string;
 
-    @Column({ length: 255 })
+    @Column({ name: "value",  length: 255, nullable: true})
+    deprecated_value?: string;
+
+    @Column("text", { name: "value_text", default: "" })
     value?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
