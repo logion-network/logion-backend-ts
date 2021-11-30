@@ -621,6 +621,21 @@
                                 }
                             }
                         }
+                    },
+                    "voidInfo": {
+                        "type": "object",
+                        "description": "Data about LOC voiding",
+                        "properties": {
+                            "reason": {
+                                "type": "string",
+                                "description": "Voiding reason"
+                            },
+                            "voidedOn": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "The date-time of voiding (chain time)"
+                            }
+                        }
                     }
                 },
                 "title": "LocRequestView",
@@ -695,6 +710,17 @@
                                 }
                             }
                         }
+                    },
+                    "voidInfo": {
+                        "type": "object",
+                        "description": "Data about LOC voiding",
+                        "properties": {
+                            "voidedOn": {
+                                "type": "string",
+                                "format": "date-time",
+                                "description": "The date-time of voiding (chain time)"
+                            }
+                        }
                     }
                 },
                 "title": "LocPublicView",
@@ -766,6 +792,17 @@
                 },
                 "title": "AddFileResultView",
                 "description": "The result of adding a file to a LOC"
+            },
+            "VoidLocView": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "description": "The voiding reason"
+                    }
+                },
+                "title": "VoidLocView",
+                "description": "The parameters of LOC voiding"
             }
         }
     }

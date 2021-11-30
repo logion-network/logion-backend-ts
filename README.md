@@ -53,6 +53,8 @@ Then copy the file [`ormconfig.json.sample`](ormconfig.json.sample) to `ormconfi
 
 Create the database schema using `yarn typeorm migration:run`. More info about [DB migrations](doc/DbMigration.md).
 
+Note that in order to run the backend itself or the integration tests, you'll need `psql` to be installed locally.
+
 ### Connection to a node
 
 By default, the backend connects to `ws://localhost:9944`, i.e. a logion node running on your local machine.

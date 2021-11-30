@@ -8,7 +8,8 @@ import {
     LocRequestStatus,
     FileDescription,
     MetadataItemDescription,
-    LinkDescription
+    LinkDescription,
+    VoidInfo
 } from "../../../src/logion/model/locrequest.model";
 
 describe("LocRequestFactory", () => {
@@ -199,6 +200,59 @@ describe("LocRequestAggregateRoot", () => {
         whenAddingLinks(links);
         thenExposesLinks(links);
     });
+
+    it("pre-closes", () => {
+        givenRequestWithStatus('OPEN');
+        whenPreClosing();
+        thenRequestStatusIs('CLOSED');
+    });
+
+    it("closes", () => {
+        givenRequestWithStatus('CLOSED');
+        const closingDate = moment();
+        whenClosing(closingDate);
+        thenClosingDateIs(closingDate);
+    });
+
+    it("pre-voids when OPEN", () => {
+        givenRequestWithStatus('OPEN');
+        whenPreVoiding("reason");
+        thenRequestStatusIs('OPEN');
+        thenVoidInfoIs({
+            reason: "reason",
+            voidedOn: null
+        })
+    });
+
+    it("pre-voids when CLOSED", () => {
+        givenRequestWithStatus('CLOSED');
+        whenPreVoiding("reason");
+        thenRequestStatusIs('CLOSED');
+        thenVoidInfoIs({
+            reason: "reason",
+            voidedOn: null
+        })
+    });
+
+    it("voids when OPEN", () => {
+        givenRequestWithStatus('OPEN');
+        const voidingDate = moment();
+        whenVoiding("reason", voidingDate);
+        thenVoidInfoIs({
+            reason: "reason",
+            voidedOn: voidingDate
+        })
+    });
+
+    it("voids when CLOSED", () => {
+        givenRequestWithStatus('CLOSED');
+        const voidingDate = moment();
+        whenVoiding("reason", voidingDate);
+        thenVoidInfoIs({
+            reason: "reason",
+            voidedOn: voidingDate
+        })
+    });
 });
 
 const REJECT_REASON = "Illegal";
@@ -354,4 +408,37 @@ function thenExposesLinks(expectedLinks: LinkDescription[]) {
         expect(link.target).toBe(expectedLinks[index].target);
         expect(link.addedOn.isSame(expectedLinks[index].addedOn)).toBe(true);
     });
+}
+
+function whenPreClosing() {
+    request.preClose();
+}
+
+function whenPreVoiding(reason: string) {
+    request.preVoid(reason);
+}
+
+function thenVoidInfoIs(expected: VoidInfo) {
+    const voidInfo = request.getVoidInfo();
+    expect(voidInfo).toBeDefined();
+    expect(voidInfo!.reason).toEqual(expected.reason);
+    if(expected.voidedOn !== null) {
+        expect(voidInfo!.voidedOn).toBeDefined();
+        expect(voidInfo!.voidedOn!.isSame(expected.voidedOn)).toBe(true);
+    } else {
+        expect(voidInfo!.voidedOn).toBeNull();
+    }
+}
+
+function whenClosing(date: Moment) {
+    request.close(date);
+}
+
+function thenClosingDateIs(expected: Moment) {
+    expect(request.getClosedOn()!.isSame(expected)).toBe(true);
+}
+
+function whenVoiding(reason: string, voidingDate: Moment) {
+    request.preVoid(reason);
+    request.voidLoc(voidingDate);
 }

@@ -42,8 +42,10 @@ async function buildLargeObjectIdPromise(path: string, comment: string, process:
             output = data.toString();
         });
         process.on('exit', () => {
-            const largeObjectId = output.substring("lo_import ".length);
-            success(Number(largeObjectId));
+            if(output !== undefined) {
+                const largeObjectId = output.substring("lo_import ".length);
+                success(Number(largeObjectId));
+            }
         });
         process.on('error', error);
 
