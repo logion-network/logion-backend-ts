@@ -50,6 +50,20 @@ export interface LinkDescription {
     readonly addedOn: Moment;
 }
 
+export interface VoidInfo {
+    readonly reason: string;
+    readonly voidedOn: Moment | null;
+}
+
+class EmbeddableVoidInfo {
+
+    @Column("text", { name: "void_reason", nullable: true })
+    reason?: string | null;
+
+    @Column("timestamp without time zone", { name: "voided_on", nullable: true })
+    voidedOn?: string | null;
+}
+
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
@@ -171,6 +185,10 @@ export class LocRequestAggregateRoot {
         this.status = 'CLOSED';
     }
 
+    getClosedOn(): Moment | null {
+        return (this.closedOn !== undefined && this.closedOn !== null) ? moment(this.closedOn) : null;
+    }
+
     addMetadataItem(itemDescription: MetadataItemDescription) {
         this.ensureOpen();
         const item = new LocMetadataItem();
@@ -248,6 +266,36 @@ export class LocRequestAggregateRoot {
         }));
     }
 
+    preVoid(reason: string) {
+        if(this.voidInfo !== undefined && this.voidInfo.reason !== null && this.voidInfo.reason !== undefined) {
+            throw new Error("LOC is already void")
+        }
+        this.voidInfo = new EmbeddableVoidInfo();
+        this.voidInfo.reason = reason;
+    }
+
+    voidLoc(timestamp: Moment) {
+        if(this.voidInfo !== undefined && this.voidInfo.voidedOn !== undefined && this.voidInfo.voidedOn !== null) {
+            throw new Error("LOC is already void");
+        }
+        if(this.voidInfo === undefined) {
+            this.voidInfo = new EmbeddableVoidInfo();
+            this.voidInfo.reason = "";
+        }
+        this.voidInfo.voidedOn = timestamp.toISOString();
+    }
+
+    getVoidInfo(): VoidInfo | null {
+        if(this.voidInfo !== undefined && this.voidInfo.reason !== null) {
+            return {
+                reason: this.voidInfo.reason || "",
+                voidedOn: this.voidInfo.voidedOn ? moment(this.voidInfo.voidedOn) : null
+            };
+        } else {
+            return null;
+        }
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -303,6 +351,9 @@ export class LocRequestAggregateRoot {
         persistence: false
     })
     links?: LocLink[];
+
+    @Column(() => EmbeddableVoidInfo, { prefix: "" })
+    voidInfo?: EmbeddableVoidInfo;
 
     _filesToDelete: LocFile[] = [];
 }

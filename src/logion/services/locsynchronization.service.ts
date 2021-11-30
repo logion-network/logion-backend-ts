@@ -47,6 +47,9 @@ export class LocSynchronizer {
                 } else if(extrinsic.method.method === "close") {
                     const locId = this.extractLocId(extrinsic.args);
                     await this.mutateLoc(locId, loc => loc.close(timestamp));
+                } else if(extrinsic.method.method === "make_void" || extrinsic.method.method === "make_void_and_replace") {
+                    const locId = this.extractLocId(extrinsic.args);
+                    await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
                 }
             }
         }

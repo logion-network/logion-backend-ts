@@ -44,6 +44,7 @@ const testDataWithUserIdentity = {
 
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
+const VOID_REASON = "Expired";
 
 describe('LocRequestController', () => {
 
@@ -294,6 +295,23 @@ describe('LocRequestController', () => {
             .put(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}/confirm`)
             .expect(204);
     });
+
+    it('pre-closes', async () => {
+        const app = setupApp(LocRequestController, mockModelForPreClose)
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/close`)
+            .expect(204);
+    });
+
+    it('pre-voids', async () => {
+        const app = setupApp(LocRequestController, mockModelForPreVoid)
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/void`)
+            .send({
+                reason: VOID_REASON
+            })
+            .expect(204);
+    });
 })
 
 function mockModelForReject(container: Container): void {
@@ -406,6 +424,7 @@ function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggreg
     request.setup(instance => instance.getFiles()).returns([]);
     request.setup(instance => instance.getMetadataItems()).returns([]);
     request.setup(instance => instance.getLinks()).returns([]);
+    request.setup(instance => instance.getVoidInfo()).returns(null);
     return request;
 }
 
@@ -540,6 +559,44 @@ function mockModelForDeleteFile(container: Container) {
 function mockModelForConfirmFile(container: Container) {
     const request = mockRequest("OPEN", testData);
     request.setup(instance => instance.confirmFile(SOME_DATA_HASH)).returns(undefined);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForPreClose(container: Container) {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.preClose()).returns(undefined);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForPreVoid(container: Container) {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.preVoid(VOID_REASON)).returns(undefined);
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))

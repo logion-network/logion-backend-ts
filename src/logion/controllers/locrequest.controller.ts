@@ -31,6 +31,7 @@ import { sha256File } from "../lib/crypto/hashing";
 import { FileDbService } from "../services/filedb.service";
 import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
+import { View } from "typeorm/schema-builder/view/View";
 
 const { logger } = Log;
 
@@ -52,6 +53,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.downloadFile(spec);
     LocRequestController.deleteFile(spec);
     LocRequestController.confirmFile(spec);
+    LocRequestController.closeLoc(spec);
+    LocRequestController.voidLoc(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -62,6 +65,7 @@ type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsRespo
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
+type VoidLocView = components["schemas"]["VoidLocView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -119,7 +123,7 @@ export class LocRequestController extends ApiController {
 
     private toView(request: LocRequestAggregateRoot, userIdentity: UserIdentity | undefined): LocRequestView {
         const locDescription = request.getDescription();
-        return {
+        const view: LocRequestView = {
             id: request.id,
             requesterAddress: locDescription.requesterAddress,
             ownerAddress: locDescription.ownerAddress,
@@ -145,7 +149,15 @@ export class LocRequestController extends ApiController {
                 target: link.target,
                 addedOn: link.addedOn.toISOString(),
             }))
+        };
+        const voidInfo = request.getVoidInfo();
+        if(voidInfo !== null) {
+            view.voidInfo = {
+                reason: voidInfo.reason,
+                voidedOn: voidInfo.voidedOn?.toISOString()
+            };
         }
+        return view;
     }
 
     private toUserView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
@@ -250,7 +262,7 @@ export class LocRequestController extends ApiController {
 
     private toPublicView(request: LocRequestAggregateRoot): LocPublicView {
         const locDescription = request.getDescription();
-        return {
+        const view: LocPublicView = {
             id: request.id,
             requesterAddress: locDescription.requesterAddress,
             ownerAddress: locDescription.ownerAddress,
@@ -266,6 +278,13 @@ export class LocRequestController extends ApiController {
                 addedOn: item.addedOn.toISOString(),
             }))
         }
+        const voidInfo = request.getVoidInfo();
+        if(voidInfo !== null) {
+            view.voidInfo = {
+                voidedOn: voidInfo.voidedOn?.toISOString()
+            };
+        }
+        return view;
     }
 
     static rejectLocRequest(spec: OpenAPIV3.Document) {
@@ -425,6 +444,14 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static closeLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/close"].post!;
+        operationObject.summary = "Closes a LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+    }
+
     @HttpPost('/:requestId/close')
     @Async()
     @SendsResponse()
@@ -434,6 +461,32 @@ export class LocRequestController extends ApiController {
             .is(request.ownerAddress);
 
         request.preClose();
+        await this.locRequestRepository.save(request);
+
+        this.response.sendStatus(204);
+    }
+
+    static voidLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/void"].post!;
+        operationObject.summary = "Voids a LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "The voiding parameters",
+            view: "VoidLocView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+    }
+
+    @HttpPost('/:requestId/void')
+    @Async()
+    @SendsResponse()
+    async voidLoc(body: VoidLocView, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+
+        request.preVoid(body.reason!);
         await this.locRequestRepository.save(request);
 
         this.response.sendStatus(204);
