@@ -289,7 +289,7 @@ export class LocRequestAggregateRoot {
         if(this.voidInfo !== undefined && this.voidInfo.reason !== null) {
             return {
                 reason: this.voidInfo.reason || "",
-                voidedOn: (this.voidInfo.voidedOn !== undefined && this.voidInfo.voidedOn !== null) ? moment(this.voidInfo.voidedOn) : null
+                voidedOn: this.voidInfo.voidedOn ? moment(this.voidInfo.voidedOn) : null
             };
         } else {
             return null;
