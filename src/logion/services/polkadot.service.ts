@@ -57,6 +57,8 @@ export class PolkadotService {
                     closed: "bool",
                     loc_type: "LocType",
                     links:"Vec<LocLink>",
+                    void_info: "Option<LocVoidInfo<LocId>>",
+                    replacer_of: "Option<LocId>"
                 },
                 MetadataItem: {
                     name: "Vec<u8>",
@@ -68,13 +70,22 @@ export class PolkadotService {
                         "Identity"
                     ]
                 },
+                LocLink: {
+                    id: "LocId",
+                    nature: "Vec<u8>",
+                },
                 File: {
                     hash: "Hash",
                     nature: "Vec<u8>",
                 },
-                LocLink: {
-                    id: "LocId",
-                    nature: "Vec<u8>",
+                LocVoidInfo: {
+                  "replacer": "Option<LocId>"
+                },
+                StorageVersion: {
+                  "_enum": [
+                    "V1",
+                    "V2MakeLocVoid"
+                  ]
                 }
             }
         });

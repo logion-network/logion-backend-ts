@@ -75,6 +75,26 @@ describe("LocSynchronizer", () => {
         thenLinkAdded();
         thenLocIsSaved();
     });
+
+    it("voids LOC on makeVoid", async () => {
+        givenLocExtrinsic("makeVoid", { loc_id: locId });
+        givenBlock();
+        givenLocRequest();
+        givenLocRequestExpectsVoid();
+        await whenConsumingBlock();
+        thenLocVoided();
+        thenLocIsSaved();
+    });
+
+    it("voids LOC on makeVoidAndReplace", async () => {
+        givenLocExtrinsic("makeVoidAndReplace", { loc_id: locId });
+        givenBlock();
+        givenLocRequest();
+        givenLocRequestExpectsVoid();
+        await whenConsumingBlock();
+        thenLocVoided();
+        thenLocIsSaved();
+    });
 });
 
 const locId = {
@@ -176,4 +196,12 @@ function givenLocRequestExpectsLink() {
 
 function thenLinkAdded() {
     locRequest.verify(instance => instance.addLink(IS_EXPECTED_LINK));
+}
+
+function givenLocRequestExpectsVoid() {
+    locRequest.setup(instance => instance.voidLoc(IS_BLOCK_TIME)).returns(undefined);
+}
+
+function thenLocVoided() {
+    locRequest.verify(instance => instance.voidLoc(IS_BLOCK_TIME));
 }
