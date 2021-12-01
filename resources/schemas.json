@@ -792,6 +792,17 @@
                 },
                 "title": "AddFileResultView",
                 "description": "The result of adding a file to a LOC"
+            },
+            "VoidLocView": {
+                "type": "object",
+                "properties": {
+                    "reason": {
+                        "type": "string",
+                        "description": "The voiding reason"
+                    }
+                },
+                "title": "VoidLocView",
+                "description": "The parameters of LOC voiding"
             }
         }
     }
