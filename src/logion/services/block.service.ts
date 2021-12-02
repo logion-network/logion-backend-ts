@@ -115,7 +115,7 @@ export class BlockExtrinsicsService {
 
     private async calculatePartialFee(feesCalculator: FeesCalculator, extrinsicBuilder: ExtrinsicBuilder, jsonEvent: JsonEvent): Promise<bigint> {
         const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
-        if (!weightInfo.weight) {
+        if (!weightInfo || !weightInfo.weight) {
             return 0n;
         } else {
             const encodedLength = extrinsicBuilder.encodedLength;

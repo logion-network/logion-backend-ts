@@ -27,6 +27,7 @@ export class Scheduler {
                 return this.blockConsumer.consumeNewBlocks(moment())
                     .catch(e => {
                         logger.error(e.message);
+                        logger.debug(e.stack);
                     })
                     .finally(() => {
                         this.running = false;
@@ -41,6 +42,7 @@ export class Scheduler {
             (err: Error) => {
                 this.running = false;
                 logger.error(err.message)
+                logger.debug(err.stack);
             }
         )
         const job = new SimpleIntervalJob({ seconds: 6 }, task);
