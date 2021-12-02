@@ -24,6 +24,8 @@ import {
     fillInSpec as fillInSpecForAuthentication
 } from "./controllers/authentication.controller";
 import { LocRequestController, fillInSpec as fillInSpecForLoc } from "./controllers/locrequest.controller";
+import { Log } from "./util/Log";
+const { logger } = Log;
 
 require('source-map-support').install();
 
@@ -96,5 +98,5 @@ createConnection()
     expressOasGenerator.handleRequests();
 
     const port = process.env.PORT || 8080;
-    app.listen(port, () => console.log(`Server started on port ${port}`));
+    app.listen(port, () => logger.info(`Server started on port ${port}`));
 });
