@@ -2,6 +2,9 @@ import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeor
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { UserIdentity } from "./useridentity";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export type ProtectionRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED';
 
@@ -50,7 +53,7 @@ export class ProtectionRequestAggregateRoot {
 
     setActivated() {
         if(this.status !== 'ACCEPTED') {
-            throw new Error("Request is not accepted");
+            logger.warn("Request is not accepted");
         }
         this.status = 'ACTIVATED';
     }
