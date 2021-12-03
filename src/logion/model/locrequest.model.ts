@@ -18,6 +18,9 @@ import { order } from "../lib/db/collections";
 import { Child, saveChildren } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
@@ -132,9 +135,13 @@ export class LocRequestAggregateRoot {
         file!.draft = false;
     }
 
-    private ensureOpen() {
-        if(this.status !== "OPEN") {
-            throw new Error("LOC is not open");
+    private ensureOpen(warnOnly: boolean = false) {
+        if (this.status !== "OPEN") {
+            if (warnOnly) {
+                logger.warn("LOC is not open")
+            } else {
+                throw new Error("LOC is not open");
+            }
         }
     }
 
@@ -162,8 +169,8 @@ export class LocRequestAggregateRoot {
     }
 
     setLocCreatedDate(timestamp: Moment) {
-        if(this.locCreatedOn !== undefined && this.locCreatedOn !== null) {
-            throw new Error("LOC created date is already set");
+        if (this.locCreatedOn) {
+            logger.warn("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
     }
@@ -178,8 +185,8 @@ export class LocRequestAggregateRoot {
     }
 
     close(timestamp: Moment) {
-        if(this.closedOn !== undefined && this.closedOn !== null) {
-            throw new Error("LOC is already closed");
+        if (this.closedOn) {
+            logger.warn("LOC is already closed");
         }
         this.closedOn = timestamp.toISOString();
         this.status = 'CLOSED';
@@ -190,7 +197,7 @@ export class LocRequestAggregateRoot {
     }
 
     addMetadataItem(itemDescription: MetadataItemDescription) {
-        this.ensureOpen();
+        this.ensureOpen(true);
         const item = new LocMetadataItem();
         item.request = this;
         item.requestId = this.id;
@@ -212,10 +219,11 @@ export class LocRequestAggregateRoot {
 
     setFileAddedOn(hash: string, addedOn: Moment) {
         const file = this.files!.find(file => file.hash === hash);
-        if(file === undefined) {
-            throw new Error(`File with hash ${hash} not found`);
+        if (!file) {
+            logger.warn(`File with hash ${ hash } not found`);
+            return;
         }
-        if(file!.addedOn !== undefined && file!.addedOn !== null) {
+        if (file!.addedOn !== undefined && file!.addedOn !== null) {
             throw new Error("File added on date is already set");
         }
         file!.addedOn = addedOn.toDate();
@@ -248,7 +256,7 @@ export class LocRequestAggregateRoot {
     }
 
     addLink(itemDescription: LinkDescription) {
-        this.ensureOpen();
+        this.ensureOpen(true);
         const item = new LocLink();
         item.request = this;
         item.requestId = this.id;
@@ -275,10 +283,10 @@ export class LocRequestAggregateRoot {
     }
 
     voidLoc(timestamp: Moment) {
-        if(this.voidInfo !== undefined && this.voidInfo.voidedOn !== undefined && this.voidInfo.voidedOn !== null) {
-            throw new Error("LOC is already void");
+        if (this.voidInfo && this.voidInfo.voidedOn) {
+            logger.warn("LOC is already void");
         }
-        if(this.voidInfo === undefined) {
+        if (!this.voidInfo) {
             this.voidInfo = new EmbeddableVoidInfo();
             this.voidInfo.reason = "";
         }
