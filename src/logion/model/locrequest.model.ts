@@ -220,7 +220,7 @@ export class LocRequestAggregateRoot {
     setFileAddedOn(hash: string, addedOn: Moment) {
         const file = this.files!.find(file => file.hash === hash);
         if (!file) {
-            logger.warn(`File with hash ${ hash } not found`);
+            logger.error(`File with hash ${ hash } not found`);
             return;
         }
         if (file!.addedOn !== undefined && file!.addedOn !== null) {
