@@ -1,9 +1,11 @@
 import { injectable } from 'inversify';
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model';
-import { ExtrinsicDataExtractor } from "../services/extrinsic.data.extractor";
-
-import { BlockExtrinsics } from './types/responses/Block';
+import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { JsonArgs } from './call';
+import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 @injectable()
 export class ProtectionSynchronizer {
@@ -20,25 +22,23 @@ export class ProtectionSynchronizer {
 
     readonly nodeOwner: string;
 
-    async updateProtectionRequests(block: BlockExtrinsics): Promise<void> {
-        const timestamp = this.extrinsicDataExtractor.getBlockTimestamp(block);
-        if(timestamp === undefined) {
-            throw Error("Block has no timestamp");
-        }
-        for(let i = 0; i < block.extrinsics.length; ++i) {
-            const extrinsic = block.extrinsics[i];
-            if(extrinsic.method.pallet === "verifiedRecovery") {
-                if(extrinsic.method.method === "createRecovery" && this.nodeOwnerInFriends(extrinsic.args)) {
-                    const signer = extrinsic.signer!;
-                    const requests = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-                        expectedRequesterAddress: signer,
-                        expectedStatuses: [ 'ACCEPTED' ],
-                    }));
-                    for(let j = 0; j < requests.length; ++j) {
-                        const request = requests[j];
-                        request.setActivated();
-                        await this.protectionRequestRepository.save(request);
-                    }
+    async updateProtectionRequests(extrinsic: JsonExtrinsic): Promise<void> {
+        if (extrinsic.method.pallet === "verifiedRecovery") {
+            if (extrinsic.error) {
+                logger.info("updateProtectionRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
+                return
+            }
+            if (extrinsic.method.method === "createRecovery" && this.nodeOwnerInFriends(extrinsic.args)) {
+                const signer = extrinsic.signer!;
+                const requests = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
+                    expectedRequesterAddress: signer,
+                    expectedStatuses: [ 'ACCEPTED' ],
+                }));
+                for (let j = 0; j < requests.length; ++j) {
+                    const request = requests[j];
+                    logger.info("Setting protection %s activated", request.id)
+                    request.setActivated();
+                    await this.protectionRequestRepository.save(request);
                 }
             }
         }
