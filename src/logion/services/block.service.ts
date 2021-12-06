@@ -40,7 +40,7 @@ export class BlockExtrinsicsService {
         const api = await this.polkadotService.readyApi();
         const hash = await api.rpc.chain.getBlockHash(blockNumber);
         const { block, events } = await this.blockAndEvents(hash);
-        const extrinsics = await this.successfulExtrinsics(block, events);
+        const extrinsics = await this.allExtrinsics(block, events);
         return {
             number: BigInt(block.header.number.toString()),
             extrinsics
@@ -65,7 +65,7 @@ export class BlockExtrinsicsService {
         };
     }
 
-    private async successfulExtrinsics(
+    private async allExtrinsics(
         block: Block,
         events: Vec<EventRecord>,
     ): Promise<JsonExtrinsic[]> {

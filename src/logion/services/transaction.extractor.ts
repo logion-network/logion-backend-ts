@@ -27,7 +27,7 @@ export class TransactionExtractor {
         }
         const blockBuilder = BlockWithTransactions.builder()
             .blockNumber(block.number);
-        logger.debug("Looking at block %d", block.number);
+        logger.info("Looking at block %d", block.number);
         const transactions: Transaction[] = [];
         for (let index = 0; index < block.extrinsics.length; index++) {
             const extrinsic = block.extrinsics[index];

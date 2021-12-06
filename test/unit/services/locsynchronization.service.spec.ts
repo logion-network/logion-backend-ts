@@ -1,10 +1,13 @@
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
-
-import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
-import { LinkDescription, LocRequestAggregateRoot, LocRequestRepository, MetadataItemDescription } from '../../../src/logion/model/locrequest.model';
+import {
+    LinkDescription,
+    LocRequestAggregateRoot,
+    LocRequestRepository,
+    MetadataItemDescription
+} from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
@@ -18,7 +21,6 @@ describe("LocSynchronizer", () => {
 
     it("sets LOC created date", async () => {
         givenLocExtrinsic("createLoc", { loc_id: locId });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsLocCreationDate();
         await whenConsumingBlock();
@@ -38,7 +40,6 @@ describe("LocSynchronizer", () => {
                 },
             }
         });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsMetadata();
         await whenConsumingBlock();
@@ -48,7 +49,6 @@ describe("LocSynchronizer", () => {
 
     it("closes LOC", async () => {
         givenLocExtrinsic("close", { loc_id: locId });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsClose();
         await whenConsumingBlock();
@@ -68,7 +68,6 @@ describe("LocSynchronizer", () => {
                 },
             }
         });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsLink();
         await whenConsumingBlock();
@@ -78,7 +77,6 @@ describe("LocSynchronizer", () => {
 
     it("voids LOC on makeVoid", async () => {
         givenLocExtrinsic("makeVoid", { loc_id: locId });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsVoid();
         await whenConsumingBlock();
@@ -88,7 +86,6 @@ describe("LocSynchronizer", () => {
 
     it("voids LOC on makeVoidAndReplace", async () => {
         givenLocExtrinsic("makeVoidAndReplace", { loc_id: locId });
-        givenBlock();
         givenLocRequest();
         givenLocRequestExpectsVoid();
         await whenConsumingBlock();
@@ -116,15 +113,6 @@ function givenLocExtrinsic(method: string, args: JsonArgs) {
 
 let locExtrinsic: Mock<JsonExtrinsic>;
 
-function givenBlock() {
-    block = new Mock<BlockExtrinsics>();
-    extrinsicDataExtractor.setup(instance => instance.getBlockTimestamp(block.object())).returns(blockTimestamp);
-    const extrinsics: JsonExtrinsic[] = [ locExtrinsic.object() ];
-    block.setup(instance => instance.extrinsics).returns(extrinsics);
-}
-
-let block: Mock<BlockExtrinsics>;
-
 function givenLocRequest() {
     locRequest = new Mock<LocRequestAggregateRoot>();
     locRequestRepository.setup(instance => instance.findById(decimalToUuid(locDecimalUuid))).returns(Promise.resolve(locRequest.object()));
@@ -141,7 +129,7 @@ function givenLocRequestExpectsLocCreationDate() {
 const IS_BLOCK_TIME = It.Is<Moment>(time => time.isSame(blockTimestamp));
 
 async function whenConsumingBlock() {
-    await locSynchronizer().updateLocRequests(block.object());
+    await locSynchronizer().updateLocRequests(locExtrinsic.object(), blockTimestamp);
 }
 
 function locSynchronizer(): LocSynchronizer {

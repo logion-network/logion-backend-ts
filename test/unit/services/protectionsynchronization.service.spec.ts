@@ -1,9 +1,10 @@
-import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
-
-import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block';
 import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
-import { FetchProtectionRequestsSpecification, ProtectionRequestAggregateRoot, ProtectionRequestRepository } from '../../../src/logion/model/protectionrequest.model';
+import {
+    FetchProtectionRequestsSpecification,
+    ProtectionRequestAggregateRoot,
+    ProtectionRequestRepository
+} from '../../../src/logion/model/protectionrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { ProtectionSynchronizer } from '../../../src/logion/services/protectionsynchronization.service';
 import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
@@ -19,7 +20,6 @@ describe("ProtectionSynchronizer", () => {
 
     it("activates protection", async () => {
         givenCreateRecoveryExtrinsic();
-        givenBlock();
         givenProtectionRequest();
         await whenConsumingBlock();
         thenRequestActivated();
@@ -27,7 +27,6 @@ describe("ProtectionSynchronizer", () => {
     });
 });
 
-const blockTimestamp = moment();
 let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
 let protectionRequestRepository: Mock<ProtectionRequestRepository>;
 
@@ -51,20 +50,11 @@ function givenCreateRecoveryExtrinsic() {
 
 let locExtrinsic: Mock<JsonExtrinsic>;
 
-function givenBlock() {
-    block = new Mock<BlockExtrinsics>();
-    extrinsicDataExtractor.setup(instance => instance.getBlockTimestamp(block.object())).returns(blockTimestamp);
-    const extrinsics: JsonExtrinsic[] = [ locExtrinsic.object() ];
-    block.setup(instance => instance.extrinsics).returns(extrinsics);
-}
-
-let block: Mock<BlockExtrinsics>;
-
 function givenProtectionRequest() {
     locRequest = new Mock<ProtectionRequestAggregateRoot>();
     locRequest.setup(instance => instance.setActivated()).returns(undefined);
 
-    protectionRequestRepository.setup(instance => instance.findBy(It.Is<FetchProtectionRequestsSpecification>(spec => 
+    protectionRequestRepository.setup(instance => instance.findBy(It.Is<FetchProtectionRequestsSpecification>(spec =>
         spec.expectedRequesterAddress === SIGNER
     ))).returns(Promise.resolve([locRequest.object()]));
     protectionRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
@@ -75,7 +65,7 @@ const SIGNER: string = "signer";
 let locRequest: Mock<ProtectionRequestAggregateRoot>;
 
 async function whenConsumingBlock() {
-    await synchronizer().updateProtectionRequests(block.object());
+    await synchronizer().updateProtectionRequests(locExtrinsic.object());
 }
 
 function synchronizer(): ProtectionSynchronizer {

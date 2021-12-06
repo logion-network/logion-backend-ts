@@ -6,6 +6,8 @@ import { LocSynchronizer } from "./locsynchronization.service";
 import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
 import { ProtectionSynchronizer } from "./protectionsynchronization.service";
+import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
+import { toString } from "./types/responses/Extrinsic";
 
 const { logger } = Log;
 
@@ -19,6 +21,7 @@ export class BlockConsumer {
         private transactionSynchronizer: TransactionSynchronizer,
         private locSynchronizer: LocSynchronizer,
         private protectionSynchronizer: ProtectionSynchronizer,
+        private extrinsicDataExtractor: ExtrinsicDataExtractor,
     ) {}
 
     async consumeNewBlocks(now: Moment): Promise<void> {
@@ -56,13 +59,25 @@ export class BlockConsumer {
                 updatedOn: now
             });
         }
-        this.syncPointRepository.save(lastSyncPoint);
+        await this.syncPointRepository.save(lastSyncPoint);
     }
 
     private async processBlock(blockNumber: bigint): Promise<void> {
-            const block = await this.blockService.getBlockExtrinsics(blockNumber);
-            await this.transactionSynchronizer.addTransactions(block);
-            await this.locSynchronizer.updateLocRequests(block);
-            await this.protectionSynchronizer.updateProtectionRequests(block);
+        const block = await this.blockService.getBlockExtrinsics(blockNumber);
+        const timestamp = this.extrinsicDataExtractor.getBlockTimestamp(block);
+        if (timestamp === undefined) {
+            throw Error("Block has no timestamp");
+        }
+        await this.transactionSynchronizer.addTransactions(block);
+        for (let i = 0; i < block.extrinsics.length; ++i) {
+            const extrinsic = block.extrinsics[i];
+            if (extrinsic.error) {
+                logger.info("Skipping extrinsic with error: %s", toString(extrinsic))
+            } else if (extrinsic.method.pallet !== "timestamp") {
+                logger.info("Processing extrinsic: %s", toString(extrinsic))
+                await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
+                await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
+            }
+        }
     }
 }
