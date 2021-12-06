@@ -2,7 +2,7 @@ import { injectable } from 'inversify';
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model';
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { JsonArgs } from './call';
-import { JsonExtrinsic } from "./types/responses/Extrinsic";
+import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
 import { Log } from "../util/Log";
 
 const { logger } = Log;
@@ -24,6 +24,10 @@ export class ProtectionSynchronizer {
 
     async updateProtectionRequests(extrinsic: JsonExtrinsic): Promise<void> {
         if (extrinsic.method.pallet === "verifiedRecovery") {
+            if (extrinsic.error) {
+                logger.info("updateProtectionRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
+                return
+            }
             if (extrinsic.method.method === "createRecovery" && this.nodeOwnerInFriends(extrinsic.args)) {
                 const signer = extrinsic.signer!;
                 const requests = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({

@@ -3,7 +3,7 @@ import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locreque
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { decimalToUuid } from '../lib/uuid';
 import { JsonArgs } from './call';
-import { JsonExtrinsic } from "./types/responses/Extrinsic";
+import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
 import { Moment } from "moment";
 import { Log } from "../util/Log";
 
@@ -19,6 +19,10 @@ export class LocSynchronizer {
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
         if (extrinsic.method.pallet === "logionLoc") {
+            if (extrinsic.error) {
+                logger.info("updateLocRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
+                return
+            }
             if (extrinsic.method.method === "createLoc") {
                 const locId = this.extractLocId(extrinsic.args);
                 await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));

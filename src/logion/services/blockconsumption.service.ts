@@ -71,9 +71,7 @@ export class BlockConsumer {
         await this.transactionSynchronizer.addTransactions(block);
         for (let i = 0; i < block.extrinsics.length; ++i) {
             const extrinsic = block.extrinsics[i];
-            if (extrinsic.error) {
-                logger.info("Skipping extrinsic with error: %s", toString(extrinsic))
-            } else if (extrinsic.method.pallet !== "timestamp") {
+            if (extrinsic.method.pallet !== "timestamp") {
                 logger.info("Processing extrinsic: %s", toString(extrinsic))
                 await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
                 await this.protectionSynchronizer.updateProtectionRequests(extrinsic);

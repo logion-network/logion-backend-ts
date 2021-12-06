@@ -107,7 +107,7 @@ describe("BlockConsumer", () => {
         protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(5));
     });
 
-    it("does not consume extrinsics with errors", async () => {
+    it("consumes extrinsics with errors", async () => {
         // Given
         const head = 10002n;
         blockService.setup(instance => instance.getHeadBlockNumber()).returns(Promise.resolve(head));
@@ -146,8 +146,8 @@ describe("BlockConsumer", () => {
         syncPointRepository.verify(instance => instance.save(syncPoint.object()));
 
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(1));
-        locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Never());
-        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Never());
+        locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(1));
+        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(1));
     });
 
     it("deletes all and restarts given out of sync", async () => {
