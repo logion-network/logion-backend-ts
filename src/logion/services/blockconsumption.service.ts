@@ -2,7 +2,6 @@ import { injectable } from "inversify";
 import { Moment } from "moment";
 import { SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
 import { BlockExtrinsicsService } from "../services/block.service";
-import { LocSynchronizer } from "../services/locsynchronization.service";
 import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
 
@@ -16,7 +15,6 @@ export class BlockConsumer {
         private syncPointRepository: SyncPointRepository,
         private syncPointFactory: SyncPointFactory,
         private transactionSynchronizer: TransactionSynchronizer,
-        private locSynchronizer: LocSynchronizer,
     ) {}
 
     async consumeNewBlocks(now: Moment): Promise<void> {
@@ -31,7 +29,6 @@ export class BlockConsumer {
             logger.warn("Out-of-sync error: last synced block number greater than head number. Transaction cache will be erased and rebuilt from block #1");
 
             await this.transactionSynchronizer.reset();
-            await this.locSynchronizer.reset();
 
             await this.syncPointRepository.delete(lastSyncPoint!);
             lastSynced = 0n;
@@ -61,6 +58,5 @@ export class BlockConsumer {
     private async processBlock(blockNumber: bigint): Promise<void> {
         const block = await this.blockService.getBlockExtrinsics(blockNumber);
         await this.transactionSynchronizer.addTransactions(block);
-        await this.locSynchronizer.updateLocRequests(block);
     }
 }

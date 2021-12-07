@@ -65,14 +65,16 @@ describe("TransactionExtractor", () => {
         expectTransaction(params);
     });
 
-    it('finds recovery.asRecovered transactions', () => {
+    it('finds recovery.asRecovered (balances.transfer) transactions', () => {
         const params = recoveryParams({
             fileName: "recovery/block-06-recovery-asRecovered.json",
             method: "asRecovered",
             blockNumber: 3388n,
             fee: 125000192n,
+            transferValue: 200000000000000000n,
             reserved: 0n,
-            from: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
+            from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+            to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         });
         expectTransaction(params);
     });
@@ -178,6 +180,13 @@ function givenBlock(fileName: string): BlockExtrinsics {
         if("dest" in args) {
             args.dest.toJSON = () => args.dest
         }
+        const call = extrinsic.args['call']
+        if (call) {
+            const callArgs = call['args']
+            if ("dest" in callArgs) {
+                callArgs.dest.toJSON = () => callArgs.dest
+            }
+        }
     });
     return json;
 }
@@ -187,15 +196,17 @@ function recoveryParams(params: {
     method: string,
     blockNumber: bigint,
     fee: bigint,
+    transferValue?: bigint,
     reserved: bigint,
     from: string,
+    to?: string
 }): ExpectTransactionParams {
     return {
         ...params,
         pallet: "recovery",
         tip: 0n,
-        transferValue: 0n,
-        to: null
+        transferValue: params.transferValue? params.transferValue : 0n,
+        to: params.to? params.to : null
     };
 }
 

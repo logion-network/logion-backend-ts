@@ -26,7 +26,6 @@ import {
     AuthenticationController,
     fillInSpec as fillInSpecForAuthentication
 } from "./controllers/authentication.controller";
-import { LocRequestController, fillInSpec as fillInSpecForLoc } from "./controllers/locrequest.controller";
 
 require('source-map-support').install();
 
@@ -57,7 +56,6 @@ expressOasGenerator.handleResponses(app, {
         fillInSpecForTokenization(spec);
         fillInSpecForTransaction(spec);
         fillInSpecForAuthentication(spec);
-        fillInSpecForLoc(spec);
 
         return spec;
     },
@@ -85,7 +83,6 @@ createConnection()
     dino.registerController(ProtectionRequestController);
     dino.registerController(TokenizationRequestController);
     dino.registerController(TransactionController);
-    dino.registerController(LocRequestController);
     dino.registerApplicationError(ApplicationErrorController);
     dino.requestEnd(JsonResponse);
 

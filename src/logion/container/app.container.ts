@@ -21,13 +21,10 @@ import { BlockConsumer } from '../services/blockconsumption.service';
 import { ExtrinsicDataExtractor } from '../services/extrinsic.data.extractor';
 import { TransactionExtractor } from '../services/transaction.extractor';
 import { TransactionSynchronizer } from '../services/transactionsync.service';
-import { LocSynchronizer } from '../services/locsynchronization.service';
 import { Scheduler } from '../scheduler/scheduler.service';
 import { AuthenticationController } from "../controllers/authentication.controller";
 import { AuthenticationService, } from "../services/authentication.service";
 import { SessionRepository, SessionFactory } from "../model/session.model";
-import { LocRequestController } from "../controllers/locrequest.controller";
-import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.model";
 import { FileDbService } from '../services/filedb.service';
 
 let container = new Container({ defaultScope: "Singleton" });
@@ -56,11 +53,7 @@ container.bind(TransactionRepository).toSelf();
 container.bind(TransactionFactory).toSelf();
 container.bind(SyncPointRepository).toSelf();
 container.bind(SyncPointFactory).toSelf();
-container.bind(LocRequestController).toSelf();
-container.bind(LocRequestRepository).toSelf();
-container.bind(LocRequestFactory).toSelf();
 container.bind(FileDbService).toSelf();
-container.bind(LocSynchronizer).toSelf();
 container.bind(BlockConsumer).toSelf();
 
 export { container as AppContainer };
