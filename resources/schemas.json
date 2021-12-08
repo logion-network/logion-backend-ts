@@ -570,6 +570,10 @@
                                     "type": "string",
                                     "description": "The file's hash"
                                 },
+                                "nature": {
+                                    "type": "string",
+                                    "description": "The file's nature"
+                                },
                                 "addedOn": {
                                     "type": "string",
                                     "format": "date-time",
@@ -781,6 +785,15 @@
                 },
                 "title": "RejectLocRequestView",
                 "description": "The info to reject a LOC request"
+            },
+            "AddFileView": {
+                "type": "object",
+                "properties": {
+                    "nature": {
+                        "type": "string",
+                        "description": "The file's nature"
+                    }
+                }
             },
             "AddFileResultView": {
                 "type": "object",

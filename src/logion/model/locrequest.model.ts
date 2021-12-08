@@ -39,6 +39,7 @@ export interface FileDescription {
     readonly hash: string;
     readonly oid: number;
     readonly contentType: string;
+    readonly nature: string;
     readonly addedOn?: Moment;
 }
 
@@ -122,6 +123,7 @@ export class LocRequestAggregateRoot {
         file.oid = fileDescription.oid;
         file.contentType = fileDescription.contentType;
         file.draft = true;
+        file.nature = fileDescription.nature;
         file._toAdd = true;
         this.files!.push(file);
     }
@@ -160,6 +162,7 @@ export class LocRequestAggregateRoot {
             contentType: file!.contentType!,
             hash: file!.hash!,
             oid: file!.oid!,
+            nature: file!.nature!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
         };
     }
@@ -393,6 +396,9 @@ export class LocFile extends Child {
 
     @Column("boolean")
     draft?: boolean;
+
+    @Column({ length: 255, nullable: true })
+    nature?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })

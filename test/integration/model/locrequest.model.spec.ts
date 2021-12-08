@@ -66,6 +66,7 @@ describe('LocRequestRepository - read accesses', () => {
         expect(file.hash).toBe(hash);
         expect(file.oid).toBe(123456);
         expect(file.addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
+        expect(file.nature).toBe("some nature")
         expect(request!.files![0].draft).toBe(true);
 
         const metadata = request!.getMetadataItems();
@@ -141,7 +142,8 @@ function givenOpenLoc(id: string): LocRequestAggregateRoot {
         addedOn: moment(),
         hash: "hash",
         oid: 123,
-        contentType: "content/type"
+        contentType: "content/type",
+        nature: "nature1",
     })
     locRequest.metadata = []
     locRequest.addMetadataItem({
