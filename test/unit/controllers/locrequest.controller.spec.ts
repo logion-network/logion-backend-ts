@@ -240,6 +240,7 @@ describe('LocRequestController', () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
+            .field({ nature: "some nature" })
             .attach('file', buffer, {
                 filename: FILE_NAME,
                 contentType: 'text/plain',
@@ -508,7 +509,8 @@ const SOME_FILE = {
     name: "file-name",
     contentType: "text/plain",
     hash: SOME_DATA_HASH,
-    oid: SOME_OID
+    oid: SOME_OID,
+    nature: "file-nature",
 };
 
 async function fileExists(filePath: string): Promise<boolean> {

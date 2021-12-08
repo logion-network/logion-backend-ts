@@ -90,13 +90,15 @@ describe("LocRequestAggregateRoot", () => {
                 hash: "hash1",
                 name: "name1",
                 contentType: "text/plain",
-                oid: 1234
+                oid: 1234,
+                nature: "nature1",
             },
             {
                 hash: "hash2",
                 name: "name2",
                 contentType: "text/plain",
-                oid: 4567
+                oid: 4567,
+                nature: "nature2",
             }
         ];
         whenAddingFiles(files);
@@ -114,13 +116,15 @@ describe("LocRequestAggregateRoot", () => {
                 hash: "hash1",
                 name: "name1",
                 contentType: "text/plain",
-                oid: 1234
+                oid: 1234,
+                nature: "nature1",
             },
             {
                 hash: "hash1",
                 name: "name2",
                 contentType: "text/plain",
-                oid: 4567
+                oid: 4567,
+                nature: "nature2",
             }
         ];
         expect(() => whenAddingFiles(files)).toThrowError();
@@ -158,13 +162,15 @@ describe("LocRequestAggregateRoot", () => {
                 hash: "hash1",
                 name: "name1",
                 contentType: "text/plain",
-                oid: 1234
+                oid: 1234,
+                nature: "nature1",
             },
             {
                 hash: "hash2",
                 name: "name2",
                 contentType: "text/plain",
-                oid: 4567
+                oid: 4567,
+                nature: "nature2",
             }
         ];
         whenAddingFiles(files);
@@ -176,7 +182,8 @@ describe("LocRequestAggregateRoot", () => {
                 hash: "hash2",
                 name: "name2",
                 contentType: "text/plain",
-                oid: 4567
+                oid: 4567,
+                nature: "nature2",
             }
         ];
         thenExposesFiles(newFiles);
@@ -348,6 +355,7 @@ function expectSameFiles(f1: FileDescription, f2: FileDescription) {
     expect(f1.name).toEqual(f2.name);
     expect(f1.oid).toEqual(f2.oid);
     expect(f1.contentType).toEqual(f2.contentType);
+    expect(f1.nature).toEqual(f2.nature);
     if(f1.addedOn === undefined) {
         expect(f2.addedOn).not.toBeDefined();
     } else {

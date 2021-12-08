@@ -31,7 +31,6 @@ import { sha256File } from "../lib/crypto/hashing";
 import { FileDbService } from "../services/filedb.service";
 import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
-import { View } from "typeorm/schema-builder/view/View";
 
 const { logger } = Log;
 
@@ -66,6 +65,7 @@ type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
 type VoidLocView = components["schemas"]["VoidLocView"];
+type AddFileView = components["schemas"]["AddFileView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -337,7 +337,7 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/files')
     @Async()
-    async addFile(_body: any, requestId: string): Promise<AddFileResultView> {
+    async addFile(addFileView: AddFileView, requestId: string): Promise<AddFileResultView> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUser(this.request)
             .is(request.ownerAddress);
@@ -365,6 +365,7 @@ export class LocRequestController extends ApiController {
             contentType: file.mimetype,
             hash,
             oid,
+            nature: addFileView.nature || ""
         });
         await this.locRequestRepository.save(request);
 
