@@ -596,6 +596,10 @@
                                     "type": "string",
                                     "format": "date-time",
                                     "description": "The date-time of addition (chain time)"
+                                },
+                                "nature": {
+                                    "type": "string",
+                                    "description": "The link's nature"
                                 }
                             }
                         }
@@ -677,6 +681,10 @@
                         "items": {
                             "type": "object",
                             "properties": {
+                                "nature": {
+                                    "type": "string",
+                                    "description": "The file's nature"
+                                },
                                 "hash": {
                                     "type": "string",
                                     "description": "The file's hash"
@@ -685,6 +693,28 @@
                                     "type": "string",
                                     "format": "date-time",
                                     "description": "The date-time of addition (chain time)"
+                                }
+                            }
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "description": "The links attached to this request's LOC",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "target": {
+                                    "type": "string",
+                                    "description": "The link's target"
+                                },
+                                "addedOn": {
+                                    "type": "string",
+                                    "format": "date-time",
+                                    "description": "The date-time of addition (chain time)"
+                                },
+                                "nature": {
+                                    "type": "string",
+                                    "description": "The link's nature"
                                 }
                             }
                         }
@@ -805,6 +835,32 @@
                 },
                 "title": "AddFileResultView",
                 "description": "The result of adding a file to a LOC"
+            },
+            "AddLinkView": {
+                "type": "object",
+                "properties": {
+                    "target": {
+                        "type": "string",
+                        "description": "The link's target"
+                    },
+                    "nature": {
+                        "type": "string",
+                        "description": "The file's nature"
+                    }
+                }
+            },
+            "AddMetadataView": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The item's name"
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "The item's value"
+                    }
+                }
             },
             "VoidLocView": {
                 "type": "object",

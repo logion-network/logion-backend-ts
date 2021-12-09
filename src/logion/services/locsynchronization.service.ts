@@ -28,23 +28,16 @@ export class LocSynchronizer {
                 await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
             } else if (extrinsic.method.method === "addMetadata") {
                 const locId = this.extractLocId(extrinsic.args);
-                const item = {
-                    name: extrinsic.args['item'].name.toUtf8(),
-                    value: extrinsic.args['item'].value.toUtf8(),
-                    addedOn: timestamp,
-                };
-                await this.mutateLoc(locId, loc => loc.addMetadataItem(item));
+                const name = extrinsic.args['item'].name.toUtf8();
+                await this.mutateLoc(locId, loc => loc.setMetadataItemAddedOn(name, timestamp));
             } else if (extrinsic.method.method === "addFile") {
                 const locId = this.extractLocId(extrinsic.args);
                 const hash = extrinsic.args['file'].get('hash').toHex();
                 await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
             } else if (extrinsic.method.method === "addLink") {
                 const locId = this.extractLocId(extrinsic.args);
-                const link = {
-                    target: decimalToUuid(extrinsic.args['link'].id.toString()),
-                    addedOn: timestamp,
-                };
-                await this.mutateLoc(locId, loc => loc.addLink(link));
+                const target = decimalToUuid(extrinsic.args['link'].id.toString());
+                await this.mutateLoc(locId, loc => loc.setLinkAddedOn(target, timestamp));
             } else if (extrinsic.method.method === "close") {
                 const locId = this.extractLocId(extrinsic.args);
                 await this.mutateLoc(locId, loc => loc.close(timestamp));

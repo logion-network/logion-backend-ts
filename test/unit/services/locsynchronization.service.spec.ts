@@ -2,12 +2,7 @@ import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
-import {
-    LinkDescription,
-    LocRequestAggregateRoot,
-    LocRequestRepository,
-    MetadataItemDescription
-} from '../../../src/logion/model/locrequest.model';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
@@ -28,7 +23,7 @@ describe("LocSynchronizer", () => {
         thenLocIsSaved();
     });
 
-    it("adds metadata", async () => {
+    it("sets metadata item added on", async () => {
         givenLocExtrinsic("addMetadata", {
             loc_id: locId,
             item: {
@@ -41,9 +36,9 @@ describe("LocSynchronizer", () => {
             }
         });
         givenLocRequest();
-        givenLocRequestExpectsMetadata();
+        givenLocRequestExpectsMetadataTimestamped();
         await whenConsumingBlock();
-        thenMetadataAdded();
+        thenMetadataTimestamped();
         thenLocIsSaved();
     });
 
@@ -56,7 +51,7 @@ describe("LocSynchronizer", () => {
         thenLocIsSaved();
     });
 
-    it("adds link", async () => {
+    it("sets link added on", async () => {
         givenLocExtrinsic("addLink", {
             loc_id: locId,
             link: {
@@ -69,9 +64,9 @@ describe("LocSynchronizer", () => {
             }
         });
         givenLocRequest();
-        givenLocRequestExpectsLink();
+        givenLocRequestExpectsLinkTimestamped();
         await whenConsumingBlock();
-        thenLinkAdded();
+        thenLinkTimestamped();
         thenLocIsSaved();
     });
 
@@ -147,20 +142,17 @@ function thenLocIsSaved() {
     locRequestRepository.verify(instance => instance.save(locRequest.object()));
 }
 
-function givenLocRequestExpectsMetadata() {
-    locRequest.setup(instance => instance.addMetadataItem(IS_EXPECTED_ITEM)).returns(undefined);
+function givenLocRequestExpectsMetadataTimestamped() {
+    locRequest.setup(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME)).returns(undefined);
 }
 
-const IS_EXPECTED_ITEM = It.Is<MetadataItemDescription>(item =>
-            item.name === METADATA_ITEM_NAME
-            && item.value === METADATA_ITEM_VALUE
-            && item.addedOn.isSame(blockTimestamp));
+const IS_EXPECTED_NAME = It.Is<string>(name => name === METADATA_ITEM_NAME)
 
 const METADATA_ITEM_NAME = "name";
 const METADATA_ITEM_VALUE = "value";
 
-function thenMetadataAdded() {
-    locRequest.verify(instance => instance.addMetadataItem(IS_EXPECTED_ITEM));
+function thenMetadataTimestamped() {
+    locRequest.verify(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsClose() {
@@ -174,16 +166,14 @@ function thenLocClosed() {
 const LINK_TARGET = "130084474896785895402627605545662412605";
 const LINK_TARGET_UUID = decimalToUuid(LINK_TARGET);
 const LINK_NATURE = "nature";
-const IS_EXPECTED_LINK = It.Is<LinkDescription>(link =>
-            link.target === LINK_TARGET_UUID
-            && link.addedOn.isSame(blockTimestamp));
+const IS_EXPECTED_TARGET = It.Is<string>(target => target === LINK_TARGET_UUID)
 
-function givenLocRequestExpectsLink() {
-    locRequest.setup(instance => instance.addLink(IS_EXPECTED_LINK)).returns(undefined);
+function givenLocRequestExpectsLinkTimestamped() {
+    locRequest.setup(instance => instance.setLinkAddedOn(IS_EXPECTED_TARGET, IS_BLOCK_TIME)).returns(undefined);
 }
 
-function thenLinkAdded() {
-    locRequest.verify(instance => instance.addLink(IS_EXPECTED_LINK));
+function thenLinkTimestamped() {
+    locRequest.verify(instance => instance.setLinkAddedOn(IS_EXPECTED_TARGET, IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsVoid() {

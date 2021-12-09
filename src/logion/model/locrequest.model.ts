@@ -14,8 +14,8 @@ import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
-import { order } from "../lib/db/collections";
-import { Child, saveChildren } from "./child";
+import { order, HasIndex } from "../lib/db/collections";
+import { saveChildren, deleteIndexedChild, Child } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { Log } from "../util/Log";
@@ -46,12 +46,13 @@ export interface FileDescription {
 export interface MetadataItemDescription {
     readonly name: string;
     readonly value: string;
-    readonly addedOn: Moment;
+    readonly addedOn?: Moment;
 }
 
 export interface LinkDescription {
     readonly target: string;
-    readonly addedOn: Moment;
+    readonly nature: string;
+    readonly addedOn?: Moment;
 }
 
 export interface VoidInfo {
@@ -111,7 +112,7 @@ export class LocRequestAggregateRoot {
 
     addFile(fileDescription: FileDescription) {
         this.ensureOpen();
-        if(this.isFileAlreadyPresent(fileDescription.hash)) {
+        if(this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
         }
         const file = new LocFile();
@@ -128,13 +129,8 @@ export class LocRequestAggregateRoot {
         this.files!.push(file);
     }
 
-    isFileAlreadyPresent(hash: string): boolean {
-        return this.files!.find(file => file.hash === hash) !== undefined;
-    }
-
     confirmFile(hash: string) {
-        const file = this.files!.find(file => file.hash === hash);
-        file!.draft = false;
+        this.file(hash)!.draft = false;
     }
 
     private ensureOpen(warnOnly: boolean = false) {
@@ -148,12 +144,15 @@ export class LocRequestAggregateRoot {
     }
 
     hasFile(hash: string): boolean {
-        return this.files!.find(file => file.hash === hash) !== undefined;
+        return this.file(hash) !== undefined;
+    }
+
+    file(hash: string): LocFile | undefined {
+        return this.files!.find(file => file.hash === hash)
     }
 
     getFile(hash: string): FileDescription {
-        const file = this.files!.find(file => file.hash === hash);
-        return this.toFileDescription(file!);
+        return this.toFileDescription(this.file(hash)!);
     }
 
     private toFileDescription(file: LocFile): FileDescription {
@@ -167,8 +166,8 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    getFiles(): FileDescription[] {
-        return order(this.files, file => this.toFileDescription(file));
+    getFiles(includeDraft: boolean = true): FileDescription[] {
+        return order(this.files?.filter(item => includeDraft || ! item.draft), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -200,38 +199,88 @@ export class LocRequestAggregateRoot {
     }
 
     addMetadataItem(itemDescription: MetadataItemDescription) {
-        this.ensureOpen(true);
+        this.ensureOpen();
+        if (this.hasMetadataItem(itemDescription.name)) {
+            throw new Error("A metadata item with given name was already added to this LOC");
+        }
         const item = new LocMetadataItem();
         item.request = this;
         item.requestId = this.id;
         item.index = this.metadata!.length;
         item.name = itemDescription.name;
         item.value = itemDescription.value;
-        item.addedOn = itemDescription.addedOn.toDate();
+        item.draft = true;
         item._toAdd = true;
         this.metadata!.push(item);
     }
 
-    getMetadataItems(): MetadataItemDescription[] {
-        return order(this.metadata, item => ({
+    getMetadataItem(name: string): MetadataItemDescription {
+        return this.toMetadataItemDescription(this.metadataItem(name)!)
+    }
+
+    private toMetadataItemDescription(item: LocMetadataItem): MetadataItemDescription {
+        return ({
             name: item.name!,
             value: item.value!,
-            addedOn: moment(item.addedOn!),
-        }));
+            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+        })
+    }
+
+    getMetadataItems(includeDraft: boolean = true): MetadataItemDescription[] {
+        return order(this.metadata?.filter(item => includeDraft || ! item.draft), this.toMetadataItemDescription);
+    }
+
+    setMetadataItemAddedOn(name: string, addedOn: Moment) {
+        const metadataItem = this.metadataItem(name)
+        if (!metadataItem) {
+            logger.error(`MetadataItem with name ${ name } not found`);
+            return;
+        }
+        if (metadataItem.addedOn) {
+            throw new Error("MetadataItem added on date is already set");
+        }
+        metadataItem.addedOn = addedOn.toDate();
+        metadataItem.draft = false;
+        metadataItem._toUpdate = true;
+    }
+
+    removeMetadataItem(name: string): void {
+        this.ensureOpen();
+        const removedItemIndex: number = this.metadata!.findIndex(link => link.name === name);
+        if (removedItemIndex === -1) {
+            throw new Error("No metadata item with given name");
+        }
+        const removedItem: LocMetadataItem = this.metadata![removedItemIndex];
+        if (!removedItem.draft) {
+            throw new Error("Only draft links can be removed");
+        }
+        deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
+    }
+
+    confirmMetadataItem(name: string) {
+        this.metadataItem(name)!.draft = false;
+    }
+
+    hasMetadataItem(name: string):boolean {
+        return this.metadataItem(name) !== undefined;
+    }
+
+    metadataItem(name: string): LocMetadataItem | undefined {
+        return this.metadata!.find(metadataItem => metadataItem.name === name)
     }
 
     setFileAddedOn(hash: string, addedOn: Moment) {
-        const file = this.files!.find(file => file.hash === hash);
+        const file = this.file(hash);
         if (!file) {
             logger.error(`File with hash ${ hash } not found`);
             return;
         }
-        if (file!.addedOn !== undefined && file!.addedOn !== null) {
+        if (file.addedOn) {
             throw new Error("File added on date is already set");
         }
-        file!.addedOn = addedOn.toDate();
-        file!.draft = false;
-        file!._toUpdate = true;
+        file.addedOn = addedOn.toDate();
+        file.draft = false;
+        file._toUpdate = true;
     }
 
     removeFile(hash: string): FileDescription {
@@ -244,37 +293,79 @@ export class LocRequestAggregateRoot {
         if(!removedFile.draft) {
             throw new Error("Only draft files can be removed");
         }
-        this._filesToDelete.push(removedFile);
-        this.files!.splice(removedFileIndex, 1);
-        this.reindexFiles(removedFileIndex!);
+        deleteIndexedChild(removedFileIndex, this.files!, this._filesToDelete)
         return this.toFileDescription(removedFile);
     }
 
-    private reindexFiles(removedFileIndex: number) {
-        for(let i = removedFileIndex; i < this.files!.length; ++i) {
-            const file = this.files![i];
-            file.index = file.index! - 1;
-            file._toUpdate = true;
-        }
-    }
-
     addLink(itemDescription: LinkDescription) {
-        this.ensureOpen(true);
+        this.ensureOpen();
+        if (this.hasLink(itemDescription.target)) {
+            throw new Error("A link with given target was already added to this LOC");
+        }
         const item = new LocLink();
         item.request = this;
         item.requestId = this.id;
         item.index = this.links!.length;
         item.target = itemDescription.target;
-        item.addedOn = itemDescription.addedOn.toDate();
+        item.nature = itemDescription.nature
+        item.draft = true;
         item._toAdd = true;
         this.links!.push(item);
     }
 
-    getLinks(): LinkDescription[] {
-        return order(this.links, item => ({
+    getLink(name: string): LinkDescription {
+        return this.toLinkDescription(this.link(name)!)
+    }
+
+    private toLinkDescription(item: LocLink): LinkDescription {
+        return {
             target: item.target!,
-            addedOn: moment(item.addedOn!),
-        }));
+            nature: item.nature!,
+            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+        }
+    }
+
+    getLinks(includeDraft: boolean = true): LinkDescription[] {
+        return order(this.links?.filter(link => includeDraft || ! link.draft), this.toLinkDescription);
+    }
+
+    setLinkAddedOn(target:string, addedOn: Moment) {
+        const link = this.link(target);
+        if (!link) {
+            logger.error(`Link with target ${ target } not found`);
+            return;
+        }
+        if (link.addedOn) {
+            throw new Error("Link added on date is already set");
+        }
+        link.addedOn = addedOn.toDate();
+        link.draft = false;
+        link._toUpdate = true;
+    }
+
+    removeLink(target: string): void {
+        this.ensureOpen();
+        const removedLinkIndex: number = this.links!.findIndex(link => link.target === target);
+        if (removedLinkIndex === -1) {
+            throw new Error("No link with given target");
+        }
+        const removedLink: LocLink = this.links![removedLinkIndex];
+        if (!removedLink.draft) {
+            throw new Error("Only draft links can be removed");
+        }
+        deleteIndexedChild(removedLinkIndex, this.links!, this._linksToDelete)
+    }
+
+    confirmLink(target: string) {
+        this.link(target)!.draft = false;
+    }
+
+    hasLink(target: string):boolean {
+        return this.link(target) !== undefined;
+    }
+
+    link(target: string): LocLink | undefined {
+        return this.links!.find(link => link.target === target)
     }
 
     preVoid(reason: string) {
@@ -367,11 +458,13 @@ export class LocRequestAggregateRoot {
     voidInfo?: EmbeddableVoidInfo;
 
     _filesToDelete: LocFile[] = [];
+    _linksToDelete: LocLink[] = [];
+    _metadataToDelete: LocMetadataItem[] = [];
 }
 
 @Entity("loc_request_file")
 @Unique(["requestId", "index"])
-export class LocFile extends Child {
+export class LocFile extends Child implements HasIndex {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
@@ -407,18 +500,19 @@ export class LocFile extends Child {
 }
 
 @Entity("loc_metadata_item")
-export class LocMetadataItem extends Child {
+@Unique(["requestId", "index"])
+export class LocMetadataItem extends Child implements HasIndex {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
 
-    @PrimaryColumn({ name: "index" })
+    @Column({ name: "index" })
     index?: number;
 
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
     addedOn?: Date;
 
-    @Column({ length: 255 })
+    @PrimaryColumn({ length: 255 })
     name?: string;
 
     @Column({ name: "value",  length: 255, nullable: true})
@@ -427,25 +521,35 @@ export class LocMetadataItem extends Child {
     @Column("text", { name: "value_text", default: "" })
     value?: string;
 
+    @Column("boolean", { default: false })
+    draft?: boolean;
+
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
 }
 
 @Entity("loc_link")
-export class LocLink extends Child {
+@Unique(["requestId", "index"])
+export class LocLink extends Child implements HasIndex {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
 
-    @PrimaryColumn({ name: "index" })
+    @Column({ name: "index" })
     index?: number;
 
-    @Column("timestamp without time zone", { name: "added_on" })
+    @Column("timestamp without time zone", { name: "added_on", nullable: true })
     addedOn?: Date;
 
-    @Column({ type: "uuid" })
+    @PrimaryColumn({ type: "uuid" })
     target?: string;
+
+    @Column("boolean", { default: false })
+    draft?: boolean;
+
+    @Column({ length: 255, nullable: true })
+    nature?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.links)
     @JoinColumn({ name: "request_id" })
@@ -501,18 +605,28 @@ export class LocRequestRepository {
     }
 
     private async saveMetadata(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
+        const whereExpression: <E extends WhereExpressionBuilder>(sql: E, item: LocMetadataItem) => E = (sql, item) => sql
+            .where("request_id = :id", { id: root.id })
+            .andWhere("name = :name", { name: item.name })
         await saveChildren({
             children: root.metadata!,
             entityManager,
-            entityClass: LocMetadataItem
+            entityClass: LocMetadataItem,
+            whereExpression,
+            childrenToDelete: root._metadataToDelete
         })
     }
 
     private async saveLinks(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
+        const whereExpression: <E extends WhereExpressionBuilder>(sql: E, link: LocLink) => E = (sql, link) => sql
+            .where("request_id = :id", { id: root.id })
+            .andWhere("target = :target", { target: link.target })
         await saveChildren({
             children: root.links!,
             entityManager,
-            entityClass: LocLink
+            entityClass: LocLink,
+            whereExpression,
+            childrenToDelete: root._linksToDelete
         })
     }
 
