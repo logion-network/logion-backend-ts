@@ -10,7 +10,7 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     NewLocRequestParameters,
-    LocRequestStatus,
+    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import {
@@ -31,6 +31,25 @@ const testData = {
     description: "I want to open a case",
     locType: "Transaction"
 };
+
+const testFile:FileDescription = {
+    name: "test-file",
+    nature: "file-nature",
+    contentType: "application/pdf",
+    hash: "0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9",
+    oid: 123,
+    addedOn: moment()
+}
+
+const testLink:LinkDescription = {
+    target: "507a00a1-7387-44b8-ac4d-fa57ccbf6da5",
+    nature: "link-nature"
+}
+
+const testMetadataItem:MetadataItemDescription = {
+    name: "test-data",
+    value: "test-data-value"
+}
 
 const testDataWithUserIdentity = {
     ...testData,
@@ -280,6 +299,19 @@ describe('LocRequestController', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.id).toBe(REQUEST_ID);
+                const file = response.body.files[0]
+                expect(file.name).toBe(testFile.name)
+                expect(file.nature).toBe(testFile.nature)
+                expect(file.hash).toBe(testFile.hash)
+                expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
+                const link = response.body.links[0]
+                expect(link.nature).toBe(testLink.nature)
+                expect(link.target).toBe(testLink.target)
+                expect(link.addedOn).toBe(testLink.addedOn?.toISOString())
+                const metadataItem = response.body.metadata[0]
+                expect(metadataItem.name).toBe(testMetadataItem.name)
+                expect(metadataItem.value).toBe(testMetadataItem.value)
+                expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
             });
     });
 
@@ -296,6 +328,67 @@ describe('LocRequestController', () => {
             .put(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}/confirm`)
             .expect(204);
     });
+
+    it('adds a metadata item', async () => {
+        const locRequest = mockRequestForMetadata();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
+            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
+            .expect(204)
+        locRequest.verify(instance => instance.addMetadataItem(
+            It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE)))
+    })
+
+    it('deletes a metadata item', async () => {
+        const locRequest = mockRequestForMetadata();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
+        const dataName = encodeURIComponent(SOME_DATA_NAME)
+        await request(app)
+            .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }`)
+            .expect(200)
+        locRequest.verify(instance => instance.removeMetadataItem(SOME_DATA_NAME))
+    })
+
+    it('confirms a metadata item', async () => {
+        const locRequest = mockRequestForMetadata();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
+        const dataName = encodeURIComponent(SOME_DATA_NAME)
+        await request(app)
+            .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }/confirm`)
+            .expect(204)
+        locRequest.verify(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
+    })
+
+
+    it('adds a link', async () => {
+        const locRequest = mockRequestForLink();
+        const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest))
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/links`)
+            .send({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE })
+            .expect(204)
+        locRequest.verify(instance => instance.addLink(
+            It.Is<LinkDescription>(item => item.target == SOME_LINK_TARGET && item.nature == SOME_LINK_NATURE)))
+    })
+
+    it('deletes a link', async () => {
+        const locRequest = mockRequestForLink();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
+        await request(app)
+            .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
+            .expect(200)
+        locRequest.verify(instance => instance.removeLink(SOME_LINK_TARGET))
+    })
+
+    it('confirms a link', async () => {
+        const locRequest = mockRequestForLink();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
+        await request(app)
+            .put(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }/confirm`)
+            .expect(204)
+        locRequest.verify(instance => instance.confirmLink(SOME_LINK_TARGET))
+    })
 
     it('pre-closes', async () => {
         const app = setupApp(LocRequestController, mockModelForPreClose)
@@ -410,7 +503,12 @@ function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepo
     return protectionRepository.object();
 }
 
-function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggregateRoot> {
+function mockRequest(status: LocRequestStatus,
+                     data: any,
+                     files: FileDescription[] = [],
+                     metadataItems: MetadataItemDescription[] = [],
+                     links: LinkDescription[] = [],
+                     ): Mock<LocRequestAggregateRoot> {
     const request = new Mock<LocRequestAggregateRoot>();
     request.setup(instance => instance.status)
         .returns(status);
@@ -422,9 +520,9 @@ function mockRequest(status: LocRequestStatus, data: any): Mock<LocRequestAggreg
             createdOn: moment().toISOString(),
             ownerAddress: ALICE
         });
-    request.setup(instance => instance.getFiles()).returns([]);
-    request.setup(instance => instance.getMetadataItems()).returns([]);
-    request.setup(instance => instance.getLinks()).returns([]);
+    request.setup(instance => instance.getFiles()).returns(files);
+    request.setup(instance => instance.getMetadataItems()).returns(metadataItems);
+    request.setup(instance => instance.getLinks()).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
     return request;
 }
@@ -461,7 +559,7 @@ function mockModelForAddFile(container: Container): void {
         .returns(Promise.resolve());
 
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.isFileAlreadyPresent(SOME_DATA_HASH)).returns(false);
+    request.setup(instance => instance.hasFile(SOME_DATA_HASH)).returns(false);
     request.setup(instance => instance.addFile).returns(() => {});
 
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
@@ -523,7 +621,12 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 function mockModelForGetSingle(container: Container): void {
-    const request = mockRequest("OPEN", testData);
+    const request = mockRequest("OPEN",
+        testData,
+        [ testFile ],
+        [ testMetadataItem ],
+        [ testLink ]
+    );
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
@@ -567,6 +670,71 @@ function mockModelForConfirmFile(container: Container) {
         .returns(Promise.resolve(request.object()));
     repository.setup(instance => instance.save(request.object()))
         .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+const SOME_DATA_NAME = "data name with exotic char !é\"/&'"
+const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
+
+function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.removeMetadataItem(SOME_DATA_NAME))
+        .returns()
+    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
+        .returns()
+    request.setup(instance => instance.addMetadataItem({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE}))
+        .returns()
+    return request;
+}
+
+const SOME_LINK_TARGET = '35bac9a0-1516-4f8d-ae9e-9b14abe87e25'
+const SOME_LINK_NATURE = 'link_nature'
+
+function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
+    const request = mockRequest("OPEN", testData);
+    request.setup(instance => instance.removeLink(SOME_LINK_TARGET))
+        .returns()
+    request.setup(instance => instance.confirmLink(SOME_LINK_TARGET))
+        .returns()
+    request.setup(instance => instance.addLink({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE}))
+        .returns()
+    return request;
+}
+
+function mockModelForAllItems(container: Container, request: Mock<LocRequestAggregateRoot>) {
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForAddLink(container: Container, request: Mock<LocRequestAggregateRoot>) {
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    const linkTargetRequest = mockRequest("OPEN", testData)
+    linkTargetRequest.setup(instance => instance.id).returns(SOME_LINK_TARGET)
+    repository.setup(instance => instance.findById(SOME_LINK_TARGET))
+        .returns(Promise.resolve(linkTargetRequest.object()))
+
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();

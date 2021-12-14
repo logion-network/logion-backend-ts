@@ -83,129 +83,11 @@ describe("LocRequestAggregateRoot", () => {
         expect(() => whenAccepting(ACCEPTED_ON)).toThrowError();
     });
 
-    it("adds and exposes files", () => {
-        givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
-            {
-                hash: "hash1",
-                name: "name1",
-                contentType: "text/plain",
-                oid: 1234,
-                nature: "nature1",
-            },
-            {
-                hash: "hash2",
-                name: "name2",
-                contentType: "text/plain",
-                oid: 4567,
-                nature: "nature2",
-            }
-        ];
-        whenAddingFiles(files);
-        thenExposesFiles(files);
-        thenExposesFileByHash("hash1", files[0]);
-        thenExposesFileByHash("hash2", files[1]);
-        thenHasFile("hash1");
-        thenHasFile("hash2");
-    });
-
-    it("does not accept several files with same hash", () => {
-        givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
-            {
-                hash: "hash1",
-                name: "name1",
-                contentType: "text/plain",
-                oid: 1234,
-                nature: "nature1",
-            },
-            {
-                hash: "hash1",
-                name: "name2",
-                contentType: "text/plain",
-                oid: 4567,
-                nature: "nature2",
-            }
-        ];
-        expect(() => whenAddingFiles(files)).toThrowError();
-    });
-
-    it("adds and exposes metadata", () => {
-        givenRequestWithStatus('OPEN');
-        const metadata: MetadataItemDescription[] = [
-            {
-                name: "name1",
-                value: "value1",
-                addedOn: moment(),
-            },
-            {
-                name: "name2",
-                value: "value2",
-                addedOn: moment(),
-            }
-        ];
-        whenAddingMetadata(metadata);
-        thenExposesMetadata(metadata);
-    });
-
     it("sets LOC created date", () => {
         givenRequestWithStatus('OPEN');
         const locCreatedDate = moment();
         whenSettingLocCreatedDate(locCreatedDate);
         thenExposesLocCreatedDate(locCreatedDate);
-    });
-
-    it("removes previously added files", () => {
-        givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
-            {
-                hash: "hash1",
-                name: "name1",
-                contentType: "text/plain",
-                oid: 1234,
-                nature: "nature1",
-            },
-            {
-                hash: "hash2",
-                name: "name2",
-                contentType: "text/plain",
-                oid: 4567,
-                nature: "nature2",
-            }
-        ];
-        whenAddingFiles(files);
-        whenRemovingFile("hash1");
-        thenReturnedRemovedFile(files[0]);
-
-        const newFiles: FileDescription[] = [
-            {
-                hash: "hash2",
-                name: "name2",
-                contentType: "text/plain",
-                oid: 4567,
-                nature: "nature2",
-            }
-        ];
-        thenExposesFiles(newFiles);
-        thenExposesFileByHash("hash2", newFiles[0]);
-        thenHasFile("hash2");
-        thenHasExpectedFileIndices();
-    });
-
-    it("adds and exposes links", () => {
-        givenRequestWithStatus('OPEN');
-        const links: LinkDescription[] = [
-            {
-                target: "value1",
-                addedOn: moment(),
-            },
-            {
-                target: "value2",
-                addedOn: moment(),
-            }
-        ];
-        whenAddingLinks(links);
-        thenExposesLinks(links);
     });
 
     it("pre-closes", () => {
@@ -261,6 +143,324 @@ describe("LocRequestAggregateRoot", () => {
         })
     });
 });
+
+describe("LocRequestAggregateRoot (metadata)", () => {
+
+    it("does not accept several metadata items with same name", () => {
+        givenRequestWithStatus('OPEN');
+        const items: MetadataItemDescription[] = [
+            {
+                name: "same name",
+                value: "some value"
+            },
+            {
+                name: "same name",
+                value: "some other value"
+            }
+        ];
+        expect(() => whenAddingMetadata(items)).toThrowError();
+    });
+
+    it("adds and exposes metadata", () => {
+        givenRequestWithStatus('OPEN');
+        const metadata: MetadataItemDescription[] = [
+            {
+                name: "name1",
+                value: "value1",
+            },
+            {
+                name: "name2",
+                value: "value2",
+            }
+        ];
+        whenAddingMetadata(metadata);
+        thenExposesMetadata(metadata);
+    });
+
+    it("removes previously added metadata item", () => {
+        givenRequestWithStatus('OPEN');
+        const items: MetadataItemDescription[] = [
+            {
+                name: "name1",
+                value: "some nice value"
+            },
+            {
+                name: "name2",
+                value: "some other nice value"
+            }
+        ];
+        whenAddingMetadata(items);
+        whenRemovingMetadataItem("name2")
+
+        const newItems: MetadataItemDescription[] = [
+            {
+                name: "name1",
+                value: "some nice value"
+            }
+        ];
+        thenExposesMetadata(newItems);
+        thenExposesMetadataItemByName("name1", newItems[0]);
+        thenHasMetadataItem("name1");
+        thenHasExpectedMetadataIndices();
+    });
+
+    it("confirms metadata item", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "target-1";
+        whenAddingMetadata([
+            {
+                name,
+                value: "value-1"
+            }
+        ])
+        whenConfirmingMetadataItem(name)
+        thenMetadataItemIsNotDraft(name)
+    })
+})
+
+describe("LocRequestAggregateRoot (links)", () => {
+
+    it("does not accept several links with same target", () => {
+        givenRequestWithStatus('OPEN');
+        const links: LinkDescription[] = [
+            {
+                target: "another-loc-id",
+                nature: "nature1"
+            },
+            {
+                target: "another-loc-id",
+                nature: "nature2"
+            }
+        ];
+        expect(() => whenAddingLinks(links)).toThrowError();
+    });
+
+    it("adds and exposes links", () => {
+        givenRequestWithStatus('OPEN');
+        const links: LinkDescription[] = [
+            {
+                target: "value1",
+                nature: "nature1",
+            },
+            {
+                target: "value2",
+                nature: "nature2",
+            }
+        ];
+        whenAddingLinks(links);
+        thenExposesLinks(links);
+    });
+
+    it("removes previously added link", () => {
+        givenRequestWithStatus('OPEN');
+        const links: LinkDescription[] = [
+            {
+                target: "target-1",
+                nature: "nature-1"
+            },
+            {
+                target: "target-2",
+                nature: "nature-2"
+            }
+        ];
+        whenAddingLinks(links);
+        whenRemovingLink("target-1")
+
+        const newLinks: LinkDescription[] = [
+            {
+                target: "target-2",
+                nature: "nature-2"
+            }
+        ];
+        thenExposesLinks(newLinks);
+        thenExposesLinkByTarget("target-2", newLinks[0]);
+        thenHasLink("target-2");
+        thenHasExpectedLinkIndices();
+    });
+
+    it("confirms link", () => {
+        givenRequestWithStatus('OPEN');
+        const target = "target-1";
+        whenAddingLinks([
+            {
+                target,
+                nature: "nature-1"
+            }
+        ])
+        whenConfirmingLink(target)
+        thenLinkIsNotDraft(target)
+    })
+})
+
+describe("LocRequestAggregateRoot (files)", () => {
+
+    it("adds and exposes files", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234,
+                nature: "nature1",
+            },
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567,
+                nature: "nature2",
+            }
+        ];
+        whenAddingFiles(files);
+        thenExposesFiles(files);
+        thenExposesFileByHash("hash1", files[0]);
+        thenExposesFileByHash("hash2", files[1]);
+        thenHasFile("hash1");
+        thenHasFile("hash2");
+    });
+
+    it("does not accept several files with same hash", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234,
+                nature: "nature1",
+            },
+            {
+                hash: "hash1",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567,
+                nature: "nature2",
+            }
+        ];
+        expect(() => whenAddingFiles(files)).toThrowError();
+    });
+
+    it("removes previously added files", () => {
+        givenRequestWithStatus('OPEN');
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234,
+                nature: "nature1",
+            },
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567,
+                nature: "nature2",
+            }
+        ];
+        whenAddingFiles(files);
+        whenRemovingFile("hash1");
+        thenReturnedRemovedFile(files[0]);
+
+        const newFiles: FileDescription[] = [
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567,
+                nature: "nature2",
+            }
+        ];
+        thenExposesFiles(newFiles);
+        thenExposesFileByHash("hash2", newFiles[0]);
+        thenHasFile("hash2");
+        thenHasExpectedFileIndices();
+    });
+
+    it("confirms file", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = "hash-1";
+        whenAddingFiles([
+            {
+                hash,
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234,
+                nature: "nature1",
+            }
+        ]);
+        whenConfirmingFile(hash)
+        thenFileIsNotDraft(hash)
+    })
+})
+
+describe("LocRequestAggregateRoot (synchronization)", () => {
+
+    it("sets metadata item timestamp", () => {
+        givenRequestWithStatus("OPEN")
+        whenAddingMetadata([{
+            name: "data-1",
+            value: "value-1",
+        }])
+        const addedOn = moment();
+        whenSettingMetadataItemAddedOn("data-1", addedOn);
+        thenMetadataItemIsNotDraft("data-1")
+        thenExposesMetadataItemByName("data-1", {
+            name: "data-1",
+            value: "value-1",
+            addedOn: addedOn
+        })
+    })
+
+    it("sets link timestamp", () => {
+        givenRequestWithStatus("OPEN")
+        whenAddingLinks([{
+            target: "target-1",
+            nature: "nature-1",
+        }])
+        const addedOn = moment();
+        whenSettingLinkAddedOn("target-1", addedOn);
+        thenLinkIsNotDraft("target-1")
+        thenExposesLinkByTarget("target-1", {
+            target: "target-1",
+            nature: "nature-1",
+            addedOn: addedOn
+        })
+    })
+
+    it("sets file timestamp", () => {
+        givenRequestWithStatus("OPEN")
+        const files: FileDescription[] = [
+            {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                oid: 1234,
+                nature: "nature1",
+            },
+            {
+                hash: "hash2",
+                name: "name2",
+                contentType: "text/plain",
+                oid: 4567,
+                nature: "nature2",
+            }
+        ];
+        whenAddingFiles(files);
+        const addedOn = moment();
+        whenSettingFileAddedOn("hash1", addedOn);
+        thenFileIsNotDraft("hash1")
+        thenExposesFileByHash("hash1", {
+            hash: "hash1",
+            name: "name1",
+            contentType: "text/plain",
+            oid: 1234,
+            nature: "nature1",
+            addedOn: addedOn
+        })
+    })
+})
 
 const REJECT_REASON = "Illegal";
 const REJECTED_ON = moment();
@@ -379,8 +579,72 @@ function thenExposesMetadata(expectedMetadata: MetadataItemDescription[]) {
     request.getMetadataItems().forEach((item, index) => {
         expect(item.name).toBe(expectedMetadata[index].name);
         expect(item.value).toBe(expectedMetadata[index].value);
-        expect(item.addedOn.isSame(expectedMetadata[index].addedOn)).toBe(true);
+        if (item.addedOn === undefined) {
+            expect(expectedMetadata[index].addedOn).not.toBeDefined()
+        } else {
+            expect(item.addedOn.isSame(expectedMetadata[index].addedOn)).toBe(true);
+        }
     });
+}
+
+function thenExposesMetadataItemByName(name: string, expectedMetadataItem: MetadataItemDescription) {
+    expectSameMetadataItems(request.getMetadataItem(name), expectedMetadataItem)
+}
+
+function expectSameMetadataItems(item1: MetadataItemDescription, item2: MetadataItemDescription) {
+    expect(item1.name).toEqual(item2.name);
+    expect(item1.value).toEqual(item2.value);
+    if (item1.addedOn === undefined) {
+        expect(item2.addedOn).toBeUndefined()
+    } else {
+        expect(item1.addedOn.isSame(item2.addedOn)).toBeTrue()
+    }
+}
+
+function thenHasMetadataItem(name: string) {
+    expect(request.hasMetadataItem(name)).toBeTrue();
+}
+
+function thenHasExpectedMetadataIndices() {
+    for(let i = 0; i < request.metadata!.length; ++i) {
+        expect(request.metadata![i].index).toBe(i);
+    }
+}
+
+function whenSettingMetadataItemAddedOn(name: string, addedOn:Moment) {
+    request.setMetadataItemAddedOn(name, addedOn);
+}
+
+function whenConfirmingMetadataItem(name: string) {
+    request.confirmMetadataItem(name);
+}
+
+function thenMetadataItemIsNotDraft(name: string) {
+    expect(request.metadataItem(name)?.draft).toBeFalse();
+}
+
+function whenSettingFileAddedOn(hash: string, addedOn:Moment) {
+    request.setFileAddedOn(hash, addedOn);
+}
+
+function whenConfirmingFile(hash: string) {
+    request.confirmFile(hash);
+}
+
+function thenFileIsNotDraft(hash: string) {
+    expect(request.file(hash)?.draft).toBeFalse();
+}
+
+function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
+    request.setLinkAddedOn(target, addedOn);
+}
+
+function whenConfirmingLink(target: string) {
+    request.confirmLink(target);
+}
+
+function thenLinkIsNotDraft(target: string) {
+    expect(request.link(target)?.draft).toBeFalse();
 }
 
 function whenSettingLocCreatedDate(locCreatedDate: Moment) {
@@ -389,6 +653,14 @@ function whenSettingLocCreatedDate(locCreatedDate: Moment) {
 
 function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
+}
+
+function whenRemovingMetadataItem(name: string) {
+    request.removeMetadataItem(name);
+}
+
+function whenRemovingLink(target: string) {
+    request.removeLink(target);
 }
 
 function whenRemovingFile(hash: string) {
@@ -414,8 +686,37 @@ function whenAddingLinks(links: LinkDescription[]) {
 function thenExposesLinks(expectedLinks: LinkDescription[]) {
     request.getLinks().forEach((link, index) => {
         expect(link.target).toBe(expectedLinks[index].target);
-        expect(link.addedOn.isSame(expectedLinks[index].addedOn)).toBe(true);
+        expect(link.nature).toBe(expectedLinks[index].nature);
+        if (link.addedOn === undefined) {
+            expect(expectedLinks[index].addedOn).not.toBeDefined()
+        } else {
+            expect(link.addedOn.isSame(expectedLinks[index].addedOn)).toBe(true);
+        }
     });
+}
+
+function thenExposesLinkByTarget(target: string, expectedLink: LinkDescription) {
+    expectSameLinks(request.getLink(target), expectedLink)
+}
+
+function expectSameLinks(item1: LinkDescription, item2: LinkDescription) {
+    expect(item1.target).toEqual(item2.target);
+    expect(item1.nature).toEqual(item2.nature);
+    if (item1.addedOn === undefined) {
+        expect(item2.addedOn).toBeUndefined()
+    } else {
+        expect(item1.addedOn.isSame(item2.addedOn)).toBeTrue()
+    }
+}
+
+function thenHasLink(name: string) {
+    expect(request.hasLink(name)).toBeTrue();
+}
+
+function thenHasExpectedLinkIndices() {
+    for(let i = 0; i < request.links!.length; ++i) {
+        expect(request.links![i].index).toBe(i);
+    }
 }
 
 function whenPreClosing() {

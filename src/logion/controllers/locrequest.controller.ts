@@ -24,7 +24,7 @@ import {
     getDefaultResponsesWithAnyBody
 } from "./doc";
 import { AuthenticationService } from "../services/authentication.service";
-import { requireDefined } from "../lib/assertions";
+import { requireDefined, requireLength } from "../lib/assertions";
 import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
@@ -54,6 +54,12 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.confirmFile(spec);
     LocRequestController.closeLoc(spec);
     LocRequestController.voidLoc(spec);
+    LocRequestController.addLink(spec);
+    LocRequestController.deleteLink(spec);
+    LocRequestController.confirmLink(spec);
+    LocRequestController.addMetadata(spec);
+    LocRequestController.deleteMetadata(spec);
+    LocRequestController.confirmMetadata(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -66,6 +72,8 @@ type UserIdentityView = components["schemas"]["UserIdentityView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
 type VoidLocView = components["schemas"]["VoidLocView"];
 type AddFileView = components["schemas"]["AddFileView"];
+type AddLinkView = components["schemas"]["AddLinkView"];
+type AddMetadataView = components["schemas"]["AddMetadataView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -138,16 +146,18 @@ export class LocRequestController extends ApiController {
             files: request.getFiles().map(file => ({
                 name: file.name,
                 hash: file.hash,
-                addedOn: file.addedOn!.toISOString() || undefined,
+                nature: file.nature,
+                addedOn: file.addedOn?.toISOString() || undefined,
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
                 value: item.value,
-                addedOn: item.addedOn.toISOString(),
+                addedOn: item.addedOn?.toISOString() || undefined,
             })),
             links: request.getLinks().map(link => ({
                 target: link.target,
-                addedOn: link.addedOn.toISOString(),
+                nature: link.nature,
+                addedOn: link.addedOn?.toISOString() || undefined,
             }))
         };
         const voidInfo = request.getVoidInfo();
@@ -236,11 +246,16 @@ export class LocRequestController extends ApiController {
     @HttpGet('/:requestId')
     @Async()
     async getLocRequest(_body: any, requestId: string): Promise<LocRequestView> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUserIsOneOf(this.request,
-            request.requesterAddress, request.ownerAddress);
-        const userIdentity = await this.findUserIdentity(request);
-        return this.toView(request, userIdentity);
+        try {
+            const request = requireDefined(await this.locRequestRepository.findById(requestId));
+            this.authenticationService.authenticatedUserIsOneOf(this.request,
+                request.requesterAddress, request.ownerAddress);
+            const userIdentity = await this.findUserIdentity(request);
+            return this.toView(request, userIdentity);
+        } catch (e) {
+            logger.error(e);
+            throw e;
+        }
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {
@@ -268,14 +283,20 @@ export class LocRequestController extends ApiController {
             ownerAddress: locDescription.ownerAddress,
             createdOn: locDescription.createdOn || undefined,
             closedOn: request.closedOn || undefined,
-            files: request.getFiles().map(file => ({
+            files: request.getFiles(false).map(file => ({
                 hash: file.hash,
-                addedOn: file.addedOn!.toISOString() || undefined,
+                nature: file.nature,
+                addedOn: file.addedOn?.toISOString() || undefined,
             })),
-            metadata: request.getMetadataItems().map(item => ({
+            metadata: request.getMetadataItems(false).map(item => ({
                 name: item.name,
                 value: item.value,
-                addedOn: item.addedOn.toISOString(),
+                addedOn: item.addedOn?.toISOString() || undefined
+            })),
+            links: request.getLinks(false).map(link => ({
+                target: link.target,
+                nature: link.nature,
+                addedOn: link.addedOn?.toISOString() || undefined,
             }))
         }
         const voidInfo = request.getVoidInfo();
@@ -355,7 +376,7 @@ export class LocRequestController extends ApiController {
         }
 
         const hash = await sha256File(file.tempFilePath);
-        if(request.isFileAlreadyPresent(hash)) {
+        if(request.hasFile(hash)) {
             throw new Error("File already present");
         }
 
@@ -488,6 +509,140 @@ export class LocRequestController extends ApiController {
             .is(request.ownerAddress);
 
         request.preVoid(body.reason!);
+        await this.locRequestRepository.save(request);
+
+        this.response.sendStatus(204);
+    }
+
+    static addLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links"].post!;
+        operationObject.summary = "Adds a link to the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+    }
+
+    @HttpPost('/:requestId/links')
+    @Async()
+    @SendsResponse()
+    async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+        const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
+        request.addLink({
+            target: targetRequest.id!,
+            nature: addLinkView.nature || ""
+        })
+        await this.locRequestRepository.save(request)
+        this.response.sendStatus(204);
+    }
+
+    static deleteLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}"].delete!;
+        operationObject.summary = "Deletes a link of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. The link must not yet have been published in the blockchain.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'target', "The ID of the linked LOC");
+    }
+
+    @HttpDelete('/:requestId/links/:target')
+    @Async()
+    async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+
+        request.removeLink(target);
+        await this.locRequestRepository.save(request);
+    }
+
+    static confirmLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/confirm"].put!;
+        operationObject.summary = "Confirms a link of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a link is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'target', "The target of the link");
+    }
+
+    @HttpPut('/:requestId/links/:target/confirm')
+    @Async()
+    @SendsResponse()
+    async confirmLink(_body: any, requestId: string, target: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+
+        request.confirmLink(target);
+        await this.locRequestRepository.save(request);
+
+        this.response.sendStatus(204);
+    }
+
+    static addMetadata(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata"].post!;
+        operationObject.summary = "Adds a Metadata item to the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+    }
+
+    @HttpPost('/:requestId/metadata')
+    @Async()
+    @SendsResponse()
+    async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+        const name = requireLength(addMetadataView, "name", 3, 40)
+        const value = requireLength(addMetadataView, "value", 1, 4096)
+        request.addMetadataItem({ name, value })
+        await this.locRequestRepository.save(request)
+        this.response.sendStatus(204);
+    }
+
+    static deleteMetadata(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{name}"].delete!;
+        operationObject.summary = "Deletes a metadata item of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. The metadata item must not yet have been published in the blockchain.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'name', "The name of the metadata item");
+    }
+
+    @HttpDelete('/:requestId/metadata/:name')
+    @Async()
+    async deleteMetadata(_body: any, requestId: string, name: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+
+        const decodedName = decodeURIComponent(name);
+        request.removeMetadataItem(decodedName);
+        await this.locRequestRepository.save(request);
+    }
+
+    static confirmMetadata(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{name}/confirm"].put!;
+        operationObject.summary = "Confirms a metadata item of the LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a metadata item is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        addPathParameter(operationObject, 'name', "The name of the metadata");
+    }
+
+    @HttpPut('/:requestId/metadata/:name/confirm')
+    @Async()
+    @SendsResponse()
+    async confirmMetadata(_body: any, requestId: string, name: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        this.authenticationService.authenticatedUser(this.request)
+            .is(request.ownerAddress);
+
+        const decodedName = decodeURIComponent(name);
+        request.confirmMetadataItem(decodedName);
         await this.locRequestRepository.save(request);
 
         this.response.sendStatus(204);

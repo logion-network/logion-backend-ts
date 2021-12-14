@@ -3,6 +3,7 @@ import { EntityTarget } from "typeorm/common/EntityTarget";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { Log } from "../util/Log";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { HasIndex } from "../lib/db/collections";
 
 const { logger } = Log;
 
@@ -64,3 +65,21 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
     }
 }
 
+export function deleteChild<T extends Child>(childToDeleteIndex: number, children: T[], childrenToDelete: T[]) {
+    const childToDelete = children[childToDeleteIndex];
+    childrenToDelete.push(childToDelete)
+    children.splice(childToDeleteIndex, 1)
+}
+
+export function deleteIndexedChild<T extends Child & HasIndex>(childToDeleteIndex: number, children: T[], childrenToDelete: T[]) {
+    deleteChild(childToDeleteIndex, children, childrenToDelete)
+    reindexChildren(childToDeleteIndex, children)
+}
+
+function reindexChildren<T extends Child & HasIndex>(deletedChildIndex: number, children: T[]) {
+    for (let i = deletedChildIndex; i < children.length; ++i) {
+        const child: T = children[i];
+        child.index = child.index! - 1;
+        child._toUpdate = true;
+    }
+}
