@@ -13,7 +13,6 @@ const { logger } = Log;
 export class LocSynchronizer {
 
     constructor(
-        private extrinsicDataExtractor: ExtrinsicDataExtractor,
         private locRequestRepository: LocRequestRepository,
     ) {}
 

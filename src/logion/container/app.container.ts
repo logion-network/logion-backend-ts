@@ -28,6 +28,7 @@ import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.mod
 import { FileDbService } from '../services/filedb.service';
 import { ProtectionSynchronizer } from '../services/protectionsynchronization.service';
 import { ErrorService } from "../services/error.service";
+import { HealthController } from '../controllers/health.controller';
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(ApplicationErrorController).toSelf();
@@ -59,5 +60,6 @@ container.bind(LocSynchronizer).toSelf();
 container.bind(BlockConsumer).toSelf();
 container.bind(ProtectionSynchronizer).toSelf();
 container.bind(ErrorService).toSelf();
+container.bind(HealthController).toSelf();
 
 export { container as AppContainer };

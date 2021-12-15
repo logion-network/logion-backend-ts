@@ -24,6 +24,7 @@ import {
     fillInSpec as fillInSpecForAuthentication
 } from "./controllers/authentication.controller";
 import { LocRequestController, fillInSpec as fillInSpecForLoc } from "./controllers/locrequest.controller";
+import { HealthController, fillInSpec as fillInSpecForHealth } from "./controllers/health.controller";
 import { Log } from "./util/Log";
 const { logger } = Log;
 
@@ -56,6 +57,7 @@ expressOasGenerator.handleResponses(app, {
         fillInSpecForTransaction(spec);
         fillInSpecForAuthentication(spec);
         fillInSpecForLoc(spec);
+        fillInSpecForHealth(spec);
 
         return spec;
     },
@@ -83,6 +85,7 @@ createConnection()
     dino.registerController(ProtectionRequestController);
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
+    dino.registerController(HealthController);
     dino.registerApplicationError(ApplicationErrorController);
     dino.requestEnd(JsonResponse);
 
