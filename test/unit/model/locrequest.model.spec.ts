@@ -215,6 +215,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         ])
         whenConfirmingMetadataItem(name)
         thenMetadataItemIsNotDraft(name)
+        thenMetadataItemRequiresUpdate(name)
     })
 })
 
@@ -289,6 +290,7 @@ describe("LocRequestAggregateRoot (links)", () => {
         ])
         whenConfirmingLink(target)
         thenLinkIsNotDraft(target)
+        thenLinkRequiresUpdate(target)
     })
 })
 
@@ -392,6 +394,7 @@ describe("LocRequestAggregateRoot (files)", () => {
         ]);
         whenConfirmingFile(hash)
         thenFileIsNotDraft(hash)
+        thenFileRequiresUpdate(hash)
     })
 })
 
@@ -406,6 +409,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         const addedOn = moment();
         whenSettingMetadataItemAddedOn("data-1", addedOn);
         thenMetadataItemIsNotDraft("data-1")
+        thenMetadataItemRequiresUpdate("data-1")
         thenExposesMetadataItemByName("data-1", {
             name: "data-1",
             value: "value-1",
@@ -422,6 +426,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         const addedOn = moment();
         whenSettingLinkAddedOn("target-1", addedOn);
         thenLinkIsNotDraft("target-1")
+        thenLinkRequiresUpdate("target-1")
         thenExposesLinkByTarget("target-1", {
             target: "target-1",
             nature: "nature-1",
@@ -451,6 +456,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         const addedOn = moment();
         whenSettingFileAddedOn("hash1", addedOn);
         thenFileIsNotDraft("hash1")
+        thenFileRequiresUpdate("hash1")
         thenExposesFileByHash("hash1", {
             hash: "hash1",
             name: "name1",
@@ -623,6 +629,10 @@ function thenMetadataItemIsNotDraft(name: string) {
     expect(request.metadataItem(name)?.draft).toBeFalse();
 }
 
+function thenMetadataItemRequiresUpdate(name: string) {
+    expect(request.metadataItem(name)?._toUpdate).toBeTrue();
+}
+
 function whenSettingFileAddedOn(hash: string, addedOn:Moment) {
     request.setFileAddedOn(hash, addedOn);
 }
@@ -635,6 +645,10 @@ function thenFileIsNotDraft(hash: string) {
     expect(request.file(hash)?.draft).toBeFalse();
 }
 
+function thenFileRequiresUpdate(hash: string) {
+    expect(request.file(hash)?._toUpdate).toBeTrue();
+}
+
 function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
     request.setLinkAddedOn(target, addedOn);
 }
@@ -645,6 +659,10 @@ function whenConfirmingLink(target: string) {
 
 function thenLinkIsNotDraft(target: string) {
     expect(request.link(target)?.draft).toBeFalse();
+}
+
+function thenLinkRequiresUpdate(target: string) {
+    expect(request.link(target)?._toUpdate).toBeTrue();
 }
 
 function whenSettingLocCreatedDate(locCreatedDate: Moment) {

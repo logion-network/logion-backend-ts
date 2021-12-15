@@ -130,7 +130,9 @@ export class LocRequestAggregateRoot {
     }
 
     confirmFile(hash: string) {
-        this.file(hash)!.draft = false;
+        const file = this.file(hash)!;
+        file.draft = false;
+        file._toUpdate = true;
     }
 
     private ensureOpen(warnOnly: boolean = false) {
@@ -237,7 +239,7 @@ export class LocRequestAggregateRoot {
             return;
         }
         if (metadataItem.addedOn) {
-            throw new Error("MetadataItem added on date is already set");
+            logger.warn("MetadataItem added on date is already set");
         }
         metadataItem.addedOn = addedOn.toDate();
         metadataItem.draft = false;
@@ -258,7 +260,9 @@ export class LocRequestAggregateRoot {
     }
 
     confirmMetadataItem(name: string) {
-        this.metadataItem(name)!.draft = false;
+        const metadataItem = this.metadataItem(name)!;
+        metadataItem.draft = false;
+        metadataItem._toUpdate = true;
     }
 
     hasMetadataItem(name: string):boolean {
@@ -276,7 +280,7 @@ export class LocRequestAggregateRoot {
             return;
         }
         if (file.addedOn) {
-            throw new Error("File added on date is already set");
+            logger.warn("File added on date is already set");
         }
         file.addedOn = addedOn.toDate();
         file.draft = false;
@@ -336,7 +340,7 @@ export class LocRequestAggregateRoot {
             return;
         }
         if (link.addedOn) {
-            throw new Error("Link added on date is already set");
+            logger.warn("Link added on date is already set");
         }
         link.addedOn = addedOn.toDate();
         link.draft = false;
@@ -357,7 +361,9 @@ export class LocRequestAggregateRoot {
     }
 
     confirmLink(target: string) {
-        this.link(target)!.draft = false;
+        const link = this.link(target)!;
+        link.draft = false;
+        link._toUpdate = true;
     }
 
     hasLink(target: string):boolean {
