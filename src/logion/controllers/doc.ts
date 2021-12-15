@@ -84,11 +84,11 @@ export function getBodyContent(view: string): { [media: string]: OpenAPIV3.Media
     };
 }
 
-export function getDefaultResponses(view: string): OpenAPIV3.ResponsesObject {
+export function getDefaultResponses(view?: string): OpenAPIV3.ResponsesObject {
     return {
         "200": {
             description: "OK",
-            content: getBodyContent(view),
+            content: view !== undefined ? getBodyContent(view) : undefined,
         },
         "401": {
             description: "Unauthorized"

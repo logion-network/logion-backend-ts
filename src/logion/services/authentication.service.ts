@@ -98,11 +98,7 @@ export class AuthenticationService {
     }
 
     private extractLogionUser(request: Request): AuthenticatedUser {
-        const header = request.header("Authorization");
-        if (header === undefined || !header.startsWith("Bearer ")) {
-            throw unauthorized("Invalid Authorization header");
-        }
-        const jwtToken = header.split(' ')[1].trim();
+        const jwtToken = this.extractBearerToken(request);
         jwt.verify(jwtToken, this.secret, { issuer: this.issuer }, err => {
             if (err) {
                 throw this._unauthorized(err)
@@ -113,6 +109,14 @@ export class AuthenticationService {
             address: token.payload.sub!,
             legalOfficer: token.payload.legalOfficer
         }
+    }
+
+    private extractBearerToken(request: Request): string {
+        const header = request.header("Authorization");
+        if (header === undefined || !header.startsWith("Bearer ")) {
+            throw unauthorized("Invalid Authorization header");
+        }
+        return header.split(' ')[1].trim();
     }
 
     private readonly secret: Buffer;
@@ -163,5 +167,14 @@ export class AuthenticationService {
     private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {
         return new UnauthorizedException({ error: error.name + ": " + error.message });
     }
-}
 
+    ensureAuthorizationBearer(request: Request, expectedToken: string | undefined) {
+        if(expectedToken === undefined) {
+            throw new UnauthorizedException("No expected token");
+        }
+        const token = this.extractBearerToken(request);
+        if(token !== expectedToken) {
+            throw new UnauthorizedException("Unexpected Bearer token");
+        }
+    }
+}

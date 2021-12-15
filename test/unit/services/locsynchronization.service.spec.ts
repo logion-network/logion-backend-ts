@@ -1,7 +1,6 @@
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
-import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
 import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
@@ -10,7 +9,6 @@ import { decimalToUuid } from '../../../src/logion/lib/uuid';
 describe("LocSynchronizer", () => {
 
     beforeEach(() => {
-        extrinsicDataExtractor = new Mock<ExtrinsicDataExtractor>();
         locRequestRepository = new Mock<LocRequestRepository>();
     });
 
@@ -94,7 +92,6 @@ const locId = {
 };
 const locDecimalUuid = "130084474896785895402627605545662412605";
 const blockTimestamp = moment();
-let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
 let locRequestRepository: Mock<LocRequestRepository>;
 
 function givenLocExtrinsic(method: string, args: JsonArgs) {
@@ -129,7 +126,6 @@ async function whenConsumingBlock() {
 
 function locSynchronizer(): LocSynchronizer {
     return new LocSynchronizer(
-        extrinsicDataExtractor.object(),
         locRequestRepository.object(),
     );
 }
