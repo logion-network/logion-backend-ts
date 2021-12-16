@@ -657,6 +657,12 @@ export class LocRequestRepository {
                 { expectedLocTypes: specification.expectedLocTypes });
         }
 
+        if (specification.expectedStatuses &&
+            (specification.expectedStatuses.includes("OPEN") || specification.expectedStatuses.includes("CLOSED"))) {
+            builder.orderBy("request.loc_created_on", "DESC")
+        } else {
+            builder.orderBy("request.created_on", "DESC")
+        }
         return builder.getMany();
     }
 }
