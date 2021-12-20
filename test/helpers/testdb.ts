@@ -1,8 +1,12 @@
 import 'reflect-metadata';
 import fs from 'fs';
-import { createConnection, Connection } from "typeorm";
+import { createConnection, Connection, QueryRunner, MigrationInterface } from "typeorm";
 
-export async function connect(entities: Function[]): Promise<void> {
+export async function connect(
+    entities: (Function | string)[],
+    migrations?: (Function | string)[],
+    synchronize: boolean = true): Promise<void>
+{
     if(connection != null) {
         throw new Error("Connection already created");
     }
@@ -13,8 +17,9 @@ export async function connect(entities: Function[]): Promise<void> {
         username: "postgres",
         password: "secret",
         database: "postgres",
-        synchronize: true,
-        entities
+        synchronize,
+        entities,
+        migrations
     });
 }
 
@@ -41,9 +46,17 @@ export async function executeScript(fileName: string): Promise<void> {
 }
 
 export async function checkNumOfRows(sql: string, numOfRows: number) {
-    const rawData: any[] | undefined = await query(sql)
+    const rawData: RawData = await query(sql)
     expect(rawData).toBeDefined()
     expect(rawData!.length).toBe(numOfRows)
+}
+
+export function queryRunner(): QueryRunner {
+    return connection?.createQueryRunner()!
+}
+
+export function allMigrations(): MigrationInterface[] {
+    return connection?.migrations!;
 }
 
 
