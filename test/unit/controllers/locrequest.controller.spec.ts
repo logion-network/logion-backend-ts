@@ -26,8 +26,29 @@ const testUserIdentity = {
     phoneNumber: "+6789"
 }
 
+const IDENTITY_LOC_ID = "6b00b9f2-4439-4c4a-843e-2ea3ce2016fd";
+
+const identityInIdentityLoc = {
+    firstName: "Felix",
+    lastName: "the Cat",
+    email: "felix@logion.network",
+    phoneNumber: "+0101"
+}
+
 const testData = {
     requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+    description: "I want to open a case",
+    locType: "Transaction"
+};
+
+const identityLoc = {
+    description: "Identity LOC",
+    locType: "Identity",
+    userIdentity: identityInIdentityLoc
+}
+
+const transactionLoc = {
+    requesterIdentityLoc: IDENTITY_LOC_ID,
     description: "I want to open a case",
     locType: "Transaction"
 };
@@ -135,6 +156,30 @@ describe('LocRequestController', () => {
                 expect(userIdentity.lastName).toBe("Doe");
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
+            });
+    });
+
+    it('succeeds to create open loc with identity LOC', async () => {
+        const app = setupApp(
+            LocRequestController,
+            mockModelForCreationWithIdentityLoc,
+            true,
+            true,
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send(transactionLoc)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBeDefined();
+                expect(response.body.status).toBe("OPEN");
+                expect(response.body.locType).toBe("Transaction");
+                const userIdentity = response.body.userIdentity;
+                expect(userIdentity.firstName).toBe("Felix");
+                expect(userIdentity.lastName).toBe("the Cat");
+                expect(userIdentity.email).toBe("felix@logion.network");
+                expect(userIdentity.phoneNumber).toBe("+0101");
             });
     });
 
@@ -470,6 +515,32 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
         .returns(openLoc.object())
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
+
+    const fileDbService = new Mock<FileDbService>();
+    container.bind(FileDbService).toConstantValue(fileDbService.object());
+}
+
+function mockModelForCreationWithIdentityLoc(container: Container): void {
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.save)
+        .returns(() => Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+    const identityLocRequest = mockRequest("CLOSED", identityLoc)
+    repository.setup(instance => instance.findById(IDENTITY_LOC_ID))
+        .returns(Promise.resolve(identityLocRequest.object()))
+
+    const factory = new Mock<LocRequestFactory>();
+    const request = mockRequest("OPEN", transactionLoc)
+    factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
+        params.description.requesterIdentityLoc === IDENTITY_LOC_ID &&
+        params.description.ownerAddress == ALICE
+    )))
+        .returns(request.object())
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+
+    const protectionRepository = new Mock<ProtectionRequestRepository>();
+    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());

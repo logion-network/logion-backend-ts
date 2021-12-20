@@ -105,7 +105,8 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = this.authenticationService.authenticatedUser(this.request);
         authenticatedUser.require(user => user.is(createLocRequestView.requesterAddress) || user.isNodeOwner());
         const description: LocRequestDescription = {
-            requesterAddress: requireDefined(createLocRequestView.requesterAddress),
+            requesterAddress: createLocRequestView.requesterAddress,
+            requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
             ownerAddress: this.authenticationService.nodeOwner,
             description: requireDefined(createLocRequestView.description),
             locType: requireDefined(createLocRequestView.locType),
@@ -114,19 +115,30 @@ export class LocRequestController extends ApiController {
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
-            request = this.locRequestFactory.newOpenLoc({
+            request = await this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description,
             });
         } else {
-            request = this.locRequestFactory.newLocRequest({
+            request = await this.locRequestFactory.newLocRequest({
                 id: uuid(),
                 description
             });
         }
+        await this.checkIdentityLoc(request.requesterIdentityLoc)
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
         return this.toView(request, userIdentity);
+    }
+
+    private async checkIdentityLoc(identityLocId:string | undefined) {
+        if (!identityLocId) {
+            return
+        }
+        const identityLoc = await this.locRequestRepository.findById(identityLocId);
+        if (!identityLoc || identityLoc.locType !== 'Identity' || identityLoc.status !== 'CLOSED' || identityLoc.getVoidInfo()) {
+            throw new Error("UnexpectedRequester: Identity LOC must be CLOSED and not VOID.")
+        }
     }
 
     private toView(request: LocRequestAggregateRoot, userIdentity: UserIdentity | undefined): LocRequestView {
@@ -134,6 +146,7 @@ export class LocRequestController extends ApiController {
         const view: LocRequestView = {
             id: request.id,
             requesterAddress: locDescription.requesterAddress,
+            requesterIdentityLoc: locDescription.requesterIdentityLoc,
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
             locType: locDescription.locType,
@@ -224,16 +237,23 @@ export class LocRequestController extends ApiController {
 
     private async findUserIdentity(request: LocRequestAggregateRoot): Promise<UserIdentity | undefined> {
         const description = request.getDescription();
-        const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-            expectedStatuses: [ "ACCEPTED", "ACTIVATED" ],
-            kind: "ANY",
-            expectedRequesterAddress: description.requesterAddress,
-        }));
-        if (protections.length > 0) {
-            return protections[0].getDescription().userIdentity;
-        } else {
-            return request.getDescription().userIdentity;
+        if (description.requesterAddress) {
+            const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
+                expectedStatuses: [ "ACCEPTED", "ACTIVATED" ],
+                kind: "ANY",
+                expectedRequesterAddress: description.requesterAddress,
+            }));
+            if (protections.length > 0) {
+                return protections[0].getDescription().userIdentity;
+            }
         }
+        if (description.requesterIdentityLoc) {
+            const identityLoc = await this.locRequestRepository.findById(description.requesterIdentityLoc)
+            if (identityLoc) {
+                return identityLoc.getDescription().userIdentity;
+            }
+        }
+        return request.getDescription().userIdentity;
     }
 
     static getLocRequest(spec: OpenAPIV3.Document) {

@@ -26,7 +26,8 @@ export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 
 export interface LocRequestDescription {
-    readonly requesterAddress: string;
+    readonly requesterAddress?: string;
+    readonly requesterIdentityLoc?: string;
     readonly ownerAddress: string;
     readonly description: string;
     readonly createdOn: string;
@@ -101,7 +102,8 @@ export class LocRequestAggregateRoot {
                 phoneNumber: this.userIdentity.phoneNumber || "",
             } : undefined;
         return {
-            requesterAddress: this.requesterAddress!,
+            requesterAddress: this.requesterAddress,
+            requesterIdentityLoc: this.requesterIdentityLoc,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
             createdOn: this.createdOn!,
@@ -410,8 +412,12 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255 })
     status?: LocRequestStatus;
 
-    @Column({ length: 255, name: "requester_address" })
+    @Column({ length: 255, name: "requester_address", nullable: true })
     requesterAddress?: string;
+
+    @ManyToOne(() => LocRequestAggregateRoot)
+    @JoinColumn({ name: "requester_identity_loc", referencedColumnName: "id" })
+    requesterIdentityLoc?: string;
 
     @Column({ length: 255, name: "owner_address" })
     ownerAddress?: string;
@@ -682,15 +688,18 @@ export class LocRequestFactory {
     }
 
     public newLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
+        const { description } = params;
+        this.ensureCorrectRequester(description)
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
         request.status = "REQUESTED";
-        request.requesterAddress = params.description.requesterAddress;
-        request.ownerAddress = params.description.ownerAddress;
-        request.description = params.description.description;
-        request.locType = params.description.locType;
-        request.createdOn = params.description.createdOn;
-        const userIdentity = params.description.userIdentity;
+        request.requesterAddress = description.requesterAddress;
+        request.requesterIdentityLoc = description.requesterIdentityLoc;
+        request.ownerAddress = description.ownerAddress;
+        request.description = description.description;
+        request.locType = description.locType;
+        request.createdOn = description.createdOn;
+        const userIdentity = description.userIdentity;
         if (userIdentity !== undefined) {
             request.userIdentity = new EmbeddableUserIdentity();
             request.userIdentity.firstName = userIdentity.firstName;
@@ -702,5 +711,22 @@ export class LocRequestFactory {
         request.metadata = [];
         request.links = [];
         return request;
+    }
+
+    private ensureCorrectRequester(description: LocRequestDescription) {
+        switch (description.locType) {
+            case 'Identity':
+                if (description.requesterIdentityLoc) {
+                    throw new Error("UnexpectedRequester: Identity LOC cannot have a LOC as requester")
+                }
+                return;
+            default:
+                if (description.requesterAddress && description.requesterIdentityLoc) {
+                    throw new Error("UnexpectedRequester: LOC cannot have both requester address and id loc")
+                }
+                if (!description.requesterAddress && !description.requesterIdentityLoc) {
+                    throw new Error("UnexpectedRequester: LOC must have one requester")
+                }
+        }
     }
 }

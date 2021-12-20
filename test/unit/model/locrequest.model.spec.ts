@@ -9,40 +9,98 @@ import {
     FileDescription,
     MetadataItemDescription,
     LinkDescription,
-    VoidInfo
+    VoidInfo,
+    LocType
 } from "../../../src/logion/model/locrequest.model";
 
 describe("LocRequestFactory", () => {
 
-    it("creates LOC request", () => {
+    it("creates Transaction LOC request", () => {
         givenRequestId(uuid());
-        const description: LocRequestDescription = {
-            requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-            ownerAddress: ALICE,
-            description: "Mrs ALice, I want to sell my last art work",
-            createdOn: moment().toISOString(),
-            userIdentity: undefined,
-            locType: 'Transaction'
-        };
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
     });
 
-    it("creates an open LOC", () => {
+    it("creates an open Transaction LOC with requester address", () => {
         givenRequestId(uuid());
-        const description: LocRequestDescription = {
-            requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-            ownerAddress: ALICE,
-            description: "Mrs ALice, I want to sell my last art work",
-            createdOn: moment().toISOString(),
-            userIdentity: undefined,
-            locType: 'Transaction'
-        };
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)
     });
+
+    it("creates an open Transaction LOC with requester id loc", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction', undefined, uuid().toString());
+        givenLocDescription(description);
+        whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description)
+    });
+
+    it("fails to create an open Transaction LOC with 2 requesters", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
+        givenLocDescription(description);
+        expect(() => whenCreatingOpenLoc()).toThrowError();
+    });
+
+    it("fails to create an open Transaction LOC with no requester", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction');
+        givenLocDescription(description);
+        expect(() => whenCreatingOpenLoc()).toThrowError();
+    });
+
+    it("creates Identity LOC request", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        whenCreatingLocRequest();
+        thenRequestCreatedWithDescription(description);
+    });
+
+    it("creates an open Identity LOC with requester address", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description)
+    });
+
+    it("fails to create an open Identity LOC with requester id loc", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity', undefined, uuid().toString());
+        givenLocDescription(description);
+        expect(() => whenCreatingOpenLoc()).toThrowError()
+    });
+
+    it("fails to create an open Identity LOC with 2 requesters", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
+        givenLocDescription(description);
+        expect(() => whenCreatingOpenLoc()).toThrowError();
+    });
+
+    it("creates an open Identity LOC with no requester", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity');
+        givenLocDescription(description);
+        whenCreatingOpenLoc();
+    });
+
+    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string): LocRequestDescription {
+        return {
+            requesterAddress,
+            requesterIdentityLoc,
+            ownerAddress: ALICE,
+            description: "Mrs ALice, I want to sell my last art work",
+            createdOn: moment().toISOString(),
+            userIdentity: undefined,
+            locType
+        };
+    }
 });
 
 describe("LocRequestAggregateRoot", () => {
