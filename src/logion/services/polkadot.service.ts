@@ -8,7 +8,7 @@ const { logger } = Log;
 export class PolkadotService {
 
     async readyApi(): Promise<ApiPromise> {
-        if(this._api === null) {
+        if (this._api === null) {
             this._api = await this._createApi();
         }
         return this._api;
@@ -51,12 +51,12 @@ export class PolkadotService {
                 LocId: "u128",
                 LegalOfficerCaseOf: {
                     owner: "AccountId",
-                    requester: "AccountId",
+                    requester: "Requester",
                     metadata: "Vec<MetadataItem>",
                     files: "Vec<File>",
                     closed: "bool",
                     loc_type: "LocType",
-                    links:"Vec<LocLink>",
+                    links: "Vec<LocLink>",
                     void_info: "Option<LocVoidInfo<LocId>>",
                     replacer_of: "Option<LocId>"
                 },
@@ -79,13 +79,21 @@ export class PolkadotService {
                     nature: "Vec<u8>",
                 },
                 LocVoidInfo: {
-                  "replacer": "Option<LocId>"
+                    "replacer": "Option<LocId>"
                 },
                 StorageVersion: {
-                  "_enum": [
-                    "V1",
-                    "V2MakeLocVoid"
-                  ]
+                    "_enum": [
+                        "V1",
+                        "V2MakeLocVoid",
+                        "V3RequesterEnum",
+                    ]
+                },
+                Requester: {
+                    "_enum": {
+                        "None": null,
+                        "Account": "AccountId",
+                        "Loc": "LocId"
+                    }
                 }
             }
         });
