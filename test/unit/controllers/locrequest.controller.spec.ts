@@ -175,6 +175,8 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe("Transaction");
+                expect(response.body.requesterAddress).toBeUndefined();
+                expect(response.body.requesterIdentityLoc).toBe(IDENTITY_LOC_ID);
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("Felix");
                 expect(userIdentity.lastName).toBe("the Cat");

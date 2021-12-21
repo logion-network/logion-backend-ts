@@ -227,6 +227,7 @@ export class LocRequestController extends ApiController {
             expectedOwnerAddress: specificationView.ownerAddress,
             expectedStatuses: requireDefined(specificationView.statuses),
             expectedLocTypes: specificationView.locTypes,
+            expectedIdentityLocType: specificationView.identityLocType
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
             const userIdentity = await this.findUserIdentity(request);

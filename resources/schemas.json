@@ -487,6 +487,14 @@
                     "Transaction"
                 ]
             },
+            "IdentityLocType": {
+                "type": "string",
+                "description": "The Identity LOC's type",
+                "enum": [
+                    "Polkadot",
+                    "Logion"
+                ]
+            },
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
@@ -801,6 +809,9 @@
                         "items": {
                             "$ref": "#/components/schemas/LocType"
                         }
+                    },
+                    "identityLocType": {
+                        "$ref": "#/components/schemas/IdentityLocType"
                     }
                 },
                 "title": "FetchLocRequestsSpecificationView",

@@ -24,6 +24,7 @@ const { logger } = Log;
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
+export type IdentityLocType = components["schemas"]["IdentityLocType"];
 
 export interface LocRequestDescription {
     readonly requesterAddress?: string;
@@ -574,6 +575,7 @@ export interface FetchLocRequestsSpecification {
     readonly expectedOwnerAddress?: string;
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
+    readonly expectedIdentityLocType?: IdentityLocType;
 }
 
 @injectable()
@@ -661,6 +663,12 @@ export class LocRequestRepository {
         if (specification.expectedLocTypes && specification.expectedLocTypes.length > 0) {
             builder.andWhere("request.loc_type IN (:...expectedLocTypes)",
                 { expectedLocTypes: specification.expectedLocTypes });
+        }
+
+        if (specification.expectedIdentityLocType === "Polkadot") {
+            builder.andWhere("request.requester_address IS NOT NULL")
+        } else if (specification.expectedIdentityLocType === "Logion") {
+            builder.andWhere("request.requester_address IS NULL")
         }
 
         if (specification.expectedStatuses &&
