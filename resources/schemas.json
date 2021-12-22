@@ -487,12 +487,25 @@
                     "Transaction"
                 ]
             },
+            "IdentityLocType": {
+                "type": "string",
+                "description": "The Identity LOC's type",
+                "enum": [
+                    "Polkadot",
+                    "Logion"
+                ]
+            },
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the LOC requester"
+                    },
+                    "requesterIdentityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
                     },
                     "description": {
                         "type": "string",
@@ -520,6 +533,11 @@
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the LOC requester"
+                    },
+                    "requesterIdentityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
                     },
                     "description": {
                         "type": "string",
@@ -660,6 +678,11 @@
                         "type": "string",
                         "description": "The SS58 address of the LOC requester"
                     },
+                    "requesterIdentityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
+                    },
                     "createdOn": {
                         "type": "string",
                         "format": "date-time",
@@ -786,6 +809,9 @@
                         "items": {
                             "$ref": "#/components/schemas/LocType"
                         }
+                    },
+                    "identityLocType": {
+                        "$ref": "#/components/schemas/IdentityLocType"
                     }
                 },
                 "title": "FetchLocRequestsSpecificationView",

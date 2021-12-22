@@ -6,7 +6,7 @@ import {
     FetchLocRequestsSpecification,
     LocFile,
     LocMetadataItem,
-    LocLink
+    LocLink, LocType
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
 import { v4 as uuid } from "uuid";
@@ -29,11 +29,28 @@ describe('LocRequestRepository - read accesses', () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: ALICE,
             expectedStatuses: [ "OPEN", "REQUESTED" ],
+            expectedLocTypes: [ "Transaction" ]
         }
         const requests = await repository.findBy(query);
-        checkDescription(requests, "loc-1", "loc-2", "loc-4", "loc-5", "loc-10");
+        checkDescription(requests, "Transaction", "loc-1", "loc-2", "loc-4", "loc-5", "loc-10", "loc-17", "loc-18");
 
         expect(requests[0].getDescription().userIdentity).toBeUndefined();
+    })
+
+    it("find LOCS with Polkadot requester", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedIdentityLocType: "Polkadot",
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5", "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13");
+    })
+
+    it("find LOCS with Logion requester", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedIdentityLocType: "Logion",
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, undefined, "loc-14", "loc-15", "loc-16", "loc-17", "loc-18", "loc-19");
     })
 
     it("find by requester and status", async () => {
@@ -42,7 +59,7 @@ describe('LocRequestRepository - read accesses', () => {
             expectedStatuses: [ "REJECTED" ],
         }
         const requests = await repository.findBy(query);
-        checkDescription(requests, "loc-7")
+        checkDescription(requests, "Transaction", "loc-7")
 
         expect(requests[0].getDescription().requesterAddress).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
         expect(requests[0].getDescription().ownerAddress).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
@@ -57,7 +74,7 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("finds loc with files, metadata and links", async () => {
         const request = await repository.findById(LOC_WITH_FILES);
-        checkDescription([request!], "loc-10");
+        checkDescription([request!], "Transaction", "loc-10");
 
         const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
         expect(request!.hasFile(hash)).toBe(true);
@@ -173,12 +190,14 @@ async function checkAggregate(id: string, numOfRows: number) {
                           WHERE request_id = '${ id }'`, numOfRows)
 }
 
-function checkDescription(requests: LocRequestAggregateRoot[], ...descriptions: string[]) {
+function checkDescription(requests: LocRequestAggregateRoot[], expectedLocType: LocType | undefined, ...descriptions: string[]) {
     expect(requests.length).toBe(descriptions.length);
     descriptions.forEach(description => {
         const matchingRequests = requests.filter(request => request.getDescription().description === description);
         expect(matchingRequests.length).withContext(`loc with description ${ description } not returned by query`).toBe(1);
-        expect(matchingRequests[0].locType).toBe('Transaction');
+        if (expectedLocType) {
+            expect(matchingRequests[0].locType).toBe(expectedLocType);
+        }
     })
 }
 
