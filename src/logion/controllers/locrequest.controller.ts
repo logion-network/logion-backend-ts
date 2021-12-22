@@ -115,12 +115,12 @@ export class LocRequestController extends ApiController {
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
-            request = await this.locRequestFactory.newOpenLoc({
+            request = this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description,
             });
         } else {
-            request = await this.locRequestFactory.newLocRequest({
+            request = this.locRequestFactory.newLocRequest({
                 id: uuid(),
                 description
             });
@@ -136,8 +136,13 @@ export class LocRequestController extends ApiController {
             return
         }
         const identityLoc = await this.locRequestRepository.findById(identityLocId);
-        if (!identityLoc || identityLoc.locType !== 'Identity' || identityLoc.status !== 'CLOSED' || identityLoc.getVoidInfo()) {
-            throw new Error("UnexpectedRequester: Identity LOC must be CLOSED and not VOID.")
+        if (
+            !identityLoc ||
+            identityLoc.locType !== 'Identity' ||
+            identityLoc.status !== 'CLOSED' ||
+            identityLoc.getVoidInfo() ||
+            identityLoc.requesterAddress !== undefined) {
+            throw new Error("UnexpectedRequester: Identity must be an existing Closed, not Void, Logion Identity LOC.")
         }
     }
 
