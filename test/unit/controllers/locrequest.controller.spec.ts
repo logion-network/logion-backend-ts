@@ -3,7 +3,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
 import request, { Response } from "supertest";
-import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../helpers/addresses";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,

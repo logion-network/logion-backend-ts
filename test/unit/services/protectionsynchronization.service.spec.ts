@@ -7,7 +7,7 @@ import {
 } from '../../../src/logion/model/protectionrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { ProtectionSynchronizer } from '../../../src/logion/services/protectionsynchronization.service';
-import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
+import { ALICE, BOB } from '../../helpers/addresses';
 
 process.env.OWNER = ALICE;
 

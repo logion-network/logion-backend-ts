@@ -6,7 +6,7 @@ import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extr
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
 
-fdescribe("LocSynchronizer", () => {
+describe("LocSynchronizer", () => {
 
     beforeEach(() => {
         locRequestRepository = new Mock<LocRequestRepository>();

@@ -1,5 +1,5 @@
 import { It, Mock } from 'moq.ts';
-import { BOB } from '../../../src/logion/model/addresses.model';
+import { BOB } from '../../helpers/addresses';
 import { SignatureService, VerifyFunction, VerifyFunctionParams } from '../../../src/logion/services/signature.service';
 
 describe('SignatureService', () => {

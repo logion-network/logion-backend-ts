@@ -1,6 +1,6 @@
 import { SessionFactory, SessionAggregateRoot, NewSessionParameters } from "../../../src/logion/model/session.model";
 import { v4 as uuid } from 'uuid';
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE } from "../../helpers/addresses";
 import moment from "moment";
 
 describe("SessionFactory", () => {

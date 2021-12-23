@@ -8,7 +8,7 @@ import {
     TransactionAggregateRoot,
     TransactionDescription
 } from "../../../src/logion/model/transaction.model";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE } from "../../helpers/addresses";
 
 describe('TransactionController', () => {
 

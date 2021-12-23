@@ -8,7 +8,7 @@ import {
     LocMetadataItem,
     LocLink, LocType
 } from "../../../src/logion/model/locrequest.model";
-import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
 
 describe('LocRequestRepository - read accesses', () => {
