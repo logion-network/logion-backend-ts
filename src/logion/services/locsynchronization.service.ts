@@ -1,6 +1,5 @@
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
-import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { decimalToUuid } from '../lib/uuid';
 import { JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
@@ -22,27 +21,43 @@ export class LocSynchronizer {
                 logger.info("updateLocRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
                 return
             }
-            if (extrinsic.method.method === "createLoc") {
-                const locId = this.extractLocId(extrinsic.args);
-                await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
-            } else if (extrinsic.method.method === "addMetadata") {
-                const locId = this.extractLocId(extrinsic.args);
-                const name = extrinsic.args['item'].name.toUtf8();
-                await this.mutateLoc(locId, loc => loc.setMetadataItemAddedOn(name, timestamp));
-            } else if (extrinsic.method.method === "addFile") {
-                const locId = this.extractLocId(extrinsic.args);
-                const hash = extrinsic.args['file'].get('hash').toHex();
-                await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
-            } else if (extrinsic.method.method === "addLink") {
-                const locId = this.extractLocId(extrinsic.args);
-                const target = decimalToUuid(extrinsic.args['link'].id.toString());
-                await this.mutateLoc(locId, loc => loc.setLinkAddedOn(target, timestamp));
-            } else if (extrinsic.method.method === "close") {
-                const locId = this.extractLocId(extrinsic.args);
-                await this.mutateLoc(locId, loc => loc.close(timestamp));
-            } else if (extrinsic.method.method === "makeVoid" || extrinsic.method.method === "makeVoidAndReplace") {
-                const locId = this.extractLocId(extrinsic.args);
-                await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
+            const locId = this.extractLocId(extrinsic.args);
+
+            switch (extrinsic.method.method) {
+
+                case "createLogionIdentityLoc":
+                case "createLogionTransactionLoc":
+                case "createPolkadotIdentityLoc":
+                case "createPolkadotTransactionLoc":
+                    await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
+                    break;
+
+                case "addMetadata":
+                    const name = extrinsic.args['item'].name.toUtf8();
+                    await this.mutateLoc(locId, loc => loc.setMetadataItemAddedOn(name, timestamp));
+                    break;
+
+                case "addFile":
+                    const hash = extrinsic.args['file'].get('hash').toHex();
+                    await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
+                    break;
+
+                case "addLink":
+                    const target = decimalToUuid(extrinsic.args['link'].id.toString());
+                    await this.mutateLoc(locId, loc => loc.setLinkAddedOn(target, timestamp));
+                    break;
+
+                case "close":
+                    await this.mutateLoc(locId, loc => loc.close(timestamp));
+                    break;
+
+                case "makeVoid":
+                case "makeVoidAndReplace":
+                    await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
+                    break;
+
+                default:
+                    logger.warn("Unexpected method in pallet logionLoc: %s", extrinsic.method.method)
             }
         }
     }

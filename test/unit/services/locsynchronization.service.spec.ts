@@ -6,19 +6,30 @@ import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extr
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
 
-describe("LocSynchronizer", () => {
+fdescribe("LocSynchronizer", () => {
 
     beforeEach(() => {
         locRequestRepository = new Mock<LocRequestRepository>();
     });
 
     it("sets LOC created date", async () => {
-        givenLocExtrinsic("createLoc", { loc_id: locId });
-        givenLocRequest();
-        givenLocRequestExpectsLocCreationDate();
-        await whenConsumingBlock();
-        thenLocCreateDateSet();
-        thenLocIsSaved();
+
+        const palletMethods = [
+            "createLogionIdentityLoc",
+            "createLogionTransactionLoc",
+            "createPolkadotIdentityLoc",
+            "createPolkadotTransactionLoc"
+        ]
+
+        for (const palletMethod of palletMethods) {
+
+            givenLocExtrinsic(palletMethod, { loc_id: locId });
+            givenLocRequest();
+            givenLocRequestExpectsLocCreationDate();
+            await whenConsumingBlock();
+            thenLocCreateDateSet();
+            thenLocIsSaved();
+        }
     });
 
     it("sets metadata item added on", async () => {
