@@ -698,6 +698,7 @@ export class LocRequestFactory {
     public newLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
         const { description } = params;
         this.ensureCorrectRequester(description)
+        this.ensureUserIdentityPresent(description)
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
         request.status = "REQUESTED";
@@ -735,6 +736,20 @@ export class LocRequestFactory {
                 if (!description.requesterAddress && !description.requesterIdentityLoc) {
                     throw new Error("UnexpectedRequester: LOC must have one requester")
                 }
+        }
+    }
+
+    private ensureUserIdentityPresent(description: LocRequestDescription) {
+        if (description.locType === 'Identity' && !description.requesterAddress) {
+            const userIdentity = description.userIdentity;
+            if (!userIdentity
+                || !userIdentity.firstName
+                || !userIdentity.lastName
+                || !userIdentity.email
+                || !userIdentity.phoneNumber
+            ) {
+                throw new Error("Logion Identity LOC request must contain first name, last name, email and phone number.")
+            }
         }
     }
 }
