@@ -1,5 +1,5 @@
 import jwt, { JwtPayload } from 'jsonwebtoken';
-import { ALICE } from "../../src/logion/model/addresses.model";
+import { ALICE } from "../helpers/addresses";
 
 const SECRET = "secret-key-that-no-one-could-possibly-know";
 const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MjM2NzQwOTksImV4cCI6MTgyMzY3NDA5OSwibGVnYWxPZmZpY2VyIjp0cnVlLCJpc3MiOiJ3d3cuZXhhbXBsZS5vcmciLCJzdWIiOiI1R3J3dmFFRjV6WGIyNkZ6OXJjUXBEV1M1N0N0RVJIcE5laFhDUGNOb0hHS3V0UVkifQ.yoaRk0oSixyYIztFDS5QCRop-0xAP_xw4UY30uTwVtM";

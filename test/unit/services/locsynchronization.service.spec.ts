@@ -13,12 +13,23 @@ describe("LocSynchronizer", () => {
     });
 
     it("sets LOC created date", async () => {
-        givenLocExtrinsic("createLoc", { loc_id: locId });
-        givenLocRequest();
-        givenLocRequestExpectsLocCreationDate();
-        await whenConsumingBlock();
-        thenLocCreateDateSet();
-        thenLocIsSaved();
+
+        const palletMethods = [
+            "createLogionIdentityLoc",
+            "createLogionTransactionLoc",
+            "createPolkadotIdentityLoc",
+            "createPolkadotTransactionLoc"
+        ]
+
+        for (const palletMethod of palletMethods) {
+
+            givenLocExtrinsic(palletMethod, { loc_id: locId });
+            givenLocRequest();
+            givenLocRequestExpectsLocCreationDate();
+            await whenConsumingBlock();
+            thenLocCreateDateSet();
+            thenLocIsSaved();
+        }
     });
 
     it("sets metadata item added on", async () => {

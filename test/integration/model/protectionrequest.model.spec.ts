@@ -6,7 +6,7 @@ import {
     ProtectionRequestKind,
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE } from "../../helpers/addresses";
 
 describe('ProtectionRequestRepositoryTest', () => {
 

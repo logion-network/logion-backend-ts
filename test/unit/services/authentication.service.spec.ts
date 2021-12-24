@@ -3,7 +3,7 @@ import { Mock } from "moq.ts";
 import { Request } from "express";
 import moment from "moment";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE } from "../../helpers/addresses";
 
 const USER_TOKEN = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MzEyMTc2MTEsImxlZ2FsT2ZmaWNlciI6ZmFsc2UsImV4cCI6NDc4NDgxNzYxMSwiaXNzIjoiZXhhbXBsZS5vcmciLCJzdWIiOiI1SDRNdkFzb2JmWjZiQkNEeWo1ZHNyV1lMckE4SHJSemFxYTlwNjFVWHR4TWhTQ1kifQ.03P4Ehzp6cweQPct0tf-dBNmkXhFKYfcUYA1xbmPsdpRV9Dn2as1aZdp6neP2iOI"
 const USER_TOKEN_WRONG_SIGNATURE = "eyJhbGciOiJIUzM4NCIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE2MzEyMTc2MTEsImxlZ2FsT2ZmaWNlciI6ZmFsc2UsImV4cCI6NDc4NDgxNzYxMSwiaXNzIjoiZXhhbXBsZS5vcmciLCJzdWIiOiI1SDRNdkFzb2JmWjZiQkNEeWo1ZHNyV1lMckE4SHJSemFxYTlwNjFVWHR4TWhTQ1kifQ.GTLJB_uMjsdcuWzM3CWL92n1UNI0WYXFUDW7QQ1Vi6k3TQIEvG_WwMuuZ2d9cexY"

@@ -141,7 +141,7 @@ export class LocRequestController extends ApiController {
             identityLoc.locType !== 'Identity' ||
             identityLoc.status !== 'CLOSED' ||
             identityLoc.getVoidInfo() ||
-            identityLoc.requesterAddress !== undefined) {
+            identityLoc.requesterAddress) {
             throw new Error("UnexpectedRequester: Identity must be an existing Closed, not Void, Logion Identity LOC.")
         }
     }

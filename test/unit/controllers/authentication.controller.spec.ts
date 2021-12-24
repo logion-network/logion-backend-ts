@@ -1,12 +1,11 @@
 import { setupApp } from "../../helpers/testapp";
 import { AuthenticationController } from "../../../src/logion/controllers/authentication.controller";
 import request from "supertest";
-import { ALICE, BOB } from "../../../src/logion/model/addresses.model";
+import { ALICE, BOB } from "../../helpers/addresses";
 import { components } from "../../../src/logion/controllers/components";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
 import { AuthenticationService } from "../../../src/logion/services/authentication.service";
-import { Log } from "../../../src/logion/util/Log";
 import {
     SessionRepository,
     SessionFactory,

@@ -6,7 +6,7 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot,
 } from '../../../src/logion/model/protectionrequest.model';
-import { BOB } from '../../../src/logion/model/addresses.model';
+import { BOB } from '../../helpers/addresses';
 
 describe('ProtectionRequestFactoryTest', () => {
 

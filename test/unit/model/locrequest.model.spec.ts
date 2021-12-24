@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE } from "../../../src/logion/model/addresses.model";
+import { ALICE } from "../../helpers/addresses";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -12,6 +12,7 @@ import {
     VoidInfo,
     LocType
 } from "../../../src/logion/model/locrequest.model";
+import { UserIdentity } from "../../../src/logion/model/useridentity";
 
 describe("LocRequestFactory", () => {
 
@@ -85,19 +86,32 @@ describe("LocRequestFactory", () => {
 
     it("creates an open Identity LOC with no requester", () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity');
+        const userIdentity = {
+            firstName: "Scott",
+            lastName: "Tiger",
+            email: "scott@logion.network",
+            phoneNumber: "+789"
+        };
+        const description = createDescription('Identity', undefined, undefined, userIdentity);
         givenLocDescription(description);
         whenCreatingOpenLoc();
     });
 
-    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string): LocRequestDescription {
+    it("fails to create an open Identity LOC with no requester when identity is missing", () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity');
+        givenLocDescription(description);
+        expect(() => whenCreatingOpenLoc()).toThrowError();
+    });
+
+    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity): LocRequestDescription {
         return {
             requesterAddress,
             requesterIdentityLoc,
             ownerAddress: ALICE,
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
-            userIdentity: undefined,
+            userIdentity,
             locType
         };
     }

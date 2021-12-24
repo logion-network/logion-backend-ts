@@ -9,7 +9,7 @@ import { JsonResponse } from '../../src/logion/middlewares/json.response';
 import { Mock } from "moq.ts";
 import { AuthenticationService, LogionUserCheck } from "../../src/logion/services/authentication.service";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
-import { ALICE } from "../../src/logion/model/addresses.model";
+import { ALICE } from "./addresses";
 
 export function setupApp<T>(
     controller: Function & { prototype: T; },

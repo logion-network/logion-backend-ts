@@ -11,9 +11,8 @@ import {
     NewProtectionRequestParameters,
     LegalOfficerDecision,
 } from '../../../src/logion/model/protectionrequest.model';
-import { ALICE, BOB } from '../../../src/logion/model/addresses.model';
+import { ALICE } from '../../helpers/addresses';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
-import { AuthenticationService } from '../../../src/logion/services/authentication.service';
 
 describe('createProtectionRequest', () => {
 
