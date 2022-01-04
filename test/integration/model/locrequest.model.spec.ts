@@ -101,6 +101,10 @@ describe('LocRequestRepository - read accesses', () => {
         expect(request!.links![0].draft).toBe(true);
     })
 
+    it("populates requesterIdentityLoc", async () => {
+        const request = await repository.findById(LOGION_TRANSACTION_LOC_ID);
+        expect(request?.requesterIdentityLocId).toBeDefined();
+    })
 })
 
 describe('LocRequestRepository.save()', () => {
@@ -202,3 +206,4 @@ function checkDescription(requests: LocRequestAggregateRoot[], expectedLocType: 
 }
 
 const LOC_WITH_FILES = "2b287596-f9d5-8030-b606-d1da538cb37f";
+const LOGION_TRANSACTION_LOC_ID = "f93bc0d2-f443-49ff-a9de-a6331167b267";
