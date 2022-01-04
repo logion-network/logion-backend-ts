@@ -507,14 +507,14 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
-        .returns(request.object())
+        .returns(Promise.resolve(request.object()))
     const openLoc = mockRequest("OPEN", hasProtection ? testData : testDataWithUserIdentity)
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
-        .returns(openLoc.object())
+        .returns(Promise.resolve(openLoc.object()))
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
 
@@ -538,7 +538,7 @@ function mockModelForCreationWithIdentityLoc(container: Container): void {
         params.description.requesterIdentityLoc === IDENTITY_LOC_ID &&
         params.description.ownerAddress == ALICE
     )))
-        .returns(request.object())
+        .returns(Promise.resolve(request.object()))
     container.bind(LocRequestFactory).toConstantValue(factory.object());
 
     const protectionRepository = new Mock<ProtectionRequestRepository>();

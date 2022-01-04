@@ -104,7 +104,7 @@ export class LocRequestAggregateRoot {
             } : undefined;
         return {
             requesterAddress: this.requesterAddress,
-            requesterIdentityLoc: this.requesterIdentityLoc,
+            requesterIdentityLoc: this.requesterIdentityLocId,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
             createdOn: this.createdOn!,
@@ -416,9 +416,12 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address", nullable: true })
     requesterAddress?: string;
 
-    @ManyToOne(() => LocRequestAggregateRoot)
-    @JoinColumn({ name: "requester_identity_loc", referencedColumnName: "id" })
-    requesterIdentityLoc?: string;
+    @ManyToOne(() => LocRequestAggregateRoot, { nullable: true })
+    @JoinColumn({ name: "requester_identity_loc" })
+    _requesterIdentityLoc?: LocRequestAggregateRoot;
+
+    @Column({ name: "requester_identity_loc", nullable: true })
+    requesterIdentityLocId?: string;
 
     @Column({ length: 255, name: "owner_address" })
     ownerAddress?: string;
@@ -689,13 +692,17 @@ export interface NewLocRequestParameters {
 @injectable()
 export class LocRequestFactory {
 
-    public newOpenLoc(params: NewLocRequestParameters): LocRequestAggregateRoot {
-        const request = this.newLocRequest(params);
+    constructor(
+        private repository: LocRequestRepository
+    ) {}
+
+    async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
+        const request = await this.newLocRequest(params);
         request.accept(moment())
-        return request
+        return request;
     }
 
-    public newLocRequest(params: NewLocRequestParameters): LocRequestAggregateRoot {
+    async newLocRequest(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
         const { description } = params;
         this.ensureCorrectRequester(description)
         this.ensureUserIdentityPresent(description)
@@ -703,7 +710,10 @@ export class LocRequestFactory {
         request.id = params.id;
         request.status = "REQUESTED";
         request.requesterAddress = description.requesterAddress;
-        request.requesterIdentityLoc = description.requesterIdentityLoc;
+        if(description.requesterIdentityLoc) {
+            request._requesterIdentityLoc = await this.repository.findById(description.requesterIdentityLoc);
+            request.requesterIdentityLocId = description.requesterIdentityLoc;
+        }
         request.ownerAddress = description.ownerAddress;
         request.description = description.description;
         request.locType = description.locType;

@@ -10,81 +10,87 @@ import {
     MetadataItemDescription,
     LinkDescription,
     VoidInfo,
-    LocType
+    LocType,
+    LocRequestRepository
 } from "../../../src/logion/model/locrequest.model";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
+import { Mock } from "moq.ts";
 
 describe("LocRequestFactory", () => {
 
-    it("creates Transaction LOC request", () => {
+    it("creates Transaction LOC request", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        whenCreatingLocRequest();
+        await whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
     });
 
-    it("creates an open Transaction LOC with requester address", () => {
+    it("creates an open Transaction LOC with requester address", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        whenCreatingOpenLoc();
+        await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)
     });
 
-    it("creates an open Transaction LOC with requester id loc", () => {
+    it("creates an open Transaction LOC with requester id loc", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Transaction', undefined, uuid().toString());
+        const requesterIdentityLocId = uuid().toString();
+        const description = createDescription('Transaction', undefined, requesterIdentityLocId);
+        const requesterIdentityLoc = new Mock<LocRequestAggregateRoot>();
+        requesterIdentityLoc.setup(instance => instance.id).returns(requesterIdentityLocId);
+        repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         givenLocDescription(description);
-        whenCreatingOpenLoc();
+        await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)
     });
 
-    it("fails to create an open Transaction LOC with 2 requesters", () => {
+    it("fails to create an open Transaction LOC with 2 requesters", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
         givenLocDescription(description);
-        expect(() => whenCreatingOpenLoc()).toThrowError();
+        await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
-    it("fails to create an open Transaction LOC with no requester", () => {
+    it("fails to create an open Transaction LOC with no requester", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction');
         givenLocDescription(description);
-        expect(() => whenCreatingOpenLoc()).toThrowError();
+        await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
-    it("creates Identity LOC request", () => {
+    it("creates Identity LOC request", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        whenCreatingLocRequest();
+        await whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
     });
 
-    it("creates an open Identity LOC with requester address", () => {
+    it("creates an open Identity LOC with requester address", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        whenCreatingOpenLoc();
+        await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)
     });
 
-    it("fails to create an open Identity LOC with requester id loc", () => {
+    it("fails to create an open Identity LOC with requester id loc", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', undefined, uuid().toString());
         givenLocDescription(description);
-        expect(() => whenCreatingOpenLoc()).toThrowError()
+        await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
-    it("fails to create an open Identity LOC with 2 requesters", () => {
+    it("fails to create an open Identity LOC with 2 requesters", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
         givenLocDescription(description);
-        expect(() => whenCreatingOpenLoc()).toThrowError();
+        await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
-    it("creates an open Identity LOC with no requester", () => {
+    it("creates an open Identity LOC with no requester", async () => {
         givenRequestId(uuid());
         const userIdentity = {
             firstName: "Scott",
@@ -94,14 +100,14 @@ describe("LocRequestFactory", () => {
         };
         const description = createDescription('Identity', undefined, undefined, userIdentity);
         givenLocDescription(description);
-        whenCreatingOpenLoc();
+        await whenCreatingOpenLoc();
     });
 
-    it("fails to create an open Identity LOC with no requester when identity is missing", () => {
+    it("fails to create an open Identity LOC with no requester when identity is missing", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity');
         givenLocDescription(description);
-        expect(() => whenCreatingOpenLoc()).toThrowError();
+        await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity): LocRequestDescription {
@@ -586,21 +592,23 @@ function givenLocDescription(value: LocRequestDescription) {
 
 let locDescription: LocRequestDescription;
 
-function whenCreatingLocRequest() {
-    createdLocRequest = factory.newLocRequest({
+async function whenCreatingLocRequest() {
+    const factory = new LocRequestFactory(repository.object());
+    createdLocRequest = await factory.newLocRequest({
         id: requestId,
         description: locDescription
     });
 }
 
-function whenCreatingOpenLoc() {
-    createdLocRequest = factory.newOpenLoc({
+async function whenCreatingOpenLoc() {
+    const factory = new LocRequestFactory(repository.object());
+    createdLocRequest = await factory.newOpenLoc({
         id: requestId,
         description: locDescription
     });
 }
 
-const factory = new LocRequestFactory();
+const repository = new Mock<LocRequestRepository>();
 
 let createdLocRequest: LocRequestAggregateRoot;
 
@@ -840,4 +848,11 @@ function thenClosingDateIs(expected: Moment) {
 function whenVoiding(reason: string, voidingDate: Moment) {
     request.preVoid(reason);
     request.voidLoc(voidingDate);
+}
+
+async function expectAsyncToThrow(func: () => Promise<void>) {
+    try {
+        await func();
+        expect(true).toBe(false);
+    } catch(_) {}
 }

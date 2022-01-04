@@ -115,17 +115,17 @@ export class LocRequestController extends ApiController {
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
-            request = this.locRequestFactory.newOpenLoc({
+            request = await this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description,
             });
         } else {
-            request = this.locRequestFactory.newLocRequest({
+            request = await this.locRequestFactory.newLocRequest({
                 id: uuid(),
                 description
             });
         }
-        await this.checkIdentityLoc(request.requesterIdentityLoc)
+        await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
         return this.toView(request, userIdentity);
