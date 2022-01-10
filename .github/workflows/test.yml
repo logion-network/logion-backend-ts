@@ -1,0 +1,31 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+            node-version: [14.x]
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v2
+        - name: Use Node.js ${{ matrix.node-version }}
+          uses: actions/setup-node@v1
+          with:
+            node-version: ${{ matrix.node-version }}
+        - name: Use Yarn
+          uses: c-hive/gha-yarn-cache@v1
+        - name: Install node modules
+          run: yarn install
+        - name: Build
+          run: yarn build
+        - name: Run unit tests
+          run: yarn run unit-test
