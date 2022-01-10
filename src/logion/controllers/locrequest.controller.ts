@@ -166,11 +166,13 @@ export class LocRequestController extends ApiController {
                 hash: file.hash,
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
+                submitter: locDescription.ownerAddress // TODO Change me
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
+                submitter: locDescription.ownerAddress // TODO Change me
             })),
             links: request.getLinks().map(link => ({
                 target: link.target,
@@ -313,11 +315,13 @@ export class LocRequestController extends ApiController {
                 hash: file.hash,
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
+                submitter: locDescription.ownerAddress // TODO Change me
             })),
             metadata: request.getMetadataItems(false).map(item => ({
                 name: item.name,
                 value: item.value,
-                addedOn: item.addedOn?.toISOString() || undefined
+                addedOn: item.addedOn?.toISOString() || undefined,
+                submitter: locDescription.ownerAddress // TODO Change me
             })),
             links: request.getLinks(false).map(link => ({
                 target: link.target,

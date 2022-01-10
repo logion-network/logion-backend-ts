@@ -27,6 +27,7 @@ const testUserIdentity = {
 }
 
 const IDENTITY_LOC_ID = "6b00b9f2-4439-4c4a-843e-2ea3ce2016fd";
+const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
 const identityInIdentityLoc = {
     firstName: "Felix",
@@ -306,7 +307,7 @@ describe('LocRequestController', () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
-            .field({ nature: "some nature" })
+            .field({ nature: "some nature", submitter: SUBMITTER })
             .attach('file', buffer, {
                 filename: FILE_NAME,
                 contentType: 'text/plain',
@@ -351,6 +352,7 @@ describe('LocRequestController', () => {
                 expect(file.nature).toBe(testFile.nature)
                 expect(file.hash).toBe(testFile.hash)
                 expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
+                expect(file.submitter).toBe(ALICE) // TODO Change me
                 const link = response.body.links[0]
                 expect(link.nature).toBe(testLink.nature)
                 expect(link.target).toBe(testLink.target)
@@ -359,6 +361,7 @@ describe('LocRequestController', () => {
                 expect(metadataItem.name).toBe(testMetadataItem.name)
                 expect(metadataItem.value).toBe(testMetadataItem.value)
                 expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
+                expect(metadataItem.submitter).toBe(ALICE) // TODO Change me
             });
     });
 
@@ -381,7 +384,7 @@ describe('LocRequestController', () => {
         const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
-            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
+            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE, submitter: SUBMITTER })
             .expect(204)
         locRequest.verify(instance => instance.addMetadataItem(
             It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE)))
@@ -682,6 +685,7 @@ const SOME_FILE = {
     hash: SOME_DATA_HASH,
     oid: SOME_OID,
     nature: "file-nature",
+    submitter: SUBMITTER
 };
 
 async function fileExists(filePath: string): Promise<boolean> {
