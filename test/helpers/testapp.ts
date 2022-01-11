@@ -15,7 +15,7 @@ export function setupApp<T>(
     controller: Function & { prototype: T; },
     mockBinder: (container: Container) => void,
     authSucceed: boolean = true,
-    isNodeOwner: boolean = false,
+    isNodeOwner: boolean = true,
 ): Express {
 
     const app = express();
@@ -58,7 +58,11 @@ function mockAuthenticationSuccess(isNodeOwner: boolean): AuthenticationService 
     authenticatedUser.setup(instance => instance.require).returns(() => {});
     authenticatedUser.setup(instance => instance.requireIs).returns(() => {});
     authenticatedUser.setup(instance => instance.requireLegalOfficer).returns(() => {});
-    authenticatedUser.setup(instance => instance.requireNodeOwner).returns(() => {});
+    authenticatedUser.setup(instance => instance.requireNodeOwner).returns(() => {
+        if (!isNodeOwner) {
+            throw new UnauthorizedException("")
+        }
+    });
     authenticatedUser.setup(instance => instance.isNodeOwner).returns(() => isNodeOwner);
 
     const authenticationService = new Mock<AuthenticationService>();

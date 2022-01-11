@@ -94,6 +94,7 @@ describe('LocRequestController', () => {
             LocRequestController,
             mockModelForCreation,
             true,
+            false
         )
         await request(app)
             .post('/api/loc-request')
@@ -191,6 +192,7 @@ describe('LocRequestController', () => {
             LocRequestController,
             container => mockModelForCreation(container, true),
             true,
+            false
         )
         await request(app)
             .post('/api/loc-request')
@@ -319,6 +321,19 @@ describe('LocRequestController', () => {
             });
     })
 
+    it('fails to add file to loc when not owner', async () => {
+        const app = setupApp(LocRequestController, mockModelForAddFile, true, false);
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/files`)
+            .field({ nature: "some nature" })
+            .attach('file', buffer, {
+                filename: FILE_NAME,
+                contentType: 'text/plain',
+            })
+            .expect(401);
+    })
+
     it('downloads existing file given its hash', async () => {
         const app = setupApp(LocRequestController, mockModelForDownloadFile);
         const filePath = "/tmp/download-" + REQUEST_ID + "-" + SOME_DATA_HASH;
@@ -388,6 +403,15 @@ describe('LocRequestController', () => {
             .expect(204)
         locRequest.verify(instance => instance.addMetadataItem(
             It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE)))
+    })
+
+    it('fails to adds a metadata item when not owner', async () => {
+        const locRequest = mockRequestForMetadata();
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest), true, false)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
+            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
+            .expect(401)
     })
 
     it('deletes a metadata item', async () => {
