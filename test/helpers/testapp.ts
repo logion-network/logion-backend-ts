@@ -16,6 +16,7 @@ export function setupApp<T>(
     mockBinder: (container: Container) => void,
     authSucceed: boolean = true,
     isNodeOwner: boolean = true,
+    conditionFulfilled: boolean = true
 ): Express {
 
     const app = express();
@@ -36,7 +37,7 @@ export function setupApp<T>(
     let container = new Container({ defaultScope: "Singleton" });
 
     container.bind(AuthenticationService)
-        .toConstantValue(authSucceed ? mockAuthenticationSuccess(isNodeOwner) : mockAuthenticationFailure());
+        .toConstantValue(authSucceed ? mockAuthenticationSuccess(isNodeOwner, conditionFulfilled) : mockAuthenticationFailure());
 
     mockBinder(container);
 
@@ -50,13 +51,22 @@ export function setupApp<T>(
     return app;
 }
 
-function mockAuthenticationSuccess(isNodeOwner: boolean): AuthenticationService {
+function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boolean): AuthenticationService {
 
     const authenticatedUser = new Mock<LogionUserCheck>();
     authenticatedUser.setup(instance => instance.legalOfficer).returns(true);
-    authenticatedUser.setup(instance => instance.is).returns(() => true);
-    authenticatedUser.setup(instance => instance.require).returns(() => {});
-    authenticatedUser.setup(instance => instance.requireIs).returns(() => {});
+    authenticatedUser.setup(instance => instance.is).returns(() => conditionFulfilled);
+    authenticatedUser.setup(instance => instance.require).returns(() => {
+        if (!conditionFulfilled) {
+            throw new UnauthorizedException("")
+        }
+        return authenticatedUser.object()
+    });
+    authenticatedUser.setup(instance => instance.requireIs).returns(() => {
+        if (!conditionFulfilled) {
+            throw new UnauthorizedException("")
+        }
+    });
     authenticatedUser.setup(instance => instance.requireLegalOfficer).returns(() => {});
     authenticatedUser.setup(instance => instance.requireNodeOwner).returns(() => {
         if (!isNodeOwner) {

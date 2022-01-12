@@ -62,7 +62,8 @@ export class PolkadotService {
                 },
                 MetadataItem: {
                     name: "Vec<u8>",
-                    value: "Vec<u8>"
+                    value: "Vec<u8>",
+                    submitter: "AccountId",
                 },
                 LocType: {
                     _enum: [
@@ -77,6 +78,7 @@ export class PolkadotService {
                 File: {
                     hash: "Hash",
                     nature: "Vec<u8>",
+                    submitter: "AccountId",
                 },
                 LocVoidInfo: {
                     "replacer": "Option<LocId>"
@@ -86,6 +88,7 @@ export class PolkadotService {
                         "V1",
                         "V2MakeLocVoid",
                         "V3RequesterEnum",
+                        "V4ItemSubmitter",
                     ]
                 },
                 Requester: {

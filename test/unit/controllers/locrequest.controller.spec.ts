@@ -60,6 +60,7 @@ const testFile:FileDescription = {
     contentType: "application/pdf",
     hash: "0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9",
     oid: 123,
+    submitter: SUBMITTER,
     addedOn: moment()
 }
 
@@ -70,7 +71,8 @@ const testLink:LinkDescription = {
 
 const testMetadataItem:MetadataItemDescription = {
     name: "test-data",
-    value: "test-data-value"
+    value: "test-data-value",
+    submitter: SUBMITTER,
 }
 
 const testDataWithUserIdentity = {
@@ -309,7 +311,7 @@ describe('LocRequestController', () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
-            .field({ nature: "some nature", submitter: SUBMITTER })
+            .field({ nature: "some nature" })
             .attach('file', buffer, {
                 filename: FILE_NAME,
                 contentType: 'text/plain',
@@ -321,8 +323,8 @@ describe('LocRequestController', () => {
             });
     })
 
-    it('fails to add file to loc when not owner', async () => {
-        const app = setupApp(LocRequestController, mockModelForAddFile, true, false);
+    it('fails to add file to loc when neither owner nor requester', async () => {
+        const app = setupApp(LocRequestController, mockModelForAddFile, true, false, false);
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
@@ -367,7 +369,7 @@ describe('LocRequestController', () => {
                 expect(file.nature).toBe(testFile.nature)
                 expect(file.hash).toBe(testFile.hash)
                 expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
-                expect(file.submitter).toBe(ALICE) // TODO Change me
+                expect(file.submitter).toBe(SUBMITTER)
                 const link = response.body.links[0]
                 expect(link.nature).toBe(testLink.nature)
                 expect(link.target).toBe(testLink.target)
@@ -376,7 +378,7 @@ describe('LocRequestController', () => {
                 expect(metadataItem.name).toBe(testMetadataItem.name)
                 expect(metadataItem.value).toBe(testMetadataItem.value)
                 expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
-                expect(metadataItem.submitter).toBe(ALICE) // TODO Change me
+                expect(metadataItem.submitter).toBe(SUBMITTER)
             });
     });
 
@@ -399,15 +401,15 @@ describe('LocRequestController', () => {
         const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest))
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
-            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE, submitter: SUBMITTER })
+            .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
             .expect(204)
         locRequest.verify(instance => instance.addMetadataItem(
             It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE)))
     })
 
-    it('fails to adds a metadata item when not owner', async () => {
+    it('fails to adds a metadata item when neither owner nor requester', async () => {
         const locRequest = mockRequestForMetadata();
-        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest), true, false)
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest), true, false, false)
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
             .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
@@ -790,7 +792,11 @@ function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
         .returns()
     request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
         .returns()
-    request.setup(instance => instance.addMetadataItem({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE}))
+    request.setup(instance => instance.addMetadataItem({
+        name: SOME_DATA_NAME,
+        value: SOME_DATA_VALUE,
+        submitter: SUBMITTER
+    }))
         .returns()
     return request;
 }
