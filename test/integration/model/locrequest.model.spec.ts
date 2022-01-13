@@ -11,6 +11,8 @@ import {
 import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
 
+const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+
 describe('LocRequestRepository - read accesses', () => {
 
     beforeAll(async () => {
@@ -169,12 +171,14 @@ function givenOpenLoc(id: string): LocRequestAggregateRoot {
         oid: 123,
         contentType: "content/type",
         nature: "nature1",
+        submitter: SUBMITTER,
     })
     locRequest.metadata = []
     locRequest.addMetadataItem({
         name: "itemName",
         addedOn: moment(),
-        value: "something valuable"
+        value: "something valuable",
+        submitter: SUBMITTER,
     })
     return locRequest;
 }

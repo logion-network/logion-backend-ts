@@ -864,10 +864,6 @@
                     "nature": {
                         "type": "string",
                         "description": "The file's nature"
-                    },
-                    "submitter": {
-                        "type": "string",
-                        "description": "The SS58 address of the file submitter"
                     }
                 }
             },
@@ -905,10 +901,6 @@
                     "value": {
                         "type": "string",
                         "description": "The item's value"
-                    },
-                    "submitter": {
-                        "type": "string",
-                        "description": "The SS58 address of the metadata item submitter"
                     }
                 }
             },

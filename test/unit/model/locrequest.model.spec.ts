@@ -16,6 +16,8 @@ import {
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock } from "moq.ts";
 
+const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+
 describe("LocRequestFactory", () => {
 
     it("creates Transaction LOC request", async () => {
@@ -229,11 +231,13 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         const items: MetadataItemDescription[] = [
             {
                 name: "same name",
-                value: "some value"
+                value: "some value",
+                submitter: SUBMITTER,
             },
             {
                 name: "same name",
-                value: "some other value"
+                value: "some other value",
+                submitter: SUBMITTER,
             }
         ];
         expect(() => whenAddingMetadata(items)).toThrowError();
@@ -245,10 +249,12 @@ describe("LocRequestAggregateRoot (metadata)", () => {
             {
                 name: "name1",
                 value: "value1",
+                submitter: SUBMITTER,
             },
             {
                 name: "name2",
                 value: "value2",
+                submitter: SUBMITTER,
             }
         ];
         whenAddingMetadata(metadata);
@@ -260,11 +266,13 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         const items: MetadataItemDescription[] = [
             {
                 name: "name1",
-                value: "some nice value"
+                value: "some nice value",
+                submitter: SUBMITTER,
             },
             {
                 name: "name2",
-                value: "some other nice value"
+                value: "some other nice value",
+                submitter: SUBMITTER,
             }
         ];
         whenAddingMetadata(items);
@@ -273,7 +281,8 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         const newItems: MetadataItemDescription[] = [
             {
                 name: "name1",
-                value: "some nice value"
+                value: "some nice value",
+                submitter: SUBMITTER,
             }
         ];
         thenExposesMetadata(newItems);
@@ -288,7 +297,8 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         whenAddingMetadata([
             {
                 name,
-                value: "value-1"
+                value: "value-1",
+                submitter: SUBMITTER,
             }
         ])
         whenConfirmingMetadataItem(name)
@@ -383,6 +393,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 1234,
                 nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 hash: "hash2",
@@ -390,6 +401,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 4567,
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
         whenAddingFiles(files);
@@ -409,6 +421,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 1234,
                 nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 hash: "hash1",
@@ -416,6 +429,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 4567,
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
         expect(() => whenAddingFiles(files)).toThrowError();
@@ -430,6 +444,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 1234,
                 nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 hash: "hash2",
@@ -437,6 +452,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 4567,
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
         whenAddingFiles(files);
@@ -450,6 +466,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 4567,
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
         thenExposesFiles(newFiles);
@@ -468,6 +485,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 oid: 1234,
                 nature: "nature1",
+                submitter: SUBMITTER,
             }
         ]);
         whenConfirmingFile(hash)
@@ -483,6 +501,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         whenAddingMetadata([{
             name: "data-1",
             value: "value-1",
+            submitter: SUBMITTER,
         }])
         const addedOn = moment();
         whenSettingMetadataItemAddedOn("data-1", addedOn);
@@ -491,6 +510,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         thenExposesMetadataItemByName("data-1", {
             name: "data-1",
             value: "value-1",
+            submitter: SUBMITTER,
             addedOn: addedOn
         })
     })
@@ -521,6 +541,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 contentType: "text/plain",
                 oid: 1234,
                 nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 hash: "hash2",
@@ -528,6 +549,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 contentType: "text/plain",
                 oid: 4567,
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
         whenAddingFiles(files);
@@ -541,6 +563,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             contentType: "text/plain",
             oid: 1234,
             nature: "nature1",
+            submitter: SUBMITTER,
             addedOn: addedOn
         })
     })
@@ -642,6 +665,7 @@ function expectSameFiles(f1: FileDescription, f2: FileDescription) {
     expect(f1.oid).toEqual(f2.oid);
     expect(f1.contentType).toEqual(f2.contentType);
     expect(f1.nature).toEqual(f2.nature);
+    expect(f1.submitter).toEqual(f2.submitter);
     if(f1.addedOn === undefined) {
         expect(f2.addedOn).not.toBeDefined();
     } else {
@@ -665,6 +689,7 @@ function thenExposesMetadata(expectedMetadata: MetadataItemDescription[]) {
     request.getMetadataItems().forEach((item, index) => {
         expect(item.name).toBe(expectedMetadata[index].name);
         expect(item.value).toBe(expectedMetadata[index].value);
+        expect(item.submitter).toBe(expectedMetadata[index].submitter);
         if (item.addedOn === undefined) {
             expect(expectedMetadata[index].addedOn).not.toBeDefined()
         } else {
@@ -680,6 +705,7 @@ function thenExposesMetadataItemByName(name: string, expectedMetadataItem: Metad
 function expectSameMetadataItems(item1: MetadataItemDescription, item2: MetadataItemDescription) {
     expect(item1.name).toEqual(item2.name);
     expect(item1.value).toEqual(item2.value);
+    expect(item1.submitter).toEqual(item2.submitter);
     if (item1.addedOn === undefined) {
         expect(item2.addedOn).toBeUndefined()
     } else {

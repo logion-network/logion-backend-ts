@@ -43,12 +43,14 @@ export interface FileDescription {
     readonly contentType: string;
     readonly nature: string;
     readonly addedOn?: Moment;
+    readonly submitter: string;
 }
 
 export interface MetadataItemDescription {
     readonly name: string;
     readonly value: string;
     readonly addedOn?: Moment;
+    readonly submitter: string;
 }
 
 export interface LinkDescription {
@@ -128,6 +130,7 @@ export class LocRequestAggregateRoot {
         file.contentType = fileDescription.contentType;
         file.draft = true;
         file.nature = fileDescription.nature;
+        file.submitter = fileDescription.submitter
         file._toAdd = true;
         this.files!.push(file);
     }
@@ -167,6 +170,7 @@ export class LocRequestAggregateRoot {
             hash: file!.hash!,
             oid: file!.oid!,
             nature: file!.nature!,
+            submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
         };
     }
@@ -215,6 +219,7 @@ export class LocRequestAggregateRoot {
         item.name = itemDescription.name;
         item.value = itemDescription.value;
         item.draft = true;
+        item.submitter = itemDescription.submitter;
         item._toAdd = true;
         this.metadata!.push(item);
     }
@@ -227,6 +232,7 @@ export class LocRequestAggregateRoot {
         return ({
             name: item.name!,
             value: item.value!,
+            submitter: item.submitter!,
             addedOn: item.addedOn ? moment(item.addedOn) : undefined,
         })
     }
@@ -509,6 +515,9 @@ export class LocFile extends Child implements HasIndex {
     @Column({ length: 255, nullable: true })
     nature?: string;
 
+    @Column({ length: 255 })
+    submitter?: string;
+
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
     request?: LocRequestAggregateRoot;
@@ -539,6 +548,9 @@ export class LocMetadataItem extends Child implements HasIndex {
 
     @Column("boolean", { default: false })
     draft?: boolean;
+
+    @Column({ length: 255 })
+    submitter?: string;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })

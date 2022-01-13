@@ -49,10 +49,11 @@ export class LogionUserCheck implements AuthenticatedUser {
             && address === this.address;
     }
 
-    require(predicate: (check: LogionUserCheck) => boolean, message?: string): void {
+    require(predicate: (check: LogionUserCheck) => boolean, message?: string): LogionUserCheck {
         if(!predicate(this)) {
             throw unauthorized(message || "Unauthorized");
         }
+        return this;
     }
 
     isOneOf(addresses: (string | undefined | null)[]): boolean {

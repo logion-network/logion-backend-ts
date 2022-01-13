@@ -166,13 +166,13 @@ export class LocRequestController extends ApiController {
                 hash: file.hash,
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
-                submitter: locDescription.ownerAddress // TODO Change me
+                submitter: file.submitter,
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
-                submitter: locDescription.ownerAddress // TODO Change me
+                submitter: item.submitter,
             })),
             links: request.getLinks().map(link => ({
                 target: link.target,
@@ -315,13 +315,13 @@ export class LocRequestController extends ApiController {
                 hash: file.hash,
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
-                submitter: locDescription.ownerAddress // TODO Change me
+                submitter: file.submitter,
             })),
             metadata: request.getMetadataItems(false).map(item => ({
                 name: item.name,
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
-                submitter: locDescription.ownerAddress // TODO Change me
+                submitter: item.submitter,
             })),
             links: request.getLinks(false).map(link => ({
                 target: link.target,
@@ -390,8 +390,9 @@ export class LocRequestController extends ApiController {
     @Async()
     async addFile(addFileView: AddFileView, requestId: string): Promise<AddFileResultView> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+        const submitter = this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can submit a file")
+            .address
 
         const files: fileUpload.FileArray = this.request.files;
         if(files === undefined || files === null) {
@@ -416,7 +417,8 @@ export class LocRequestController extends ApiController {
             contentType: file.mimetype,
             hash,
             oid,
-            nature: addFileView.nature || ""
+            nature: addFileView.nature || "",
+            submitter,
         });
         await this.locRequestRepository.save(request);
 
@@ -438,7 +440,7 @@ export class LocRequestController extends ApiController {
     async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can download a file")
 
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
@@ -465,7 +467,7 @@ export class LocRequestController extends ApiController {
     async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete a file")
 
         const file = request.removeFile(hash);
         await this.locRequestRepository.save(request);
@@ -624,11 +626,12 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+        const submitter = this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can submit metadata")
+            .address
         const name = requireLength(addMetadataView, "name", 3, 40)
         const value = requireLength(addMetadataView, "value", 1, 4096)
-        request.addMetadataItem({ name, value })
+        request.addMetadataItem({ name, value, submitter })
         await this.locRequestRepository.save(request)
         this.response.sendStatus(204);
     }
@@ -647,7 +650,7 @@ export class LocRequestController extends ApiController {
     async deleteMetadata(_body: any, requestId: string, name: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete metadata")
 
         const decodedName = decodeURIComponent(name);
         request.removeMetadataItem(decodedName);
