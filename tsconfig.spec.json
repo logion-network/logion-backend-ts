@@ -1,9 +1,7 @@
 {
     "extends": "./tsconfig",
     "compilerOptions": {
-        "sourceMap": true
-    },
-    "exclude": [
-        "node_modules"
-    ]
+        "sourceMap": true,
+        "inlineSources": true
+    }
 }

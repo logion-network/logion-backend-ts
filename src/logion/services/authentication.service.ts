@@ -105,9 +105,13 @@ export class AuthenticationService {
             }
         });
         const token = jwt.decode(jwtToken, { complete: true }) as Jwt;
-        return {
-            address: token.payload.sub!,
-            legalOfficer: token.payload.legalOfficer
+        if(typeof token.payload !== 'string') {
+            return {
+                address: token.payload.sub!,
+                legalOfficer: token.payload.legalOfficer
+            }
+        } else {
+            throw unauthorized("Unable to decode payload");
         }
     }
 

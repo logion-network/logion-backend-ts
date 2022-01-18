@@ -3,17 +3,9 @@
     "compilerOptions": {
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "lib": [
-            "es2017",
-            "dom"
-        ],
-        "typeRoots": [
-            "node_modules/@types",
-            "types"
-        ]
+        "outDir": "dist"
     },
     "compileOnSave": false,
-    "outDir": "dist",
     "exclude": [
         "dist"
     ]

@@ -40,7 +40,9 @@ export class BlockExtrinsicsService {
         const api = await this.polkadotService.readyApi();
         const hash = await api.rpc.chain.getBlockHash(blockNumber);
         const { block, events } = await this.blockAndEvents(hash);
-        const extrinsics = await this.allExtrinsics(block, events);
+        const apiAt = await api.at(hash);
+        const registry = apiAt.registry;
+        const extrinsics = await this.allExtrinsics(registry, block, events);
         return {
             number: BigInt(block.header.number.toString()),
             extrinsics
@@ -52,9 +54,10 @@ export class BlockExtrinsicsService {
         events: Vec<EventRecord>
     }> {
         const api = await this.polkadotService.readyApi();
+        const apiAt = await api.at(hash);
         const [ signedBlock, events ] = await Promise.all([
             api.derive.chain.getBlock(hash),
-            api.query.system.events.at(hash),
+            apiAt.query.system.events(),
         ]);
         if (signedBlock === undefined) {
             throw new Error('Block not found');
@@ -66,6 +69,7 @@ export class BlockExtrinsicsService {
     }
 
     private async allExtrinsics(
+        registry: Registry,
         block: Block,
         events: Vec<EventRecord>,
     ): Promise<JsonExtrinsic[]> {
@@ -78,7 +82,7 @@ export class BlockExtrinsicsService {
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
-                builders[extrinsicIndex] ||= this.createBuilder(extrinsics[extrinsicIndex], events.registry);
+                builders[extrinsicIndex] ||= this.createBuilder(extrinsics[extrinsicIndex], registry);
                 const extrinsicBuilder: ExtrinsicBuilder = builders[extrinsicIndex];
 
                 const jsonData = event.data.toJSON() as AnyJson[];
