@@ -9,7 +9,7 @@
     },
     "license": "Apache-2.0",
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --p ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
