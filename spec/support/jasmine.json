@@ -4,7 +4,7 @@
     "**/*.spec.ts"
   ],
   "helpers": [
-    "../../test/helpers/typescript-helper.js"
+    "../../test/helpers/typescript-transpile-only.js"
   ],
   "stopSpecOnExpectationFailure": false,
   "reporters": [
