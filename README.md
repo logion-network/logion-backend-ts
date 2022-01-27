@@ -31,6 +31,35 @@ it as a path variable in the other queries.
 ### Authentication
 Authentication process is described [here](doc/Authentication.md).
 
+For testing purpose, you may generate your own token [here](https://jwt.io/) and set the following fields:
+
+Header:
+```
+{
+  "alg": "HS384",
+  "typ": "JWT"
+}
+```
+
+Payload:
+```
+{
+    "iat": 1623674099,
+    "exp": 1823674099,
+    "legalOfficer": true,
+    "iss": "localhost",
+    "sub": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+}
+```
+Note that the value of `iss` must match `JWT_ISSUER`.
+
+Verify signature: check the "base 64 encoded" box and paste the value of `JWT_SECRET`.
+
+The generated token may be sent to the API with `Authorization: Bearer $TOKEN` header. With `curl`, the command would look like this:
+```
+curl -v http://localhost:8090/api/$PATH -H "Authorization: Bearer $TOKEN" ...
+```
+
 ### Build
 
 The sub-package `calc` must be built first !
