@@ -42,7 +42,7 @@
         "mongoose": "^6.1.6",
         "mongoose-to-swagger": "^1.4.0",
         "node-fetch": "3.1.1",
-        "openapi-typescript": "^5.1.0",
+        "openapi-typescript": "5.1.0",
         "pg": "^8.7.1",
         "source-map-support": "^0.5.21",
         "swagger-ui-express": "^4.3.0",
