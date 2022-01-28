@@ -56,18 +56,18 @@ export class BlockConsumer {
 
             if(processedBlocksSinceLastSync === PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD) {
                 processedBlocksSinceLastSync = 0;
-                lastSyncPoint = await this.sync(lastSyncPoint, now, head);
+                lastSyncPoint = await this.sync(lastSyncPoint, now, blockNumber);
                 lastSynced = blockNumber;
             }
 
             blockNumber++;
         }
 
-        if(lastSynced < head) {
-            await this.sync(lastSyncPoint, now, head);
+        if(lastSynced < (blockNumber - 1n)) {
+            await this.sync(lastSyncPoint, now, blockNumber - 1n);
         }
 
-        if(blockNumber === BATCH_SIZE) {
+        if(blockNumber < head) {
             logger.info(`Batch size reached (${BATCH_SIZE}), stopping; sync will resume in a couple of seconds`);
         }
     }
