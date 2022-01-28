@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { Moment } from "moment";
-import { SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
+import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
 import { BlockExtrinsicsService } from "./block.service";
 import { LocSynchronizer } from "./locsynchronization.service";
 import { Log } from "../util/Log";
@@ -10,6 +10,9 @@ import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toString } from "./types/responses/Extrinsic";
 
 const { logger } = Log;
+
+const PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD = 1000;
+const BATCH_SIZE = 20000n;
 
 @injectable()
 export class BlockConsumer {
@@ -42,24 +45,38 @@ export class BlockConsumer {
             lastSyncPoint = undefined;
         }
 
-        for (let blockNumber: bigint = lastSynced + 1n; blockNumber <= head; blockNumber++) {
-            logger.debug("Scanning block %d/%d", blockNumber, head);
+        let totalProcessedBlocks: bigint = 0n;
+        let processedBlocksSinceLastSync = 0;
+        let blockNumber: bigint = lastSynced + 1n
+        while (blockNumber <= head && totalProcessedBlocks < BATCH_SIZE) {
+            this.logProgress(blockNumber, head);
             await this.processBlock(blockNumber);
+            ++processedBlocksSinceLastSync;
+            ++totalProcessedBlocks;
+
+            if(processedBlocksSinceLastSync === PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD) {
+                processedBlocksSinceLastSync = 0;
+                lastSyncPoint = await this.sync(lastSyncPoint, now, blockNumber);
+                lastSynced = blockNumber;
+            }
+
+            blockNumber++;
         }
 
-        if(lastSyncPoint === undefined) {
-            lastSyncPoint = this.syncPointFactory.newSyncPoint({
-                name: TRANSACTIONS_SYNC_POINT_NAME,
-                latestHeadBlockNumber: head,
-                createdOn: now
-            });
-        } else {
-            lastSyncPoint.update({
-                blockNumber: head,
-                updatedOn: now
-            });
+        if(lastSynced < (blockNumber - 1n)) {
+            await this.sync(lastSyncPoint, now, blockNumber - 1n);
         }
-        await this.syncPointRepository.save(lastSyncPoint);
+
+        if(blockNumber < head) {
+            logger.info(`Batch size reached (${BATCH_SIZE}), stopping; sync will resume in a couple of seconds`);
+        }
+    }
+
+    private logProgress(blockNumber: bigint, head: bigint) {
+        logger.debug("Scanning block %d/%d", blockNumber, head);
+        if(!logger.isDebugEnabled() && logger.isInfoEnabled() && (blockNumber % 1000n) === 0n) {
+            logger.info("Scanning block %d/%d", blockNumber, head);
+        }
     }
 
     private async processBlock(blockNumber: bigint): Promise<void> {
@@ -77,5 +94,23 @@ export class BlockConsumer {
                 await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
             }
         }
+    }
+
+    private async sync(lastSyncPoint: SyncPointAggregateRoot | undefined, now: Moment, head: bigint): Promise<SyncPointAggregateRoot> {
+        let current = lastSyncPoint;
+        if(current === undefined) {
+            current = this.syncPointFactory.newSyncPoint({
+                name: TRANSACTIONS_SYNC_POINT_NAME,
+                latestHeadBlockNumber: head,
+                createdOn: now
+            });
+        } else {
+            current.update({
+                blockNumber: head,
+                updatedOn: now
+            });
+        }
+        await this.syncPointRepository.save(current);
+        return current;
     }
 }
