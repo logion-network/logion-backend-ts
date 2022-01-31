@@ -3,7 +3,12 @@
     "compilerOptions": {
         "emitDecoratorMetadata": true,
         "experimentalDecorators": true,
-        "outDir": "dist"
+        "outDir": "dist",
+        "baseUrl": ".",
+        "paths": {
+            "@polkadot/api/augment": ["src/logion/lib/polkadot/interfaces/augment-api.ts"],
+            "@polkadot/types/augment": ["src/logion/lib/polkadot/interfaces/augment-types.ts"]
+        }
     },
     "compileOnSave": false,
     "exclude": [

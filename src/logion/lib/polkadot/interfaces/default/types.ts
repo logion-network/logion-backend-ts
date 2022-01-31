@@ -3,7 +3,6 @@
 
 import type { Bytes, Enum, Option, Struct, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AccountId, Balance, Hash, MultiAddress } from '@polkadot/types/interfaces/runtime';
-import type { SessionKeys2 } from '@polkadot/types/interfaces/session';
 import type { AccountInfoWithDualRefCount } from '@polkadot/types/interfaces/system';
 import type { DepositBalance } from '@polkadot/types/interfaces/uniques';
 
@@ -45,9 +44,6 @@ export interface File extends Struct {
   readonly nature: Bytes;
   readonly submitter: AccountId;
 }
-
-/** @name Keys */
-export interface Keys extends SessionKeys2 {}
 
 /** @name LegalOfficerCaseOf */
 export interface LegalOfficerCaseOf extends Struct {
