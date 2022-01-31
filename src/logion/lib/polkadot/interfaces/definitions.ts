@@ -75,6 +75,7 @@ export default {
                 "Account": "AccountId",
                 "Loc": "LocId"
             }
-        }
+        },
+        Keys: "SessionKeys2"
     }
 };
