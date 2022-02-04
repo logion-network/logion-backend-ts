@@ -38,7 +38,7 @@ describe("TransactionSync", () => {
                 .transactions(transactions)
                 .build();
         transactionExtractor.setup(instance => instance.extractBlockWithTransactions(block.object()))
-            .returns(blockWithTransaction);
+            .returns(Promise.resolve(blockWithTransaction));
 
         const transactionAggregate = new Mock<TransactionAggregateRoot>();
         transactionFactory.setup(instance => instance.newTransaction(It.IsAny()))

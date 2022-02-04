@@ -5,14 +5,18 @@ export interface JsonExtrinsic {
     signer: string | null;
     args: JsonArgs;
     tip: string | null;
-    partialFee?: string;
+    partialFee: () => Promise<string | undefined>;
     events: JsonEvent[];
     paysFee: boolean;
-    error: ExtrinsicError | null;
+    error: () => ExtrinsicError | null;
 }
 
-export function toString(extrinsic: JsonExtrinsic): string {
-    return `extrinsic ${ methodToString(extrinsic.method) } ${ errorToString(extrinsic.error) }`
+export function toString(extrinsic: JsonExtrinsic, error: ExtrinsicError | null): string {
+    return `extrinsic ${ methodToString(extrinsic.method) } ${ errorToString(error) }`
+}
+
+export function toStringWithoutError(extrinsic: JsonExtrinsic): string {
+    return `extrinsic ${ methodToString(extrinsic.method) }`
 }
 
 export interface JsonEvent {

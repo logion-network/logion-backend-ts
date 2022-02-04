@@ -46,6 +46,7 @@ function givenCreateRecoveryExtrinsic() {
     ];
     locExtrinsic.setup(instance => instance.args).returns({ legal_officers: legalOfficers });
     locExtrinsic.setup(instance => instance.signer).returns(SIGNER);
+    locExtrinsic.setup(instance => instance.error).returns(() => null);
 }
 
 let locExtrinsic: Mock<JsonExtrinsic>;

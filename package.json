@@ -12,6 +12,7 @@
         "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
+        "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
         "test": "yarn run unit-test && yarn run integration-test",
         "unit-test": "jasmine --config=spec/support/jasmine.json",

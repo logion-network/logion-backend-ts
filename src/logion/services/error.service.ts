@@ -1,6 +1,7 @@
 import { injectable } from "inversify";
 import { PolkadotService } from "./polkadot.service";
 import { Log } from "../util/Log";
+import { ApiPromise } from "@polkadot/api";
 
 const { logger } = Log;
 
@@ -10,6 +11,10 @@ export class ErrorService {
 
     async findError(module: Module | null): Promise<Error> {
         const api = await this.polkadotService.readyApi();
+        return this.findErrorWithApi(api, module);
+    }
+
+    findErrorWithApi(api: ApiPromise, module: Module | null): Error {
         if (module) {
             try {
                 const metaError = api.registry.findMetaError(new Uint8Array([ module.index, module.error ]));
