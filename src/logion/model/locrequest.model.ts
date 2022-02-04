@@ -255,17 +255,28 @@ export class LocRequestAggregateRoot {
         metadataItem._toUpdate = true;
     }
 
-    removeMetadataItem(name: string): void {
+    removeMetadataItem(removerAddress: string, name: string): void {
         this.ensureOpen();
         const removedItemIndex: number = this.metadata!.findIndex(link => link.name === name);
         if (removedItemIndex === -1) {
             throw new Error("No metadata item with given name");
         }
         const removedItem: LocMetadataItem = this.metadata![removedItemIndex];
+        if(!this.canRemove(removerAddress, removedItem)) {
+            throw new Error("Item removal not allowed");
+        }
         if (!removedItem.draft) {
             throw new Error("Only draft links can be removed");
         }
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
+    }
+
+    private canRemove(address: string, item: Submitted | LocLink): boolean {
+        if(item instanceof LocLink) {
+            return address === this.ownerAddress;
+        } else {
+            return address === this.ownerAddress || address === item.submitter;
+        }
     }
 
     confirmMetadataItem(name: string) {
@@ -296,13 +307,16 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    removeFile(hash: string): FileDescription {
+    removeFile(removerAddress: string, hash: string): FileDescription {
         this.ensureOpen();
         const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
         if(removedFileIndex === -1) {
             throw new Error("No file with given hash");
         }
         const removedFile: LocFile = this.files![removedFileIndex];
+        if(!this.canRemove(removerAddress, removedFile)) {
+            throw new Error("Item removal not allowed");
+        }
         if(!removedFile.draft) {
             throw new Error("Only draft files can be removed");
         }
@@ -356,13 +370,16 @@ export class LocRequestAggregateRoot {
         link._toUpdate = true;
     }
 
-    removeLink(target: string): void {
+    removeLink(removerAddress: string, target: string): void {
         this.ensureOpen();
         const removedLinkIndex: number = this.links!.findIndex(link => link.target === target);
         if (removedLinkIndex === -1) {
             throw new Error("No link with given target");
         }
         const removedLink: LocLink = this.links![removedLinkIndex];
+        if(!this.canRemove(removerAddress, removedLink)) {
+            throw new Error("Item removal not allowed");
+        }
         if (!removedLink.draft) {
             throw new Error("Only draft links can be removed");
         }
@@ -486,7 +503,7 @@ export class LocRequestAggregateRoot {
 
 @Entity("loc_request_file")
 @Unique(["requestId", "index"])
-export class LocFile extends Child implements HasIndex {
+export class LocFile extends Child implements HasIndex, Submitted {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
@@ -526,7 +543,7 @@ export class LocFile extends Child implements HasIndex {
 
 @Entity("loc_metadata_item")
 @Unique(["requestId", "index"])
-export class LocMetadataItem extends Child implements HasIndex {
+export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
@@ -555,6 +572,10 @@ export class LocMetadataItem extends Child implements HasIndex {
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
+}
+
+interface Submitted {
+    submitter?: string;
 }
 
 @Entity("loc_link")

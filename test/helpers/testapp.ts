@@ -54,6 +54,7 @@ export function setupApp<T>(
 function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boolean): AuthenticationService {
 
     const authenticatedUser = new Mock<LogionUserCheck>();
+    authenticatedUser.setup(instance => instance.address).returns(ALICE);
     authenticatedUser.setup(instance => instance.legalOfficer).returns(true);
     authenticatedUser.setup(instance => instance.is).returns(() => conditionFulfilled);
     authenticatedUser.setup(instance => instance.require).returns(() => {

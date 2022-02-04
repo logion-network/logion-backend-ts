@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE } from "../../helpers/addresses";
+import { ALICE, DEFAULT_LEGAL_OFFICER } from "../../helpers/addresses";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -261,7 +261,9 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenExposesMetadata(metadata);
     });
 
-    it("removes previously added metadata item", () => {
+    it("submitter removes previously added metadata item", () => testRemovesItem(SUBMITTER));
+
+    function testRemovesItem(remover: string) {
         givenRequestWithStatus('OPEN');
         const items: MetadataItemDescription[] = [
             {
@@ -276,7 +278,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
             }
         ];
         whenAddingMetadata(items);
-        whenRemovingMetadataItem("name2")
+        whenRemovingMetadataItem(remover, "name2")
 
         const newItems: MetadataItemDescription[] = [
             {
@@ -289,7 +291,9 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenExposesMetadataItemByName("name1", newItems[0]);
         thenHasMetadataItem("name1");
         thenHasExpectedMetadataIndices();
-    });
+    }
+
+    it("owner removes previously added metadata item", () => testRemovesItem(OWNER));
 
     it("confirms metadata item", () => {
         givenRequestWithStatus('OPEN');
@@ -340,7 +344,7 @@ describe("LocRequestAggregateRoot (links)", () => {
         thenExposesLinks(links);
     });
 
-    it("removes previously added link", () => {
+    it("owner removes previously added link", () => {
         givenRequestWithStatus('OPEN');
         const links: LinkDescription[] = [
             {
@@ -353,7 +357,7 @@ describe("LocRequestAggregateRoot (links)", () => {
             }
         ];
         whenAddingLinks(links);
-        whenRemovingLink("target-1")
+        whenRemovingLink(OWNER, "target-1")
 
         const newLinks: LinkDescription[] = [
             {
@@ -365,6 +369,22 @@ describe("LocRequestAggregateRoot (links)", () => {
         thenExposesLinkByTarget("target-2", newLinks[0]);
         thenHasLink("target-2");
         thenHasExpectedLinkIndices();
+    });
+
+    it("cannot remove link if not owner", () => {
+        givenRequestWithStatus('OPEN');
+        const links: LinkDescription[] = [
+            {
+                target: "target-1",
+                nature: "nature-1"
+            },
+            {
+                target: "target-2",
+                nature: "nature-2"
+            }
+        ];
+        whenAddingLinks(links);
+        expect(() => whenRemovingLink(SUBMITTER, "target-1")).toThrowError();
     });
 
     it("confirms link", () => {
@@ -435,7 +455,9 @@ describe("LocRequestAggregateRoot (files)", () => {
         expect(() => whenAddingFiles(files)).toThrowError();
     });
 
-    it("removes previously added files", () => {
+    it("submitter removes previously added files", () => testRemovesFile(SUBMITTER));
+
+    function testRemovesFile(remover: string) {
         givenRequestWithStatus('OPEN');
         const files: FileDescription[] = [
             {
@@ -456,7 +478,7 @@ describe("LocRequestAggregateRoot (files)", () => {
             }
         ];
         whenAddingFiles(files);
-        whenRemovingFile("hash1");
+        whenRemovingFile(remover, "hash1");
         thenReturnedRemovedFile(files[0]);
 
         const newFiles: FileDescription[] = [
@@ -473,7 +495,9 @@ describe("LocRequestAggregateRoot (files)", () => {
         thenExposesFileByHash("hash2", newFiles[0]);
         thenHasFile("hash2");
         thenHasExpectedFileIndices();
-    });
+    }
+
+    it("owner removes previously added files", () => testRemovesFile(OWNER));
 
     it("confirms file", () => {
         givenRequestWithStatus('OPEN');
@@ -579,7 +603,11 @@ function givenRequestWithStatus(status: LocRequestStatus) {
     request.files = [];
     request.metadata = [];
     request.links = [];
+    request.ownerAddress = OWNER;
+    request.requesterAddress = SUBMITTER;
 }
+
+const OWNER = DEFAULT_LEGAL_OFFICER;
 
 let request: LocRequestAggregateRoot;
 
@@ -779,16 +807,16 @@ function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
 }
 
-function whenRemovingMetadataItem(name: string) {
-    request.removeMetadataItem(name);
+function whenRemovingMetadataItem(remover: string, name: string) {
+    request.removeMetadataItem(remover, name);
 }
 
-function whenRemovingLink(target: string) {
-    request.removeLink(target);
+function whenRemovingLink(remover: string, target: string) {
+    request.removeLink(remover, target);
 }
 
-function whenRemovingFile(hash: string) {
-    removedFile = request.removeFile(hash);
+function whenRemovingFile(remover: string, hash: string) {
+    removedFile = request.removeFile(remover, hash);
 }
 
 let removedFile: FileDescription;

@@ -423,7 +423,7 @@ describe('LocRequestController', () => {
         await request(app)
             .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }`)
             .expect(200)
-        locRequest.verify(instance => instance.removeMetadataItem(SOME_DATA_NAME))
+        locRequest.verify(instance => instance.removeMetadataItem(ALICE, SOME_DATA_NAME))
     })
 
     it('confirms a metadata item', async () => {
@@ -454,7 +454,7 @@ describe('LocRequestController', () => {
         await request(app)
             .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
             .expect(200)
-        locRequest.verify(instance => instance.removeLink(SOME_LINK_TARGET))
+        locRequest.verify(instance => instance.removeLink(ALICE, SOME_LINK_TARGET))
     })
 
     it('confirms a link', async () => {
@@ -746,7 +746,7 @@ function mockModelForGetSingle(container: Container): void {
 
 function mockModelForDeleteFile(container: Container) {
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.removeFile(SOME_DATA_HASH)).returns(SOME_FILE);
+    request.setup(instance => instance.removeFile(ALICE, SOME_DATA_HASH)).returns(SOME_FILE);
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
@@ -788,7 +788,7 @@ const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.removeMetadataItem(SOME_DATA_NAME))
+    request.setup(instance => instance.removeMetadataItem(ALICE, SOME_DATA_NAME))
         .returns()
     request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
         .returns()
@@ -806,7 +806,7 @@ const SOME_LINK_NATURE = 'link_nature'
 
 function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.removeLink(SOME_LINK_TARGET))
+    request.setup(instance => instance.removeLink(ALICE, SOME_LINK_TARGET))
         .returns()
     request.setup(instance => instance.confirmLink(SOME_LINK_TARGET))
         .returns()
