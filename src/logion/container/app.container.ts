@@ -29,15 +29,12 @@ import { FileDbService } from '../services/filedb.service';
 import { ProtectionSynchronizer } from '../services/protectionsynchronization.service';
 import { ErrorService } from "../services/error.service";
 import { HealthController } from '../controllers/health.controller';
+import { TransactionController } from '../controllers/transaction.controller';
 
 let container = new Container({ defaultScope: "Singleton" });
-container.bind(ApplicationErrorController).toSelf();
-container.bind(AuthenticationController).toSelf();
 container.bind(AuthenticationService).toSelf();
 container.bind(SessionRepository).toSelf();
 container.bind(SessionFactory).toSelf();
-container.bind(JsonResponse).toSelf();
-container.bind(ProtectionRequestController).toSelf();
 container.bind(ProtectionRequestRepository).toSelf();
 container.bind(ProtectionRequestFactory).toSelf();
 container.bind(PolkadotService).toSelf();
@@ -52,7 +49,6 @@ container.bind(TransactionRepository).toSelf();
 container.bind(TransactionFactory).toSelf();
 container.bind(SyncPointRepository).toSelf();
 container.bind(SyncPointFactory).toSelf();
-container.bind(LocRequestController).toSelf();
 container.bind(LocRequestRepository).toSelf();
 container.bind(LocRequestFactory).toSelf();
 container.bind(FileDbService).toSelf();
@@ -60,6 +56,14 @@ container.bind(LocSynchronizer).toSelf();
 container.bind(BlockConsumer).toSelf();
 container.bind(ProtectionSynchronizer).toSelf();
 container.bind(ErrorService).toSelf();
-container.bind(HealthController).toSelf();
+container.bind(JsonResponse).toSelf();
+
+// Controllers are stateful so they must not be injected with singleton scope
+container.bind(ApplicationErrorController).toSelf().inTransientScope();
+container.bind(AuthenticationController).toSelf().inTransientScope();
+container.bind(HealthController).toSelf().inTransientScope();
+container.bind(LocRequestController).toSelf().inTransientScope();
+container.bind(ProtectionRequestController).toSelf().inTransientScope();
+container.bind(TransactionController).toSelf().inTransientScope();
 
 export { container as AppContainer };

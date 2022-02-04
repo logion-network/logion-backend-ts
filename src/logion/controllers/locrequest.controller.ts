@@ -466,10 +466,10 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
-            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete a file")
+        const userCheck = this.authenticationService.authenticatedUser(this.request);
+        userCheck.require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete a file")
 
-        const file = request.removeFile(hash);
+        const file = request.removeFile(userCheck.address, hash);
         await this.locRequestRepository.save(request);
 
         await this.fileDbService.deleteFile(file.oid);
@@ -583,10 +583,10 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
-            .requireNodeOwner();
+        const userCheck = this.authenticationService.authenticatedUser(this.request);
+        userCheck.requireNodeOwner();
 
-        request.removeLink(target);
+        request.removeLink(userCheck.address, target);
         await this.locRequestRepository.save(request);
     }
 
@@ -649,11 +649,12 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteMetadata(_body: any, requestId: string, name: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
-            .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete metadata")
+        const userCheck = this.authenticationService.authenticatedUser(this.request);
+        userCheck.require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can delete metadata")
 
         const decodedName = decodeURIComponent(name);
-        request.removeMetadataItem(decodedName);
+
+        request.removeMetadataItem(userCheck.address, decodedName);
         await this.locRequestRepository.save(request);
     }
 
