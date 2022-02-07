@@ -61,7 +61,7 @@ describe("BlockConsumer", () => {
             protectionSynchronizer.object(),
             extrinsicDataExtractor.object(),
         );
-        await transactionSync.consumeNewBlocks(moment());
+        await transactionSync.consumeNewBlocks(() => moment());
     }
 
     it("consumes n new blocks", async () => {

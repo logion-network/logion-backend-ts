@@ -8,6 +8,7 @@ import { TransactionSynchronizer } from "./transactionsync.service";
 import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toString } from "./types/responses/Extrinsic";
+import { ProgressRateLogger } from "./progressratelogger";
 
 const { logger } = Log;
 
@@ -27,7 +28,7 @@ export class BlockConsumer {
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
     ) {}
 
-    async consumeNewBlocks(now: Moment): Promise<void> {
+    async consumeNewBlocks(now: () => Moment): Promise<void> {
         const head = await this.blockService.getHeadBlockNumber();
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
         let lastSynced = lastSyncPoint !== undefined ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
@@ -45,18 +46,19 @@ export class BlockConsumer {
             lastSyncPoint = undefined;
         }
 
+        const progressLogger = new ProgressRateLogger(now(), lastSynced, head, logger, 100n);
         let totalProcessedBlocks: bigint = 0n;
         let processedBlocksSinceLastSync = 0;
         let blockNumber: bigint = lastSynced + 1n
         while (blockNumber <= head && totalProcessedBlocks < BATCH_SIZE) {
-            this.logProgress(blockNumber, head);
+            progressLogger.log(now(), blockNumber);
             await this.processBlock(blockNumber);
             ++processedBlocksSinceLastSync;
             ++totalProcessedBlocks;
 
             if(processedBlocksSinceLastSync === PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD) {
                 processedBlocksSinceLastSync = 0;
-                lastSyncPoint = await this.sync(lastSyncPoint, now, blockNumber);
+                lastSyncPoint = await this.sync(lastSyncPoint, now(), blockNumber);
                 lastSynced = blockNumber;
             }
 
@@ -64,7 +66,7 @@ export class BlockConsumer {
         }
 
         if(lastSynced < (blockNumber - 1n)) {
-            await this.sync(lastSyncPoint, now, blockNumber - 1n);
+            await this.sync(lastSyncPoint, now(), blockNumber - 1n);
         }
 
         if(blockNumber < head) {

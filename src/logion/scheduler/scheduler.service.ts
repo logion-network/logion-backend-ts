@@ -24,7 +24,7 @@ export class Scheduler {
         const syncTransactions = () => {
             if (!this.running) {
                 this.running = true;
-                return this.blockConsumer.consumeNewBlocks(moment())
+                return this.blockConsumer.consumeNewBlocks(() => moment())
                     .catch(e => {
                         logger.error(e.message);
                         logger.debug(e.stack);
