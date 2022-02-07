@@ -1,11 +1,11 @@
--- Requested locs
+-- Requested Transaction locs
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'loc-1', 'REQUESTED', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-2', 'REQUESTED', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-3', 'REQUESTED', 'Transaction');
--- Open locs
+-- Open Transaction locs
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'loc-4', 'OPEN', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
@@ -49,3 +49,17 @@ INSERT INTO loc_request (id, requester_identity_loc, owner_address, description,
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '7eb5b359-088b-4051-9507-fb66cf7d03aa', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', 'loc-18', 'OPEN', 'Transaction');
 INSERT INTO loc_request (id, requester_identity_loc, owner_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '518536e4-71e6-4c4f-82db-b16cbfb495ed', '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', 'loc-19', 'OPEN', 'Transaction');
+-- Requested Collection locs
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'loc-21', 'REQUESTED', 'Collection');
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-22', 'REQUESTED', 'Collection');
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-23', 'REQUESTED', 'Collection');
+-- Open Collection locs
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'loc-24', 'OPEN', 'Collection');
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-25', 'OPEN', 'Collection');
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-26', 'OPEN', 'Collection');

@@ -10,7 +10,7 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     NewLocRequestParameters,
-    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription,
+    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription, LocType,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import {
@@ -36,11 +36,15 @@ const identityInIdentityLoc = {
     phoneNumber: "+0101"
 }
 
-const testData = {
-    requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
-    description: "I want to open a case",
-    locType: "Transaction"
+const testDataWithType = (locType: LocType) => {
+    return {
+        requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+        description: "I want to open a case",
+        locType
+    }
 };
+
+const testData = testDataWithType("Transaction");
 
 const identityLoc = {
     description: "Identity LOC",
@@ -75,15 +79,18 @@ const testMetadataItem:MetadataItemDescription = {
     submitter: SUBMITTER,
 }
 
-const testDataWithUserIdentity = {
-    ...testData,
+const testDataWithUserIdentityWithType = (locType: LocType) => {
+    return {
+    ...testDataWithType(locType),
     userIdentity: {
         firstName: "John",
         lastName: "Doe",
         email: "john.doe@logion.network",
         phoneNumber: "+1234"
     }
-};
+}};
+
+const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction")
 
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
@@ -91,10 +98,10 @@ const VOID_REASON = "Expired";
 
 describe('LocRequestController', () => {
 
-    it('succeeds to create loc request with embedded user identity', async () => {
+    async function testLocRequestCreationWithEmbeddedUserIdentity(locType: LocType) {
         const app = setupApp(
             LocRequestController,
-            mockModelForCreation,
+            container => mockModelForCreation(container, locType),
             true,
             false
         )
@@ -106,19 +113,27 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
-                expect(response.body.locType).toBe("Transaction");
+                expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("John");
                 expect(userIdentity.lastName).toBe("Doe");
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
             });
+    }
+
+    it('succeeds to create a Transaction loc request with embedded user identity', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Transaction")
     });
 
-    it('succeeds to create open loc with existing protection request', async () => {
+    it('succeeds to create a Collection loc request with embedded user identity', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Collection")
+    });
+
+    async function testOpenLocCreation(locType: LocType) {
         const app = setupApp(
             LocRequestController,
-            container => mockModelForCreation(container, true),
+            container => mockModelForCreation(container, locType, true),
             true,
             true,
         )
@@ -130,19 +145,27 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
-                expect(response.body.locType).toBe("Transaction");
+                expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("Scott");
                 expect(userIdentity.lastName).toBe("Tiger");
                 expect(userIdentity.email).toBe("scott.tiger@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+6789");
             });
+    }
+
+    it('succeeds to create open Transaction loc with existing protection request', async () => {
+        await testOpenLocCreation("Transaction")
     });
 
-    it('succeeds to create open loc with embedded user identity', async () => {
+    it('succeeds to create open Collection loc with existing protection request', async () => {
+        await testOpenLocCreation("Collection")
+    });
+
+    async function testOpenLocCreationWithEmbeddedUserIdentity(locType: LocType) {
         const app = setupApp(
             LocRequestController,
-            mockModelForCreation,
+            container => mockModelForCreation(container, locType),
             true,
             true,
         )
@@ -154,13 +177,21 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
-                expect(response.body.locType).toBe("Transaction");
+                expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("John");
                 expect(userIdentity.lastName).toBe("Doe");
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
             });
+    }
+
+    it('succeeds to create open Transaction loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Transaction")
+    });
+
+    it('succeeds to create open Collection loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Collection")
     });
 
     it('succeeds to create open loc with identity LOC', async () => {
@@ -189,10 +220,10 @@ describe('LocRequestController', () => {
             });
     });
 
-    it('succeeds to create loc request with existing protection request', async () => {
+    async function testLocRequestCreation(locType: LocType) {
         const app = setupApp(
             LocRequestController,
-            container => mockModelForCreation(container, true),
+            container => mockModelForCreation(container, locType, true),
             true,
             false
         )
@@ -204,13 +235,21 @@ describe('LocRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
-                expect(response.body.locType).toBe("Transaction");
+                expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
                 expect(userIdentity.firstName).toBe("Scott");
                 expect(userIdentity.lastName).toBe("Tiger");
                 expect(userIdentity.email).toBe("scott.tiger@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+6789");
             });
+    }
+
+    it('succeeds to create Transaction loc request with existing protection request', async () => {
+        await testLocRequestCreation("Transaction")
+    });
+
+    it('succeeds to create Collection loc request with existing protection request', async () => {
+        await testLocRequestCreation("Collection")
     });
 
     it('succeeds to fetch loc requests with embedded user identity', async () => {
@@ -254,7 +293,7 @@ describe('LocRequestController', () => {
     });
 
     it('fails to create loc request - authentication failure', async () => {
-        const app = setupApp(LocRequestController, mockModelForCreation, false)
+        const app = setupApp(LocRequestController, container => mockModelForCreation(container, "Transaction"), false)
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -522,7 +561,7 @@ function mockModelForAccept(container: Container): void {
     container.bind(FileDbService).toConstantValue(fileDbService.object());
 }
 
-function mockModelForCreation(container: Container, hasProtection: boolean = false): void {
+function mockModelForCreation(container: Container, locType: LocType, hasProtection: boolean = false): void {
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save)
@@ -530,14 +569,14 @@ function mockModelForCreation(container: Container, hasProtection: boolean = fal
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
-    const request = mockRequest("REQUESTED", hasProtection ? testData : testDataWithUserIdentity)
+    const request = mockRequest("REQUESTED", hasProtection ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
     factory.setup(instance => instance.newLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
         .returns(Promise.resolve(request.object()))
-    const openLoc = mockRequest("OPEN", hasProtection ? testData : testDataWithUserIdentity)
+    const openLoc = mockRequest("OPEN", hasProtection ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&

@@ -62,6 +62,48 @@ describe("LocRequestFactory", () => {
         await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
+    it("creates Collection LOC request", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        await whenCreatingLocRequest();
+        thenRequestCreatedWithDescription(description);
+    });
+
+    it("creates an open Collection LOC with requester address", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        await whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description)
+    });
+
+    it("creates an open Collection LOC with requester id loc", async () => {
+        givenRequestId(uuid());
+        const requesterIdentityLocId = uuid().toString();
+        const description = createDescription('Collection', undefined, requesterIdentityLocId);
+        const requesterIdentityLoc = new Mock<LocRequestAggregateRoot>();
+        requesterIdentityLoc.setup(instance => instance.id).returns(requesterIdentityLocId);
+        repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
+        givenLocDescription(description);
+        await whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description)
+    });
+
+    it("fails to create an open Collection LOC with 2 requesters", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
+        givenLocDescription(description);
+        await expectAsyncToThrow(whenCreatingOpenLoc);
+    });
+
+    it("fails to create an open Collection LOC with no requester", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Collection');
+        givenLocDescription(description);
+        await expectAsyncToThrow(whenCreatingOpenLoc);
+    });
+
     it("creates Identity LOC request", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
