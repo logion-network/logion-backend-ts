@@ -484,7 +484,8 @@
                 "description": "The LOC's type",
                 "enum": [
                     "Identity",
-                    "Transaction"
+                    "Transaction",
+                    "Collection"
                 ]
             },
             "IdentityLocType": {

@@ -111,7 +111,7 @@ export class LocRequestAggregateRoot {
             description: this.description!,
             createdOn: this.createdOn!,
             userIdentity,
-            locType: this.locType === 'Identity' ? this.locType : 'Transaction',
+            locType: this.locType!,
         }
     }
 
@@ -453,7 +453,7 @@ export class LocRequestAggregateRoot {
     description?: string;
 
     @Column({ length: 255, name: "loc_type" })
-    locType?: string;
+    locType?: LocType;
 
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
     decisionOn?: string | null;

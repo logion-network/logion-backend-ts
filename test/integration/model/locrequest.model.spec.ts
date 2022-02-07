@@ -27,7 +27,7 @@ describe('LocRequestRepository - read accesses', () => {
         await disconnect();
     });
 
-    it("find by owner and status", async () => {
+    it("find by owner, status and type", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: ALICE,
             expectedStatuses: [ "OPEN", "REQUESTED" ],
@@ -44,7 +44,9 @@ describe('LocRequestRepository - read accesses', () => {
             expectedIdentityLocType: "Polkadot",
         }
         const requests = await repository.findBy(query);
-        checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5", "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13");
+        checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5",
+            "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13", "loc-21", "loc-22", "loc-23",
+            "loc-24", "loc-25", "loc-26");
     })
 
     it("find LOCS with Logion requester", async () => {
@@ -123,37 +125,45 @@ describe('LocRequestRepository.save()', () => {
     });
 
     it("saves a LocRequest aggregate", async () => {
-        const id = '57104fa2-18b2-4a0a-a23b-f907deadc2de'
-        const locRequest = givenOpenLoc(id)
+        const locTypes: LocType[] = ["Collection", "Transaction"];
+        for (const locType of locTypes) {
 
-        await repository.save(locRequest)
+            const id = uuid()
+            const locRequest = givenOpenLoc(id, locType)
 
-        await checkAggregate(id, 1)
+            await repository.save(locRequest)
+
+            await checkAggregate(id, 1)
+        }
     })
 
     it("rollbacks when trying to add invalid link", async () => {
-        const id = '12940aa1-12f5-463f-b39c-c2902ccdfd25'
-        const locRequest = givenOpenLoc(id)
+        const locTypes: LocType[] = ["Collection", "Transaction"];
+        for (const locType of locTypes) {
 
-        locRequest.links![0].target = undefined;
+            const id = uuid()
+            const locRequest = givenOpenLoc(id, locType)
 
-        const result: string = await repository.save(locRequest)
-            .catch((reason => {
-                return reason.toString()
-            }))
-        expect(result).toBe("QueryFailedError: null value in column \"target\" violates not-null constraint")
+            locRequest.links![0].target = undefined;
 
-        await checkAggregate(id, 0)
+            const result: string = await repository.save(locRequest)
+                .catch((reason => {
+                    return reason.toString()
+                }))
+            expect(result).toBe("QueryFailedError: null value in column \"target\" violates not-null constraint")
+
+            await checkAggregate(id, 0)
+        }
     })
 })
 
-function givenOpenLoc(id: string): LocRequestAggregateRoot {
+function givenOpenLoc(id: string, locType: LocType): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
     locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
     locRequest.ownerAddress = BOB
     locRequest.description = "I want to open a case"
-    locRequest.locType = "Transaction"
+    locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()
     locRequest.status = 'OPEN'
 
