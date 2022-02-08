@@ -629,7 +629,7 @@ export class LocRequestController extends ApiController {
         const submitter = this.authenticationService.authenticatedUser(this.request)
             .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can submit metadata")
             .address
-        const name = requireLength(addMetadataView, "name", 3, 40)
+        const name = requireLength(addMetadataView, "name", 3, 255)
         const value = requireLength(addMetadataView, "value", 1, 4096)
         request.addMetadataItem({ name, value, submitter })
         await this.locRequestRepository.save(request)
