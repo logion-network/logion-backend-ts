@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { LocId, PeerId } from '../interfaces/default';
+import type { CollectionItemId, LocId, PeerId } from '../interfaces/default';
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { Bytes, Vec, u16, u32, u8 } from '@polkadot/types-codec';
 import type { ITuple } from '@polkadot/types-codec/types';
@@ -157,6 +157,10 @@ declare module '@polkadot/api-base/types/events' {
     };
     logionLoc: {
       /**
+       * Issued when an item was added to a collection. [locId, collectionItemId]
+       **/
+      ItemAdded: AugmentedEvent<ApiType, [LocId, CollectionItemId]>;
+      /**
        * Issued when LOC is closed. [locId]
        **/
       LocClosed: AugmentedEvent<ApiType, [LocId]>;
@@ -165,7 +169,7 @@ declare module '@polkadot/api-base/types/events' {
        **/
       LocCreated: AugmentedEvent<ApiType, [LocId]>;
       /**
-       * Issued when LOC is made void. [locId]
+       * Issued when LOC is voided. [locId]
        **/
       LocVoid: AugmentedEvent<ApiType, [LocId]>;
       /**

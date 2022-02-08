@@ -177,6 +177,26 @@ declare module '@polkadot/api-base/types/errors' {
        **/
       CannotMutateVoid: AugmentedError<ApiType>;
       /**
+       * A collection LOC must be limited in time and/or quantity of items
+       **/
+      CollectionHasNoLimit: AugmentedError<ApiType>;
+      /**
+       * An item with same identifier already exists in the collection
+       **/
+      CollectionItemAlreadyExists: AugmentedError<ApiType>;
+      /**
+       * Collection Item cannot be added to given collection because submitted data are invalid
+       **/
+      CollectionItemInvalid: AugmentedError<ApiType>;
+      /**
+       * The collection limits have been reached
+       **/
+      CollectionLimitsReached: AugmentedError<ApiType>;
+      /**
+       * File cannot be added to given LOC because submitted data are invalid
+       **/
+      FileInvalid: AugmentedError<ApiType>;
+      /**
        * Submitter must be either LOC owner, either LOC requester (only when requester is a Polkadot account)
        **/
       InvalidSubmitter: AugmentedError<ApiType>;
@@ -184,6 +204,14 @@ declare module '@polkadot/api-base/types/errors' {
        * Occurs when trying to link to a non-existent LOC
        **/
       LinkedLocNotFound: AugmentedError<ApiType>;
+      /**
+       * Link cannot be added to given LOC because submitted data are invalid
+       **/
+      LocLinkInvalid: AugmentedError<ApiType>;
+      /**
+       * Metadata Item cannot be added to given LOC because submitted data are invalid
+       **/
+      MetadataItemInvalid: AugmentedError<ApiType>;
       /**
        * Target LOC does not exist
        **/
@@ -212,6 +240,10 @@ declare module '@polkadot/api-base/types/errors' {
        * Unexpected requester given LOC type
        **/
       UnexpectedRequester: AugmentedError<ApiType>;
+      /**
+       * Item cannot be added to given collection, it may be missing or limits are reached
+       **/
+      WrongCollectionLoc: AugmentedError<ApiType>;
       /**
        * Generic error
        **/

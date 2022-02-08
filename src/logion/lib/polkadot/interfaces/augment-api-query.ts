@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { LegalOfficerCaseOf, LocId, PeerId, StorageVersion } from '../interfaces/default';
+import type { CollectionItem, CollectionItemId, CollectionSize, LegalOfficerCaseOf, LocId, PeerId, StorageVersion } from '../interfaces/default';
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { BTreeSet, Bytes, Option, U8aFixed, Vec, bool, u32 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
@@ -113,6 +113,14 @@ declare module '@polkadot/api-base/types/storage' {
        * Requested LOCs by account ID.
        **/
       accountLocsMap: AugmentedQuery<ApiType, (arg: AccountId | string | Uint8Array) => Observable<Option<Vec<LocId>>>, [AccountId]> & QueryableStorageEntry<ApiType, [AccountId]>;
+      /**
+       * Collection items by LOC ID.
+       **/
+      collectionItemsMap: AugmentedQuery<ApiType, (arg1: LocId | AnyNumber | Uint8Array, arg2: CollectionItemId | string | Uint8Array) => Observable<Option<CollectionItem>>, [LocId, CollectionItemId]> & QueryableStorageEntry<ApiType, [LocId, CollectionItemId]>;
+      /**
+       * Collection size by LOC ID.
+       **/
+      collectionSizeMap: AugmentedQuery<ApiType, (arg: LocId | AnyNumber | Uint8Array) => Observable<Option<CollectionSize>>, [LocId]> & QueryableStorageEntry<ApiType, [LocId]>;
       /**
        * Requested LOCs by logion Identity LOC.
        **/

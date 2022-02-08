@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-defs`, do not edit
 /* eslint-disable */
 
-import type { File, LegalOfficerCaseOf, LocId, LocLink, LocType, LocVoidInfo, MetadataItem, PeerId, Requester, StorageVersion } from '../interfaces/default';
+import type { CollectionItem, CollectionItemId, CollectionSize, File, LegalOfficerCaseOf, LocId, LocLink, LocType, LocVoidInfo, MetadataItem, PeerId, Requester, StorageVersion } from '../interfaces/default';
 import type { FullIdentification, IdentificationTuple, Keys, MembershipProof, SessionIndex, SessionKeys2, ValidatorCount } from '../interfaces/session';
 import type { Data, StorageKey } from '@polkadot/types';
 import type { BitVec, Bool, Bytes, I128, I16, I256, I32, I64, I8, Json, Null, Raw, Text, Type, U128, U16, U256, U32, U64, U8, USize, bool, i128, i16, i256, i32, i64, i8, u128, u16, u256, u32, u64, u8, usize } from '@polkadot/types-codec';
@@ -202,6 +202,9 @@ declare module '@polkadot/types/types/registry' {
     CodeUploadResultValue: CodeUploadResultValue;
     CollatorId: CollatorId;
     CollatorSignature: CollatorSignature;
+    CollectionItem: CollectionItem;
+    CollectionItemId: CollectionItemId;
+    CollectionSize: CollectionSize;
     CollectiveOrigin: CollectiveOrigin;
     CommittedCandidateReceipt: CommittedCandidateReceipt;
     CompactAssignments: CompactAssignments;

@@ -36,7 +36,9 @@ export default {
             loc_type: "LocType",
             links: "Vec<LocLink>",
             void_info: "Option<LocVoidInfo<LocId>>",
-            replacer_of: "Option<LocId>"
+            replacer_of: "Option<LocId>",
+            collection_last_block_submission: "Option<BlockNumber>",
+            collection_max_size: "Option<CollectionSize>",
         },
         MetadataItem: {
             name: "Vec<u8>",
@@ -46,7 +48,8 @@ export default {
         LocType: {
             _enum: [
                 "Transaction",
-                "Identity"
+                "Identity",
+                "Collection"
             ]
         },
         LocLink: {
@@ -66,7 +69,8 @@ export default {
             "V1",
             "V2MakeLocVoid",
             "V3RequesterEnum",
-            "V4ItemSubmitter"
+            "V4ItemSubmitter",
+            "V5Collection"
           ]
         },
         Requester: {
@@ -75,6 +79,11 @@ export default {
                 "Account": "AccountId",
                 "Loc": "LocId"
             }
+        },
+        CollectionSize: "u32",
+        CollectionItemId: "Hash",
+        CollectionItem: {
+            description: "Vec<u8>"
         }
     }
 };

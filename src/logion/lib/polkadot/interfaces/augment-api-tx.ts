@@ -1,7 +1,7 @@
 // Auto-generated via `yarn polkadot-types-from-chain`, do not edit
 /* eslint-disable */
 
-import type { File, LocId, LocLink, MetadataItem, PeerId } from '../interfaces/default';
+import type { CollectionItemId, File, LocId, LocLink, MetadataItem, PeerId } from '../interfaces/default';
 import type { ApiTypes } from '@polkadot/api-base/types';
 import type { Bytes, Compact, Option, U8aFixed, Vec, bool, u16, u32, u64, u8 } from '@polkadot/types-codec';
 import type { AnyNumber, ITuple } from '@polkadot/types-codec/types';
@@ -422,6 +422,10 @@ declare module '@polkadot/api-base/types/submittable' {
     };
     logionLoc: {
       /**
+       * Adds an item to a collection
+       **/
+      addCollectionItem: AugmentedSubmittable<(collectionLocId: Compact<LocId> | AnyNumber | Uint8Array, itemId: CollectionItemId | string | Uint8Array, itemDescription: Bytes | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<LocId>, CollectionItemId, Bytes]>;
+      /**
        * Add file to LOC
        **/
       addFile: AugmentedSubmittable<(locId: Compact<LocId> | AnyNumber | Uint8Array, file: File | { hash?: any; nature?: any; submitter?: any } | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<LocId>, File]>;
@@ -437,6 +441,10 @@ declare module '@polkadot/api-base/types/submittable' {
        * Close LOC.
        **/
       close: AugmentedSubmittable<(locId: Compact<LocId> | AnyNumber | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<LocId>]>;
+      /**
+       * Creates a new Collection LOC
+       **/
+      createCollectionLoc: AugmentedSubmittable<(locId: Compact<LocId> | AnyNumber | Uint8Array, requesterAccountId: AccountId | string | Uint8Array, collectionLastBlockSubmission: Option<BlockNumber> | null | object | string | Uint8Array, collectionMaxSize: Option<u32> | null | object | string | Uint8Array) => SubmittableExtrinsic<ApiType>, [Compact<LocId>, AccountId, Option<BlockNumber>, Option<u32>]>;
       /**
        * Creates a new logion Identity LOC i.e. a LOC describing a real identity not yet linked to an AccountId
        **/

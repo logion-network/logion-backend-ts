@@ -2,7 +2,7 @@
 /* eslint-disable */
 
 import type { Bytes, Enum, Option, Struct, Vec, bool, u128, u32, u64, u8 } from '@polkadot/types-codec';
-import type { AccountId, Balance, Hash, MultiAddress } from '@polkadot/types/interfaces/runtime';
+import type { AccountId, Balance, BlockNumber, Hash, MultiAddress } from '@polkadot/types/interfaces/runtime';
 import type { AccountInfoWithDualRefCount } from '@polkadot/types/interfaces/system';
 import type { DepositBalance } from '@polkadot/types/interfaces/uniques';
 
@@ -38,6 +38,17 @@ export interface AssetMetadata extends Struct {
   readonly decimals: u8;
 }
 
+/** @name CollectionItem */
+export interface CollectionItem extends Struct {
+  readonly description: Bytes;
+}
+
+/** @name CollectionItemId */
+export interface CollectionItemId extends Hash {}
+
+/** @name CollectionSize */
+export interface CollectionSize extends u32 {}
+
 /** @name File */
 export interface File extends Struct {
   readonly hash: Hash;
@@ -56,6 +67,8 @@ export interface LegalOfficerCaseOf extends Struct {
   readonly links: Vec<LocLink>;
   readonly void_info: Option<LocVoidInfo>;
   readonly replacer_of: Option<LocId>;
+  readonly collection_last_block_submission: Option<BlockNumber>;
+  readonly collection_max_size: Option<CollectionSize>;
 }
 
 /** @name LocId */
@@ -71,7 +84,8 @@ export interface LocLink extends Struct {
 export interface LocType extends Enum {
   readonly isTransaction: boolean;
   readonly isIdentity: boolean;
-  readonly type: 'Transaction' | 'Identity';
+  readonly isCollection: boolean;
+  readonly type: 'Transaction' | 'Identity' | 'Collection';
 }
 
 /** @name LocVoidInfo */
@@ -108,7 +122,8 @@ export interface StorageVersion extends Enum {
   readonly isV2MakeLocVoid: boolean;
   readonly isV3RequesterEnum: boolean;
   readonly isV4ItemSubmitter: boolean;
-  readonly type: 'V1' | 'V2MakeLocVoid' | 'V3RequesterEnum' | 'V4ItemSubmitter';
+  readonly isV5Collection: boolean;
+  readonly type: 'V1' | 'V2MakeLocVoid' | 'V3RequesterEnum' | 'V4ItemSubmitter' | 'V5Collection';
 }
 
 /** @name TAssetBalance */
