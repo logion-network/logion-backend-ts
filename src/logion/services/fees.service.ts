@@ -133,11 +133,11 @@ export class FeesCalculator {
     readonly specVersion: number;
     private weightValue: WeightValue;
 
-    public async getPartialFees(
+    public getPartialFees(
         weightInfo: WeightInfo,
         encodedLength: number,
-    ): Promise<BigInt> {
-        const extrinsicBaseWeight = await this.getBaseWeight(weightInfo);
+    ): BigInt {
+        const extrinsicBaseWeight = this.getBaseWeight(weightInfo);
         const weight = weightInfo.weight;
 
         const partialFee = this.calcFee!.calc_fee(
@@ -149,9 +149,9 @@ export class FeesCalculator {
         return BigInt(partialFee);
     }
 
-    private async getBaseWeight(
+    private getBaseWeight(
         weightInfo: WeightInfo,
-    ): Promise<BigInt> {
+    ): BigInt {
         if (weightInfo.class === 'Normal') {
             return this.weightValue.normal.baseExtrinsic;
         } else if (weightInfo.class === 'Mandatory') {

@@ -13,12 +13,13 @@ beforeAll(() => {
 
 describe("TransactionExtractor", () => {
 
-    it('does not find transaction in empty block', () => {
+    it('does not find transaction in empty block', async () => {
         const block = givenBlock("block-empty.json");
-        expect(transactionExtractor.extractBlockWithTransactions(block)).toBeUndefined();
+        const transaction = await transactionExtractor.extractBlockWithTransactions(block);
+        expect(transaction).toBeUndefined();
     });
 
-    it('finds recovery.createRecovery transactions', () => {
+    it('finds recovery.createRecovery transactions', async () => {
         const params = recoveryParams({
             fileName: "recovery/block-01-recovery-createRecovery.json",
             method: "createRecovery",
@@ -27,10 +28,10 @@ describe("TransactionExtractor", () => {
             reserved: 12n,
             from: "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds recovery.initiateRecovery transactions', () => {
+    it('finds recovery.initiateRecovery transactions', async () => {
         const params = recoveryParams({
             fileName: "recovery/block-02-recovery-initiateRecovery.json",
             method: "initiateRecovery",
@@ -39,10 +40,10 @@ describe("TransactionExtractor", () => {
             reserved: 10n,
             from: "5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds recovery.vouchRecovery transactions', () => {
+    it('finds recovery.vouchRecovery transactions', async () => {
         const params = recoveryParams({
             fileName: "recovery/block-03-recovery-vouchRecovery.json",
             method: "vouchRecovery",
@@ -51,10 +52,10 @@ describe("TransactionExtractor", () => {
             reserved: 0n,
             from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds recovery.claimRecovery transactions', () => {
+    it('finds recovery.claimRecovery transactions', async () => {
         const params = recoveryParams({
             fileName: "recovery/block-05-recovery-claimRecovery.json",
             method: "claimRecovery",
@@ -63,10 +64,10 @@ describe("TransactionExtractor", () => {
             reserved: 0n,
             from: "5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds recovery.asRecovered (balances.transfer) transactions', () => {
+    it('finds recovery.asRecovered (balances.transfer) transactions', async () => {
         const params = recoveryParams({
             fileName: "recovery/block-06-recovery-asRecovered.json",
             method: "asRecovered",
@@ -77,10 +78,10 @@ describe("TransactionExtractor", () => {
             from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds assets.create transactions', () => {
+    it('finds assets.create transactions', async () => {
         const params = assetsParams({
             fileName: "token/block-01-assets-create.json",
             method: "create",
@@ -89,10 +90,10 @@ describe("TransactionExtractor", () => {
             reserved: 11n,
             from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds assets.setMetadata transactions', () => {
+    it('finds assets.setMetadata transactions', async () => {
         const params = assetsParams({
             fileName: "token/block-02-assets-setMetadata.json",
             method: "setMetadata",
@@ -101,10 +102,10 @@ describe("TransactionExtractor", () => {
             reserved: 23n,
             from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds assets.mint transactions', () => {
+    it('finds assets.mint transactions', async () => {
         const params = assetsParams({
             fileName: "token/block-03-assets-mint.json",
             method: "mint",
@@ -113,10 +114,10 @@ describe("TransactionExtractor", () => {
             reserved: 0n,
             from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds balances.transfer transactions', () => {
+    it('finds balances.transfer transactions', async () => {
         const params = balancesParams({
             fileName: "transfer/block-transfer.json",
             method: "transfer",
@@ -127,10 +128,10 @@ describe("TransactionExtractor", () => {
             from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
             to: "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds balances.transferKeepAlive-tip transactions', () => {
+    it('finds balances.transferKeepAlive-tip transactions', async () => {
         const params = balancesParams({
             fileName: "transfer/block-transferKeepAlive-tip.json",
             method: "transferKeepAlive",
@@ -141,10 +142,10 @@ describe("TransactionExtractor", () => {
             from: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
             to: "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds balances.transferKeepAlive transactions', () => {
+    it('finds balances.transferKeepAlive transactions', async () => {
         const params = balancesParams({
             fileName: "transfer/block-transferKeepAlive.json",
             method: "transferKeepAlive",
@@ -155,10 +156,10 @@ describe("TransactionExtractor", () => {
             from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds balances.transferKeepAlive failed transactions', () => {
+    it('finds balances.transferKeepAlive failed transactions', async () => {
         const params = balancesParams({
             fileName: "transfer/block-transferKeepAliveFailed.json",
             method: "transferKeepAlive",
@@ -174,10 +175,10 @@ describe("TransactionExtractor", () => {
                 details: "Value too low to create account due to existential deposit"
             }
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 
-    it('finds balances.transferKeepAlive2 transactions', () => {
+    it('finds balances.transferKeepAlive2 transactions', async () => {
         const params = balancesParams({
             fileName: "transfer/block-transferKeepAlive2.json",
             method: "transferKeepAlive",
@@ -188,7 +189,7 @@ describe("TransactionExtractor", () => {
             from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         });
-        expectTransaction(params);
+        await expectTransaction(params);
     });
 })
 
@@ -206,6 +207,18 @@ function givenBlock(fileName: string): BlockExtrinsics {
             if ("dest" in callArgs) {
                 callArgs.dest.toJSON = () => callArgs.dest
             }
+        }
+
+        const partialFee = extrinsic.partialFee;
+        if(partialFee) {
+            extrinsic.partialFee = () => partialFee;
+        }
+
+        const error = extrinsic.error;
+        if(error) {
+            extrinsic.error = () => error;
+        } else {
+            extrinsic.error = () => null;
         }
     });
     return json;
@@ -244,13 +257,13 @@ interface ExpectTransactionParams {
     error?: TransactionError,
 }
 
-function expectTransaction(params: ExpectTransactionParams) {
+async function expectTransaction(params: ExpectTransactionParams) {
     const block = givenBlock(params.fileName);
     block.number = BigInt(block.number);
-    var blockWithTransactions = transactionExtractor.extractBlockWithTransactions(block)!;
-    expect(blockWithTransactions.blockNumber).toBe(params.blockNumber);
+    var blockWithTransactions = await transactionExtractor.extractBlockWithTransactions(block);
+    expect(blockWithTransactions!.blockNumber).toBe(params.blockNumber);
 
-    const transaction = blockWithTransactions.transactions[0];
+    const transaction = blockWithTransactions!.transactions[0];
     expect(transaction.extrinsicIndex).toBe(1);
     expect(transaction.pallet).toBe(params.pallet);
     expect(transaction.method).toBe(params.method);

@@ -112,6 +112,7 @@ function givenLocExtrinsic(method: string, args: JsonArgs) {
         method,
     });
     locExtrinsic.setup(instance => instance.args).returns(args);
+    locExtrinsic.setup(instance => instance.error).returns(() => null);
 }
 
 let locExtrinsic: Mock<JsonExtrinsic>;

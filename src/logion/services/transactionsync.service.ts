@@ -14,7 +14,7 @@ export class TransactionSynchronizer {
     ) {}
 
     async addTransactions(block: BlockExtrinsics): Promise<void> {
-        const blockWithTransactions = this.transactionExtractor.extractBlockWithTransactions(block);
+        const blockWithTransactions = await this.transactionExtractor.extractBlockWithTransactions(block);
         if (blockWithTransactions === undefined) {
             return;
         }

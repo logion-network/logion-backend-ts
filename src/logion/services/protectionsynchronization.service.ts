@@ -24,8 +24,9 @@ export class ProtectionSynchronizer {
 
     async updateProtectionRequests(extrinsic: JsonExtrinsic): Promise<void> {
         if (extrinsic.method.pallet === "verifiedRecovery") {
-            if (extrinsic.error) {
-                logger.info("updateProtectionRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
+            const error = extrinsic.error();
+            if (error) {
+                logger.info("updateProtectionRequests() - Skipping extrinsic with error: %s", toString(extrinsic, error))
                 return
             }
             if (extrinsic.method.method === "createRecovery" && this.nodeOwnerInFriends(extrinsic.args)) {

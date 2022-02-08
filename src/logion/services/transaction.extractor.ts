@@ -21,7 +21,7 @@ export class TransactionExtractor {
 
     constructor(private extrinsicDataExtractor: ExtrinsicDataExtractor) {}
 
-    extractBlockWithTransactions(block: BlockExtrinsics): BlockWithTransactions | undefined {
+    async extractBlockWithTransactions(block: BlockExtrinsics): Promise<BlockWithTransactions | undefined> {
         if (block.extrinsics === undefined || block.extrinsics.length <= 1) {
             return undefined;
         }
@@ -35,7 +35,7 @@ export class TransactionExtractor {
             if (type === ExtrinsicType.TIMESTAMP) {
                 blockBuilder.timestamp(this.extrinsicDataExtractor.getTimestamp(extrinsic))
             } else {
-                const transaction = this.extractTransaction(extrinsic, type, index);
+                const transaction = await this.extractTransaction(extrinsic, type, index);
                 transactions.push(transaction);
             }
         }
@@ -46,7 +46,7 @@ export class TransactionExtractor {
             .build()
     }
 
-    private extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Transaction {
+    private async extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Promise<Transaction> {
         let from: string = this.from(extrinsic);
         let transferValue: bigint = 0n;
         let to: string | undefined = undefined;
@@ -72,7 +72,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: this.tip(extrinsic),
-                fee: this.fee(extrinsic),
+                fee: await this.fee(extrinsic),
                 reserved: this.reserved(extrinsic),
                 from,
                 transferValue,
@@ -94,8 +94,8 @@ export class TransactionExtractor {
         return this.undefinedTo0(extrinsic.tip!);
     }
 
-    private fee(extrinsic: JsonExtrinsic): bigint {
-        return this.undefinedTo0(extrinsic.partialFee);
+    private async fee(extrinsic: JsonExtrinsic): Promise<bigint> {
+        return this.undefinedTo0(await extrinsic.partialFee());
     }
 
     private reserved(extrinsic: JsonExtrinsic): bigint {
@@ -120,8 +120,9 @@ export class TransactionExtractor {
     }
 
     private error(extrinsic: JsonExtrinsic): TransactionError | undefined {
-        if (extrinsic.error) {
-            return { ...extrinsic.error }
+        const error = extrinsic.error();
+        if (error) {
+            return { ...error }
         }
         return undefined;
     }

@@ -1,5 +1,6 @@
 import { injectable } from "inversify";
 import { Moment } from "moment";
+import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
 import { BlockExtrinsicsService } from "./block.service";
 import { LocSynchronizer } from "./locsynchronization.service";
@@ -7,12 +8,12 @@ import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
 import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
-import { toString } from "./types/responses/Extrinsic";
+import { toStringWithoutError } from "./types/responses/Extrinsic";
+import { ProgressRateLogger } from "./progressratelogger";
 
 const { logger } = Log;
 
-const PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD = 1000;
-const BATCH_SIZE = 20000n;
+const BATCH_SIZE = 10n;
 
 @injectable()
 export class BlockConsumer {
@@ -27,8 +28,11 @@ export class BlockConsumer {
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
     ) {}
 
-    async consumeNewBlocks(now: Moment): Promise<void> {
-        const head = await this.blockService.getHeadBlockNumber();
+    async consumeNewBlocks(now: () => Moment): Promise<void> {
+        const headHash = await this.blockService.getHeadBlockHash();
+        const headBlock = await this.blockService.getBlockByHash(headHash);
+        const head = this.blockService.getBlockNumber(headBlock.block);
+
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
         let lastSynced = lastSyncPoint !== undefined ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
         if (lastSynced === head.valueOf()) {
@@ -45,51 +49,42 @@ export class BlockConsumer {
             lastSyncPoint = undefined;
         }
 
+        let blocksToSync = head - lastSynced;
         let totalProcessedBlocks: bigint = 0n;
-        let processedBlocksSinceLastSync = 0;
-        let blockNumber: bigint = lastSynced + 1n
-        while (blockNumber <= head && totalProcessedBlocks < BATCH_SIZE) {
-            this.logProgress(blockNumber, head);
-            await this.processBlock(blockNumber);
-            ++processedBlocksSinceLastSync;
-            ++totalProcessedBlocks;
+        let nextStop = this.nextStopNumber(lastSynced, head);
+        const progressRateLogger = new ProgressRateLogger(now(), lastSynced, head, logger, 100n);
+        while(totalProcessedBlocks < blocksToSync) {
+            const nextBatchSize = nextStop - lastSynced;
+            const nextStopHash = await this.blockService.getBlockHash(nextStop);
+            const blocks = await this.blockService.getBlocksUpTo(nextStopHash, nextBatchSize);
 
-            if(processedBlocksSinceLastSync === PROCESSED_BLOCKS_SINCE_LAST_SYNC_THRESHOLD) {
-                processedBlocksSinceLastSync = 0;
-                lastSyncPoint = await this.sync(lastSyncPoint, now, blockNumber);
-                lastSynced = blockNumber;
+            for(let i = 0; i < blocks.length; ++i) {
+                const block = blocks[i];
+                const blockNumber = this.blockService.getBlockNumber(block.block);
+                progressRateLogger.log(now(), blockNumber);
+                await this.processBlock(block);
             }
 
-            blockNumber++;
-        }
+            const blockNumber = this.blockService.getBlockNumber(blocks[blocks.length - 1].block);
+            lastSyncPoint = await this.sync(lastSyncPoint, now(), blockNumber);
+            lastSynced = blockNumber;
 
-        if(lastSynced < (blockNumber - 1n)) {
-            await this.sync(lastSyncPoint, now, blockNumber - 1n);
-        }
-
-        if(blockNumber < head) {
-            logger.info(`Batch size reached (${BATCH_SIZE}), stopping; sync will resume in a couple of seconds`);
+            totalProcessedBlocks += BigInt(blocks.length);
+            nextStop = this.nextStopNumber(lastSynced, head);
         }
     }
 
-    private logProgress(blockNumber: bigint, head: bigint) {
-        logger.debug("Scanning block %d/%d", blockNumber, head);
-        if(!logger.isDebugEnabled() && logger.isInfoEnabled() && (blockNumber % 1000n) === 0n) {
-            logger.info("Scanning block %d/%d", blockNumber, head);
-        }
-    }
-
-    private async processBlock(blockNumber: bigint): Promise<void> {
-        const block = await this.blockService.getBlockExtrinsics(blockNumber);
-        const timestamp = this.extrinsicDataExtractor.getBlockTimestamp(block);
+    private async processBlock(block: SignedBlockExtended): Promise<void> {
+        const extrinsics = await this.blockService.getBlockExtrinsics(block);
+        const timestamp = this.extrinsicDataExtractor.getBlockTimestamp(extrinsics);
         if (timestamp === undefined) {
             throw Error("Block has no timestamp");
         }
-        await this.transactionSynchronizer.addTransactions(block);
-        for (let i = 0; i < block.extrinsics.length; ++i) {
-            const extrinsic = block.extrinsics[i];
+        await this.transactionSynchronizer.addTransactions(extrinsics);
+        for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
+            const extrinsic = extrinsics.extrinsics[i];
             if (extrinsic.method.pallet !== "timestamp") {
-                logger.info("Processing extrinsic: %s", toString(extrinsic))
+                logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                 await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
                 await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
             }
@@ -112,5 +107,9 @@ export class BlockConsumer {
         }
         await this.syncPointRepository.save(current);
         return current;
+    }
+
+    private nextStopNumber(lastSynced: bigint, head: bigint): bigint {
+        return [lastSynced + BATCH_SIZE, head].reduce((m, e) => e < m ? e : m);   
     }
 }

@@ -17,8 +17,9 @@ export class LocSynchronizer {
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
         if (extrinsic.method.pallet === "logionLoc") {
-            if (extrinsic.error) {
-                logger.info("updateLocRequests() - Skipping extrinsic with error: %s", toString(extrinsic))
+            const error = extrinsic.error();
+            if (error) {
+                logger.info("updateLocRequests() - Skipping extrinsic with error: %s", toString(extrinsic, error))
                 return
             }
             const locId = this.extractLocId(extrinsic.args);
