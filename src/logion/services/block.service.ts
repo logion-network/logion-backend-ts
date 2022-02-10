@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Block, Hash } from '@polkadot/types/interfaces';
+import { Block, Hash, SignedBlock } from '@polkadot/types/interfaces';
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 
 import { BlockExtrinsics } from './types/responses/Block';
@@ -32,9 +32,9 @@ export class BlockExtrinsicsService {
         return await api.rpc.chain.getFinalizedHead();
     }
 
-    async getBlocksUpTo(hash: Hash, maxBlocks: bigint): Promise<SignedBlockExtended[]> {
+    async getBlocksUpTo(hash: Hash, maxBlocks: bigint): Promise<SignedBlock[]> {
         const arrayLength = Number(maxBlocks);
-        const blocks = new Array<SignedBlockExtended>(arrayLength);
+        const blocks = new Array<SignedBlock>(arrayLength);
         let nextHash = hash;
         let index = arrayLength - 1;
         while(index >= 0) {
@@ -51,13 +51,23 @@ export class BlockExtrinsicsService {
         return await api.rpc.chain.getBlockHash(blockNumber);
     }
 
-    async getBlockByHash(hash: Hash): Promise<SignedBlockExtended> {
+    async getBlockByHash(hash: Hash): Promise<SignedBlock> {
         const api = await this.polkadotService.readyApi();
-        const signedBlock = await api.derive.chain.getBlock(hash);
-        if (signedBlock === undefined) {
+        const block = await api.rpc.chain.getBlock(hash);
+        if (block === undefined) {
             throw new Error('Block not found');
         } else {
-            return signedBlock;
+            return block;
+        }
+    }
+
+    async getExtendedBlockByHash(hash: Hash): Promise<SignedBlockExtended> {
+        const api = await this.polkadotService.readyApi();
+        const block = await api.derive.chain.getBlock(hash);
+        if (block === undefined) {
+            throw new Error('Block not found');
+        } else {
+            return block;
         }
     }
 

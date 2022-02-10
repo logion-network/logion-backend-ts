@@ -1,6 +1,9 @@
 import moment from 'moment';
 import { It, Mock, Times } from 'moq.ts';
-import { Block, Hash, Header } from '@polkadot/types/interfaces';
+import type { Vec } from '@polkadot/types-codec';
+import type { AnyTuple } from '@polkadot/types-codec/types';
+import { GenericExtrinsic } from '@polkadot/types/extrinsic';
+import { Block, Hash } from '@polkadot/types/interfaces';
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 
 import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from '../../../src/logion/model/syncpoint.model';
@@ -54,16 +57,23 @@ describe("BlockConsumer", () => {
         syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
     });
 
-    function givenBlock(blockNumber: bigint) {
+    function givenBlock(blockNumber: bigint): SignedBlockExtended {
         const headHash = new Mock<Hash>();
         blockService.setup(instance => instance.getHeadBlockHash()).returns(Promise.resolve(headHash.object()));
-        const headBlock = new Mock<SignedBlockExtended>();
-        blockService.setup(instance => instance.getBlockByHash(headHash.object())).returns(Promise.resolve(headBlock.object()));
-        const headBlockBlock = new Mock<Block>();
-        headBlock.setup(instance => instance.block).returns(headBlockBlock.object());
-        blockService.setup(instance => instance.getBlockNumber(headBlockBlock.object())).returns(blockNumber);
 
+        const headBlock = new Mock<SignedBlockExtended>();
+        const headBlockBlock = new Mock<Block>();
+        const extrinsics = new Mock<Vec<GenericExtrinsic<AnyTuple>>>();
+        extrinsics.setup(instance => instance.length).returns(2);
+        headBlockBlock.setup(instance => instance.extrinsics).returns(extrinsics.object());
+        headBlock.setup(instance => instance.block).returns(headBlockBlock.object());
+        blockService.setup(instance => instance.getBlockByHash(headHash.object())).returns(Promise.resolve(headBlock.object()));
+        blockService.setup(instance => instance.getExtendedBlockByHash(headHash.object())).returns(Promise.resolve(headBlock.object()));
+
+        blockService.setup(instance => instance.getBlockNumber(headBlockBlock.object())).returns(blockNumber);
         blockService.setup(instance => instance.getBlockHash(blockNumber)).returns(Promise.resolve(headHash.object()));
+
+        return headBlock.object();
     }
 
     async function consumeNewBlocks(): Promise<void> {
@@ -125,13 +135,7 @@ describe("BlockConsumer", () => {
     function givenNewBlocks(blocks: bigint, startBlockNumber: bigint) {
         const blocksArray = new Array<SignedBlockExtended>(Number(blocks));
         for(let i = startBlockNumber; i < startBlockNumber + blocks; ++i) {
-            const block = new Mock<SignedBlockExtended>();
-            blocksArray[Number(i - startBlockNumber)] = block.object();
-
-            const blockBlock = new Mock<Block>();
-            block.setup(instance => instance.block).returns(blockBlock.object());
-
-            blockService.setup(instance => instance.getBlockNumber(blockBlock.object())).returns(i);
+            blocksArray[Number(i - startBlockNumber)] = givenBlock(i);
         }
         blockService.setup(instance => instance.getBlocksUpTo(It.IsAny(), It.IsAny())).returns(Promise.resolve(blocksArray));
     }

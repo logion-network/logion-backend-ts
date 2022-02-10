@@ -10,6 +10,7 @@ import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toStringWithoutError } from "./types/responses/Extrinsic";
 import { ProgressRateLogger } from "./progressratelogger";
+import { SignedBlock } from "@polkadot/types/interfaces";
 
 const { logger } = Log;
 
@@ -62,7 +63,10 @@ export class BlockConsumer {
                 const block = blocks[i];
                 const blockNumber = this.blockService.getBlockNumber(block.block);
                 progressRateLogger.log(now(), blockNumber);
-                await this.processBlock(block);
+                if(!this.isEmptyBlock(block)) {
+                    const extendedBlock = await this.blockService.getExtendedBlockByHash(block.block.hash);
+                    await this.processBlock(extendedBlock);
+                }
             }
 
             const blockNumber = this.blockService.getBlockNumber(blocks[blocks.length - 1].block);
@@ -72,6 +76,10 @@ export class BlockConsumer {
             totalProcessedBlocks += BigInt(blocks.length);
             nextStop = this.nextStopNumber(lastSynced, head);
         }
+    }
+
+    private isEmptyBlock(block: SignedBlock): boolean {
+        return block.block.extrinsics.length <= 1;
     }
 
     private async processBlock(block: SignedBlockExtended): Promise<void> {
