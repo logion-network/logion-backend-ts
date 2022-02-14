@@ -1,5 +1,5 @@
 import moment, { Moment } from 'moment';
-import { It, Mock } from 'moq.ts';
+import { It, Mock, Times } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
@@ -18,7 +18,8 @@ describe("LocSynchronizer", () => {
             "createLogionIdentityLoc",
             "createLogionTransactionLoc",
             "createPolkadotIdentityLoc",
-            "createPolkadotTransactionLoc"
+            "createPolkadotTransactionLoc",
+            "createCollectionLoc"
         ]
 
         for (const palletMethod of palletMethods) {
@@ -95,6 +96,14 @@ describe("LocSynchronizer", () => {
         await whenConsumingBlock();
         thenLocVoided();
         thenLocIsSaved();
+    });
+
+    it("skips addCollectionItem", async () => {
+        givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId });
+        givenLocRequest();
+        givenLocRequestExpectsVoid();
+        await whenConsumingBlock();
+        thenUpdateSkipped();
     });
 });
 
@@ -190,4 +199,8 @@ function givenLocRequestExpectsVoid() {
 
 function thenLocVoided() {
     locRequest.verify(instance => instance.voidLoc(IS_BLOCK_TIME));
+}
+
+function thenUpdateSkipped() {
+    locRequestRepository.verify(instance => instance.save(locRequest.object()), Times.Never());
 }
