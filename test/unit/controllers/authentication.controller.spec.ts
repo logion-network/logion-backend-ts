@@ -171,14 +171,14 @@ function mockDependenciesForAuth(container: Container, verifies:boolean, session
     container.rebind(AuthenticationService).toConstantValue(authenticationService.object());
 
     authenticationService
-        .setup(instance => instance.createToken(ALICE, It.IsAny<number>())).returns({
+        .setup(instance => instance.createToken(ALICE, It.IsAny<number>())).returns(Promise.resolve({
         value: TOKEN_ALICE,
         expiredOn: moment()
-    })
-        .setup(instance => instance.createToken(BOB, It.IsAny<number>())).returns({
+    }))
+        .setup(instance => instance.createToken(BOB, It.IsAny<number>())).returns(Promise.resolve({
         value: TOKEN_BOB,
         expiredOn: moment()
-    });
+    }));
 
     const sessionRepository = new Mock<SessionRepository>();
     if (sessionExists) {
