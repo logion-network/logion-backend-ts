@@ -3,6 +3,7 @@ import { injectable } from "inversify";
 import { Request } from "express";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import moment, { Moment } from "moment";
+import { PolkadotService } from "./polkadot.service";
 
 const ALGORITHM: Algorithm = "HS384";
 
@@ -128,7 +129,9 @@ export class AuthenticationService {
     private readonly ttl: number;
     readonly nodeOwner: string;
 
-    constructor() {
+    constructor(
+        private polkadotService: PolkadotService
+    ) {
         if (process.env.JWT_SECRET === undefined) {
             throw Error("No JWT secret set, please set var JWT_SECRET");
         }
@@ -148,12 +151,12 @@ export class AuthenticationService {
         this.nodeOwner = process.env.OWNER;
     }
 
-    createToken(address: string, issuedAt: Moment, expiresIn?: number): Token {
+    async createToken(address: string, issuedAt: Moment, expiresIn?: number): Promise<Token> {
         const now = Math.floor(issuedAt.unix());
         const expiredOn = now + (expiresIn !== undefined ? expiresIn : this.ttl);
         const payload = {
             iat: now,
-            legalOfficer: this.isLegalOfficer(address),
+            legalOfficer: await this.isLegalOfficer(address),
             exp: expiredOn
         };
         const encodedToken = jwt.sign(payload, this.secret, {
@@ -164,8 +167,10 @@ export class AuthenticationService {
         return { value: encodedToken, expiredOn: moment.unix(expiredOn) };
     }
 
-    private isLegalOfficer(address: string): boolean {
-        return address === this.nodeOwner;
+    private async isLegalOfficer(address: string): Promise<boolean> {
+        const api = await this.polkadotService.readyApi();
+        const result = await api.query.loAuthorityList.legalOfficerSet(address);
+        return result.isSome && result.unwrap().isTrue;
     }
 
     private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {
