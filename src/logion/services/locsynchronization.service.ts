@@ -5,6 +5,7 @@ import { JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
 import { Moment } from "moment";
 import { Log } from "../util/Log";
+import { CollectionRepository, CollectionFactory } from "../model/collection.model";
 
 const { logger } = Log;
 
@@ -13,6 +14,8 @@ export class LocSynchronizer {
 
     constructor(
         private locRequestRepository: LocRequestRepository,
+        private collectionFactory: CollectionFactory,
+        private collectionRepository: CollectionRepository,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
@@ -62,6 +65,12 @@ export class LocSynchronizer {
                     await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
                     break;
                 }
+                case "addCollectionItem": {
+                    const locId = this.extractLocId('collection_loc_id', extrinsic.args);
+                    const itemId = extrinsic.args['item_id'].toHex();
+                    await this.addCollectionItem(locId, itemId, timestamp)
+                    break;
+                }
                 default:
                     logger.warn("Unexpected method in pallet logionLoc: %s", extrinsic.method.method)
             }
@@ -78,6 +87,21 @@ export class LocSynchronizer {
             logger.info("Mutating LOC %s : %s", locId, mutator)
             mutator(loc);
             await this.locRequestRepository.save(loc);
+        }
+    }
+
+    private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {
+        const loc = await this.locRequestRepository.findById(collectionLocId);
+        if(loc !== undefined) {
+            logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId)
+            const collectionItem = this.collectionFactory.newItem({
+                collectionLocId,
+                description: {
+                    itemId,
+                    addedOn: timestamp
+                }
+            });
+            await this.collectionRepository.save(collectionItem)
         }
     }
 }
