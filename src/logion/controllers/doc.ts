@@ -99,6 +99,18 @@ export function getDefaultResponses(view?: string): OpenAPIV3.ResponsesObject {
     };
 }
 
+export function getPublicResponses(view?: string): OpenAPIV3.ResponsesObject {
+    return {
+        "200": {
+            description: "OK",
+            content: view !== undefined ? getBodyContent(view) : undefined,
+        },
+        "400": {
+            description: "Bad Request"
+        }
+    };
+}
+
 export function getDefaultResponsesNoContent(): OpenAPIV3.ResponsesObject {
     return {
         "204": {

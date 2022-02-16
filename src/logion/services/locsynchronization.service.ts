@@ -92,14 +92,12 @@ export class LocSynchronizer {
 
     private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {
         const loc = await this.locRequestRepository.findById(collectionLocId);
-        if(loc !== undefined) {
+        if (loc !== undefined) {
             logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId)
             const collectionItem = this.collectionFactory.newItem({
                 collectionLocId,
-                description: {
-                    itemId,
-                    addedOn: timestamp
-                }
+                itemId,
+                addedOn: timestamp
             });
             await this.collectionRepository.save(collectionItem)
         }

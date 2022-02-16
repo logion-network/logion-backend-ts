@@ -20,6 +20,7 @@ import { ApplicationErrorController } from "./controllers/application.error.cont
 import { JsonResponse } from "./middlewares/json.response";
 import { Container } from "inversify";
 import { AppContainer } from "./container/app.container";
+import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -47,6 +48,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForAuthentication(spec);
     fillInSpecForLoc(spec);
     fillInSpecForHealth(spec);
+    fillInSpecForCollection(spec);
 
     return spec;
 }
@@ -68,6 +70,7 @@ export function setupApp(app: Express) {
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
     dino.registerController(HealthController);
+    dino.registerController(CollectionController);
     dino.registerApplicationError(ApplicationErrorController);
     dino.requestEnd(JsonResponse);
 
