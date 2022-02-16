@@ -1,15 +1,23 @@
 import moment, { Moment } from 'moment';
-import { It, Mock, Times } from 'moq.ts';
+import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
 import { decimalToUuid } from '../../../src/logion/lib/uuid';
+import {
+    CollectionFactory,
+    CollectionRepository,
+    NewItemParameters,
+    CollectionItemAggregateRoot
+} from "../../../src/logion/model/collection.model";
 
 describe("LocSynchronizer", () => {
 
     beforeEach(() => {
         locRequestRepository = new Mock<LocRequestRepository>();
+        collectionFactory = new Mock<CollectionFactory>();
+        collectionRepository = new Mock<CollectionRepository>();
     });
 
     it("sets LOC created date", async () => {
@@ -98,21 +106,28 @@ describe("LocSynchronizer", () => {
         thenLocIsSaved();
     });
 
-    it("skips addCollectionItem", async () => {
-        givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId });
+    it("adds Collection Item", async () => {
+        givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId, item_id: itemId});
         givenLocRequest();
-        givenLocRequestExpectsVoid();
+        givenCollectionItem();
+        givenCollectionFactory();
         await whenConsumingBlock();
-        thenUpdateSkipped();
+        thenCollectionItemSaved();
     });
 });
 
 const locId = {
     toString: () => locDecimalUuid
 };
+const itemId = {
+    toHex: () => itemIdHex
+}
 const locDecimalUuid = "130084474896785895402627605545662412605";
+const itemIdHex = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
 const blockTimestamp = moment();
 let locRequestRepository: Mock<LocRequestRepository>;
+let collectionFactory: Mock<CollectionFactory>;
+let collectionRepository: Mock<CollectionRepository>;
 
 function givenLocExtrinsic(method: string, args: JsonArgs) {
     locExtrinsic = new Mock<JsonExtrinsic>();
@@ -132,7 +147,21 @@ function givenLocRequest() {
     locRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 }
 
+function givenCollectionItem() {
+    collectionItem = new Mock<CollectionItemAggregateRoot>()
+    collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
+}
+
+function givenCollectionFactory() {
+    collectionFactory.setup(instance => instance.newItem(It.Is<NewItemParameters>(params =>
+        params.collectionLocId === decimalToUuid(locDecimalUuid) &&
+        params.description.itemId === itemIdHex &&
+        params.description.addedOn !== undefined
+    ))).returns(collectionItem.object())
+}
+
 let locRequest: Mock<LocRequestAggregateRoot>;
+let collectionItem: Mock<CollectionItemAggregateRoot>;
 
 function givenLocRequestExpectsLocCreationDate() {
     locRequest.setup(instance => instance.setLocCreatedDate(IS_BLOCK_TIME))
@@ -148,6 +177,8 @@ async function whenConsumingBlock() {
 function locSynchronizer(): LocSynchronizer {
     return new LocSynchronizer(
         locRequestRepository.object(),
+        collectionFactory.object(),
+        collectionRepository.object(),
     );
 }
 
@@ -201,6 +232,6 @@ function thenLocVoided() {
     locRequest.verify(instance => instance.voidLoc(IS_BLOCK_TIME));
 }
 
-function thenUpdateSkipped() {
-    locRequestRepository.verify(instance => instance.save(locRequest.object()), Times.Never());
+function thenCollectionItemSaved() {
+    collectionRepository.verify(instance => instance.save(collectionItem.object()))
 }
