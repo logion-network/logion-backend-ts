@@ -13,7 +13,7 @@ import {
 
 import { components } from './components';
 
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, addPathParameter } from './doc';
+import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
 
@@ -163,7 +163,7 @@ export class ProtectionRequestController extends ApiController {
             view: "RejectProtectionRequestView",
         });
         operationObject.responses = getDefaultResponses("ProtectionRequestView");
-        addPathParameter(operationObject, 'id', "The ID of the request to reject");
+        setPathParameters(operationObject, { 'id': "The ID of the request to reject" });
     }
 
     @Async()
@@ -186,7 +186,7 @@ export class ProtectionRequestController extends ApiController {
             view: "AcceptProtectionRequestView",
         });
         operationObject.responses = getDefaultResponses("ProtectionRequestView");
-        addPathParameter(operationObject, 'id', "The ID of the request to accept");
+        setPathParameters(operationObject, { 'id': "The ID of the request to accept" });
     }
 
     @Async()
@@ -208,7 +208,7 @@ export class ProtectionRequestController extends ApiController {
         operationObject.summary = "Fetch all info necessary for the legal officer to accept or reject recovery.";
         operationObject.description = "The authentication user must be either the protection requester, the recovery requester, or one of the legal officers";
         operationObject.responses = getDefaultResponses("RecoveryInfoView");
-        addPathParameter(operationObject, 'id', "The ID of the recovery request");
+        setPathParameters(operationObject, { 'id': "The ID of the recovery request" });
     }
 
     @Async()

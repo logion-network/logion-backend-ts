@@ -4,7 +4,7 @@ import { CollectionRepository, CollectionItemAggregateRoot } from "../model/coll
 import { components } from "./components";
 import { requireDefined } from "../lib/assertions";
 import { OpenAPIV3 } from "express-oas-generator";
-import { addTag, setControllerTag, getPublicResponses, addPathParameter } from "./doc";
+import { addTag, setControllerTag, getPublicResponses, setPathParameters } from "./doc";
 import { badRequest } from "./errors";
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
@@ -34,9 +34,11 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}"].get!;
         operationObject.summary = "Gets the info of a published Collection Item";
         operationObject.description = "No authentication required.";
-        operationObject.responses = getPublicResponses();
-        addPathParameter(operationObject, 'collectionLocId', "The id of the collection loc");
-        addPathParameter(operationObject, 'itemId', "The id of the collection item");
+        operationObject.responses = getPublicResponses("CollectionItemView");
+        setPathParameters(operationObject, {
+            'collectionLocId': "The id of the collection loc",
+            'itemId': "The id of the collection item"
+        });
     }
 
     @HttpGet('/:collectionLocId/:itemId')
