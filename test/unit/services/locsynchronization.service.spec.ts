@@ -8,8 +8,7 @@ import { decimalToUuid } from '../../../src/logion/lib/uuid';
 import {
     CollectionFactory,
     CollectionRepository,
-    NewItemParameters,
-    CollectionItemAggregateRoot
+    CollectionItemAggregateRoot, CollectionItemDescription
 } from "../../../src/logion/model/collection.model";
 
 describe("LocSynchronizer", () => {
@@ -153,10 +152,10 @@ function givenCollectionItem() {
 }
 
 function givenCollectionFactory() {
-    collectionFactory.setup(instance => instance.newItem(It.Is<NewItemParameters>(params =>
+    collectionFactory.setup(instance => instance.newItem(It.Is<CollectionItemDescription>(params =>
         params.collectionLocId === decimalToUuid(locDecimalUuid) &&
-        params.description.itemId === itemIdHex &&
-        params.description.addedOn !== undefined
+        params.itemId === itemIdHex &&
+        params.addedOn !== undefined
     ))).returns(collectionItem.object())
 }
 

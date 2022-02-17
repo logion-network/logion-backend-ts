@@ -1,9 +1,14 @@
-export function requireDefined<T>(value: T | undefined): T {
+export function requireDefined<T>(value: T | undefined, errorSupplier?: () => Error): T {
     if(value === undefined) {
-        throw new Error("Value is undefined");
+        if (errorSupplier) {
+            throw errorSupplier();
+        } else {
+            throw new Error("Value is undefined");
+        }
     } else {
         return value;
     }
+
 }
 
 export function requireLength<T>(obj: T, property: keyof T, minLength:number, maxLength:number): string {

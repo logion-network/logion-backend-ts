@@ -99,6 +99,18 @@ export function getDefaultResponses(view?: string): OpenAPIV3.ResponsesObject {
     };
 }
 
+export function getPublicResponses(view?: string): OpenAPIV3.ResponsesObject {
+    return {
+        "200": {
+            description: "OK",
+            content: view !== undefined ? getBodyContent(view) : undefined,
+        },
+        "400": {
+            description: "Bad Request"
+        }
+    };
+}
+
 export function getDefaultResponsesNoContent(): OpenAPIV3.ResponsesObject {
     return {
         "204": {
@@ -113,17 +125,20 @@ export function getDefaultResponsesNoContent(): OpenAPIV3.ResponsesObject {
     };
 }
 
-export function addPathParameter(operationObject: OpenAPIV3.OperationObject, parameterName: string, description: string) {
+export function setPathParameters(operationObject: OpenAPIV3.OperationObject, params: Record<string, string>) {
     if(operationObject.parameters !== undefined) {
         operationObject.parameters = [];
     }
-    operationObject.parameters!.push({
-        name: parameterName,
-        in: "path",
-        description,
-        required: true,
-        schema: {type: "string"}
-    });
+    Object.keys(params).forEach(parameterName => {
+        const description = params[parameterName]
+        operationObject.parameters!.push({
+            name: parameterName,
+            in: "path",
+            description,
+            required: true,
+            schema: { type: "string" }
+        });
+    })
 }
 
 export function getDefaultResponsesWithAnyBody(): OpenAPIV3.ResponsesObject {

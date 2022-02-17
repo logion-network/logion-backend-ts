@@ -20,7 +20,7 @@ import {
     addTag,
     setControllerTag,
     getDefaultResponsesNoContent,
-    addPathParameter,
+    setPathParameters,
     getDefaultResponsesWithAnyBody
 } from "./doc";
 import { AuthenticationService } from "../services/authentication.service";
@@ -269,6 +269,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Gets a single LOC Request";
         operationObject.description = "The authenticated user must be either expected requester or expected owner.";
         operationObject.responses = getDefaultResponses("LocRequestView");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC request" })
     }
 
     @HttpGet('/:requestId')
@@ -291,6 +292,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Gets the published attributes of a single LOC";
         operationObject.description = "No authentication required.";
         operationObject.responses = getDefaultResponses("LocPublicView");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC request" })
     }
 
     @HttpGet('/:requestId/public')
@@ -347,7 +349,7 @@ export class LocRequestController extends ApiController {
             view: "RejectLocRequestView",
         });
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC request to reject");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC request to reject" });
     }
 
     @HttpPost('/:requestId/reject')
@@ -365,7 +367,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Accepts a LOC Request";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC request to reject");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC request to reject" });
     }
 
     @HttpPost('/:requestId/accept')
@@ -383,7 +385,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Adds a file to the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponses("AddFileResultView");
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/files')
@@ -430,8 +432,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Downloads a file of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to download"
+        });
     }
 
     @HttpGet('/:requestId/files/:hash')
@@ -458,8 +462,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Deletes a file of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. The file's hash must not yet have been published in the blockchain.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to download"
+        });
     }
 
     @HttpDelete('/:requestId/files/:hash')
@@ -480,8 +486,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Confirms a file of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a file is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'hash', "The hash of the file to download");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to download"
+        });
     }
 
     @HttpPut('/:requestId/files/:hash/confirm')
@@ -503,7 +511,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Closes a LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/close')
@@ -529,7 +537,7 @@ export class LocRequestController extends ApiController {
             view: "VoidLocView",
         });
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/void')
@@ -551,7 +559,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Adds a link to the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/links')
@@ -575,8 +583,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Deletes a link of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. The link must not yet have been published in the blockchain.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'target', "The ID of the linked LOC");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The ID of the linked LOC"
+        });
     }
 
     @HttpDelete('/:requestId/links/:target')
@@ -595,8 +605,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Confirms a link of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a link is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'target', "The target of the link");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The target of the link"
+        });
     }
 
     @HttpPut('/:requestId/links/:target/confirm')
@@ -618,7 +630,7 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Adds a Metadata item to the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/metadata')
@@ -641,8 +653,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Deletes a metadata item of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. The metadata item must not yet have been published in the blockchain.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'name', "The name of the metadata item");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'name': "The name of the metadata item"
+        });
     }
 
     @HttpDelete('/:requestId/metadata/:name')
@@ -663,8 +677,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Confirms a metadata item of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a metadata item is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
-        addPathParameter(operationObject, 'requestId', "The ID of the LOC");
-        addPathParameter(operationObject, 'name', "The name of the metadata");
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'name': "The name of the metadata"
+        });
     }
 
     @HttpPut('/:requestId/metadata/:name/confirm')

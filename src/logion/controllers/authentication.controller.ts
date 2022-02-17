@@ -8,7 +8,7 @@ import moment from "moment";
 import { requireDefined } from "../lib/assertions";
 import { SignatureService } from "../services/signature.service";
 import { OpenAPIV3 } from "express-oas-generator";
-import { getRequestBody, getBodyContent, getDefaultResponses, addPathParameter, addTag, setControllerTag } from "./doc";
+import { getRequestBody, getBodyContent, getDefaultResponses, setPathParameters, addTag, setControllerTag } from "./doc";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Authentication';
@@ -82,7 +82,7 @@ export class AuthenticationController extends ApiController {
             view: "AuthenticateRequestView",
         });
         operationObject.responses = getDefaultResponses("AuthenticateResponseView");
-        addPathParameter(operationObject, 'sessionId', "The ID of the session to authenticate");
+        setPathParameters(operationObject, { 'sessionId': "The ID of the session to authenticate" });
     }
 
     @HttpPost('/:sessionId/authenticate')

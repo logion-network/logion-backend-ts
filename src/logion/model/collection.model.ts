@@ -1,14 +1,23 @@
 import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
-import { Moment } from "moment";
+import moment, { Moment } from "moment";
 import { injectable } from "inversify";
 
 export interface CollectionItemDescription {
+    readonly collectionLocId: string
     readonly itemId: string
     readonly addedOn: Moment
 }
 
 @Entity("collection_item")
 export class CollectionItemAggregateRoot {
+
+    getDescription(): CollectionItemDescription {
+        return {
+            collectionLocId: this.collectionLocId!,
+            itemId: this.itemId!,
+            addedOn: moment(this.addedOn)
+        }
+    }
 
     @PrimaryColumn({ type: "uuid", name: "collection_loc_id" })
     collectionLocId?: string;
@@ -33,22 +42,21 @@ export class CollectionRepository {
     public async save(root: CollectionItemAggregateRoot): Promise<void> {
         await this.repository.save(root);
     }
-}
 
-export interface NewItemParameters {
-    collectionLocId: string,
-    description: CollectionItemDescription
+    public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | undefined> {
+        return this.repository.findOne({ collectionLocId, itemId })
+    }
 }
 
 @injectable()
 export class CollectionFactory {
 
-    newItem(params: NewItemParameters): CollectionItemAggregateRoot {
-        const { collectionLocId, description } = params;
+    newItem(params: CollectionItemDescription): CollectionItemAggregateRoot {
+        const { collectionLocId, itemId, addedOn } = params;
         const item = new CollectionItemAggregateRoot()
         item.collectionLocId = collectionLocId;
-        item.itemId = description.itemId;
-        item.addedOn = description.addedOn.toDate();
+        item.itemId = itemId;
+        item.addedOn = addedOn.toDate();
         return item;
     }
 }
