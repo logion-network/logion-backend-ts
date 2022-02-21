@@ -5,7 +5,7 @@ import { It, Mock } from "moq.ts";
 import { HealthController } from '../../../src/logion/controllers/health.controller';
 import { AuthenticationService } from '../../../src/logion/services/authentication.service';
 import { SyncPointRepository } from '../../../src/logion/model/syncpoint.model';
-import { PolkadotService } from 'src/logion/services/polkadot.service';
+import { AuthorityService } from "../../../src/logion/services/authority.service";
 
 describe('HealthController', () => {
 
@@ -64,9 +64,9 @@ const EXPECTED_TOKEN = "the-health-check-token";
 const UNEXPECTED_TOKEN = "wrong-health-check-token";
 
 function bindMocks(container: Container, up: boolean): void {
-    const polkadotService = new Mock<PolkadotService>();
+    const authorityService = new Mock<AuthorityService>();
 
-    container.rebind(AuthenticationService).toConstantValue(new AuthenticationService(polkadotService.object()));
+    container.rebind(AuthenticationService).toConstantValue(new AuthenticationService(authorityService.object()));
 
     const syncPointRepository = new Mock<SyncPointRepository>();
     if(up) {

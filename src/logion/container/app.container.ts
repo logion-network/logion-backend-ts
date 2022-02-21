@@ -31,6 +31,7 @@ import { ErrorService } from "../services/error.service";
 import { HealthController } from '../controllers/health.controller';
 import { TransactionController } from '../controllers/transaction.controller';
 import { CollectionRepository, CollectionFactory } from "../model/collection.model";
+import { AuthorityService } from "../services/authority.service";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -60,6 +61,7 @@ container.bind(ErrorService).toSelf();
 container.bind(JsonResponse).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
+container.bind(AuthorityService).toSelf()
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();

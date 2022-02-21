@@ -935,6 +935,25 @@
                         "description": "The creation timestamp"
                     }
                 }
+            },
+            "RefreshRequestView": {
+                "type": "object",
+                "properties": {
+                    "tokens": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "string",
+                            "description": "The token to refresh"
+                        },
+                        "description": "A map of tokens, index by SS58 addresses of refresh requester",
+                        "example": {
+                            "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": "eyJhbGciOiJIUzM4NCI....",
+                            "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": "eyJhbGciOiJIUzM4NCI...."
+                        }
+                    }
+                },
+                "title": "RefreshRequestView",
+                "description": "the refresh request"
             }
         }
     }

@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, HttpPost, Async } from "dinoloop";
+import { Controller, ApiController, HttpPost, Async, HttpPut } from "dinoloop";
 import { components } from "./components";
 import { v4 as uuid } from "uuid";
 import { AuthenticationService, Token, unauthorized } from "../services/authentication.service";
@@ -9,6 +9,9 @@ import { requireDefined } from "../lib/assertions";
 import { SignatureService } from "../services/signature.service";
 import { OpenAPIV3 } from "express-oas-generator";
 import { getRequestBody, getBodyContent, getDefaultResponses, setPathParameters, addTag, setControllerTag } from "./doc";
+import { Log } from "../util/Log";
+
+const { logger } = Log;
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Authentication';
@@ -27,6 +30,7 @@ type SignInResponseView = components["schemas"]["SignInResponseView"];
 type AuthenticateRequestView = components["schemas"]["AuthenticateRequestView"];
 type AuthenticateResponseView = components["schemas"]["AuthenticateResponseView"];
 type SignatureView = components["schemas"]["SignatureView"];
+type RefreshRequestView = components["schemas"]["RefreshRequestView"];
 
 @injectable()
 @Controller('/auth')
@@ -96,6 +100,23 @@ export class AuthenticationController extends ApiController {
             const signature: SignatureView = authenticateRequest.signatures[address];
             const token = await this.authenticateSession(address, sessionId, signature);
             response.tokens![address] = { value: token.value, expiredOn: token.expiredOn.toISOString() }
+        }
+        return Promise.resolve(response);
+    }
+
+    @HttpPut('/refresh')
+    @Async()
+    async refresh(refreshRequest: RefreshRequestView): Promise<AuthenticateResponseView> {
+
+        let response: AuthenticateResponseView = { tokens: {} };
+        for (let address in refreshRequest.tokens) {
+            const oldToken = refreshRequest.tokens[address];
+            try {
+                const refreshedToken = await this.authenticationService.refreshToken(oldToken)
+                response.tokens![address] = { value: refreshedToken.value, expiredOn: refreshedToken.expiredOn.toISOString() }
+            } catch (e) {
+                logger.warn("Failed to refresh token for %s: %s", address, e)
+            }
         }
         return Promise.resolve(response);
     }
