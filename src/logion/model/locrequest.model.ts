@@ -184,6 +184,9 @@ export class LocRequestAggregateRoot {
             logger.warn("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
+        if(this.status === "REQUESTED") {
+            this.accept(timestamp);
+        }
     }
 
     getLocCreatedDate(): Moment {
