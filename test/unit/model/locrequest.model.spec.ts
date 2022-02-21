@@ -264,6 +264,13 @@ describe("LocRequestAggregateRoot", () => {
             voidedOn: voidingDate
         })
     });
+
+    it("accepts if pending when setting creation date", () => {
+        givenRequestWithStatus('REQUESTED');
+        const locCreatedDate = moment();
+        whenSettingLocCreatedDate(locCreatedDate);
+        thenStatusIs('OPEN');
+    });
 });
 
 describe("LocRequestAggregateRoot (metadata)", () => {
@@ -951,4 +958,8 @@ async function expectAsyncToThrow(func: () => Promise<void>) {
         await func();
         expect(true).toBe(false);
     } catch(_) {}
+}
+
+function thenStatusIs(expectedStatus: LocRequestStatus) {
+    expect(request.status).toBe(expectedStatus);
 }
