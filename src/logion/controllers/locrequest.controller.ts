@@ -356,7 +356,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
         request.reject(rejectLocRequestView.rejectReason!, moment());
         await this.locRequestRepository.save(request)
@@ -374,7 +374,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async acceptLocRequest(_ignoredBody: any, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
         request.accept(moment());
         await this.locRequestRepository.save(request)
@@ -497,7 +497,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
 
         request.confirmFile(hash);
@@ -519,7 +519,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async closeLoc(_body: any, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
 
         request.preClose();
@@ -545,7 +545,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async voidLoc(body: VoidLocView, requestId: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
 
         request.preVoid(body.reason!);
@@ -567,7 +567,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
         const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
         request.addLink({
@@ -594,7 +594,7 @@ export class LocRequestController extends ApiController {
     async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const userCheck = this.authenticationService.authenticatedUser(this.request);
-        userCheck.requireNodeOwner();
+        await userCheck.requireNodeOwner();
 
         request.removeLink(userCheck.address, target);
         await this.locRequestRepository.save(request);
@@ -616,7 +616,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async confirmLink(_body: any, requestId: string, target: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
 
         request.confirmLink(target);
@@ -688,7 +688,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async confirmMetadata(_body: any, requestId: string, name: string) {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        this.authenticationService.authenticatedUser(this.request)
+        await this.authenticationService.authenticatedUser(this.request)
             .requireNodeOwner();
 
         const decodedName = decodeURIComponent(name);

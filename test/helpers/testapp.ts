@@ -55,7 +55,6 @@ function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boo
 
     const authenticatedUser = new Mock<LogionUserCheck>();
     authenticatedUser.setup(instance => instance.address).returns(ALICE);
-    authenticatedUser.setup(instance => instance.legalOfficer).returns(true);
     authenticatedUser.setup(instance => instance.is).returns(() => conditionFulfilled);
     authenticatedUser.setup(instance => instance.require).returns(() => {
         if (!conditionFulfilled) {
@@ -68,11 +67,11 @@ function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boo
             throw new UnauthorizedException("")
         }
     });
-    authenticatedUser.setup(instance => instance.requireLegalOfficer).returns(() => {});
     authenticatedUser.setup(instance => instance.requireNodeOwner).returns(() => {
         if (!isNodeOwner) {
             throw new UnauthorizedException("")
         }
+        return Promise.resolve()
     });
     authenticatedUser.setup(instance => instance.isNodeOwner).returns(() => isNodeOwner);
 
