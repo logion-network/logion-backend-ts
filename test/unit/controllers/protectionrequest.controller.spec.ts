@@ -10,9 +10,12 @@ import {
     ProtectionRequestAggregateRoot,
     NewProtectionRequestParameters,
     LegalOfficerDecision,
+    ProtectionRequestDescription,
 } from '../../../src/logion/model/protectionrequest.model';
 import { ALICE } from '../../helpers/addresses';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
+import { NotificationService, Template } from "../../../src/logion/services/notification.service";
+import { now } from "moment";
 
 describe('createProtectionRequest', () => {
 
@@ -92,11 +95,9 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
     container.bind(ProtectionRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<ProtectionRequestFactory>();
-    const root = new Mock<ProtectionRequestAggregateRoot>();
+    const root = mockProtectionRequest()
     const decision = new Mock<LegalOfficerDecision>();
     root.setup(instance => instance.decision).returns(decision.object());
-    root.setup(instance => instance.id)
-        .returns("id");
     factory.setup(instance => instance.newProtectionRequest(
             It.Is<NewProtectionRequestParameters>(params =>
                 params.description.addressToRecover === addressToRecover
@@ -104,6 +105,7 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
                 && params.description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
+    mockNotificationService(container)
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -153,7 +155,7 @@ describe('fetchProtectionRequests', () => {
             .send({
                 requesterAddress: "",
                 legalOfficerAddress: [ ALICE ],
-                decisionStatuses: ["ACCEPTEED", "REJECTED"]
+                decisionStatuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(401);
 
@@ -168,19 +170,7 @@ const REJECT_REASON = "Illegal";
 function mockModelForFetch(container: Container): void {
     const repository = new Mock<ProtectionRequestRepository>();
 
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.requesterAddress).returns(REQUESTER_ADDRESS);
-
-    protectionRequest.setup(instance => instance.firstName).returns("John");
-    protectionRequest.setup(instance => instance.lastName).returns("Doe");
-    protectionRequest.setup(instance => instance.email).returns("john.doe@logion.network");
-    protectionRequest.setup(instance => instance.phoneNumber).returns("+1234");
-
-    protectionRequest.setup(instance => instance.line1).returns("Place de le République Française, 10");
-    protectionRequest.setup(instance => instance.line2).returns("boite 15");
-    protectionRequest.setup(instance => instance.postalCode).returns("4000");
-    protectionRequest.setup(instance => instance.city).returns("Liège");
-    protectionRequest.setup(instance => instance.country).returns("Belgium");
+    const protectionRequest = mockProtectionRequest()
 
     const decision = new Mock<LegalOfficerDecision>();
     decision.setup(instance => instance.rejectReason).returns(REJECT_REASON);
@@ -199,6 +189,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
+    mockNotificationService(container)
 }
 
 describe('acceptProtectionRequest', () => {
@@ -213,12 +204,15 @@ describe('acceptProtectionRequest', () => {
             })
             .expect(200)
             .expect('Content-Type', /application\/json/);
+
+        notificationService.verify(instance => instance.notify(IDENTITY.email, "protection-accepted", It.IsAny<ProtectionRequestDescription>()))
     });
 });
 
+let notificationService: Mock<NotificationService>;
+
 function mockModelForAccept(container: Container, verifies: boolean): void {
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.id).returns(REQUEST_ID);
+    const protectionRequest = mockProtectionRequest();
     protectionRequest.setup(instance => instance.accept(
         It.IsAny(), It.Is<string>(locId => locId !== undefined && locId !== null))).returns(undefined);
     const decision = new Mock<LegalOfficerDecision>();
@@ -235,6 +229,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
+    mockNotificationService(container)
 }
 
 const REQUEST_ID = "requestId";
@@ -256,8 +251,7 @@ describe('rejectProtectionRequest', () => {
 });
 
 function mockModelForReject(container: Container, verifies: boolean): void {
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.id).returns(REQUEST_ID);
+    const protectionRequest = mockProtectionRequest();
     protectionRequest.setup(instance => instance.reject).returns(() => {});
     const decision = new Mock<LegalOfficerDecision>();
     protectionRequest.setup(instance => instance.decision).returns(decision.object());
@@ -273,4 +267,45 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
+    mockNotificationService(container)
+}
+
+function mockNotificationService(container: Container) {
+    notificationService = new Mock<NotificationService>();
+    notificationService
+        .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
+        .returns()
+    container.bind(NotificationService).toConstantValue(notificationService.object())
+}
+
+function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
+
+    const description: ProtectionRequestDescription = {
+        requesterAddress: REQUESTER_ADDRESS,
+        isRecovery: false,
+        otherLegalOfficerAddress: "",
+        createdOn: now().toString(),
+        addressToRecover: null,
+        userIdentity: IDENTITY,
+        userPostalAddress: POSTAL_ADDRESS
+    }
+    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>()
+    protectionRequest.setup(instance => instance.id).returns(REQUEST_ID)
+    protectionRequest.setup(instance => instance.requesterAddress).returns(description.requesterAddress)
+    protectionRequest.setup(instance => instance.isRecovery).returns(description.isRecovery)
+    protectionRequest.setup(instance => instance.otherLegalOfficerAddress).returns(description.otherLegalOfficerAddress)
+    const userIdentity = description.userIdentity
+    protectionRequest.setup(instance => instance.firstName).returns(userIdentity.firstName);
+    protectionRequest.setup(instance => instance.lastName).returns(userIdentity.lastName);
+    protectionRequest.setup(instance => instance.email).returns(userIdentity.email);
+    protectionRequest.setup(instance => instance.phoneNumber).returns(userIdentity.phoneNumber);
+    const userPostalAddress = description.userPostalAddress
+    protectionRequest.setup(instance => instance.line1).returns(userPostalAddress.line1);
+    protectionRequest.setup(instance => instance.line2).returns(userPostalAddress.line2);
+    protectionRequest.setup(instance => instance.postalCode).returns(userPostalAddress.postalCode);
+    protectionRequest.setup(instance => instance.city).returns(userPostalAddress.city);
+    protectionRequest.setup(instance => instance.country).returns(userPostalAddress.country);
+
+    protectionRequest.setup(instance => instance.getDescription()).returns(description)
+    return protectionRequest
 }

@@ -16,6 +16,8 @@ import { components } from './components';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
+import { NotificationService } from "../services/notification.service";
+import { badRequest } from "./errors";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -47,7 +49,8 @@ export class ProtectionRequestController extends ApiController {
     constructor(
         private protectionRequestRepository: ProtectionRequestRepository,
         private protectionRequestFactory: ProtectionRequestFactory,
-        private authenticationService: AuthenticationService) {
+        private authenticationService: AuthenticationService,
+        private notificationService: NotificationService) {
         super();
     }
 
@@ -195,11 +198,16 @@ export class ProtectionRequestController extends ApiController {
         this.authenticationService.authenticatedUser(this.request)
             .require(user => user.isNodeOwner());
         if(body.locId === undefined || body.locId === null) {
-            throw new Error("Missing LOC ID");
+            throw badRequest("Missing LOC ID");
         }
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         request.accept(moment(), body.locId!);
         await this.protectionRequestRepository.save(request);
+        if (request.isRecovery) {
+            this.notificationService.notify(request.email, "recovery-accepted", request.getDescription())
+        } else {
+            this.notificationService.notify(request.email, "protection-accepted", request.getDescription())
+        }
         return this.adapt(request);
     }
 
