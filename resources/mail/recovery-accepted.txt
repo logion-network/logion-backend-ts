@@ -1,0 +1,5 @@
+Your recovery request is accepted
+Dear {{it.userIdentity.firstName}} {{it.userIdentity.lastName}},
+Your Legal Officer has accepted to protect your new Polkadot account {{it.requesterAddress}} and allow you to recover assets of account {{it.requesterAddress}}.
+Yours sincerely,
+The logion team

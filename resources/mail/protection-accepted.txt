@@ -1,0 +1,5 @@
+Your protection request is accepted
+Dear {{it.userIdentity.firstName}} {{it.userIdentity.lastName}},
+Your Legal Officer has accepted to protect your Polkadot account {{it.requesterAddress}}.
+Yours sincerely,
+The logion team

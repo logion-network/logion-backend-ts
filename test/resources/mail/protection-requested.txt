@@ -1,0 +1,4 @@
+Your protection is requested
+Dear Legal Officer,
+The following user has requested your protection:
+{{it.userIdentity.firstName}} {{it.userIdentity.lastName}}({{it.requesterAddress}})
