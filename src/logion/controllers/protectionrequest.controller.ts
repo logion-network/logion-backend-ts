@@ -8,7 +8,7 @@ import {
     ProtectionRequestRepository,
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
-    ProtectionRequestFactory,
+    ProtectionRequestFactory, ProtectionRequestDescription, LegalOfficerDecision,
 } from '../model/protectionrequest.model';
 
 import { components } from './components';
@@ -16,8 +16,9 @@ import { components } from './components';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
-import { NotificationService } from "../services/notification.service";
+import { NotificationService, Template } from "../services/notification.service";
 import { badRequest } from "./errors";
+import { DirectoryService } from "../services/directory.service";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -35,7 +36,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     });
     setControllerTag(spec, /^\/api\/protection-request.*/, tagName);
 
-    ProtectionRequestController.createProtectionRequests(spec);
+    ProtectionRequestController.createProtectionRequest(spec);
     ProtectionRequestController.fetchProtectionRequests(spec);
     ProtectionRequestController.rejectProtectionRequest(spec);
     ProtectionRequestController.acceptProtectionRequest(spec);
@@ -50,11 +51,14 @@ export class ProtectionRequestController extends ApiController {
         private protectionRequestRepository: ProtectionRequestRepository,
         private protectionRequestFactory: ProtectionRequestFactory,
         private authenticationService: AuthenticationService,
-        private notificationService: NotificationService) {
+        private notificationService: NotificationService,
+        private directoryService: DirectoryService) {
         super();
     }
 
-    static createProtectionRequests(spec: OpenAPIV3.Document) {
+    private readonly ownerAddress: string = process.env.OWNER!
+
+    static createProtectionRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/protection-request"].post!;
         operationObject.summary = "Creates a new Protection Request";
         operationObject.description = "The authenticated user must be the protection/recovery requester";
@@ -67,7 +71,7 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('')
-    async createProtectionRequests(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
+    async createProtectionRequest(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
         this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
         const request = this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
@@ -94,7 +98,9 @@ export class ProtectionRequestController extends ApiController {
         });
 
         await this.protectionRequestRepository.save(request);
-
+        const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
+        this.getNotificationInfo(request.getDescription())
+            .then(info => this.notificationService.notify(info.legalOfficerEMail, templateId, info.data))
         return this.adapt(request);
     }
 
@@ -177,6 +183,9 @@ export class ProtectionRequestController extends ApiController {
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         request.reject(body.rejectReason!, moment());
         await this.protectionRequestRepository.save(request);
+        const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected"
+        this.getNotificationInfo(request.getDescription(), request.decision)
+            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
         return this.adapt(request);
     }
 
@@ -203,11 +212,9 @@ export class ProtectionRequestController extends ApiController {
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         request.accept(moment(), body.locId!);
         await this.protectionRequestRepository.save(request);
-        if (request.isRecovery) {
-            this.notificationService.notify(request.email, "recovery-accepted", request.getDescription())
-        } else {
-            this.notificationService.notify(request.email, "protection-accepted", request.getDescription())
-        }
+        const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted"
+        this.getNotificationInfo(request.getDescription(), request.decision)
+            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info))
         return this.adapt(request);
     }
 
@@ -249,5 +256,24 @@ export class ProtectionRequestController extends ApiController {
             recoveryAccount: this.adapt(recovery),
             accountToRecover: this.adapt(protectionRequests[0]),
         };
+    }
+
+    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecision):
+        Promise<{ legalOfficerEMail: string, walletUserEmail: string, data: any }> {
+
+        const legalOfficer = await this.directoryService.get(this.ownerAddress)
+        const otherLegalOfficer = await this.directoryService.get(protection.otherLegalOfficerAddress)
+        return {
+            legalOfficerEMail: legalOfficer.userIdentity.email,
+            walletUserEmail: protection.userIdentity.email,
+            data: {
+                protection,
+                decision,
+                legalOfficer,
+                otherLegalOfficer,
+                walletUser: protection.userIdentity,
+                walletUserPostalAddress: protection.userPostalAddress
+            }
+        }
     }
 }

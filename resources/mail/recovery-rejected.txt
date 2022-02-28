@@ -4,7 +4,8 @@ Dear {{it.walletUser.firstName}} {{it.walletUser.lastName}},
 You receive this message because you are requesting the protection of a Legal Officer through the logion blockchain network.
 Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
 
-One of your Legal Officers, {{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}}, has accepted to protect your Polkadot account set as follows: {{it.protection.requesterAddress}}.
+One of your Legal Officers, {{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}}, has refused to protect your Polkadot account set as follows: {{it.protection.requesterAddress}}, for the following reason:
+{{it.protection.decision.rejectReason}}
 
 Your logion Legal Officer details are:
 __________________________________________________________
@@ -39,9 +40,7 @@ Additional information:
 __________________________________________________________
 
 
-Upon acceptance of the other Legal Officer (Bob Network), you will be able to
-* activate your protection directly from your wallet.
-* recover the assets from your previous account: {{it.protection.addressToRecover}}
+Please contact your Legal Officer if you want more details.
 
 Trustfully yours,
 

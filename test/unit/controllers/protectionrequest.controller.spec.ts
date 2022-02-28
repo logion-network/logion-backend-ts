@@ -16,6 +16,8 @@ import { ALICE } from '../../helpers/addresses';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
 import { now } from "moment";
+import { DirectoryService } from "../../../src/logion/services/directory.service";
+import { notifiedLegalOfficer } from "../services/notification-test-data";
 
 describe('createProtectionRequest', () => {
 
@@ -105,7 +107,7 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
                 && params.description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationService(container)
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -189,7 +191,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationService(container)
+    mockNotificationAndDirectoryService(container)
 }
 
 describe('acceptProtectionRequest', () => {
@@ -229,7 +231,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationService(container)
+    mockNotificationAndDirectoryService(container)
 }
 
 const REQUEST_ID = "requestId";
@@ -267,15 +269,21 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationService(container)
+    mockNotificationAndDirectoryService(container)
 }
 
-function mockNotificationService(container: Container) {
+function mockNotificationAndDirectoryService(container: Container) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
-        .returns()
+        .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
+
+    const directoryService = new Mock<DirectoryService>();
+    directoryService
+        .setup(instance => instance.get(It.IsAny<string>()))
+        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+    container.bind(DirectoryService).toConstantValue(directoryService.object())
 }
 
 function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
