@@ -6,7 +6,7 @@ contain only variables, which are replaced at runtime with their respective valu
 
 ## Available variables
 
-All possible variables are available (for copy/paste) in this template: [all-documented-vars.txt](resources/mail/all-documented-vars.txt)
+All possible variables are available (for copy/paste) in this template: [all-documented-vars.txt](all-documented-vars.txt)
 
 ### Legal Officer
     legalOfficer.address
