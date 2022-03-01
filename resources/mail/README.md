@@ -1,7 +1,7 @@
 # Mail Templates
 This directory contains mail templates. The first line of each template is the **subject** of the mail, while the
 subsequent lines represent the **body**.
-Although there [are many customization features](https://squirrelly.js.org/docs/), most of the time the template
+Although there [are many customization features](https://pugjs.org/), most of the time the template
 contain only variables, which are replaced at runtime with their respective value:
 
 ## Available variables
@@ -35,9 +35,9 @@ In the context of a protection (or recovery), all the variables defined above ma
     protection.createdOn
     protection.isRecovery
 
-    protection.decisionOn
-    protection.rejectReason
-    protection.locId
+    protection.decision.decisionOn
+    protection.decision.rejectReason
+    protection.decision.locId
 
 ### LOC
 (TBD)

@@ -1,4 +1,5 @@
-Your protection is requested
-Dear Legal Officer,
-The following user has requested your protection:
-{{it.walletUser.firstName}} {{it.walletUser.lastName}}({{it.protection.requesterAddress}})
+| Your protection is requested
+| Dear Legal Officer,
+| The following user has requested your protection:
+| #{walletUser.firstName} #{walletUser.lastName}(#{protection.requesterAddress})
+|

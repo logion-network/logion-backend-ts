@@ -1,58 +1,58 @@
-All possible variables
-
-=== Legal Officer ===
-{{it.legalOfficer.address}};
-{{it.legalOfficer.additionalDetails}};
-{{it.legalOfficer.node}};
-
-{{it.legalOfficer.userIdentity.firstName}};
-{{it.legalOfficer.userIdentity.lastName}};
-{{it.legalOfficer.userIdentity.email}};
-{{it.legalOfficer.userIdentity.phoneNumber}};
-
-{{it.legalOfficer.postalAddress.company}};
-{{it.legalOfficer.postalAddress.line1}};
-{{it.legalOfficer.postalAddress.line2}};
-{{it.legalOfficer.postalAddress.postalCode}};
-{{it.legalOfficer.postalAddress.city}};
-{{it.legalOfficer.postalAddress.country}};
-
-=== Other Legal Officer ===
-{{it.otherLegalOfficer.address}};
-{{it.otherLegalOfficer.additionalDetails}};
-{{it.otherLegalOfficer.node}};
-
-{{it.otherLegalOfficer.userIdentity.firstName}};
-{{it.otherLegalOfficer.userIdentity.lastName}};
-{{it.otherLegalOfficer.userIdentity.email}};
-{{it.otherLegalOfficer.userIdentity.phoneNumber}};
-
-{{it.otherLegalOfficer.postalAddress.company}};
-{{it.otherLegalOfficer.postalAddress.line1}};
-{{it.otherLegalOfficer.postalAddress.line2}};
-{{it.otherLegalOfficer.postalAddress.postalCode}};
-{{it.otherLegalOfficer.postalAddress.city}};
-{{it.otherLegalOfficer.postalAddress.country}};
-
-=== Protection ===
-{{it.protection.requesterAddress}};
-{{it.protection.otherLegalOfficerAddress}};
-{{it.protection.addressToRecover}};
-{{it.protection.createdOn}};
-{{it.protection.isRecovery}};
-
-{{it.protection.decision.decisionOn}};
-{{it.protection.decision.rejectReason}};
-{{it.protection.decision.locId}};
-
-=== Wallet User ===
-{{it.walletUser.firstName}};
-{{it.walletUser.lastName}};
-{{it.walletUser.email}};
-{{it.walletUser.phoneNumber}};
-
-{{it.walletUserPostalAddress.line1}};
-{{it.walletUserPostalAddress.line2}};
-{{it.walletUserPostalAddress.postalCode}};
-{{it.walletUserPostalAddress.city}};
-{{it.walletUserPostalAddress.country}};
+| All possible variables
+|
+| === Legal Officer ===
+| #{legalOfficer.address};
+| #{legalOfficer.additionalDetails};
+| #{legalOfficer.node};
+|
+| #{legalOfficer.userIdentity.firstName};
+| #{legalOfficer.userIdentity.lastName};
+| #{legalOfficer.userIdentity.email};
+| #{legalOfficer.userIdentity.phoneNumber};
+|
+| #{legalOfficer.postalAddress.company};
+| #{legalOfficer.postalAddress.line1};
+| #{legalOfficer.postalAddress.line2};
+| #{legalOfficer.postalAddress.postalCode};
+| #{legalOfficer.postalAddress.city};
+| #{legalOfficer.postalAddress.country};
+|
+| === Other Legal Officer ===
+| #{otherLegalOfficer.address};
+| #{otherLegalOfficer.additionalDetails};
+| #{otherLegalOfficer.node};
+|
+| #{otherLegalOfficer.userIdentity.firstName};
+| #{otherLegalOfficer.userIdentity.lastName};
+| #{otherLegalOfficer.userIdentity.email};
+| #{otherLegalOfficer.userIdentity.phoneNumber};
+|
+| #{otherLegalOfficer.postalAddress.company};
+| #{otherLegalOfficer.postalAddress.line1};
+| #{otherLegalOfficer.postalAddress.line2};
+| #{otherLegalOfficer.postalAddress.postalCode};
+| #{otherLegalOfficer.postalAddress.city};
+| #{otherLegalOfficer.postalAddress.country};
+|
+| === Protection ===
+| #{protection.requesterAddress};
+| #{protection.otherLegalOfficerAddress};
+| #{protection.addressToRecover};
+| #{protection.createdOn};
+| #{protection.isRecovery};
+|
+| #{protection.decision.decisionOn};
+| #{protection.decision.rejectReason};
+| #{protection.decision.locId};
+|
+| === Wallet User ===
+| #{walletUser.firstName};
+| #{walletUser.lastName};
+| #{walletUser.email};
+| #{walletUser.phoneNumber};
+|
+| #{walletUserPostalAddress.line1};
+| #{walletUserPostalAddress.line2};
+| #{walletUserPostalAddress.postalCode};
+| #{walletUserPostalAddress.city};
+| #{walletUserPostalAddress.country};
