@@ -1,58 +1,58 @@
-logion notification - recovery request
-Dear {{it.walletUser.firstName}} {{it.walletUser.lastName}},
-
-You receive this message because you are requesting the protection of a Legal Officer through the logion blockchain network.
-Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
-
-One of your Legal Officers, {{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}}, has accepted to protect your Polkadot account set as follows: {{it.protection.requesterAddress}}.
-
-Your logion Legal Officer details are:
-__________________________________________________________
-
-Name:
-*******
-{{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}}
-
-Identification key:
-********************
-{{it.legalOfficer.address}}
-
-Email:
-*******
-{{it.legalOfficer.userIdentity.email}}
-
-Telephone:
-************
-{{it.legalOfficer.userIdentity.phoneNumber}}
-
-Address:
-*********
-{{it.legalOfficer.postalAddress.line1}}
-{{it.legalOfficer.postalAddress.line2}}
-{{it.legalOfficer.postalAddress.postalCode}} {{it.legalOfficer.postalAddress.city}}
-{{it.legalOfficer.postalAddress.country}}
-
-Additional information:
-*************************
-{{it.legalOfficer.additionalDetails}}
-
-__________________________________________________________
-
-
-Upon acceptance of the other Legal Officer (Bob Network), you will be able to
-* activate your protection directly from your wallet.
-* recover the assets from your previous account: {{it.protection.addressToRecover}}
-
-Trustfully yours,
-
-      ___       ___           ___                       ___           ___
-     /\__\     /\  \         /\  \          ___        /\  \         /\__\
-    /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
-   /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
-  /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
- /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
- \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
-  \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
-   \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
-    \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
-     \/__/     \/__/         \/__/                     \/__/         \/__/
+| logion notification - recovery request
+| Dear #{walletUser.firstName} #{walletUser.lastName},
+|
+| You receive this message because you are requesting the protection of a Legal Officer through the logion blockchain network.
+| Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
+|
+| One of your Legal Officers, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has accepted to protect your Polkadot account set as follows: #{protection.requesterAddress}.
+|
+| Your logion Legal Officer details are:
+| __________________________________________________________
+|
+| Name:
+| *******
+| #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}
+|
+| Identification key:
+| ********************
+| #{legalOfficer.address}
+|
+| Email:
+| *******
+| #{legalOfficer.userIdentity.email}
+|
+| Telephone:
+| ************
+| #{legalOfficer.userIdentity.phoneNumber}
+|
+| Address:
+| *********
+| #{legalOfficer.postalAddress.line1}
+| #{legalOfficer.postalAddress.line2}
+| #{legalOfficer.postalAddress.postalCode} #{legalOfficer.postalAddress.city}
+| #{legalOfficer.postalAddress.country}
+|
+| Additional information:
+| *************************
+| #{legalOfficer.additionalDetails}
+|
+| __________________________________________________________
+|
+|
+| Upon acceptance of the other Legal Officer (Bob Network), you will be able to
+| * activate your protection directly from your wallet.
+| * recover the assets from your previous account: #{protection.addressToRecover}
+|
+| Trustfully yours,
+|
+|       ___       ___           ___                       ___           ___
+|      /\__\     /\  \         /\  \          ___        /\  \         /\__\
+|     /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
+|    /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
+|   /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
+|  /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
+|  \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
+|   \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
+|    \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
+|     \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
+|      \/__/     \/__/         \/__/                     \/__/         \/__/

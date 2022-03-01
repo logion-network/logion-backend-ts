@@ -1,43 +1,43 @@
-logion notification - protection request
-Dear {{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}},
-
-The following user has requested your protection:
-__________________________________________________________
-
-Name:
-*******
-{{it.walletUser.firstName}} {{it.walletUser.lastName}}
-
-Identification key:
-********************
-{{it.protection.requesterAddress}}
-
-Email:
-*******
-{{it.walletUser.email}}
-
-Telephone:
-************
-{{it.walletUser.phoneNumber}}
-
-Address:
-*********
-{{it.walletUserPostalAddress.line1}}
-{{it.walletUserPostalAddress.line2}}
-{{it.walletUserPostalAddress.postalCode}} {{it.walletUserPostalAddress.city}}
-{{it.walletUserPostalAddress.country}}
-__________________________________________________________
-
-Trustfully yours,
-
-      ___       ___           ___                       ___           ___
-     /\__\     /\  \         /\  \          ___        /\  \         /\__\
-    /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
-   /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
-  /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
- /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
- \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
-  \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
-   \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
-    \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
-     \/__/     \/__/         \/__/                     \/__/         \/__/
+| logion notification - protection request
+| Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
+|
+| The following user has requested your protection:
+| __________________________________________________________
+|
+| Name:
+| *******
+| #{walletUser.firstName} #{walletUser.lastName}
+|
+| Identification key:
+| ********************
+| #{protection.requesterAddress}
+|
+| Email:
+| *******
+| #{walletUser.email}
+|
+| Telephone:
+| ************
+| #{walletUser.phoneNumber}
+|
+| Address:
+| *********
+| #{walletUserPostalAddress.line1}
+| #{walletUserPostalAddress.line2}
+| #{walletUserPostalAddress.postalCode} #{walletUserPostalAddress.city}
+| #{walletUserPostalAddress.country}
+| __________________________________________________________
+|
+| Trustfully yours,
+|
+|       ___       ___           ___                       ___           ___
+|      /\__\     /\  \         /\  \          ___        /\  \         /\__\
+|     /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
+|    /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
+|   /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
+|  /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
+|  \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
+|   \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
+|    \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
+|     \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
+|      \/__/     \/__/         \/__/                     \/__/         \/__/

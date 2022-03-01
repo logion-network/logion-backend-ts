@@ -1,8 +1,8 @@
 import { readFileSync } from 'fs';
-import { render } from "squirrelly";
 import { MailService } from "./mail.service";
 import { Log } from "../util/Log";
 import { injectable } from "inversify";
+import { compileTemplate, compile } from "pug";
 
 const { logger } = Log;
 
@@ -23,6 +23,13 @@ export interface Message {
     text: string,
 }
 
+type RenderFunction = compileTemplate;
+
+interface MailTemplate {
+    renderSubject: RenderFunction,
+    renderText: RenderFunction
+}
+
 @injectable()
 export class NotificationService {
 
@@ -31,6 +38,26 @@ export class NotificationService {
     ) {}
 
     public templatePath: string = "resources/mail"
+
+    private templates: Map<Template, MailTemplate> = new Map<Template, MailTemplate>();
+
+    private getMailTemplate(templateId: Template): MailTemplate {
+        let mailTemplate = this.templates.get(templateId)
+        if (!mailTemplate) {
+            const path = `${ this.templatePath }/${ templateId }.txt`;
+            logger.info("Compiling template %s", path)
+            const template = readFileSync(path).toString()
+            const separator = template.indexOf("\n");
+            const subject = template.slice(0, separator)
+            const text = template.slice(separator + 1);
+            mailTemplate = {
+                renderSubject: compile(subject, {}),
+                renderText: compile(text)
+            };
+            this.templates.set(templateId, mailTemplate)
+        }
+        return mailTemplate;
+    }
 
     async notify(to: string | undefined, templateId: Template, data: any): Promise<void> {
         if (!to) {
@@ -48,13 +75,10 @@ export class NotificationService {
     }
 
     renderMessage(templateId: Template, data: any): Message {
-        const template = readFileSync(`${this.templatePath}/${templateId}.txt`).toString()
-        const separator = template.indexOf("\n");
-        const subject = template.slice(0, separator)
-        const text = template.slice(separator + 1);
+        const template: MailTemplate = this.getMailTemplate(templateId)
         return {
-            subject: render(subject, data),
-            text: render(text, data, { autoTrim: false })
+            subject: template.renderSubject(data),
+            text: template.renderText(data)
         }
     }
 }
