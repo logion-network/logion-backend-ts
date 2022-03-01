@@ -1,0 +1,43 @@
+logion notification - protection request
+Dear {{it.legalOfficer.userIdentity.firstName}} {{it.legalOfficer.userIdentity.lastName}},
+
+The following user has requested your protection:
+__________________________________________________________
+
+Name:
+*******
+{{it.walletUser.firstName}} {{it.walletUser.lastName}}
+
+Identification key:
+********************
+{{it.protection.requesterAddress}}
+
+Email:
+*******
+{{it.walletUser.email}}
+
+Telephone:
+************
+{{it.walletUser.phoneNumber}}
+
+Address:
+*********
+{{it.walletUserPostalAddress.line1}}
+{{it.walletUserPostalAddress.line2}}
+{{it.walletUserPostalAddress.postalCode}} {{it.walletUserPostalAddress.city}}
+{{it.walletUserPostalAddress.country}}
+__________________________________________________________
+
+Trustfully yours,
+
+      ___       ___           ___                       ___           ___
+     /\__\     /\  \         /\  \          ___        /\  \         /\__\
+    /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
+   /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
+  /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
+ /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
+ \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
+  \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
+   \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
+    \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
+     \/__/     \/__/         \/__/                     \/__/         \/__/

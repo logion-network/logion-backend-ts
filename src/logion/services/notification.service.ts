@@ -6,13 +6,17 @@ import { injectable } from "inversify";
 
 const { logger } = Log;
 
-export type Template =
-    "protection-requested" |
-    "protection-accepted" |
-    "protection-rejected" |
-    "recovery-requested" |
-    "recovery-accepted" |
-    "recovery-rejected"
+export const templateValues = [
+    "protection-requested",
+    "protection-accepted",
+    "protection-rejected",
+    "recovery-requested",
+    "recovery-accepted",
+    "recovery-rejected",
+    "all-documented-vars"
+] as const;
+
+export type Template = typeof templateValues[number];
 
 export interface Message {
     subject: string,
@@ -28,18 +32,19 @@ export class NotificationService {
 
     public templatePath: string = "resources/mail"
 
-    notify(to: string | undefined, templateId: Template, data: any): void {
+    async notify(to: string | undefined, templateId: Template, data: any): Promise<void> {
         if (!to) {
             logger.warn("Cannot notify undefined recipient")
             return
         }
         const message = this.renderMessage(templateId, data);
-        this.mailService.send({ ...message, to })
+        await this.mailService.send({ ...message, to })
             .then(success => {
                 if (!success) {
                     logger.warn("User %s NOT notified of '%s'.", to, templateId);
                 }
             })
+            .catch(reason => logger.error("Failed to notify %s of '%s': %s", to, templateId, reason))
     }
 
     renderMessage(templateId: Template, data: any): Message {
@@ -49,7 +54,7 @@ export class NotificationService {
         const text = template.slice(separator + 1);
         return {
             subject: render(subject, data),
-            text: render(text, data)
+            text: render(text, data, { autoTrim: false })
         }
     }
 }
