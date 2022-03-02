@@ -15,9 +15,11 @@ import {
 import { ALICE } from '../../helpers/addresses';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
-import { now } from "moment";
+import moment, { now } from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
+
+const DECISION_TIMESTAMP = moment().toISOString()
 
 describe('createProtectionRequest', () => {
 
@@ -207,7 +209,9 @@ describe('acceptProtectionRequest', () => {
             .expect(200)
             .expect('Content-Type', /application\/json/);
 
-        notificationService.verify(instance => instance.notify(IDENTITY.email, "protection-accepted", It.IsAny<ProtectionRequestDescription>()))
+        notificationService.verify(instance => instance.notify(IDENTITY.email, "protection-accepted", It.Is<any>(data => {
+            return data.protection.decision.decisionOn === DECISION_TIMESTAMP
+        })))
     });
 });
 
@@ -218,6 +222,8 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
     protectionRequest.setup(instance => instance.accept(
         It.IsAny(), It.Is<string>(locId => locId !== undefined && locId !== null))).returns(undefined);
     const decision = new Mock<LegalOfficerDecision>();
+    decision.setup(instance => instance.decisionOn)
+        .returns(DECISION_TIMESTAMP)
     protectionRequest.setup(instance => instance.decision).returns(decision.object());
 
     const repository = new Mock<ProtectionRequestRepository>();
@@ -249,6 +255,11 @@ describe('rejectProtectionRequest', () => {
             })
             .expect(200)
             .expect('Content-Type', /application\/json/);
+
+        notificationService.verify(instance => instance.notify(IDENTITY.email, "protection-rejected", It.Is<any>(data => {
+            return data.protection.decision.rejectReason === REJECT_REASON &&
+                data.protection.decision.decisionOn === DECISION_TIMESTAMP
+        })))
     });
 });
 
@@ -256,6 +267,10 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     const protectionRequest = mockProtectionRequest();
     protectionRequest.setup(instance => instance.reject).returns(() => {});
     const decision = new Mock<LegalOfficerDecision>();
+    decision.setup(instance => instance.rejectReason)
+        .returns(REJECT_REASON)
+    decision.setup(instance => instance.decisionOn)
+        .returns(DECISION_TIMESTAMP)
     protectionRequest.setup(instance => instance.decision).returns(decision.object());
 
     const repository = new Mock<ProtectionRequestRepository>();

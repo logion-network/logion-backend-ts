@@ -214,7 +214,7 @@ export class ProtectionRequestController extends ApiController {
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted"
         this.getNotificationInfo(request.getDescription(), request.decision)
-            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info))
+            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
         return this.adapt(request);
     }
 
@@ -267,8 +267,7 @@ export class ProtectionRequestController extends ApiController {
             legalOfficerEMail: legalOfficer.userIdentity.email,
             walletUserEmail: protection.userIdentity.email,
             data: {
-                protection,
-                decision,
+                protection: { ...protection, decision },
                 legalOfficer,
                 otherLegalOfficer,
                 walletUser: protection.userIdentity,
