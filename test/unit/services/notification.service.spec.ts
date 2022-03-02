@@ -51,4 +51,17 @@ describe("NotificationService", () => {
         mailService
             .verify(instance => instance.send(It.Is<MailMessage>(mailMessage => mailMessage.to === to)))
     })
+
+    it("renders included file", () => {
+        const mailService = new Mock<MailService>().object()
+        const notificationService = new NotificationService(mailService);
+        notificationService.templatePath = "test/resources/mail";
+        const message = notificationService.renderMessage("protection-accepted", { });
+        expect(message.subject).toEqual("Your protection is accepted.")
+        expect(message.text).toEqual([
+            "Your protection is accepted.",
+            "This is the footer.",
+            ""
+        ].join("\n"))
+    })
 })

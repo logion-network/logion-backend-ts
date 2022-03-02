@@ -2,7 +2,7 @@ import { readFileSync } from 'fs';
 import { MailService } from "./mail.service";
 import { Log } from "../util/Log";
 import { injectable } from "inversify";
-import { compileTemplate, compile } from "pug";
+import { compileTemplate, compile, Options } from "pug";
 
 const { logger } = Log;
 
@@ -50,9 +50,10 @@ export class NotificationService {
             const separator = template.indexOf("\n");
             const subject = template.slice(0, separator)
             const text = template.slice(separator + 1);
+            const options:Options = { basedir: this.templatePath }
             mailTemplate = {
-                renderSubject: compile(subject, {}),
-                renderText: compile(text)
+                renderSubject: compile(subject, options),
+                renderText: compile(text, options)
             };
             this.templates.set(templateId, mailTemplate)
         }

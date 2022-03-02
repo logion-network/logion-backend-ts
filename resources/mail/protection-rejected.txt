@@ -42,8 +42,4 @@
 |
 | Please contact your Legal Officer if you want more details.
 |
-| Trustfully yours,
-|  ____ ____ ____ ____ ____ ____ 
-| ||l |||o |||g |||i |||o |||n ||
-| ||__|||__|||__|||__|||__|||__||
-| |/__\|/__\|/__\|/__\|/__\|/__\|
+include /footer.txt
