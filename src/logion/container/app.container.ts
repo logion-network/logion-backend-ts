@@ -34,6 +34,7 @@ import { CollectionRepository, CollectionFactory } from "../model/collection.mod
 import { AuthorityService } from "../services/authority.service";
 import { NotificationService } from "../services/notification.service";
 import { MailService } from "../services/mail.service";
+import { DirectoryService } from "../services/directory.service";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -66,6 +67,7 @@ container.bind(CollectionFactory).toSelf()
 container.bind(AuthorityService).toSelf()
 container.bind(NotificationService).toSelf()
 container.bind(MailService).toSelf()
+container.bind(DirectoryService).toSelf()
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();
