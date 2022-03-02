@@ -1,7 +1,9 @@
-| logion notification - protection request
+| logion notification - protection request to be reviewed
 | Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
 |
-| The following user has requested your protection:
+| Please note, for security reasons, the logion network will never send email notifications that include links to any applications.
+|
+| The following user has requested your protection, please go to your logion application and start the review and approval process:
 | __________________________________________________________
 |
 | Name:
@@ -29,15 +31,7 @@
 | __________________________________________________________
 |
 | Trustfully yours,
-|
-|       ___       ___           ___                       ___           ___
-|      /\__\     /\  \         /\  \          ___        /\  \         /\__\
-|     /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
-|    /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
-|   /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
-|  /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
-|  \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
-|   \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
-|    \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
-|     \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
-|      \/__/     \/__/         \/__/                     \/__/         \/__/
+|  ____ ____ ____ ____ ____ ____
+| ||l |||o |||g |||i |||o |||n ||
+| ||__|||__|||__|||__|||__|||__||
+| |/__\|/__\|/__\|/__\|/__\|/__\|
