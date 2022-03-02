@@ -2,9 +2,9 @@
 | Dear #{walletUser.firstName} #{walletUser.lastName},
 |
 | You receive this message because you are requesting the protection of a Legal Officer through the logion blockchain network.
-| Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
+| Please note, you can't answer this email. logion will never ask you to provide any kind of information or let you access to a web address through its email notifications.
 |
-| One of your Legal Officers, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has accepted to protect your Polkadot account set as follows: #{protection.requesterAddress}.
+| One of your Legal Officers, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has accepted to let you recover all digital assets from your Polkadot account set as follows: #{protection.requesterAddress}.
 |
 | Your logion Legal Officer details are:
 | __________________________________________________________
@@ -39,20 +39,12 @@
 | __________________________________________________________
 |
 |
-| Upon acceptance of the other Legal Officer (Bob Network), you will be able to
-| * activate your protection directly from your wallet.
-| * recover the assets from your previous account: #{protection.addressToRecover}
+| Upon acceptance of the other selected Legal Officer, you will be able, from your wallet, to:
+| * activate the protection of your new account directly
+| * recover all digital assets from your previous account (#{protection.addressToRecover}) by transfering them to the new one
 |
 | Trustfully yours,
-|
-|       ___       ___           ___                       ___           ___
-|      /\__\     /\  \         /\  \          ___        /\  \         /\__\
-|     /:/  /    /::\  \       /::\  \        /\  \      /::\  \       /::|  |
-|    /:/  /    /:/\:\  \     /:/\:\  \       \:\  \    /:/\:\  \     /:|:|  |
-|   /:/  /    /:/  \:\  \   /:/  \:\  \      /::\__\  /:/  \:\  \   /:/|:|  |__
-|  /:/__/    /:/__/ \:\__\ /:/__/_\:\__\  __/:/\/__/ /:/__/ \:\__\ /:/ |:| /\__\
-|  \:\  \    \:\  \ /:/  / \:\  /\ \/__/ /\/:/  /    \:\  \ /:/  / \/__|:|/:/  /
-|   \:\  \    \:\  /:/  /   \:\ \:\__\   \::/__/      \:\  /:/  /      |:/:/  /
-|    \:\  \    \:\/:/  /     \:\/:/  /    \:\__\       \:\/:/  /       |::/  /
-|     \:\__\    \::/  /       \::/  /      \/__/        \::/  /        /:/  /
-|      \/__/     \/__/         \/__/                     \/__/         \/__/
+|  ____ ____ ____ ____ ____ ____ 
+| ||l |||o |||g |||i |||o |||n ||
+| ||__|||__|||__|||__|||__|||__||
+| |/__\|/__\|/__\|/__\|/__\|/__\|
