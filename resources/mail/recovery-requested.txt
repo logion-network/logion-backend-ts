@@ -1,9 +1,9 @@
 | logion notification - recovery request
 | Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
 |
-| Please note, for security reasons, the logion network will never send email notifications that include links to any applications. 
-| 
-| The following user has requested your help to recover a lost account, please go to your logion application and start the review and aproval process:
+| Please note, for security reasons, the logion network will never send email notifications that include links to any applications.
+|
+| The following user has requested your help to recover a lost account, please go to your logion application and start the review and approval process:
 | __________________________________________________________
 |
 | Name:
@@ -35,7 +35,7 @@
 | __________________________________________________________
 |
 | Trustfully yours,
-|  ____ ____ ____ ____ ____ ____ 
+|  ____ ____ ____ ____ ____ ____
 | ||l |||o |||g |||i |||o |||n ||
 | ||__|||__|||__|||__|||__|||__||
 | |/__\|/__\|/__\|/__\|/__\|/__\|
