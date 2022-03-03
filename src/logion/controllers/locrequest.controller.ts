@@ -12,7 +12,8 @@ import {
     LocRequestFactory,
     LocRequestDescription,
     LocRequestAggregateRoot,
-    FetchLocRequestsSpecification
+    FetchLocRequestsSpecification,
+    LocRequestDecision
 } from "../model/locrequest.model";
 import {
     getRequestBody,
@@ -31,6 +32,8 @@ import { sha256File } from "../lib/crypto/hashing";
 import { FileDbService } from "../services/filedb.service";
 import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
+import { NotificationService } from "../services/notification.service";
+import { DirectoryService } from "../services/directory.service";
 
 const { logger } = Log;
 
@@ -84,9 +87,13 @@ export class LocRequestController extends ApiController {
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
         private protectionRequestRepository: ProtectionRequestRepository,
-        private fileDbService: FileDbService) {
+        private fileDbService: FileDbService,
+        private notificationService: NotificationService,
+        private directoryService: DirectoryService) {
         super();
     }
+
+    private readonly ownerAddress: string = process.env.OWNER!
 
     static createLocRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request"].post!;
@@ -114,20 +121,27 @@ export class LocRequestController extends ApiController {
             userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
         let request: LocRequestAggregateRoot;
+        let notifyLO: boolean
         if (authenticatedUser.isNodeOwner()) {
             request = await this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description,
             });
+            notifyLO = false
         } else {
             request = await this.locRequestFactory.newLocRequest({
                 id: uuid(),
                 description
             });
+            notifyLO = true
         }
         await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
+        if (notifyLO && userIdentity) {
+            this.getNotificationInfo(request.getDescription(), userIdentity)
+                .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
+        }
         return this.toView(request, userIdentity);
     }
 
@@ -360,6 +374,11 @@ export class LocRequestController extends ApiController {
             .requireNodeOwner();
         request.reject(rejectLocRequestView.rejectReason!, moment());
         await this.locRequestRepository.save(request)
+        const userIdentity = await this.findUserIdentity(request)
+        if (userIdentity) {
+            this.getNotificationInfo(request.getDescription(), userIdentity, request.getDecision())
+                .then(info => this.notificationService.notify(info.walletUserEmail, "loc-rejected", info.data))
+        }
     }
 
     static acceptLocRequest(spec: OpenAPIV3.Document) {
@@ -378,6 +397,11 @@ export class LocRequestController extends ApiController {
             .requireNodeOwner();
         request.accept(moment());
         await this.locRequestRepository.save(request)
+        const userIdentity = await this.findUserIdentity(request)
+        if (userIdentity) {
+            this.getNotificationInfo(request.getDescription(), userIdentity, request.getDecision())
+                .then(info => this.notificationService.notify(info.walletUserEmail, "loc-accepted", info.data))
+        }
     }
 
     static addFile(spec: OpenAPIV3.Document) {
@@ -696,5 +720,20 @@ export class LocRequestController extends ApiController {
         await this.locRequestRepository.save(request);
 
         this.response.sendStatus(204);
+    }
+
+    private async getNotificationInfo(loc: LocRequestDescription, userIdentity: UserIdentity, decision?: LocRequestDecision):
+        Promise<{ legalOfficerEMail: string, walletUserEmail: string, data: any }> {
+
+        const legalOfficer = await this.directoryService.get(this.ownerAddress)
+        return {
+            legalOfficerEMail: legalOfficer.userIdentity.email,
+            walletUserEmail: userIdentity.email,
+            data: {
+                loc: { ...loc, decision },
+                legalOfficer,
+                walletUser: userIdentity,
+            }
+        }
     }
 }

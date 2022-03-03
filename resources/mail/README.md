@@ -6,7 +6,7 @@ contain only variables, which are replaced at runtime with their respective valu
 
 ## Available variables
 
-All possible variables are available (for copy/paste) in this template: [all-documented-vars.txt](all-documented-vars.txt)
+All possible variables are available (for copy/paste) in this template: [all-documented-vars.pug](all-documented-vars.pug)
 
 ### Legal Officer
     legalOfficer.address
@@ -40,7 +40,15 @@ In the context of a protection (or recovery), all the variables defined above ma
     protection.decision.locId
 
 ### LOC
-(TBD)
+    loc.requesterAddress
+    loc.requesterIdentityLoc
+    loc.ownerAddress
+    loc.description
+    loc.createdOn
+    loc.locType
+
+    loc.decision.decisionOn
+    loc.decision.rejectReason
 
 ### Wallet User
 #### Identity

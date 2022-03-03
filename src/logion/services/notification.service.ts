@@ -13,6 +13,9 @@ export const templateValues = [
     "recovery-requested",
     "recovery-accepted",
     "recovery-rejected",
+    "loc-requested",
+    "loc-accepted",
+    "loc-rejected",
     "all-documented-vars"
 ] as const;
 
@@ -44,13 +47,16 @@ export class NotificationService {
     private getMailTemplate(templateId: Template): MailTemplate {
         let mailTemplate = this.templates.get(templateId)
         if (!mailTemplate) {
-            const path = `${ this.templatePath }/${ templateId }.txt`;
+            const path = `${ this.templatePath }/${ templateId }.pug`;
             logger.info("Compiling template %s", path)
             const template = readFileSync(path).toString()
             const separator = template.indexOf("\n");
             const subject = template.slice(0, separator)
             const text = template.slice(separator + 1);
-            const options:Options = { basedir: this.templatePath }
+            const options:Options = {
+                basedir: this.templatePath,
+                filename: `${ templateId }.pug`
+            }
             mailTemplate = {
                 renderSubject: compile(subject, options),
                 renderText: compile(text, options)
