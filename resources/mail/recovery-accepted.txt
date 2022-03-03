@@ -43,8 +43,4 @@
 | * activate the protection of your new account directly
 | * recover all digital assets from your previous account (#{protection.addressToRecover}) by transfering them to the new one
 |
-| Trustfully yours,
-|  ____ ____ ____ ____ ____ ____ 
-| ||l |||o |||g |||i |||o |||n ||
-| ||__|||__|||__|||__|||__|||__||
-| |/__\|/__\|/__\|/__\|/__\|/__\|
+include /footer.txt
