@@ -18,6 +18,9 @@ import {
     ProtectionRequestAggregateRoot
 } from "../../../src/logion/model/protectionrequest.model";
 import { FileDbService } from "../../../src/logion/services/filedb.service";
+import { NotificationService, Template } from "../../../src/logion/services/notification.service";
+import { DirectoryService } from "../../../src/logion/services/directory.service";
+import { notifiedLegalOfficer } from "../services/notification-test-data";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -95,6 +98,9 @@ const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction")
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 const VOID_REASON = "Expired";
+const DECISION_TIMESTAMP = moment().toISOString()
+
+let notificationService: Mock<NotificationService>;
 
 describe('LocRequestController', () => {
 
@@ -242,6 +248,11 @@ describe('LocRequestController', () => {
                 expect(userIdentity.email).toBe("scott.tiger@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+6789");
             });
+
+        notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
+            return data.loc.locType === locType
+        })))
+
     }
 
     it('succeeds to create Transaction loc request with existing protection request', async () => {
@@ -336,6 +347,11 @@ describe('LocRequestController', () => {
                 rejectReason: REJECT_REASON
             })
             .expect(200)
+
+        notificationService.verify(instance => instance.notify(testUserIdentity.email, "loc-rejected", It.Is<any>(data => {
+            return data.loc.decision.rejectReason === REJECT_REASON &&
+                data.loc.decision.decisionOn === DECISION_TIMESTAMP
+        })))
     })
 
     it('accepts a requested loc', async () => {
@@ -343,6 +359,10 @@ describe('LocRequestController', () => {
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/accept`)
             .expect(200)
+
+        notificationService.verify(instance => instance.notify(testUserIdentity.email, "loc-accepted", It.Is<any>(data => {
+            return data.loc.decision.decisionOn === DECISION_TIMESTAMP
+        })))
     })
 
     it('adds file to loc', async () => {
@@ -529,17 +549,19 @@ function mockModelForReject(container: Container): void {
     const request = mockRequest("REQUESTED", testData);
     request.setup(instance => instance.reject(It.Is<string>(reason => reason === REJECT_REASON), It.IsAny<Moment>()))
         .returns();
+    request.setup(instance => instance.getDecision())
+        .returns({ decisionOn: DECISION_TIMESTAMP, rejectReason: REJECT_REASON })
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
         .returns(Promise.resolve());
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForAccept(container: Container): void {
@@ -548,17 +570,19 @@ function mockModelForAccept(container: Container): void {
     const request = mockRequest("REQUESTED", testData);
     request.setup(instance => instance.accept(It.Is<string>(It.IsAny<Moment>())))
         .returns();
+    request.setup(instance => instance.getDecision())
+        .returns({ decisionOn: DECISION_TIMESTAMP })
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
         .returns(Promise.resolve());
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForCreation(container: Container, locType: LocType, hasProtection: boolean = false): void {
@@ -588,6 +612,7 @@ function mockModelForCreation(container: Container, locType: LocType, hasProtect
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForCreationWithIdentityLoc(container: Container): void {
@@ -614,6 +639,7 @@ function mockModelForCreationWithIdentityLoc(container: Container): void {
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepository {
@@ -685,6 +711,7 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 const SOME_DATA = 'some data';
@@ -716,6 +743,7 @@ function mockModelForAddFile(container: Container): void {
     fileDbService.setup(instance => instance.importFile(It.IsAny<string>(), SOME_DATA_HASH))
         .returns(Promise.resolve(42));
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForDownloadFile(container: Container): void {
@@ -740,6 +768,7 @@ function mockModelForDownloadFile(container: Container): void {
     fileDbService.setup(instance => instance.exportFile(SOME_OID, filePath))
         .returns(Promise.resolve());
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 const SOME_OID = 123456;
@@ -781,6 +810,7 @@ function mockModelForGetSingle(container: Container): void {
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForDeleteFile(container: Container) {
@@ -801,6 +831,7 @@ function mockModelForDeleteFile(container: Container) {
     const fileDbService = new Mock<FileDbService>();
     fileDbService.setup(instance => instance.deleteFile(SOME_OID)).returns(Promise.resolve());
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForConfirmFile(container: Container) {
@@ -820,6 +851,7 @@ function mockModelForConfirmFile(container: Container) {
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 const SOME_DATA_NAME = "data name with exotic char !é\"/&'"
@@ -868,6 +900,7 @@ function mockModelForAllItems(container: Container, request: Mock<LocRequestAggr
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForAddLink(container: Container, request: Mock<LocRequestAggregateRoot>) {
@@ -889,6 +922,7 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForPreClose(container: Container) {
@@ -908,6 +942,7 @@ function mockModelForPreClose(container: Container) {
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
 
 function mockModelForPreVoid(container: Container) {
@@ -927,4 +962,20 @@ function mockModelForPreVoid(container: Container) {
 
     const fileDbService = new Mock<FileDbService>();
     container.bind(FileDbService).toConstantValue(fileDbService.object());
+    mockNotificationAndDirectoryService(container)
 }
+
+function mockNotificationAndDirectoryService(container: Container) {
+    notificationService = new Mock<NotificationService>();
+    notificationService
+        .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
+        .returns(Promise.resolve())
+    container.bind(NotificationService).toConstantValue(notificationService.object())
+
+    const directoryService = new Mock<DirectoryService>();
+    directoryService
+        .setup(instance => instance.get(It.IsAny<string>()))
+        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+    container.bind(DirectoryService).toConstantValue(directoryService.object())
+}
+

@@ -1,21 +1,17 @@
-| logion notification - recovery request
+| logion notification - protection request to be reviewed
 | Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
 |
 | Please note, for security reasons, the logion network will never send email notifications that include links to any applications.
 |
-| The following user has requested your help to recover a lost account, please go to your logion application and start the review and approval process:
+| The following user has requested your protection, please go to your logion application and start the review and approval process:
 | __________________________________________________________
 |
 | Name:
 | *******
 | #{walletUser.firstName} #{walletUser.lastName}
 |
-| Identification key to recover:
-| ***********************************
-| #{protection.addressToRecover}
-|
-| New Identification key:
-| **************************
+| Identification key:
+| ********************
 | #{protection.requesterAddress}
 |
 | Email:
@@ -34,4 +30,4 @@
 | #{walletUserPostalAddress.country}
 | __________________________________________________________
 |
-include /footer.txt
+include /footer.pug

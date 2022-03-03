@@ -1,0 +1,45 @@
+| logion notification - protection request
+| Dear #{walletUser.firstName} #{walletUser.lastName},
+|
+| You receive this message because you are requesting the protection of a Legal Officer through the logion blockchain network.
+| Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
+|
+| One of your Legal Officers, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has refused to protect your Polkadot account set as follows: #{protection.requesterAddress}, for the following reason:
+| #{protection.decision.rejectReason}
+|
+| Your logion Legal Officer details are:
+| __________________________________________________________
+|
+| Name:
+| *******
+| #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}
+|
+| Identification key:
+| ********************
+| #{legalOfficer.address}
+|
+| Email:
+| *******
+| #{legalOfficer.userIdentity.email}
+|
+| Telephone:
+| ************
+| #{legalOfficer.userIdentity.phoneNumber}
+|
+| Address:
+| *********
+| #{legalOfficer.postalAddress.line1}
+| #{legalOfficer.postalAddress.line2}
+| #{legalOfficer.postalAddress.postalCode} #{legalOfficer.postalAddress.city}
+| #{legalOfficer.postalAddress.country}
+|
+| Additional information:
+| *************************
+| #{legalOfficer.additionalDetails}
+|
+| __________________________________________________________
+|
+|
+| Please contact your Legal Officer if you want more details.
+|
+include /footer.pug

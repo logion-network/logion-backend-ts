@@ -1,6 +1,7 @@
 import { ProtectionRequestDescription, LegalOfficerDecision } from "../../../src/logion/model/protectionrequest.model";
 import { BOB, ALICE } from "../../helpers/addresses";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model";
+import { LocRequestDescription, LocRequestDecision } from "../../../src/logion/model/locrequest.model";
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: Partial<LegalOfficerDecision> } = {
     requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
@@ -50,6 +51,20 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
     };
 }
 
+export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDecision } {
+    return {
+        ownerAddress: ALICE,
+        description: "Some LOC description",
+        createdOn: "2021-06-10T16:25:23.668294",
+        locType: "Transaction",
+        decision: {
+            decisionOn: "2021-06-10T16:25:23.668294",
+            rejectReason: "Failed to provide some data",
+        },
+        userIdentity: undefined
+    }
+}
+
 export function notificationData() {
     const lo = notifiedLegalOfficer(ALICE);
     const otherLo = notifiedLegalOfficer(BOB);
@@ -58,7 +73,8 @@ export function notificationData() {
         legalOfficer: lo,
         otherLegalOfficer: otherLo,
         walletUser: notifiedProtection.userIdentity,
-        walletUserPostalAddress: notifiedProtection.userPostalAddress
+        walletUserPostalAddress: notifiedProtection.userPostalAddress,
+        loc: notifiedLOC()
     }
 }
 

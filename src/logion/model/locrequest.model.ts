@@ -36,6 +36,11 @@ export interface LocRequestDescription {
     readonly locType: LocType;
 }
 
+export interface LocRequestDecision {
+    readonly decisionOn: string;
+    readonly rejectReason?: string;
+}
+
 export interface FileDescription {
     readonly name: string;
     readonly hash: string;
@@ -112,6 +117,15 @@ export class LocRequestAggregateRoot {
             createdOn: this.createdOn!,
             userIdentity,
             locType: this.locType!,
+        }
+    }
+
+    getDecision(): LocRequestDecision | undefined {
+        if (this.status !== 'REQUESTED') {
+            return {
+                decisionOn: this.decisionOn!,
+                rejectReason: this.status === 'REJECTED' ? this.rejectReason! : undefined
+            }
         }
     }
 

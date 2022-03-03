@@ -1,0 +1,42 @@
+| logion notification - loc request to be reviewed
+| Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
+|
+| Please note, for security reasons, the logion network will never send email notifications that include links to any applications.
+|
+| The following user has requested a Legal Officer Case, please go to your logion application and start the review and approval process:
+| __________________________________________________________
+|
+| Type:
+| *******
+| #{loc.locType}
+|
+| Description:
+| **************
+| #{loc.description}
+|
+| Name:
+| *******
+| #{walletUser.firstName} #{walletUser.lastName}
+|
+|
+if loc.requesterAddress
+    | Identification key:
+    | *******************
+    | #{loc.requesterAddress}
+else if loc.requesterIdentityLoc
+    | Identification LOC:
+    | *******************
+    | #{loc.requesterIdentityLoc}
+|
+|
+| Email:
+| *******
+| #{walletUser.email}
+|
+| Telephone:
+| ************
+| #{walletUser.phoneNumber}
+|
+| __________________________________________________________
+|
+include /footer.pug
