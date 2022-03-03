@@ -8,11 +8,16 @@ import { tmpdir } from 'os';
 describe("NotificationService", () => {
 
     const to = "someone@example.org";
-    const mailService = new Mock<MailService>()
-    mailService
-        .setup(instance => instance.send(It.Is<MailMessage>(mailMessage => mailMessage.to === to)))
-        .returns(Promise.resolve(true))
-    const notificationService = new NotificationService(mailService.object());
+    let mailService: Mock<MailService>;
+    let notificationService: NotificationService;
+
+    beforeEach(() => {
+        mailService = new Mock<MailService>()
+        mailService
+            .setup(instance => instance.send(It.Is<MailMessage>(mailMessage => mailMessage.to === to)))
+            .returns(Promise.resolve(true))
+        notificationService = new NotificationService(mailService.object());
+    })
 
     it("renders message", () => {
 
@@ -90,7 +95,7 @@ describe("NotificationService", () => {
     })
 
     it("renders conditional (else if)", () => {
-
+        notificationService.templatePath = "test/resources/mail";
         const message = notificationService.renderMessage(
             "loc-requested",
             { loc: { requesterIdentityLoc: "81342986-8999-4d1e-86fb-d0ce96566708" } });
