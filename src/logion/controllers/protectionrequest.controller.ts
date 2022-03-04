@@ -8,7 +8,9 @@ import {
     ProtectionRequestRepository,
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
-    ProtectionRequestFactory, ProtectionRequestDescription, LegalOfficerDecision,
+    ProtectionRequestFactory,
+    ProtectionRequestDescription,
+    LegalOfficerDecisionDescription,
 } from '../model/protectionrequest.model';
 
 import { components } from './components';
@@ -184,7 +186,7 @@ export class ProtectionRequestController extends ApiController {
         request.reject(body.rejectReason!, moment());
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected"
-        this.getNotificationInfo(request.getDescription(), request.decision)
+        this.getNotificationInfo(request.getDescription(), request.getDecision())
             .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
         return this.adapt(request);
     }
@@ -213,7 +215,7 @@ export class ProtectionRequestController extends ApiController {
         request.accept(moment(), body.locId!);
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted"
-        this.getNotificationInfo(request.getDescription(), request.decision)
+        this.getNotificationInfo(request.getDescription(), request.getDecision())
             .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
         return this.adapt(request);
     }
@@ -258,7 +260,7 @@ export class ProtectionRequestController extends ApiController {
         };
     }
 
-    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecision):
+    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, walletUserEmail: string, data: any }> {
 
         const legalOfficer = await this.directoryService.get(this.ownerAddress)
