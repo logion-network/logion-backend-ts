@@ -16,6 +16,7 @@ export const templateValues = [
     "loc-requested",
     "loc-accepted",
     "loc-rejected",
+    "loc-created",
     "all-documented-vars"
 ] as const;
 

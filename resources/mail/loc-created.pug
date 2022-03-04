@@ -1,0 +1,43 @@
+| logion notification - loc request
+| Dear #{walletUser.firstName} #{walletUser.lastName},
+|
+| You receive this message because you are requesting to protect your #{loc.locType}.
+| Please note, you can't answer this email. logion will never ask you to provide any kind of information or access to a web address through its email notifications.
+|
+| Your Legal Officer, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has accepted to protect your #{loc.locType}, and has created the related Legal Officer Case.
+|
+| Your logion Legal Officer details are:
+| __________________________________________________________
+|
+| Name:
+| *******
+| #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}
+|
+| Identification key:
+| ********************
+| #{legalOfficer.address}
+|
+| Email:
+| *******
+| #{legalOfficer.userIdentity.email}
+|
+| Telephone:
+| ************
+| #{legalOfficer.userIdentity.phoneNumber}
+|
+| Address:
+| *********
+| #{legalOfficer.postalAddress.line1}
+| #{legalOfficer.postalAddress.line2}
+| #{legalOfficer.postalAddress.postalCode} #{legalOfficer.postalAddress.city}
+| #{legalOfficer.postalAddress.country}
+|
+| Additional information:
+| *************************
+| #{legalOfficer.additionalDetails}
+|
+| __________________________________________________________
+|
+|
+|
+include /footer.pug
