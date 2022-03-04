@@ -121,26 +121,28 @@ export class LocRequestController extends ApiController {
             userIdentity: this.fromUserView(createLocRequestView.userIdentity)
         }
         let request: LocRequestAggregateRoot;
-        let notifyLO: boolean
         if (authenticatedUser.isNodeOwner()) {
             request = await this.locRequestFactory.newOpenLoc({
                 id: uuid(),
                 description,
             });
-            notifyLO = false
         } else {
             request = await this.locRequestFactory.newLocRequest({
                 id: uuid(),
                 description
             });
-            notifyLO = true
         }
         await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
-        if (notifyLO && userIdentity) {
-            this.getNotificationInfo(request.getDescription(), userIdentity)
-                .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
+        if (userIdentity) {
+            if (authenticatedUser.isNodeOwner()) {
+                this.getNotificationInfo(request.getDescription(), userIdentity)
+                    .then(info => this.notificationService.notify(info.walletUserEmail, "loc-accepted", info.data))
+            } else {
+                this.getNotificationInfo(request.getDescription(), userIdentity)
+                    .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
+            }
         }
         return this.toView(request, userIdentity);
     }
