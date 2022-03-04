@@ -163,7 +163,7 @@ describe('LocRequestController', () => {
                 expect(userIdentity.phoneNumber).toBe("+6789");
             });
 
-        notificationService.verify(instance => instance.notify(testUserIdentity.email, "loc-accepted", It.Is<any>(data => {
+        notificationService.verify(instance => instance.notify(testUserIdentity.email, "loc-created", It.Is<any>(data => {
             return data.loc.locType === locType
         })))
     }
@@ -199,7 +199,7 @@ describe('LocRequestController', () => {
                 expect(userIdentity.phoneNumber).toBe("+1234");
             });
 
-        notificationService.verify(instance => instance.notify("john.doe@logion.network", "loc-accepted", It.Is<any>(data => {
+        notificationService.verify(instance => instance.notify("john.doe@logion.network", "loc-created", It.Is<any>(data => {
             return data.loc.locType === locType
         })))
     }
@@ -237,7 +237,7 @@ describe('LocRequestController', () => {
                 expect(userIdentity.phoneNumber).toBe("+0101");
             });
 
-        notificationService.verify(instance => instance.notify("felix@logion.network", "loc-accepted", It.Is<any>(data => {
+        notificationService.verify(instance => instance.notify("felix@logion.network", "loc-created", It.Is<any>(data => {
             return data.loc.locType === "Transaction"
         })))
     });

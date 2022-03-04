@@ -138,7 +138,7 @@ export class LocRequestController extends ApiController {
         if (userIdentity) {
             if (authenticatedUser.isNodeOwner()) {
                 this.getNotificationInfo(request.getDescription(), userIdentity)
-                    .then(info => this.notificationService.notify(info.walletUserEmail, "loc-accepted", info.data))
+                    .then(info => this.notificationService.notify(info.walletUserEmail, "loc-created", info.data))
             } else {
                 this.getNotificationInfo(request.getDescription(), userIdentity)
                     .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
