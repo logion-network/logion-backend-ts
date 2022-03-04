@@ -48,7 +48,7 @@ describe("NotificationService", () => {
     })
 
     it("renders all templates to /tmp", () => {
-        const dir = mkdtempSync(tmpdir() + "/logion-mail")
+        const dir = mkdtempSync(tmpdir() + "/logion-mail-")
         console.log("Generating all templates to %s", dir)
         notificationService.templatePath = "resources/mail";
         for (let i = 0; i < templateValues.length; i++) {
