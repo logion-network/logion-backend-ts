@@ -7,37 +7,7 @@
 | Your Legal Officer, #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}, has refused to protect your transaction for the following reason:
 | #{loc.decision.rejectReason}
 |
-| Your logion Legal Officer details are:
-| __________________________________________________________
-|
-| Name:
-| *******
-| #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName}
-|
-| Identification key:
-| ********************
-| #{legalOfficer.address}
-|
-| Email:
-| *******
-| #{legalOfficer.userIdentity.email}
-|
-| Telephone:
-| ************
-| #{legalOfficer.userIdentity.phoneNumber}
-|
-| Address:
-| *********
-| #{legalOfficer.postalAddress.line1}
-| #{legalOfficer.postalAddress.line2}
-| #{legalOfficer.postalAddress.postalCode} #{legalOfficer.postalAddress.city}
-| #{legalOfficer.postalAddress.country}
-|
-| Additional information:
-| *************************
-| #{legalOfficer.additionalDetails}
-|
-| __________________________________________________________
+include /legal-officer-details.pug
 |
 |Pease contact your Legal Officer for more information.
 |
