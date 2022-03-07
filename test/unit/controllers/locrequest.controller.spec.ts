@@ -126,10 +126,6 @@ describe('LocRequestController', () => {
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
             });
-
-        notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
-            return data.loc.locType === locType
-        })))
     }
 
     it('succeeds to create a Transaction loc request with embedded user identity', async () => {
@@ -162,10 +158,6 @@ describe('LocRequestController', () => {
                 expect(userIdentity.email).toBe("scott.tiger@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+6789");
             });
-
-        notificationService.verify(instance => instance.notify(testUserIdentity.email, "loc-created", It.Is<any>(data => {
-            return data.loc.locType === locType
-        })))
     }
 
     it('succeeds to create open Transaction loc with existing protection request', async () => {
@@ -198,10 +190,6 @@ describe('LocRequestController', () => {
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
             });
-
-        notificationService.verify(instance => instance.notify("john.doe@logion.network", "loc-created", It.Is<any>(data => {
-            return data.loc.locType === locType
-        })))
     }
 
     it('succeeds to create open Transaction loc with embedded user identity', async () => {
@@ -236,10 +224,6 @@ describe('LocRequestController', () => {
                 expect(userIdentity.email).toBe("felix@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+0101");
             });
-
-        notificationService.verify(instance => instance.notify("felix@logion.network", "loc-created", It.Is<any>(data => {
-            return data.loc.locType === "Transaction"
-        })))
     });
 
     async function testLocRequestCreation(locType: LocType) {
@@ -268,6 +252,7 @@ describe('LocRequestController', () => {
         notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
             return data.loc.locType === locType
         })))
+
     }
 
     it('succeeds to create Transaction loc request with existing protection request', async () => {

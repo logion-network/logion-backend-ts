@@ -135,14 +135,9 @@ export class LocRequestController extends ApiController {
         await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
         const userIdentity = await this.findUserIdentity(request);
-        if (userIdentity) {
-            if (authenticatedUser.isNodeOwner()) {
-                this.getNotificationInfo(request.getDescription(), userIdentity)
-                    .then(info => this.notificationService.notify(info.walletUserEmail, "loc-created", info.data))
-            } else {
-                this.getNotificationInfo(request.getDescription(), userIdentity)
-                    .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
-            }
+        if (!authenticatedUser.isNodeOwner() && userIdentity) {
+            this.getNotificationInfo(request.getDescription(), userIdentity)
+                .then(info => this.notificationService.notify(info.legalOfficerEMail, "loc-requested", info.data))
         }
         return this.toView(request, userIdentity);
     }
