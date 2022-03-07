@@ -6,6 +6,8 @@ import { compileTemplate, compile, Options } from "pug";
 
 const { logger } = Log;
 
+export type NotificationRecipient = "WalletUser" | "LegalOfficer";
+
 export const templateValues = [
     "protection-requested",
     "protection-accepted",
