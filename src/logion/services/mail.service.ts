@@ -25,11 +25,11 @@ export class MailService {
                 pass: process.env.SMTP_PASSWD,
                 method: 'login'
             },
-            secure: true,
+            secure: process.env.SMTP_SECURE !== "false",
             logger: process.env.SMTP_LOGGER === "true"
         }
         if (this.enabled) {
-            logger.info("MailService running with smtp server: %s", this.transportOptions.host)
+            logger.info("MailService running with smtp server: %s:%s", this.transportOptions.host, this.transportOptions.port)
         } else {
             logger.warn("MailService is disabled")
         }

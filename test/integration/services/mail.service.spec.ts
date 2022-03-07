@@ -20,5 +20,5 @@ describe("MailService", () => {
             console.log("Please review the sample config in '.env.sample' and adapt your own '.env' accordingly.")
         }
         expect(success).toBeTrue()
-    })
+    }, 30000)
 })
