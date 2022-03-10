@@ -9,17 +9,18 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot,
     NewProtectionRequestParameters,
-    LegalOfficerDecision,
     ProtectionRequestDescription,
+    LegalOfficerDecision,
+    LegalOfficerDecisionDescription,
 } from '../../../src/logion/model/protectionrequest.model';
 import { ALICE } from '../../helpers/addresses';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
-import moment, { now } from "moment";
+import { now } from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
 
-const DECISION_TIMESTAMP = moment().toISOString()
+const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294"
 
 describe('createProtectionRequest', () => {
 
@@ -100,8 +101,8 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
 
     const factory = new Mock<ProtectionRequestFactory>();
     const root = mockProtectionRequest()
-    const decision = new Mock<LegalOfficerDecision>();
-    root.setup(instance => instance.decision).returns(decision.object());
+    mockDecision(root, undefined)
+
     factory.setup(instance => instance.newProtectionRequest(
             It.Is<NewProtectionRequestParameters>(params =>
                 params.description.addressToRecover === addressToRecover
@@ -176,11 +177,11 @@ function mockModelForFetch(container: Container): void {
 
     const protectionRequest = mockProtectionRequest()
 
-    const decision = new Mock<LegalOfficerDecision>();
-    decision.setup(instance => instance.rejectReason).returns(REJECT_REASON);
-    decision.setup(instance => instance.decisionOn).returns(TIMESTAMP);
+    mockDecision(protectionRequest, {
+        rejectReason: REJECT_REASON,
+        decisionOn: DECISION_TIMESTAMP
+    })
 
-    protectionRequest.setup(instance => instance.decision).returns(decision.object());
     protectionRequest.setup(instance => instance.createdOn).returns(TIMESTAMP);
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
@@ -221,10 +222,8 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
     const protectionRequest = mockProtectionRequest();
     protectionRequest.setup(instance => instance.accept(
         It.IsAny(), It.Is<string>(locId => locId !== undefined && locId !== null))).returns(undefined);
-    const decision = new Mock<LegalOfficerDecision>();
-    decision.setup(instance => instance.decisionOn)
-        .returns(DECISION_TIMESTAMP)
-    protectionRequest.setup(instance => instance.decision).returns(decision.object());
+
+    mockDecision(protectionRequest, { decisionOn: DECISION_TIMESTAMP} )
 
     const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
@@ -263,15 +262,30 @@ describe('rejectProtectionRequest', () => {
     });
 });
 
+function mockDecision(protectionRequest: Mock<ProtectionRequestAggregateRoot>, decisionDescription: LegalOfficerDecisionDescription | undefined) {
+    const decision = new Mock<LegalOfficerDecision>();
+    if (decisionDescription) {
+        decision.setup(instance => instance.rejectReason)
+            .returns(decisionDescription.rejectReason)
+        decision.setup(instance => instance.decisionOn)
+            .returns(decisionDescription.decisionOn)
+        decision.setup(instance => instance.locId)
+            .returns(decisionDescription.locId)
+    }
+    protectionRequest.setup(instance => instance.decision)
+        .returns(decision.object());
+    protectionRequest.setup(instance => instance.getDecision())
+        .returns(decisionDescription)
+}
+
 function mockModelForReject(container: Container, verifies: boolean): void {
     const protectionRequest = mockProtectionRequest();
     protectionRequest.setup(instance => instance.reject).returns(() => {});
-    const decision = new Mock<LegalOfficerDecision>();
-    decision.setup(instance => instance.rejectReason)
-        .returns(REJECT_REASON)
-    decision.setup(instance => instance.decisionOn)
-        .returns(DECISION_TIMESTAMP)
-    protectionRequest.setup(instance => instance.decision).returns(decision.object());
+
+    mockDecision(protectionRequest, {
+        rejectReason: REJECT_REASON,
+        decisionOn: DECISION_TIMESTAMP
+    })
 
     const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))

@@ -1,10 +1,13 @@
-import { ProtectionRequestDescription, LegalOfficerDecision } from "../../../src/logion/model/protectionrequest.model";
+import {
+    ProtectionRequestDescription,
+    LegalOfficerDecisionDescription
+} from "../../../src/logion/model/protectionrequest.model";
 import { BOB, ALICE } from "../../helpers/addresses";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model";
 import { LocRequestDescription, LocRequestDecision } from "../../../src/logion/model/locrequest.model";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model";
 
-export const notifiedProtection: ProtectionRequestDescription & { decision: Partial<LegalOfficerDecision> } = {
+export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
     otherLegalOfficerAddress: BOB,
     addressToRecover: "5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn",

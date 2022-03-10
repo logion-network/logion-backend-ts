@@ -153,6 +153,18 @@ export class ProtectionRequestAggregateRoot {
             addressToRecover: this.addressToRecover || null,
         };
     }
+
+    getDecision(): LegalOfficerDecisionDescription | undefined {
+        if (!this.decision || this.decision.decisionOn === undefined) {
+            return undefined
+        }
+        const { decisionOn, locId, rejectReason} = this.decision
+        return {
+            decisionOn,
+            rejectReason,
+            locId
+        }
+    }
 }
 
 export class FetchProtectionRequestsSpecification {
@@ -232,6 +244,12 @@ export interface ProtectionRequestDescription {
     readonly createdOn: string,
     readonly isRecovery: boolean,
     readonly addressToRecover: string | null,
+}
+
+export interface LegalOfficerDecisionDescription {
+    readonly decisionOn: string;
+    readonly rejectReason?: string;
+    readonly locId?: string;
 }
 
 export interface NewProtectionRequestParameters {

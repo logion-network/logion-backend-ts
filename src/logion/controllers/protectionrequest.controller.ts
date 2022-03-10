@@ -8,7 +8,9 @@ import {
     ProtectionRequestRepository,
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
-    ProtectionRequestFactory, ProtectionRequestDescription, LegalOfficerDecision,
+    ProtectionRequestFactory,
+    ProtectionRequestDescription,
+    LegalOfficerDecisionDescription,
 } from '../model/protectionrequest.model';
 
 import { components } from './components';
@@ -16,9 +18,10 @@ import { components } from './components';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
-import { NotificationService, Template } from "../services/notification.service";
+import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { badRequest } from "./errors";
 import { DirectoryService } from "../services/directory.service";
+import { Log } from "../util/Log";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -27,6 +30,8 @@ type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectio
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
 type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
+
+const { logger } = Log;
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Protection Requests';
@@ -99,8 +104,7 @@ export class ProtectionRequestController extends ApiController {
 
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
-        this.getNotificationInfo(request.getDescription())
-            .then(info => this.notificationService.notify(info.legalOfficerEMail, templateId, info.data))
+        this.notify("LegalOfficer", templateId, request.getDescription())
         return this.adapt(request);
     }
 
@@ -184,8 +188,7 @@ export class ProtectionRequestController extends ApiController {
         request.reject(body.rejectReason!, moment());
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected"
-        this.getNotificationInfo(request.getDescription(), request.decision)
-            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
+        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision())
         return this.adapt(request);
     }
 
@@ -213,8 +216,7 @@ export class ProtectionRequestController extends ApiController {
         request.accept(moment(), body.locId!);
         await this.protectionRequestRepository.save(request);
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted"
-        this.getNotificationInfo(request.getDescription(), request.decision)
-            .then(info => this.notificationService.notify(info.walletUserEmail, templateId, info.data))
+        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision())
         return this.adapt(request);
     }
 
@@ -258,14 +260,25 @@ export class ProtectionRequestController extends ApiController {
         };
     }
 
-    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecision):
-        Promise<{ legalOfficerEMail: string, walletUserEmail: string, data: any }> {
+    private notify(recipient: NotificationRecipient, templateId: Template, protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription): void {
+        this.getNotificationInfo(protection, decision)
+            .then(info => {
+                const to = recipient === "WalletUser" ? protection.userIdentity.email : info.legalOfficerEMail
+                return this.notificationService.notify(to, templateId, info.data)
+                    .catch(reason => logger.warn("Failed to send email '%s' to %s : %s", templateId, to, reason))
+            })
+            .catch(reason =>
+                logger.warn("Failed to retrieve notification info from directory: %s. Mail '%' not sent.", reason, templateId)
+            )
+    }
+
+    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription):
+        Promise<{ legalOfficerEMail: string, data: any }> {
 
         const legalOfficer = await this.directoryService.get(this.ownerAddress)
         const otherLegalOfficer = await this.directoryService.get(protection.otherLegalOfficerAddress)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
-            walletUserEmail: protection.userIdentity.email,
             data: {
                 protection: { ...protection, decision },
                 legalOfficer,
