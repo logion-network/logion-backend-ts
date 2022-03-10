@@ -48,16 +48,6 @@ describe('TransactionController', () => {
                 expect(response.body.transactions[1].error.details).toBe("someDetails");
             });
     });
-
-    it('fetchTransactions fails on authentication failure', async () => {
-        const app = setupApp(TransactionController, mockModelForFetch, false);
-
-        await request(app)
-            .put('/api/transaction')
-            .send({ address: ALICE })
-            .expect(401);
-
-    })
 });
 
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
