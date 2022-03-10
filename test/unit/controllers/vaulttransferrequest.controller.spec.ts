@@ -110,7 +110,7 @@ describe('VaultTransferRequestController', () => {
             .expect('Content-Type', /application\/json/);
 
         notificationService.verify(instance => instance.notify(IDENTITY.email, "vault-transfer-accepted", It.Is<any>(data => {
-            return data.protection.decision.decisionOn === DECISION_TIMESTAMP
+            return data.vaultTransfer.decision.decisionOn === DECISION_TIMESTAMP
         })))
     });
 
@@ -127,8 +127,8 @@ describe('VaultTransferRequestController', () => {
             .expect('Content-Type', /application\/json/);
 
         notificationService.verify(instance => instance.notify(IDENTITY.email, "vault-transfer-rejected", It.Is<any>(data => {
-            return data.protection.decision.rejectReason === REJECT_REASON &&
-                data.protection.decision.decisionOn === DECISION_TIMESTAMP
+            return data.vaultTransfer.decision.rejectReason === REJECT_REASON &&
+                data.vaultTransfer.decision.decisionOn === DECISION_TIMESTAMP
         })))
     });
 });

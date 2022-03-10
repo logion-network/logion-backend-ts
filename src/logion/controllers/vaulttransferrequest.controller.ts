@@ -97,12 +97,12 @@ export class VaultTransferRequestController extends ApiController {
         return this.adapt(request);
     }
 
-    private async getNotificationInfo(protection: VaultTransferRequestDescription, decision?: VaultTransferRequestDecision):
+    private async getNotificationInfo(vaultTransfer: VaultTransferRequestDescription, decision?: VaultTransferRequestDecision):
         Promise<{ legalOfficerEmail: string, userEmail: string, data: any }> {
 
         const legalOfficer = await this.directoryService.get(this.ownerAddress);
         const protectionRequests = await this.protectionRequestRepository.findBy({
-            expectedRequesterAddress: protection.requesterAddress,
+            expectedRequesterAddress: vaultTransfer.requesterAddress,
             expectedStatuses: [ 'ACTIVATED' ],
             kind: 'ANY'
         });
@@ -116,7 +116,7 @@ export class VaultTransferRequestController extends ApiController {
             legalOfficerEmail: legalOfficer.userIdentity.email,
             userEmail: protectionRequestDescription.userIdentity.email,
             data: {
-                protection: { ...protection, decision },
+                vaultTransfer: { ...vaultTransfer, decision },
                 legalOfficer,
                 walletUser: protectionRequestDescription.userIdentity,
                 walletUserPostalAddress: protectionRequestDescription.userPostalAddress,

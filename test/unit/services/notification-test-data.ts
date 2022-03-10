@@ -89,7 +89,13 @@ export function notificationData() {
         walletUser: notifiedProtection.userIdentity,
         walletUserPostalAddress: notifiedProtection.userPostalAddress,
         loc: notifiedLOC(),
-        vaultTransfer
+        vaultTransfer: {
+            ...vaultTransfer,
+            decision: {
+                decisionOn: "2021-06-10T16:25:23.668294",
+                rejectReason: "Failed to provide some data",
+            }
+        }
     }
 }
 
