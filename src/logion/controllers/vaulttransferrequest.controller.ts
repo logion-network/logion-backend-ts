@@ -80,7 +80,6 @@ export class VaultTransferRequestController extends ApiController {
             requesterAddress: body.requesterAddress!,
             createdOn: moment().toISOString(),
             amount: BigInt(body.amount!),
-            call: body.call!,
             destination: body.destination!,
             timepoint: {
                 blockNumber: BigInt(body.block!),
@@ -161,7 +160,6 @@ export class VaultTransferRequestController extends ApiController {
             destination: description.destination,
             block: description.timepoint.blockNumber.toString(),
             index: description.timepoint.extrinsicIndex,
-            call: description.call,
             decision: {
                 rejectReason: request.decision!.rejectReason || "",
                 decisionOn: request.decision!.decisionOn || undefined,

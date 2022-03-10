@@ -970,10 +970,6 @@
                         "type": "string",
                         "description": "The amount to transfer"
                     },
-                    "call": {
-                        "type": "string",
-                        "description": "The hexadecimal representation of the call (i.e. the serialized form of an OpaqueCall)"
-                    },
                     "block": {
                         "type": "string",
                         "description": "The block number at which the call was submitted"
@@ -1067,10 +1063,6 @@
                     "amount": {
                         "type": "string",
                         "description": "The amount to transfer"
-                    },
-                    "call": {
-                        "type": "string",
-                        "description": "The hexadecimal representation of the call (i.e. the serialized form of an OpaqueCall)"
                     },
                     "block": {
                         "type": "string",

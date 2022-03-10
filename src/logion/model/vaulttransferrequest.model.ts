@@ -34,7 +34,6 @@ export class VaultTransferRequestAggregateRoot {
         this.createdOn = description.createdOn;
         this.destination = description.destination;
         this.amount = description.amount.toString();
-        this.call = description.call;
         this.blockNumber = description.timepoint.blockNumber.toString();
         this.extrinsicIndex = description.timepoint.extrinsicIndex;
     }
@@ -46,7 +45,6 @@ export class VaultTransferRequestAggregateRoot {
             createdOn: this.createdOn!,
             destination: this.destination!,
             amount: BigInt(this.amount || "0"),
-            call: this.call!,
             timepoint: {
                 blockNumber: BigInt(this.blockNumber!),
                 extrinsicIndex: this.extrinsicIndex!,
@@ -84,9 +82,6 @@ export class VaultTransferRequestAggregateRoot {
 
     @Column("numeric", { name: "amount", precision: AMOUNT_PRECISION })
     amount?: string;
-
-    @Column({ length: 255, name: "call" })
-    call?: string;
 
     @Column("bigint", { name: "block_number" })
     blockNumber?: string;
@@ -162,7 +157,6 @@ export interface VaultTransferRequestDescription {
     readonly createdOn: string,
     readonly destination: string,
     readonly amount: bigint,
-    readonly call: string,
     readonly timepoint: Timepoint,
 }
 

@@ -74,7 +74,6 @@ describe('VaultTransferRequestRepository updates', () => {
         request.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
         request.destination = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
         request.amount = '10000';
-        request.call = '0x000000000000';
         request.blockNumber = "4242";
         request.extrinsicIndex = 42;
         request.status = 'PENDING';
