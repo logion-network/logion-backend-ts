@@ -18,7 +18,10 @@ export const templateValues = [
     "loc-requested",
     "loc-accepted",
     "loc-rejected",
-    "all-documented-vars"
+    "all-documented-vars",
+    "vault-transfer-requested",
+    "vault-transfer-rejected",
+    "vault-transfer-accepted"
 ] as const;
 
 export type Template = typeof templateValues[number];

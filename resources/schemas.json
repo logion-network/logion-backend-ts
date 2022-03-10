@@ -954,6 +954,155 @@
                 },
                 "title": "RefreshRequestView",
                 "description": "the refresh request"
+            },
+            "CreateVaultTransferRequestView": {
+                "type": "object",
+                "properties": {
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester"
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination SS58 address of the transfer"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "description": "The amount to transfer"
+                    },
+                    "call": {
+                        "type": "string",
+                        "description": "The hexadecimal representation of the call (i.e. the serialized form of an OpaqueCall)"
+                    },
+                    "block": {
+                        "type": "string",
+                        "description": "The block number at which the call was submitted"
+                    },
+                    "index": {
+                        "type": "number",
+                        "description": "The index of the call's transaction in the block"
+                    }
+                },
+                "title": "CreateVaultTransferRequestView",
+                "description": "A Protection Request to create"
+            },
+            "FetchVaultTransferRequestsResponseView": {
+                "type": "object",
+                "properties": {
+                    "requests": {
+                        "type": "array",
+                        "description": "The Protection Requests matching provided specification",
+                        "items": {
+                            "$ref": "#/components/schemas/VaultTransferRequestView"
+                        }
+                    }
+                },
+                "title": "FetchVaultTransferRequestsResponseView",
+                "description": "The fetched Protection Requests"
+            },
+            "FetchVaultTransferRequestsSpecificationView": {
+                "type": "object",
+                "properties": {
+                    "statuses": {
+                        "type": "array",
+                        "description": "The statuses of expected Protection Requests",
+                        "uniqueItems": true,
+                        "items": {
+                            "type": "string",
+                            "enum": [
+                                "ACCEPTED",
+                                "PENDING",
+                                "REJECTED"
+                            ]
+                        }
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester in expected Protection Requests"
+                    }
+                },
+                "title": "FetchVaultTransferRequestsSpecificationView",
+                "description": "The specification for fetching Protection Requests"
+            },
+            "VaultTransferRequestDecisionDecisionView": {
+                "type": "object",
+                "properties": {
+                    "decisionOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If decision is reject, the reason of the rejection"
+                    }
+                },
+                "title": "VaultTransferRequestDecisionDecisionView",
+                "description": "Legal Officer decision"
+            },
+            "VaultTransferRequestView": {
+                "type": "object",
+                "properties": {
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "decision": {
+                        "$ref": "#/components/schemas/VaultTransferRequestDecisionDecisionView"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of created Protection Request"
+                    },
+                    "requesterAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the requester"
+                    },
+                    "destination": {
+                        "type": "string",
+                        "description": "The destination SS58 address of the transfer"
+                    },
+                    "amount": {
+                        "type": "string",
+                        "description": "The amount to transfer"
+                    },
+                    "call": {
+                        "type": "string",
+                        "description": "The hexadecimal representation of the call (i.e. the serialized form of an OpaqueCall)"
+                    },
+                    "block": {
+                        "type": "string",
+                        "description": "The block number at which the call was submitted"
+                    },
+                    "index": {
+                        "type": "number",
+                        "description": "The index of the call's transaction in the block"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "The status (retrieved from chain)",
+                        "enum": [
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED"
+                        ]
+                    }
+                },
+                "title": "VaultTransferRequestView",
+                "description": "Information about the created Protection Request"
+            },
+            "RejectVaultTransferRequestView": {
+                "type": "object",
+                "properties": {
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    }
+                },
+                "title": "RejectVaultTransferRequestView",
+                "description": "The Protection Request to reject"
             }
         }
     }

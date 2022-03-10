@@ -65,3 +65,16 @@ The postal address is not always available, for instance for LOC requested by no
     walletUserPostalAddress.postalCode
     walletUserPostalAddress.city
     walletUserPostalAddress.country
+
+### Vault transfer
+    vaultTransfer.id
+    vaultTransfer.requesterAddress
+    vaultTransfer.createdOn
+    vaultTransfer.destination
+    vaultTransfer.amount
+    vaultTransfer.call
+    vaultTransfer.timepoint.blockNumber
+    vaultTransfer.timepoint.extrinsicIndex
+
+    vaultTransfer.decision.decisionOn
+    vaultTransfer.decision.rejectReason
