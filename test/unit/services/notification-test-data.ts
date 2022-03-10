@@ -75,7 +75,6 @@ const vaultTransfer: VaultTransferRequestDescription = {
     destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
     createdOn: "2021-06-10T16:25:23.668294",
     amount: 10000n,
-    call: '0x0303005e017e03e2ee7a0a97e2e5df5cd902aa0b976d65eac998889ea40992efc3d254070010a5d4e8',
     timepoint: {
         blockNumber: 42n,
         extrinsicIndex: 1
