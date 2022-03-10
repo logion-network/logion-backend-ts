@@ -5,7 +5,6 @@ import { OpenAPIV3 } from 'express-oas-generator';
 import { components } from './components';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from './doc';
 import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model";
-import { AuthenticationService } from "../services/authentication.service";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';
@@ -27,8 +26,7 @@ type FetchTransactionsResponseView = components["schemas"]["FetchTransactionsRes
 export class TransactionController extends ApiController {
 
     constructor(
-        private transactionRepository: TransactionRepository,
-        private authenticationService: AuthenticationService) {
+        private transactionRepository: TransactionRepository) {
         super();
     }
 
@@ -46,7 +44,6 @@ export class TransactionController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchTransactions(body: FetchTransactionsSpecificationView): Promise<FetchTransactionsResponseView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.address)
         const transactions = await this.transactionRepository.findByAddress(body.address!)
         return {
             transactions: transactions.map(this.toView)
