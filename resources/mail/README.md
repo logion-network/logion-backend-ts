@@ -75,3 +75,6 @@ The postal address is not always available, for instance for LOC requested by no
     vaultTransfer.call
     vaultTransfer.timepoint.blockNumber
     vaultTransfer.timepoint.extrinsicIndex
+
+    vaultTransfer.decision.decisionOn
+    vaultTransfer.decision.rejectReason
