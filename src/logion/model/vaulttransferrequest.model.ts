@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, getRepository, Repository, Unique } from
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 
-export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED';
+export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED';
 
 export class VaultTransferRequestDecision {
 
@@ -11,7 +11,7 @@ export class VaultTransferRequestDecision {
         this.rejectReason = reason;
     }
 
-    accept(decisionOn: Moment): void {
+    acceptOrCancel(decisionOn: Moment): void {
         this.decisionOn = decisionOn.toISOString();
     }
 
@@ -65,7 +65,15 @@ export class VaultTransferRequestAggregateRoot {
             throw new Error("Request is not pending");
         }
         this.status = 'ACCEPTED';
-        this.decision!.accept(decisionOn);
+        this.decision!.acceptOrCancel(decisionOn);
+    }
+
+    cancel(decisionOn: Moment): void {
+        if(this.status !== 'PENDING') {
+            throw new Error("Request is not pending");
+        }
+        this.status = 'CANCELLED';
+        this.decision!.acceptOrCancel(decisionOn);
     }
 
     @PrimaryColumn({ type: "uuid" })

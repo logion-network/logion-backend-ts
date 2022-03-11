@@ -44,6 +44,8 @@ describe('VaultTransferRequestController', () => {
             .then(response => {
                 expect(response.body.id).toBeDefined();
             });
+
+        notificationService.verify(instance => instance.notify(ALICE_LEGAL_OFFICER.userIdentity.email, "vault-transfer-requested", It.Is<any>(() => true)));
     });
 
     it('fails with empty request', async () => {
@@ -98,15 +100,11 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('WithValidAuthentication', async () => {
-        const app = setupApp(VaultTransferRequestController, container => mockModelForAccept(container, true));
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
 
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/accept")
-            .send({
-                locId: "locId"
-            })
-            .expect(200)
-            .expect('Content-Type', /application\/json/);
+            .expect(200);
 
         notificationService.verify(instance => instance.notify(IDENTITY.email, "vault-transfer-accepted", It.Is<any>(data => {
             return data.vaultTransfer.decision.decisionOn === DECISION_TIMESTAMP
@@ -119,7 +117,6 @@ describe('VaultTransferRequestController', () => {
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/reject")
             .send({
-                legalOfficerAddress: ALICE,
                 rejectReason: REJECT_REASON,
             })
             .expect(200)
@@ -129,6 +126,24 @@ describe('VaultTransferRequestController', () => {
             return data.vaultTransfer.decision.rejectReason === REJECT_REASON &&
                 data.vaultTransfer.decision.decisionOn === DECISION_TIMESTAMP
         })))
+    });
+
+    it('lets requester cancel', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
+
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/cancel")
+            .expect(200);
+
+        notificationService.verify(instance => instance.notify(ALICE_LEGAL_OFFICER.userIdentity.email, "vault-transfer-cancelled", It.Is<any>(() => true)));
+    });
+
+    it('cancel fails on auth failure', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), false);
+
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/cancel")
+            .expect(401);
     });
 });
 
@@ -158,6 +173,8 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     mockNotificationAndDirectoryService(container)
 }
 
+const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE);
+
 function mockNotificationAndDirectoryService(container: Container) {
     notificationService = new Mock<NotificationService>();
     notificationService
@@ -168,7 +185,7 @@ function mockNotificationAndDirectoryService(container: Container) {
     const directoryService = new Mock<DirectoryService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
-        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)));
+        .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
     container.bind(DirectoryService).toConstantValue(directoryService.object());
 
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
@@ -275,9 +292,10 @@ function mockVaultTransferRequestModel(container: Container): void {
 
 let notificationService: Mock<NotificationService>;
 
-function mockModelForAccept(container: Container, verifies: boolean): void {
+function mockModelForAcceptOrCancel(container: Container, verifies: boolean): void {
     const vaultTransferRequest = mockVaultTransferRequest();
     vaultTransferRequest.setup(instance => instance.accept(It.IsAny())).returns(undefined);
+    vaultTransferRequest.setup(instance => instance.cancel(It.IsAny())).returns(undefined);
     const decision = new Mock<VaultTransferRequestDecision>();
     decision.setup(instance => instance.decisionOn)
         .returns(DECISION_TIMESTAMP)

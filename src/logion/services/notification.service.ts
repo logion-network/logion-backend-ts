@@ -21,7 +21,8 @@ export const templateValues = [
     "all-documented-vars",
     "vault-transfer-requested",
     "vault-transfer-rejected",
-    "vault-transfer-accepted"
+    "vault-transfer-accepted",
+    "vault-transfer-cancelled",
 ] as const;
 
 export type Template = typeof templateValues[number];
