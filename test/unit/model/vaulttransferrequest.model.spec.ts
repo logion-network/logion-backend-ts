@@ -42,7 +42,6 @@ describe('VaultTransferRequestAggregateRoot', () => {
     it('fails on re-accept', async () => {
         const request = newVaultTransferRequestUsingFactory();
         const decisionOn = moment();
-        const locId = "locId";
         request.accept(decisionOn);
 
         expect(() => request.accept(decisionOn)).toThrowError();
@@ -54,6 +53,24 @@ describe('VaultTransferRequestAggregateRoot', () => {
         request.reject("", decisionOn);
 
         expect(() => request.reject("", decisionOn)).toThrowError();
+    });
+
+    it('cancels', async () => {
+        const request = newVaultTransferRequestUsingFactory();
+        const decisionOn = moment();
+
+        request.cancel(decisionOn);
+
+        expect(request.status).toBe('CANCELLED');
+        expect(request.decision!.decisionOn).toBe(decisionOn.toISOString());
+    });
+
+    it('fails on re-cancel', async () => {
+        const request = newVaultTransferRequestUsingFactory();
+        const decisionOn = moment();
+        request.cancel(decisionOn);
+
+        expect(() => request.cancel(decisionOn)).toThrowError();
     });
 });
 

@@ -996,6 +996,16 @@
                 "title": "FetchVaultTransferRequestsResponseView",
                 "description": "The fetched Protection Requests"
             },
+            "VaultTransferRequestStatusView": {
+                "title": "VaultTransferRequestStatusView",
+                "description": "The status of a Vault Transfer Request",
+                "enum": [
+                    "ACCEPTED",
+                    "PENDING",
+                    "REJECTED",
+                    "CANCELLED"
+                ]
+            },
             "FetchVaultTransferRequestsSpecificationView": {
                 "type": "object",
                 "properties": {
@@ -1004,12 +1014,7 @@
                         "description": "The statuses of expected Protection Requests",
                         "uniqueItems": true,
                         "items": {
-                            "type": "string",
-                            "enum": [
-                                "ACCEPTED",
-                                "PENDING",
-                                "REJECTED"
-                            ]
+                            "$ref": "#/components/schemas/VaultTransferRequestStatusView"
                         }
                     },
                     "requesterAddress": {
@@ -1073,13 +1078,7 @@
                         "description": "The index of the call's transaction in the block"
                     },
                     "status": {
-                        "type": "string",
-                        "description": "The status (retrieved from chain)",
-                        "enum": [
-                            "ACCEPTED",
-                            "PENDING",
-                            "REJECTED"
-                        ]
+                        "$ref": "#/components/schemas/VaultTransferRequestStatusView"
                     }
                 },
                 "title": "VaultTransferRequestView",

@@ -222,4 +222,21 @@ export class VaultTransferRequestController extends ApiController {
             .catch(error => logger.error(error));
         return this.adapt(request);
     }
+
+    @Async()
+    @HttpPost('/:id/cancel')
+    async cancelVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
+        const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
+        this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.address === request.getDescription().requesterAddress);
+
+        request.cancel(moment());
+        await this.vaultTransferRequestRepository.save(request);
+
+        this.getNotificationInfo(request.getDescription(), request.decision)
+            .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-cancelled", info.data))
+            .catch(error => logger.error(error));
+
+        return this.adapt(request);
+    }
 }
