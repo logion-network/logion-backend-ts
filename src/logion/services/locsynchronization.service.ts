@@ -26,7 +26,11 @@ export class LocSynchronizer {
                 return
             }
 
+            // Note to developers:
+            // Refrain from removing methods that no longer exist in the pallet (for instance "createLoc"),
+            // because they are still present in the extrinsics created at the time those methods were active.
             switch (extrinsic.method.method) {
+                case "createLoc":
                 case "createLogionIdentityLoc":
                 case "createLogionTransactionLoc":
                 case "createPolkadotIdentityLoc":
