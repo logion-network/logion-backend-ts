@@ -21,7 +21,7 @@ import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
-import { ProtectionRequestRepository } from '../model/protectionrequest.model';
+import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model';
 import { badRequest } from './errors';
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
@@ -87,21 +87,19 @@ export class VaultTransferRequestController extends ApiController {
             }
         });
 
+        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
         await this.vaultTransferRequestRepository.save(request);
 
-        this.getNotificationInfo(request.getDescription())
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request);
+        return this.adapt(request, protectionRequestDescription);
     }
 
-    private async getNotificationInfo(vaultTransfer: VaultTransferRequestDescription, decision?: VaultTransferRequestDecision):
-        Promise<{ legalOfficerEmail: string, userEmail: string, data: any }> {
-
-        const legalOfficer = await this.directoryService.get(this.ownerAddress);
+    private async getProtectionRequestDescription(requesterAddress: string): Promise<ProtectionRequestDescription> {
         const protectionRequests = await this.protectionRequestRepository.findBy({
-            expectedRequesterAddress: vaultTransfer.requesterAddress,
+            expectedRequesterAddress: requesterAddress,
             expectedStatuses: [ 'ACTIVATED' ],
             kind: 'ANY'
         });
@@ -110,7 +108,16 @@ export class VaultTransferRequestController extends ApiController {
             throw badRequest("Requester is not protected");
         }
 
-        const protectionRequestDescription = protectionRequests[0].getDescription();
+        return protectionRequests[0].getDescription();
+    }
+
+    private async getNotificationInfo(
+        vaultTransfer: VaultTransferRequestDescription,
+        protectionRequestDescription: ProtectionRequestDescription,
+        decision?: VaultTransferRequestDecision
+    ): Promise<{ legalOfficerEmail: string, userEmail: string, data: any }> {
+
+        const legalOfficer = await this.directoryService.get(this.ownerAddress);
         return {
             legalOfficerEmail: legalOfficer.userIdentity.email,
             userEmail: protectionRequestDescription.userIdentity.email,
@@ -144,13 +151,20 @@ export class VaultTransferRequestController extends ApiController {
             expectedRequesterAddress: body.requesterAddress,
             expectedStatuses: body.statuses,
         });
+
         const vaultTransferRequests = await this.vaultTransferRequestRepository.findBy(specification);
+        const protectionDescriptions: Record<string, ProtectionRequestDescription> = {};
+        for(let i = 0; i < vaultTransferRequests.length; ++i) {
+            const request = vaultTransferRequests[i];
+            protectionDescriptions[request.requesterAddress!] ||= await this.getProtectionRequestDescription(request.requesterAddress!);
+        }
+
         return {
-            requests: vaultTransferRequests.map(request => this.adapt(request))
+            requests: vaultTransferRequests.map(request => this.adapt(request, protectionDescriptions[request.requesterAddress!]))
         };
     }
 
-    adapt(request: VaultTransferRequestAggregateRoot): VaultTransferRequestView {
+    adapt(request: VaultTransferRequestAggregateRoot, protectionDescription: ProtectionRequestDescription): VaultTransferRequestView {
         const description = request.getDescription();
         return {
             id: description.id,
@@ -165,6 +179,8 @@ export class VaultTransferRequestController extends ApiController {
                 decisionOn: request.decision!.decisionOn || undefined,
             },
             status: request.status!,
+            requesterIdentity: protectionDescription.userIdentity,
+            requesterPostalAddress: protectionDescription.userPostalAddress,
         };
     }
 
@@ -187,14 +203,15 @@ export class VaultTransferRequestController extends ApiController {
             .require(user => user.isNodeOwner());
 
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
+        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
         request.reject(body.rejectReason!, moment());
         await this.vaultTransferRequestRepository.save(request);
 
-        this.getNotificationInfo(request.getDescription(), request.decision)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-rejected", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request);
+        return this.adapt(request, protectionRequestDescription);
     }
 
     static acceptVaultTransferRequest(spec: OpenAPIV3.Document) {
@@ -215,12 +232,15 @@ export class VaultTransferRequestController extends ApiController {
         this.authenticationService.authenticatedUser(this.request)
             .require(user => user.isNodeOwner());
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
+        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
         request.accept(moment());
         await this.vaultTransferRequestRepository.save(request);
-        this.getNotificationInfo(request.getDescription(), request.decision)
+
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-accepted", info.data))
             .catch(error => logger.error(error));
-        return this.adapt(request);
+
+        return this.adapt(request, protectionRequestDescription);
     }
 
     @Async()
@@ -230,13 +250,14 @@ export class VaultTransferRequestController extends ApiController {
         this.authenticationService.authenticatedUser(this.request)
             .require(user => user.address === request.getDescription().requesterAddress);
 
+        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
         request.cancel(moment());
         await this.vaultTransferRequestRepository.save(request);
 
-        this.getNotificationInfo(request.getDescription(), request.decision)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-cancelled", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request);
+        return this.adapt(request, protectionRequestDescription);
     }
 }
