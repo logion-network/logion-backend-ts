@@ -1079,6 +1079,12 @@
                     },
                     "status": {
                         "$ref": "#/components/schemas/VaultTransferRequestStatusView"
+                    },
+                    "requesterIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "requesterPostalAddress": {
+                        "$ref": "#/components/schemas/PostalAddressView"
                     }
                 },
                 "title": "VaultTransferRequestView",
