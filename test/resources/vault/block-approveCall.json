@@ -1,0 +1,74 @@
+{
+    "number": "1739",
+    "extrinsics": [
+      {
+        "method": {
+          "pallet": "timestamp",
+          "method": "set"
+        },
+        "signer": null,
+        "args": {
+          "now": "1626696336000"
+        },
+        "tip": null,
+        "hash": "0xdb92d913b4142b02d2ad3fc98f53bfd06d43c0518ac9e1f0da5248b41d424217",
+        "info": {},
+        "events": [
+          {
+            "method": {
+              "pallet": "system",
+              "method": "ExtrinsicSuccess"
+            },
+            "data": [
+              {
+                "weight": "161650000",
+                "class": "Mandatory",
+                "paysFee": "Yes"
+              }
+            ]
+          }
+        ],
+        "success": true,
+        "paysFee": false
+      },
+      {
+        "method": {
+          "pallet": "vault",
+          "method": "approveCall"
+        },
+        "signer": "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        "args": {
+          "call": {
+            "method": { "pallet": "balances", "method": "transfer" },
+            "args": { "dest": {"id": "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"}, "value": "200000000000000000" }
+          },
+          "other_signatories": [
+            "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
+            "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+          ],
+          "value": "200000000000000000"
+        },
+        "tip": "0",
+        "hash": "0x20a034ce8e8efab6a414e43cc45051227703f6392529611468c44bfd91253751",
+        "partialFee": "125000149",
+        "events": [
+          {
+            "method": {
+              "pallet": "system",
+              "method": "ExtrinsicSuccess"
+            },
+            "data": [
+              {
+                "weight": "194407000",
+                "class": "Normal",
+                "paysFee": "Yes"
+              }
+            ]
+          }
+        ],
+        "success": true,
+        "paysFee": true
+      }
+    ]
+  }
+  

@@ -6,12 +6,14 @@ import { JsonExtrinsic } from "./types/responses/Extrinsic";
 import { JsonMethod, JsonArgs } from "./call";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { Log } from "../util/Log";
+import { PolkadotService } from "./polkadot.service";
 
 enum ExtrinsicType {
     TIMESTAMP,
     TRANSFER,
     GENERIC_TRANSACTION,
-    TRANSFER_FROM_RECOVERED
+    TRANSFER_FROM_RECOVERED,
+    TRANSFER_FROM_VAULT
 }
 
 const { logger } = Log;
@@ -19,7 +21,10 @@ const { logger } = Log;
 @injectable()
 export class TransactionExtractor {
 
-    constructor(private extrinsicDataExtractor: ExtrinsicDataExtractor) {}
+    constructor(
+        private extrinsicDataExtractor: ExtrinsicDataExtractor,
+        private polkadotService: PolkadotService,
+    ) {}
 
     async extractBlockWithTransactions(block: BlockExtrinsics): Promise<BlockWithTransactions | undefined> {
         if (block.extrinsics === undefined || block.extrinsics.length <= 1) {
@@ -35,8 +40,8 @@ export class TransactionExtractor {
             if (type === ExtrinsicType.TIMESTAMP) {
                 blockBuilder.timestamp(this.extrinsicDataExtractor.getTimestamp(extrinsic))
             } else {
-                const transaction = await this.extractTransaction(extrinsic, type, index);
-                transactions.push(transaction);
+                const blockTransactions = await this.extractTransactions(extrinsic, type, index);
+                blockTransactions.forEach(transaction => transactions.push(transaction));
             }
         }
         if (transactions.length === 0) {
@@ -46,40 +51,60 @@ export class TransactionExtractor {
             .build()
     }
 
-    private async extractTransaction(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Promise<Transaction> {
+    private async extractTransactions(extrinsic: JsonExtrinsic, type: ExtrinsicType, index: number): Promise<Transaction[]> {
+        const transactions: Transaction[] = [];
         let from: string = this.from(extrinsic);
         let transferValue: bigint = 0n;
         let to: string | undefined = undefined;
 
-        switch (type) {
-            case ExtrinsicType.TRANSFER:
-                transferValue = this.transferValue(extrinsic)
-                to = this.to(extrinsic)
-                break
-            case ExtrinsicType.TRANSFER_FROM_RECOVERED:
-                const account = this.extrinsicDataExtractor.getAccount(extrinsic);
-                if (account) {
-                    from = account
-                }
-                const call = this.extrinsicDataExtractor.getCall(extrinsic)
-                transferValue = this.transferValue(call)
-                to = this.to(call)
-                break
+        if(type ===  ExtrinsicType.TRANSFER) {
+            transferValue = this.transferValue(extrinsic)
+            to = this.to(extrinsic)
+        } else if(type === ExtrinsicType.TRANSFER_FROM_RECOVERED) {
+            const account = this.extrinsicDataExtractor.getAccount(extrinsic);
+            if (account) {
+                from = account
+            }
+            const call = this.extrinsicDataExtractor.getCall(extrinsic)
+            transferValue = this.transferValue(call)
+            to = this.to(call)
+        } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
+            const signer = extrinsic.signer;
+            const otherSignatories = extrinsic.args['other_signatories'].map((signatory: any) => signatory.toJSON());
+            const allSignatories = [ signer, ...otherSignatories ].sort();
+            const vaultAddress = this.polkadotService.getVaultAddress(allSignatories);
+
+            const call = this.extrinsicDataExtractor.getCall(extrinsic);
+            const vaultTransferValue = this.transferValue(call);
+            const vaultTransferTo = this.to(call);
+
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: "balances",
+                method: "transfer",
+                tip: 0n,
+                fee: 0n,
+                reserved: 0n,
+                from: vaultAddress,
+                transferValue: vaultTransferValue,
+                to: vaultTransferTo,
+            }));
         }
 
-        return new Transaction({
-                extrinsicIndex: index,
-                pallet: this.pallet(extrinsic),
-                method: this.methodName(extrinsic),
-                tip: this.tip(extrinsic),
-                fee: await this.fee(extrinsic),
-                reserved: this.reserved(extrinsic),
-                from,
-                transferValue,
-                to,
-                error: this.error(extrinsic)
-            }
-        )
+        transactions.push(new Transaction({
+            extrinsicIndex: index,
+            pallet: this.pallet(extrinsic),
+            method: this.methodName(extrinsic),
+            tip: this.tip(extrinsic),
+            fee: await this.fee(extrinsic),
+            reserved: this.reserved(extrinsic),
+            from,
+            transferValue,
+            to,
+            error: this.error(extrinsic)
+        }));
+
+        return transactions;
     }
 
     private pallet(extrinsic: JsonExtrinsic): string {
@@ -158,6 +183,15 @@ export class TransactionExtractor {
                     }
                 }
                 return ExtrinsicType.GENERIC_TRANSACTION
+
+            case "vault":
+                if(method.method === "approveCall") {
+                    const call = this.extrinsicDataExtractor.getCall(extrinsic);
+                    if (call.method.pallet === "balances") {
+                        return ExtrinsicType.TRANSFER_FROM_VAULT
+                    }
+                }
+                return ExtrinsicType.GENERIC_TRANSACTION;
 
             default:
                 return ExtrinsicType.GENERIC_TRANSACTION

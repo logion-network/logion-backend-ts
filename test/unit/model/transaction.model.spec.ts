@@ -57,6 +57,9 @@ function aTransaction(): TransactionAggregateRoot {
 describe("TransactionFactory", () => {
 
     const description: TransactionDescription = {
+        id: "some-id",
+        blockNumber: 123456n,
+        extrinsicIndex: 5,
         from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
         to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         fee: 12n,
@@ -76,11 +79,7 @@ describe("TransactionFactory", () => {
             ...description,
             error: undefined
         };
-        const transaction = new TransactionFactory().newTransaction({
-            blockNumber,
-            extrinsicIndex,
-            description: successfulDescription
-        });
+        const transaction = new TransactionFactory().newTransaction(successfulDescription);
         expect(transaction.getDescription()).toEqual(successfulDescription);
         expect(transaction.blockNumber).toBe(blockNumber.toString());
         expect(transaction.extrinsicIndex).toBe(extrinsicIndex);
@@ -96,11 +95,7 @@ describe("TransactionFactory", () => {
             ...description,
             error: { section: "aSection", name: "aName", details: "someDetails" }
         };
-        const transaction = new TransactionFactory().newTransaction({
-            blockNumber,
-            extrinsicIndex,
-            description: notSuccessfulDescription
-        });
+        const transaction = new TransactionFactory().newTransaction(notSuccessfulDescription);
         expect(transaction.getDescription()).toEqual(notSuccessfulDescription);
         expect(transaction.blockNumber).toBe(blockNumber.toString());
         expect(transaction.extrinsicIndex).toBe(extrinsicIndex);

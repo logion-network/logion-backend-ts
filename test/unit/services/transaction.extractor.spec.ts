@@ -3,12 +3,21 @@ import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Bl
 import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
 import { TransactionError } from "../../../src/logion/services/transaction.vo";
+import { PolkadotService } from 'src/logion/services/polkadot.service';
+import { It, Mock } from 'moq.ts';
 
 let transactionExtractor: TransactionExtractor;
+let polkadotServiceMock: Mock<PolkadotService>;
 
 beforeAll(() => {
     let extrinsicDataExtractor = new ExtrinsicDataExtractor();
-    transactionExtractor = new TransactionExtractor(extrinsicDataExtractor);
+    polkadotServiceMock = new Mock<PolkadotService>();
+    polkadotServiceMock.setup(instance => instance.getVaultAddress(It.Is<string[]>(params =>
+        params[0] === "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"
+        && params[1] === "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
+        && params[2] === "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
+    ))).returns("5GsjmoJBjbKpjQiUHeVmSHuUvgonLvJUyLSHfbKDRYz4GK3V");
+    transactionExtractor = new TransactionExtractor(extrinsicDataExtractor, polkadotServiceMock.object());
 })
 
 describe("TransactionExtractor", () => {
@@ -191,6 +200,30 @@ describe("TransactionExtractor", () => {
         });
         await expectTransaction(params);
     });
+
+    it('finds vault.approveCall transactions', async () => {
+        const transferParams = vaultParams({
+            fileName: "vault/block-approveCall.json",
+            pallet: "balances",
+            method: "transfer",
+            blockNumber: 1739n,
+            fee: 0n,
+            transferValue: 200000000000000000n,
+            from: "5GsjmoJBjbKpjQiUHeVmSHuUvgonLvJUyLSHfbKDRYz4GK3V",
+            to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+        });
+        await expectTransaction(transferParams, 0);
+
+        const approvalParams = vaultParams({
+            fileName: "vault/block-approveCall.json",
+            pallet: "vault",
+            method: "approveCall",
+            blockNumber: 1739n,
+            fee: 125000149n,
+            from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+        });
+        await expectTransaction(approvalParams, 1);
+    });
 })
 
 function givenBlock(fileName: string): BlockExtrinsics {
@@ -219,6 +252,10 @@ function givenBlock(fileName: string): BlockExtrinsics {
             extrinsic.error = () => error;
         } else {
             extrinsic.error = () => null;
+        }
+
+        if("other_signatories" in args) {
+            args.other_signatories = args.other_signatories.map((signatory: any) => ({toJSON: () => signatory}))
         }
     });
     return json;
@@ -257,13 +294,13 @@ interface ExpectTransactionParams {
     error?: TransactionError,
 }
 
-async function expectTransaction(params: ExpectTransactionParams) {
+async function expectTransaction(params: ExpectTransactionParams, transactionIndex?: number) {
     const block = givenBlock(params.fileName);
     block.number = BigInt(block.number);
     var blockWithTransactions = await transactionExtractor.extractBlockWithTransactions(block);
     expect(blockWithTransactions!.blockNumber).toBe(params.blockNumber);
 
-    const transaction = blockWithTransactions!.transactions[0];
+    const transaction = blockWithTransactions!.transactions[transactionIndex || 0];
     expect(transaction.extrinsicIndex).toBe(1);
     expect(transaction.pallet).toBe(params.pallet);
     expect(transaction.method).toBe(params.method);
@@ -308,5 +345,24 @@ function balancesParams(params: {
         ...params,
         pallet: "balances",
         reserved: 0n,
+    };
+}
+
+function vaultParams(params: {
+    fileName: string,
+    pallet: string,
+    method: string,
+    blockNumber: bigint,
+    fee: bigint,
+    transferValue?: bigint,
+    from: string,
+    to?: string
+}): ExpectTransactionParams {
+    return {
+        ...params,
+        tip: 0n,
+        reserved: 0n,
+        transferValue: params.transferValue? params.transferValue : 0n,
+        to: params.to? params.to : null
     };
 }
