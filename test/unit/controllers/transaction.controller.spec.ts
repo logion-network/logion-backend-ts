@@ -23,6 +23,8 @@ describe('TransactionController', () => {
             .then(response => {
                 expect(response.body.transactions).toBeDefined();
                 expect(response.body.transactions.length).toBe(2);
+
+                expect(response.body.transactions[0].id).toBeDefined();
                 expect(response.body.transactions[0].from).toBe(ALICE);
                 expect(response.body.transactions[0].to).toBeUndefined();
                 expect(response.body.transactions[0].pallet).toBe("pallet");
@@ -33,6 +35,8 @@ describe('TransactionController', () => {
                 expect(response.body.transactions[0].reserved).toBe("4");
                 expect(response.body.transactions[0].total).toBe("10");
                 expect(response.body.transactions[0].successful).toBeTrue();
+
+                expect(response.body.transactions[1].id).toBeDefined();
                 expect(response.body.transactions[1].from).toBe(ALICE);
                 expect(response.body.transactions[1].to).toBeUndefined();
                 expect(response.body.transactions[1].pallet).toBe("pallet");
@@ -55,6 +59,9 @@ const TIMESTAMP = "2021-06-10T16:25:23.668294";
 function mockModelForFetch(container: Container): void {
 
     const transactionDescription: TransactionDescription = {
+        id: "9464ca21-d290-4515-ac4d-80c4fa3f6508",
+        blockNumber: 42n,
+        extrinsicIndex: 1,
         from: ALICE,
         to: null,
         createdOn: TIMESTAMP,
@@ -71,6 +78,7 @@ function mockModelForFetch(container: Container): void {
     const failedTransaction = new Mock<TransactionAggregateRoot>();
     failedTransaction.setup(instance => instance.getDescription()).returns({
         ...transactionDescription,
+        id: "503649be-9743-4ba4-aeac-d806b81e6cd3",
         error: {
             section: "aSection",
             name: "aName",

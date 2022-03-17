@@ -61,6 +61,7 @@ export class TransactionController extends ApiController {
             total += description.transferValue ;
         }
         return {
+            id: description.id,
             from: description.from,
             to: description.to || undefined,
             createdOn: description.createdOn,

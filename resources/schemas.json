@@ -274,6 +274,11 @@
             "TransactionView": {
                 "type": "object",
                 "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the transaction"
+                    },
                     "createdOn": {
                         "type": "string",
                         "format": "date-time",

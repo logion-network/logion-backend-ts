@@ -74,7 +74,7 @@ yarn build
 ### DB
 First, run a PostgreSQL 12 server:
 
-`docker run --name logion-postgres -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:12`
+`docker run --name logion-postgres -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest`
 
 (or `docker start -a logion-postgres` if you already executed the above command).
 
@@ -83,6 +83,12 @@ Then copy the file [`ormconfig.json.sample`](ormconfig.json.sample) to `ormconfi
 Create the database schema using `yarn typeorm migration:run`. More info about [DB migrations](doc/DbMigration.md).
 
 Note that in order to run the backend itself or the integration tests, you'll need `psql` to be installed locally.
+
+Logion backend is using a custom PostgreSQL image `logionnetwork/logion-postgres`. It may be built with the following command:
+
+`docker build logion-postgres/ -t logionnetwork/logion-postgres:latest`
+
+See `./logion-postgres/Dockerfile` for more information about the customizations.
 
 ### Connection to a node
 

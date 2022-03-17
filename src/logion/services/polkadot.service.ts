@@ -4,6 +4,7 @@ import '../lib/polkadot/interfaces/augment-types';
 import { ApiPromise, WsProvider } from '@polkadot/api';
 import * as definitions from '../lib/polkadot/interfaces/definitions';
 import { Log } from "../util/Log";
+import { createKeyMulti, encodeAddress } from '@polkadot/util-crypto';
 
 const { logger } = Log;
 
@@ -28,5 +29,10 @@ export class PolkadotService {
             provider: wsProvider,
             types
         });
+    }
+
+    getVaultAddress(signatories: string[]): string {
+        const address = createKeyMulti(signatories, 2);
+        return encodeAddress(address);
     }
 }

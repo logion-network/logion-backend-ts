@@ -1,4 +1,5 @@
 import { injectable } from "inversify";
+import { v4 as uuid } from 'uuid';
 import { TransactionAggregateRoot, TransactionRepository, TransactionFactory, TransactionDescription } from "../model/transaction.model";
 import { TransactionExtractor } from "./transaction.extractor";
 import { BlockWithTransactions, Transaction } from './transaction.vo';
@@ -29,13 +30,11 @@ export class TransactionSynchronizer {
         const createdOn = blockWithTransactions.timestamp!.toISOString();
         let description: TransactionDescription = {
             ...transaction,
-            createdOn
-        };
-        return this.transactionFactory.newTransaction({
+            id: uuid(),
             blockNumber: blockWithTransactions.blockNumber!,
-            extrinsicIndex: transaction.extrinsicIndex,
-            description
-        });
+            createdOn,
+        };
+        return this.transactionFactory.newTransaction(description);
     }
 
     async reset() {

@@ -17,7 +17,7 @@
         "test": "yarn run unit-test && yarn run integration-test",
         "unit-test": "jasmine --config=spec/support/jasmine.json",
         "integration-test": "yarn run setup-test-db && jasmine --config=spec/support/jasmine-integration.json ; yarn run teardown-test-db",
-        "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 postgres:12",
+        "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest",
         "teardown-test-db": "docker stop logion-test-db",
         "coverage-unit": "nyc yarn run unit-test",
         "coverage": "nyc yarn run test",

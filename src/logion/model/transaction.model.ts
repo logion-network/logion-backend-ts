@@ -2,6 +2,9 @@ import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 
 export interface TransactionDescription {
+    readonly id: string;
+    readonly blockNumber: bigint,
+    readonly extrinsicIndex: number,
     readonly from: string;
     readonly to: string | null;
     readonly transferValue: bigint;
@@ -33,6 +36,9 @@ export class TransactionAggregateRoot {
         }
 
         return {
+            id: this.id!,
+            blockNumber: BigInt(this.blockNumber!),
+            extrinsicIndex: this.extrinsicIndex!,
             from: this.from!,
             to: this.to || null,
             transferValue: BigInt(this.transferValue || "0"),
@@ -46,10 +52,13 @@ export class TransactionAggregateRoot {
         };
     }
 
-    @PrimaryColumn("bigint", {name: "block_number"})
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    id?: string;
+
+    @Column("bigint", {name: "block_number"})
     blockNumber?: string;
 
-    @PrimaryColumn("integer", {name: "extrinsic_index"})
+    @Column("integer", {name: "extrinsic_index"})
     extrinsicIndex?: number;
 
     @Column({name: "from_address", length: 255})
@@ -127,17 +136,13 @@ export class TransactionRepository {
 @injectable()
 export class TransactionFactory {
 
-    newTransaction(params: {
-        blockNumber: bigint,
-        extrinsicIndex: number,
-        description: TransactionDescription
-    }): TransactionAggregateRoot {
-        const { blockNumber, extrinsicIndex } = params;
+    newTransaction(description: TransactionDescription): TransactionAggregateRoot {
+        const { blockNumber, extrinsicIndex } = description;
         let transaction = new TransactionAggregateRoot();
+        transaction.id = description.id;
         transaction.blockNumber = blockNumber.toString();
         transaction.extrinsicIndex = extrinsicIndex;
 
-        const { description } = params;
         transaction.from = description.from;
         transaction.to = description.to;
         transaction.transferValue = description.transferValue.toString();
