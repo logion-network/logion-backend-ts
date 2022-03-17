@@ -7,4 +7,7 @@ coverage
 .env
 calc/pkg
 calc/target
-logion-postgres
+docker/postgres
+docker/base
+.nyc_output
+.git
