@@ -2,7 +2,7 @@ import { Entity, PrimaryColumn, Column, getRepository, Repository, Unique } from
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 
-export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED';
+export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED' | 'REJECTED_CANCELLED';
 
 export class VaultTransferRequestDecision {
 
@@ -13,6 +13,11 @@ export class VaultTransferRequestDecision {
 
     acceptOrCancel(decisionOn: Moment): void {
         this.decisionOn = decisionOn.toISOString();
+    }
+
+    clear() {
+        this.decisionOn = undefined;
+        this.rejectReason = undefined;
     }
 
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
@@ -69,11 +74,23 @@ export class VaultTransferRequestAggregateRoot {
     }
 
     cancel(decisionOn: Moment): void {
-        if(this.status !== 'PENDING') {
-            throw new Error("Request is not pending");
+        if(this.status !== 'PENDING' && this.status !== 'REJECTED') {
+            throw new Error("Request is not pending or rejected");
         }
-        this.status = 'CANCELLED';
+        if(this.status === 'PENDING') {
+            this.status = 'CANCELLED';
+        } else {
+            this.status = 'REJECTED_CANCELLED';
+        }
         this.decision!.acceptOrCancel(decisionOn);
+    }
+
+    resubmit(): void {
+        if(this.status !== 'REJECTED') {
+            throw new Error("Request is not rejected");
+        }
+        this.status = "PENDING";
+        this.decision!.clear();
     }
 
     @PrimaryColumn({ type: "uuid" })
