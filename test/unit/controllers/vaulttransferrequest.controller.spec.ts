@@ -145,6 +145,24 @@ describe('VaultTransferRequestController', () => {
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/cancel")
             .expect(401);
     });
+
+    it('lets requester resubmit', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
+
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/resubmit")
+            .expect(200);
+
+        notificationService.verify(instance => instance.notify(ALICE_LEGAL_OFFICER.userIdentity.email, "vault-transfer-requested", It.Is<any>(() => true)));
+    });
+
+    it('cancel fails on auth failure', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), false);
+
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/resubmit")
+            .expect(401);
+    });
 });
 
 const DECISION_TIMESTAMP = moment().toISOString();
@@ -296,6 +314,7 @@ function mockModelForAcceptOrCancel(container: Container, verifies: boolean): vo
     const vaultTransferRequest = mockVaultTransferRequest();
     vaultTransferRequest.setup(instance => instance.accept(It.IsAny())).returns(undefined);
     vaultTransferRequest.setup(instance => instance.cancel(It.IsAny())).returns(undefined);
+    vaultTransferRequest.setup(instance => instance.resubmit()).returns(undefined);
     const decision = new Mock<VaultTransferRequestDecision>();
     decision.setup(instance => instance.decisionOn)
         .returns(DECISION_TIMESTAMP)

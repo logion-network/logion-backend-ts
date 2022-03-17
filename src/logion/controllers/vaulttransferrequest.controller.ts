@@ -260,4 +260,22 @@ export class VaultTransferRequestController extends ApiController {
 
         return this.adapt(request, protectionRequestDescription);
     }
+
+    @Async()
+    @HttpPost('/:id/resubmit')
+    async resubmitVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
+        const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
+        this.authenticationService.authenticatedUser(this.request)
+            .require(user => user.address === request.getDescription().requesterAddress);
+
+        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
+        request.resubmit();
+        await this.vaultTransferRequestRepository.save(request);
+
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
+            .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
+            .catch(error => logger.error(error));
+
+        return this.adapt(request, protectionRequestDescription);
+    }
 }

@@ -72,6 +72,30 @@ describe('VaultTransferRequestAggregateRoot', () => {
 
         expect(() => request.cancel(decisionOn)).toThrowError();
     });
+
+    it('cancels after rejection', async () => {
+        const request = newVaultTransferRequestUsingFactory();
+        const rejectDecisionOn = moment();
+        request.reject("Some reason.", rejectDecisionOn);
+
+        const decisionOn = rejectDecisionOn.clone().add(1, "hour");
+        request.cancel(decisionOn);
+
+        expect(request.status).toBe('REJECTED_CANCELLED');
+        expect(request.decision!.decisionOn).toBe(decisionOn.toISOString());
+    });
+
+    it('resubmits after rejection', async () => {
+        const request = newVaultTransferRequestUsingFactory();
+        const rejectDecisionOn = moment();
+        request.reject("Some reason.", rejectDecisionOn);
+
+        request.resubmit();
+
+        expect(request.status).toBe('PENDING');
+        expect(request.decision!.decisionOn).toBeUndefined();
+        expect(request.decision!.rejectReason).toBeUndefined();
+    });
 });
 
 const description: VaultTransferRequestDescription = {
