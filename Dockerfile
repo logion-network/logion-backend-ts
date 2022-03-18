@@ -1,22 +1,15 @@
-# Build calc
-FROM paritytech/ci-linux:production AS build-calc
-COPY calc /tmp/calc
-WORKDIR /tmp/calc
-RUN ./build.sh
-
 # Build backend
+FROM logionnetwork/logion-backend-calc:v1 AS calc
 FROM node:14 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
-COPY --from=build-calc /tmp/calc/pkg calc/pkg
+COPY --from=calc /tmp/calc/pkg calc/pkg
 RUN yarn install
 RUN yarn build
 
 # Backend image
-FROM node:14
-RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client ; rm -rf /var/lib/apt/lists/*
+FROM logionnetwork/logion-backend-base:v1
 
-WORKDIR /usr/share/logion-backend
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules
 COPY --from=build-backend /tmp/logion-backend/resources resources
@@ -39,7 +32,7 @@ ENV TYPEORM_SYNCHRONIZE=false
 ENV TYPEORM_ENTITIES=dist/model/*.model.js
 ENV TYPEORM_MIGRATIONS=dist/migration/*.js
 
-COPY ./docker /usr/docker
+COPY ./docker/backend/. /usr/docker/.
 RUN chmod +x /usr/docker/*
 
 ENTRYPOINT ["/usr/docker/docker-entrypoint.sh"]

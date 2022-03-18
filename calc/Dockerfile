@@ -1,5 +1,4 @@
-# Build calc
-FROM paritytech/ci-linux:9575dfcd-20210727
-WORKDIR /tmp/logion-backend-calc
-COPY . .
-RUN ./build.sh
+FROM paritytech/ci-linux:production
+COPY . /tmp/calc
+WORKDIR /tmp/calc
+RUN ./build.sh && rm -rf ./target && rm -rf /root/.cache/ && rm -rf /usr/local/cargo/registry
