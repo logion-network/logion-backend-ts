@@ -41,6 +41,7 @@ export class VaultTransferRequestAggregateRoot {
         this.amount = description.amount.toString();
         this.blockNumber = description.timepoint.blockNumber.toString();
         this.extrinsicIndex = description.timepoint.extrinsicIndex;
+        this.isRecovery = description.isRecovery;
     }
 
     getDescription(): VaultTransferRequestDescription {
@@ -53,7 +54,8 @@ export class VaultTransferRequestAggregateRoot {
             timepoint: {
                 blockNumber: BigInt(this.blockNumber!),
                 extrinsicIndex: this.extrinsicIndex!,
-            }
+            },
+            isRecovery: this.isRecovery!
         };
     }
 
@@ -113,6 +115,9 @@ export class VaultTransferRequestAggregateRoot {
 
     @Column("integer", { name: "extrinsic_index" })
     extrinsicIndex?: number;
+
+    @Column("boolean", {name: "is_recovery" })
+    isRecovery?: boolean;
 
     @Column({ length: 255 })
     status?: VaultTransferRequestStatus;
@@ -183,6 +188,7 @@ export interface VaultTransferRequestDescription {
     readonly destination: string,
     readonly amount: bigint,
     readonly timepoint: Timepoint,
+    readonly isRecovery: boolean,
 }
 
 @injectable()

@@ -54,7 +54,7 @@ describe('VaultTransferRequestController', () => {
         await request(app)
             .post('/api/vault-transfer-request')
             .send({})
-            .expect(500)
+            .expect(400)
             .expect('Content-Type', /application\/json/);
     });
 
@@ -82,6 +82,7 @@ describe('VaultTransferRequestController', () => {
                 expect(response.body.requests[0].decision.decisionOn).toBe(TIMESTAMP);
                 expect(response.body.requests[0].decision.rejectReason).toBe(REJECT_REASON);
                 expect(response.body.requests[0].status).toBe("REJECTED");
+                expect(response.body.requests[0].isRecovery).toBeFalse();
             });
     });
 
@@ -237,7 +238,8 @@ const description: VaultTransferRequestDescription = {
     timepoint: {
         blockNumber: 4242n,
         extrinsicIndex: 42
-    }
+    },
+    isRecovery: false
 }
 
 const IDENTITY = {
