@@ -101,6 +101,7 @@ describe('VaultTransferRequestAggregateRoot', () => {
 const description: VaultTransferRequestDescription = {
     id: uuid(),
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
     destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
     createdOn: moment().toISOString(),
     amount: 10000n,
@@ -108,7 +109,6 @@ const description: VaultTransferRequestDescription = {
         blockNumber: 42n,
         extrinsicIndex: 1
     },
-    isRecovery: true
 };
 
 function newVaultTransferRequestUsingFactory(): VaultTransferRequestAggregateRoot {

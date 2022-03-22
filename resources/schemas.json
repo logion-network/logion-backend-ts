@@ -963,9 +963,9 @@
             "CreateVaultTransferRequestView": {
                 "type": "object",
                 "properties": {
-                    "requesterAddress": {
+                    "origin": {
                         "type": "string",
-                        "description": "The SS58 address of the requester"
+                        "description": "The origin SS58 address of the transfer. In case of a regular vault-out transfer, this equals to requesterAddress. In case of a vault recovery, this equals to the recovered account"
                     },
                     "destination": {
                         "type": "string",
@@ -1063,9 +1063,9 @@
                         "format": "uuid",
                         "description": "The ID of created Protection Request"
                     },
-                    "requesterAddress": {
+                    "origin": {
                         "type": "string",
-                        "description": "The SS58 address of the requester"
+                        "description": "The origin SS58 address of the transfer. In case of a regular vault-out transfer, this equals to requesterAddress. In case of a vault recovery, this equals to the recovered account"
                     },
                     "destination": {
                         "type": "string",
@@ -1082,10 +1082,6 @@
                     "index": {
                         "type": "number",
                         "description": "The index of the call's transaction in the block"
-                    },
-                    "isRecovery": {
-                        "type": "boolean",
-                        "description": "True if the the request is done on a recovered vault"
                     },
                     "status": {
                         "$ref": "#/components/schemas/VaultTransferRequestStatusView"

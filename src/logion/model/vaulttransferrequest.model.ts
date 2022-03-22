@@ -37,11 +37,11 @@ export class VaultTransferRequestAggregateRoot {
         this.id = description.id;
         this.requesterAddress = description.requesterAddress;
         this.createdOn = description.createdOn;
+        this.origin = description.origin;
         this.destination = description.destination;
         this.amount = description.amount.toString();
         this.blockNumber = description.timepoint.blockNumber.toString();
         this.extrinsicIndex = description.timepoint.extrinsicIndex;
-        this.isRecovery = description.isRecovery;
     }
 
     getDescription(): VaultTransferRequestDescription {
@@ -49,13 +49,13 @@ export class VaultTransferRequestAggregateRoot {
             id: this.id!,
             requesterAddress: this.requesterAddress!,
             createdOn: this.createdOn!,
+            origin: this.origin!,
             destination: this.destination!,
             amount: BigInt(this.amount || "0"),
             timepoint: {
                 blockNumber: BigInt(this.blockNumber!),
                 extrinsicIndex: this.extrinsicIndex!,
             },
-            isRecovery: this.isRecovery!
         };
     }
 
@@ -104,6 +104,9 @@ export class VaultTransferRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
+    @Column({ length: 255, name: "origin" })
+    origin?: string;
+
     @Column({ length: 255, name: "destination" })
     destination?: string;
 
@@ -115,9 +118,6 @@ export class VaultTransferRequestAggregateRoot {
 
     @Column("integer", { name: "extrinsic_index" })
     extrinsicIndex?: number;
-
-    @Column("boolean", {name: "is_recovery" })
-    isRecovery?: boolean;
 
     @Column({ length: 255 })
     status?: VaultTransferRequestStatus;
@@ -185,10 +185,10 @@ export interface VaultTransferRequestDescription {
     readonly id: string,
     readonly requesterAddress: string,
     readonly createdOn: string,
+    readonly origin: string,
     readonly destination: string,
     readonly amount: bigint,
     readonly timepoint: Timepoint,
-    readonly isRecovery: boolean,
 }
 
 @injectable()
