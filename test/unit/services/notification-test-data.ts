@@ -78,7 +78,8 @@ const vaultTransfer: VaultTransferRequestDescription = {
     timepoint: {
         blockNumber: 42n,
         extrinsicIndex: 1
-    }
+    },
+    isRecovery: false
 };
 
 export function notificationData() {

@@ -77,6 +77,7 @@ describe('VaultTransferRequestRepository updates', () => {
         request.blockNumber = "4242";
         request.extrinsicIndex = 42;
         request.status = 'PENDING';
+        request.isRecovery = true;
         // When
         await repository.save(request);
         // Then

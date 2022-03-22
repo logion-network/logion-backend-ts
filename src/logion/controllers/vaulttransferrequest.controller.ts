@@ -74,20 +74,22 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPost('')
     async createVaultTransferRequest(body: CreateVaultTransferRequestView): Promise<VaultTransferRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
+        const requesterAddress = requireDefined(body.requesterAddress, () => badRequest("Missing requesterAddress"))
+        const protectionRequestDescription = await this.userAuthorizedAndProtected(requesterAddress)
+
         const request = this.vaultTransferRequestFactory.newVaultTransferRequest({
             id: uuid(),
-            requesterAddress: body.requesterAddress!,
+            requesterAddress,
             createdOn: moment().toISOString(),
             amount: BigInt(body.amount!),
             destination: body.destination!,
             timepoint: {
                 blockNumber: BigInt(body.block!),
                 extrinsicIndex: body.index!
-            }
+            },
+            isRecovery: protectionRequestDescription.addressToRecover === requesterAddress
         });
 
-        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
         await this.vaultTransferRequestRepository.save(request);
 
         this.getNotificationInfo(request.getDescription(), protectionRequestDescription)
@@ -95,6 +97,15 @@ export class VaultTransferRequestController extends ApiController {
             .catch(error => logger.error(error));
 
         return this.adapt(request, protectionRequestDescription);
+    }
+
+    private async userAuthorizedAndProtected(requesterAddress: string): Promise<ProtectionRequestDescription> {
+        const user = this.authenticationService.authenticatedUser(this.request);
+        const protectionRequestDescription = await this.getProtectionRequestDescription(user.address);
+        user.require(user =>
+            user.address === requesterAddress ||
+            requesterAddress === protectionRequestDescription.addressToRecover)
+        return protectionRequestDescription
     }
 
     private async getProtectionRequestDescription(requesterAddress: string): Promise<ProtectionRequestDescription> {
@@ -174,6 +185,7 @@ export class VaultTransferRequestController extends ApiController {
             destination: description.destination,
             block: description.timepoint.blockNumber.toString(),
             index: description.timepoint.extrinsicIndex,
+            isRecovery: description.isRecovery,
             decision: {
                 rejectReason: request.decision!.rejectReason || "",
                 decisionOn: request.decision!.decisionOn || undefined,
@@ -247,10 +259,7 @@ export class VaultTransferRequestController extends ApiController {
     @HttpPost('/:id/cancel')
     async cancelVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
-        this.authenticationService.authenticatedUser(this.request)
-            .require(user => user.address === request.getDescription().requesterAddress);
-
-        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
+        const protectionRequestDescription = await this.userAuthorizedAndProtected(request.requesterAddress!);
         request.cancel(moment());
         await this.vaultTransferRequestRepository.save(request);
 
@@ -265,10 +274,7 @@ export class VaultTransferRequestController extends ApiController {
     @HttpPost('/:id/resubmit')
     async resubmitVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
-        this.authenticationService.authenticatedUser(this.request)
-            .require(user => user.address === request.getDescription().requesterAddress);
-
-        const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
+        const protectionRequestDescription = await this.userAuthorizedAndProtected(request.requesterAddress!);
         request.resubmit();
         await this.vaultTransferRequestRepository.save(request);
 

@@ -1083,6 +1083,10 @@
                         "type": "number",
                         "description": "The index of the call's transaction in the block"
                     },
+                    "isRecovery": {
+                        "type": "boolean",
+                        "description": "True if the the request is done on a recovered vault"
+                    },
                     "status": {
                         "$ref": "#/components/schemas/VaultTransferRequestStatusView"
                     },
