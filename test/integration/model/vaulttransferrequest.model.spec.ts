@@ -72,12 +72,12 @@ describe('VaultTransferRequestRepository updates', () => {
         const request = new VaultTransferRequestAggregateRoot();
         request.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639';
         request.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
+        request.origin = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
         request.destination = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
         request.amount = '10000';
         request.blockNumber = "4242";
         request.extrinsicIndex = 42;
         request.status = 'PENDING';
-        request.isRecovery = true;
         // When
         await repository.save(request);
         // Then

@@ -72,6 +72,7 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
 const vaultTransfer: VaultTransferRequestDescription = {
     id: "id",
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
     destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
     createdOn: "2021-06-10T16:25:23.668294",
     amount: 10000n,
@@ -79,7 +80,6 @@ const vaultTransfer: VaultTransferRequestDescription = {
         blockNumber: 42n,
         extrinsicIndex: 1
     },
-    isRecovery: false
 };
 
 export function notificationData() {

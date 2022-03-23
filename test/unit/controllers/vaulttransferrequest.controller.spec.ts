@@ -33,6 +33,7 @@ describe('VaultTransferRequestController', () => {
             .post('/api/vault-transfer-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                origin: REQUESTER_ADDRESS,
                 destination: DESTINATION,
                 amount: "1000",
                 call: "0x0303005e017e03e2ee7a0a97e2e5df5cd902aa0b976d65eac998889ea40992efc3d254070010a5d4e8",
@@ -74,7 +75,7 @@ describe('VaultTransferRequestController', () => {
                 expect(response.body.requests.length).toBe(1);
                 expect(response.body.requests[0].id).toBe(description.id);
                 expect(response.body.requests[0].createdOn).toBe(description.createdOn);
-                expect(response.body.requests[0].requesterAddress).toBe(description.requesterAddress);
+                expect(response.body.requests[0].origin).toBe(description.origin);
                 expect(response.body.requests[0].destination).toBe(description.destination);
                 expect(response.body.requests[0].amount).toBe(description.amount.toString());
                 expect(response.body.requests[0].block).toBe(description.timepoint.blockNumber.toString());
@@ -82,7 +83,6 @@ describe('VaultTransferRequestController', () => {
                 expect(response.body.requests[0].decision.decisionOn).toBe(TIMESTAMP);
                 expect(response.body.requests[0].decision.rejectReason).toBe(REJECT_REASON);
                 expect(response.body.requests[0].status).toBe("REJECTED");
-                expect(response.body.requests[0].isRecovery).toBeFalse();
             });
     });
 
@@ -212,7 +212,7 @@ function mockNotificationAndDirectoryService(container: Container) {
 
     const protectionRequestRepository = new Mock<ProtectionRequestRepository>();
     protectionRequestRepository
-        .setup(instance => instance.findBy(It.Is<FetchProtectionRequestsSpecification>(spec => true)))
+        .setup(instance => instance.findBy(It.IsAny<FetchProtectionRequestsSpecification>()))
         .returns(Promise.resolve([ protectionRequest.object() ]));
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRequestRepository.object());
 }
@@ -234,12 +234,12 @@ const description: VaultTransferRequestDescription = {
     id: REQUEST_ID,
     createdOn: now().toString(),
     amount: 1000n,
+    origin: REQUESTER_ADDRESS,
     destination: DESTINATION,
     timepoint: {
         blockNumber: 4242n,
         extrinsicIndex: 42
     },
-    isRecovery: false
 }
 
 const IDENTITY = {
