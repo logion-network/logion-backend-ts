@@ -77,7 +77,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('')
     async createProtectionRequest(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
+        await this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
         const request = this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
             description: {
@@ -122,7 +122,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
-        this.authenticationService.authenticatedUserIsOneOf(this.request,
+        await this.authenticationService.authenticatedUserIsOneOf(this.request,
             body.requesterAddress,
             this.authenticationService.nodeOwner);
         const specification = new FetchProtectionRequestsSpecification({
@@ -182,7 +182,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
         const request = requireDefined(await this.protectionRequestRepository.findById(id));
         request.reject(body.rejectReason!, moment());
@@ -207,7 +207,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
         if(body.locId === undefined || body.locId === null) {
             throw badRequest("Missing LOC ID");
@@ -253,7 +253,7 @@ export class ProtectionRequestController extends ApiController {
             authorizeUsers.push(protectionRequests[0].addressToRecover);
         }
         authorizeUsers.push(protectionRequests[0].requesterAddress!);
-        this.authenticationService.authenticatedUserIsOneOf(this.request, ...authorizeUsers)
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, ...authorizeUsers)
         return {
             recoveryAccount: this.adapt(recovery),
             accountToRecover: this.adapt(protectionRequests[0]),
