@@ -1,6 +1,6 @@
 # Build backend
 FROM logionnetwork/logion-backend-calc:v1 AS calc
-FROM node:14 AS build-backend
+FROM node:16 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
 COPY --from=calc /tmp/calc/pkg calc/pkg
@@ -8,7 +8,7 @@ RUN yarn install
 RUN yarn build
 
 # Backend image
-FROM logionnetwork/logion-backend-base:v1
+FROM logionnetwork/logion-backend-base:v2
 
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules
@@ -18,8 +18,8 @@ COPY --from=build-backend /tmp/logion-backend/calc/pkg calc/pkg
 ENV NODE_ENV=production
 ENV WS_PROVIDER_URL=ws://localhost:9944
 ENV NODE_TLS_REJECT_UNAUTHORIZED=0
-ENV JWT_SECRET=Y2hhbmdlLW1lLXBsZWFzZQ==
-ENV JWT_ISSUER=localhost
+ENV JWT_SECRET=1c482e5368b84abe08e1a27d0670d303351989b3aa281cb1abfc2f48e4530b57
+ENV JWT_ISSUER=12D3KooWDCuGU7WY3VaWjBS1E44x4EnmTgK3HRxWFqYG3dqXDfP1
 ENV JWT_TTL_SEC=3600
 ENV PORT=8080
 ENV TYPEORM_CONNECTION=postgres

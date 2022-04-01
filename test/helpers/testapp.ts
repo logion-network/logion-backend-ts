@@ -77,11 +77,11 @@ function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boo
 
     const authenticationService = new Mock<AuthenticationService>();
     authenticationService.setup(instance => instance.authenticatedUserIs)
-        .returns(() => authenticatedUser.object());
+        .returns(() => Promise.resolve(authenticatedUser.object()));
     authenticationService.setup(instance => instance.authenticatedUserIsOneOf)
-        .returns(() => authenticatedUser.object());
+        .returns(() => Promise.resolve(authenticatedUser.object()));
     authenticationService.setup(instance => instance.authenticatedUser)
-        .returns(() => authenticatedUser.object());
+        .returns(() => Promise.resolve(authenticatedUser.object()));
     authenticationService.setup(instance => instance.nodeOwner)
         .returns(ALICE);
     return authenticationService.object();
@@ -104,7 +104,8 @@ function mockAuthenticationFailure(): AuthenticationService {
         throw new UnauthorizedException();
     });
 
-    authenticationService.setup(instance => instance.authenticatedUser).returns(() => authenticatedUser.object());
+    authenticationService.setup(instance => instance.authenticatedUser)
+        .returns(() => Promise.resolve(authenticatedUser.object()));
     authenticationService.setup(instance => instance.nodeOwner).returns(ALICE);
     return authenticationService.object();
 }

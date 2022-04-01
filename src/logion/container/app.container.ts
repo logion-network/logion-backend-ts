@@ -37,6 +37,7 @@ import { MailService } from "../services/mail.service";
 import { DirectoryService } from "../services/directory.service";
 import { VaultTransferRequestController } from '../controllers/vaulttransferrequest.controller';
 import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../model/vaulttransferrequest.model';
+import { NodeAuthorizationService } from "../services/nodeauthorization.service";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -72,6 +73,7 @@ container.bind(MailService).toSelf()
 container.bind(DirectoryService).toSelf()
 container.bind(VaultTransferRequestRepository).toSelf();
 container.bind(VaultTransferRequestFactory).toSelf();
+container.bind(NodeAuthorizationService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();

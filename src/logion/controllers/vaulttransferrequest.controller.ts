@@ -100,7 +100,7 @@ export class VaultTransferRequestController extends ApiController {
     }
 
     private async userAuthorizedAndProtected(origin: string): Promise<ProtectionRequestDescription> {
-        const user = this.authenticationService.authenticatedUser(this.request);
+        const user = await this.authenticationService.authenticatedUser(this.request);
         const protectionRequestDescription = await this.getProtectionRequestDescription(user.address);
         user.require(user =>
             user.address === origin ||
@@ -155,7 +155,7 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchVaultTransferRequests(body: FetchVaultTransferRequestsSpecificationView): Promise<FetchVaultTransferRequestsResponseView> {
-        this.authenticationService.authenticatedUserIsOneOf(this.request,
+        await this.authenticationService.authenticatedUserIsOneOf(this.request,
             body.requesterAddress,
             this.authenticationService.nodeOwner);
         const specification = new FetchVaultTransferRequestsSpecification({
@@ -210,7 +210,7 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectVaultTransferRequest(body: RejectVaultTransferRequestView, id: string): Promise<VaultTransferRequestView> {
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
 
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
@@ -240,7 +240,7 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
@@ -258,7 +258,7 @@ export class VaultTransferRequestController extends ApiController {
     @HttpPost('/:id/cancel')
     async cancelVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.address === request.getDescription().requesterAddress);
 
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);
@@ -276,7 +276,7 @@ export class VaultTransferRequestController extends ApiController {
     @HttpPost('/:id/resubmit')
     async resubmitVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
         const request = requireDefined(await this.vaultTransferRequestRepository.findById(id));
-        this.authenticationService.authenticatedUser(this.request)
+        (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.address === request.getDescription().requesterAddress);
 
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!);

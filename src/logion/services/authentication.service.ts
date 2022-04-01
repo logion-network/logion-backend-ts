@@ -1,11 +1,15 @@
-import jwt, { Algorithm, Jwt, VerifyErrors } from "jsonwebtoken";
 import { injectable } from "inversify";
 import { Request } from "express";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import moment, { Moment } from "moment";
 import { AuthorityService } from "./authority.service";
+import PeerId from "peer-id";
+import { KeyObject, createPublicKey, createPrivateKey } from "crypto";
+import { base64url, SignJWT, decodeJwt, jwtVerify, JWTPayload } from "jose";
+import { JWTVerifyResult } from "jose/dist/types/types";
+import { NodeAuthorizationService } from "./nodeauthorization.service";
 
-const ALGORITHM: Algorithm = "HS384";
+const ALGORITHM = "EdDSA";
 
 export interface AuthenticatedUser {
     address: string,
@@ -77,21 +81,21 @@ async function isLegalOfficer(authorityService: AuthorityService, address: strin
 @injectable()
 export class AuthenticationService {
 
-    authenticatedUser(request: Request): LogionUserCheck {
-        const user = this.extractLogionUser(request);
+    async authenticatedUser(request: Request): Promise<LogionUserCheck> {
+        const user = await this.extractLogionUser(request);
         return new LogionUserCheck(user, this.nodeOwner, address => isLegalOfficer(this.authorityService, address));
     }
 
-    authenticatedUserIs(request: Request, address: string | undefined | null): LogionUserCheck {
-        const user = this.authenticatedUser(request);
+    async authenticatedUserIs(request: Request, address: string | undefined | null): Promise<LogionUserCheck> {
+        const user = await this.authenticatedUser(request);
         if (user.is(address)) {
             return user;
         }
         throw unauthorized("User has not access to this resource");
     }
 
-    authenticatedUserIsOneOf(request: Request, ...addresses: (string | undefined | null)[]): LogionUserCheck {
-        const user = this.authenticatedUser(request);
+    async authenticatedUserIsOneOf(request: Request, ...addresses: (string | undefined | null)[]): Promise<LogionUserCheck> {
+        const user = await this.authenticatedUser(request);
         if (user.isOneOf(addresses)) {
             return user;
         }
@@ -99,27 +103,40 @@ export class AuthenticationService {
     }
 
     async refreshToken(jwtToken: string): Promise<Token> {
-        const authenticatedUser = this.verifyToken(jwtToken)
+        const authenticatedUser = await this.verifyToken(jwtToken)
         return await this.createToken(authenticatedUser.address, moment())
     }
 
-    private extractLogionUser(request: Request): AuthenticatedUser {
+    private async extractLogionUser(request: Request): Promise<AuthenticatedUser> {
         const jwtToken = this.extractBearerToken(request);
-        return this.verifyToken(jwtToken)
+        return await this.verifyToken(jwtToken)
     }
 
-    private verifyToken(jwtToken: string): AuthenticatedUser {
-        jwt.verify(jwtToken, this.secret, { issuer: this.issuer }, err => {
-            if (err) {
-                throw this._unauthorized(err)
-            }
-        });
-        const token = jwt.decode(jwtToken, { complete: true }) as Jwt;
-        if(typeof token.payload !== 'string') {
-            return { address: token.payload.sub! }
-        } else {
-            throw unauthorized("Unable to decode payload");
+    private async verifyToken(jwtToken: string): Promise<AuthenticatedUser> {
+
+        let payload:JWTPayload;
+        try {
+            payload = decodeJwt(jwtToken)
+        } catch (error) {
+            throw unauthorized("" + error)
         }
+        const issuer = payload.iss;
+        if (!issuer || ! await this.nodeAuthorizationService.isWellKnownNode(issuer)) {
+            throw unauthorized("Invalid issuer");
+        }
+
+        const publicKey = this.createPublicKey(issuer)
+        let result: JWTVerifyResult;
+        try {
+            result = await jwtVerify(jwtToken, publicKey, { algorithms: [ ALGORITHM ] });
+        } catch (error) {
+            throw unauthorized("" + error)
+        }
+        const address = result.payload.sub;
+        if (!address) {
+            throw unauthorized("Unable to find issuer in payload");
+        }
+        return { address }
     }
 
     private extractBearerToken(request: Request): string {
@@ -130,19 +147,20 @@ export class AuthenticationService {
         return header.split(' ')[1].trim();
     }
 
-    private readonly secret: Buffer;
+    private readonly privateKey: KeyObject
     private readonly issuer: string;
     private readonly ttl: number;
     readonly nodeOwner: string;
 
     constructor(
         public authorityService: AuthorityService,
+        public nodeAuthorizationService: NodeAuthorizationService,
     ) {
         if (process.env.JWT_SECRET === undefined) {
-            throw Error("No JWT secret set, please set var JWT_SECRET");
+            throw Error("No JWT secret set, please set var JWT_SECRET equal to NODE_SECRET_KEY");
         }
         if (process.env.JWT_ISSUER === undefined) {
-            throw Error("No JWT issuer set, please set var JWT_ISSUER");
+            throw Error("No JWT issuer set, please set var JWT_ISSUER equal to NODE_PEER_ID (base58 encoding)");
         }
         if (process.env.JWT_TTL_SEC === undefined) {
             throw Error("No JWT Time-to-live set, please set var JWT_TTL_SEC");
@@ -150,30 +168,55 @@ export class AuthenticationService {
         if (process.env.OWNER === undefined) {
             throw Error("No node owner set, please set var OWNER");
         }
-        const bas64EncodedSecret = process.env.JWT_SECRET as string;
-        this.secret = Buffer.from(bas64EncodedSecret, 'base64')
         this.issuer = process.env.JWT_ISSUER;
+        this.privateKey = this.createPrivateKey(this.publicKeyBytes(this.issuer), process.env.JWT_SECRET)
         this.ttl = parseInt(process.env.JWT_TTL_SEC);
         this.nodeOwner = process.env.OWNER;
+    }
+
+    private publicKeyBytes(issuer: string): Uint8Array {
+        const peerId = PeerId.createFromB58String(issuer);
+        return peerId.pubKey.bytes.slice(4, 36)
+    }
+
+    private createPrivateKey(publicKeyBytes: Uint8Array, nodeKey: string): KeyObject {
+        const privateKeyBytes = Buffer.from(nodeKey, "hex");
+
+        return createPrivateKey({
+            key: {
+                kty: "OKP",
+                crv: "Ed25519",
+                x: base64url.encode(publicKeyBytes),
+                d: base64url.encode(privateKeyBytes),
+            },
+            format: "jwk"
+        })
+    }
+
+    private createPublicKey(issuer: string): KeyObject {
+
+        return createPublicKey({
+            key: {
+                kty: "OKP",
+                crv: "Ed25519",
+                x: base64url.encode(this.publicKeyBytes(issuer))
+            },
+            format: "jwk"
+        });
     }
 
     async createToken(address: string, issuedAt: Moment, expiresIn?: number): Promise<Token> {
         const now = Math.floor(issuedAt.unix());
         const expiredOn = now + (expiresIn !== undefined ? expiresIn : this.ttl);
-        const payload = {
-            iat: now,
-            exp: expiredOn
-        };
-        const encodedToken = jwt.sign(payload, this.secret, {
-            algorithm: ALGORITHM,
-            issuer: this.issuer,
-            subject: address
-        });
-        return { value: encodedToken, expiredOn: moment.unix(expiredOn) };
-    }
+        const encodedToken = await new SignJWT({})
+            .setProtectedHeader({ alg: ALGORITHM })
+            .setIssuedAt(now)
+            .setExpirationTime(expiredOn)
+            .setIssuer(this.issuer)
+            .setSubject(address)
+            .sign(this.privateKey)
 
-    private _unauthorized(error: VerifyErrors): UnauthorizedException<{ error: string }> {
-        return new UnauthorizedException({ error: error.name + ": " + error.message });
+        return { value: encodedToken, expiredOn: moment.unix(expiredOn) };
     }
 
     ensureAuthorizationBearer(request: Request, expectedToken: string | undefined) {
