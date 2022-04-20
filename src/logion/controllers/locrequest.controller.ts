@@ -427,12 +427,12 @@ export class LocRequestController extends ApiController {
             throw new Error("File already present");
         }
 
-        const oid = await this.fileDbService.importFile(file.tempFilePath, hash);
+        const cid = await this.fileDbService.importFile(file.tempFilePath);
         request.addFile({
             name: file.name,
             contentType: file.mimetype,
             hash,
-            oid,
+            cid,
             nature: addFileView.nature || "",
             submitter,
         });
@@ -462,7 +462,7 @@ export class LocRequestController extends ApiController {
 
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
-        await this.fileDbService.exportFile(file.oid, tempFilePath);
+        await this.fileDbService.exportFile(file.oid!, tempFilePath);
         this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (error: any) => {
             rm(tempFilePath);
             if(error) {
@@ -492,7 +492,7 @@ export class LocRequestController extends ApiController {
         const file = request.removeFile(userCheck.address, hash);
         await this.locRequestRepository.save(request);
 
-        await this.fileDbService.deleteFile(file.oid);
+        await this.fileDbService.deleteFile(file.oid!);
     }
 
     static confirmFile(spec: OpenAPIV3.Document) {
