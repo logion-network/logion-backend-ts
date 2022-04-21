@@ -18,7 +18,6 @@ export class FileStorageService {
             ipfsClusterHost: process.env.IPFS_CLUSTER_HOST!,
             minReplica: Number(process.env.IPFS_MIN_REPLICA!),
             maxReplica: Number(process.env.IPFS_MAX_REPLICA!),
-            ipfs: process.env.IPFS!,
             ipfsHost: process.env.IPFS_HOST!,
         };
         this.fileManager = new DefaultFileManager(fileManagerConfiguration)

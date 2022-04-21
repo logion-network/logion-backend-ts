@@ -19,7 +19,6 @@ export interface DefaultFileManagerConfiguration {
     ipfsClusterHost: string;
     minReplica: number;
     maxReplica: number;
-    ipfs: string;
     ipfsHost: string;
 }
 
