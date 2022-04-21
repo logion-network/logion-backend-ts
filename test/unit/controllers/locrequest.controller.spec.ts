@@ -740,8 +740,8 @@ function mockModelForAddFile(container: Container): void {
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 
     const fileDbService = new Mock<FileDbService>();
-    fileDbService.setup(instance => instance.importFile(It.IsAny<string>(), SOME_DATA_HASH))
-        .returns(Promise.resolve(42));
+    fileDbService.setup(instance => instance.importFile(It.IsAny<string>()))
+        .returns(Promise.resolve("cid-42"));
     container.bind(FileDbService).toConstantValue(fileDbService.object());
     mockNotificationAndDirectoryService(container)
 }

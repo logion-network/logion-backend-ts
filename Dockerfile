@@ -8,7 +8,7 @@ RUN yarn install
 RUN yarn build
 
 # Backend image
-FROM logionnetwork/logion-backend-base:v2
+FROM logionnetwork/logion-backend-base:latest
 
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules

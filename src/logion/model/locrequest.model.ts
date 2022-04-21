@@ -44,7 +44,8 @@ export interface LocRequestDecision {
 export interface FileDescription {
     readonly name: string;
     readonly hash: string;
-    readonly oid: number;
+    readonly oid?: number;
+    readonly cid?: string;
     readonly contentType: string;
     readonly nature: string;
     readonly addedOn?: Moment;
@@ -140,7 +141,7 @@ export class LocRequestAggregateRoot {
         file.index = this.files!.length;
         file.name = fileDescription.name;
         file.hash! = fileDescription.hash;
-        file.oid = fileDescription.oid;
+        file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
         file.draft = true;
         file.nature = fileDescription.nature;
@@ -182,7 +183,8 @@ export class LocRequestAggregateRoot {
             name: file!.name!,
             contentType: file!.contentType!,
             hash: file!.hash!,
-            oid: file!.oid!,
+            oid: file!.oid,
+            cid: file!.cid,
             nature: file!.nature!,
             submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
@@ -537,8 +539,11 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255 })
     name?: string;
 
-    @Column("int4")
+    @Column("int4", { nullable: true })
     oid?: number;
+
+    @Column({ length: 255, nullable: true })
+    cid?: string;
 
     @Column({ length: 255, name: "content_type" })
     contentType?: string;
