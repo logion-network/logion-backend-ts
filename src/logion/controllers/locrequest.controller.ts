@@ -29,7 +29,7 @@ import { requireDefined, requireLength } from "../lib/assertions";
 import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
-import { FileDbService } from "../services/filedb.service";
+import { FileStorageService } from "../services/file.storage.service";
 import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
@@ -87,7 +87,7 @@ export class LocRequestController extends ApiController {
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
         private protectionRequestRepository: ProtectionRequestRepository,
-        private fileDbService: FileDbService,
+        private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
         private directoryService: DirectoryService) {
         super();
@@ -427,7 +427,7 @@ export class LocRequestController extends ApiController {
             throw new Error("File already present");
         }
 
-        const cid = await this.fileDbService.importFile(file.tempFilePath);
+        const cid = await this.fileStorageService.importFile(file.tempFilePath);
         request.addFile({
             name: file.name,
             contentType: file.mimetype,
@@ -462,7 +462,7 @@ export class LocRequestController extends ApiController {
 
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
-        await this.fileDbService.exportFile(file.oid!, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath);
         this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (error: any) => {
             rm(tempFilePath);
             if(error) {
@@ -492,7 +492,7 @@ export class LocRequestController extends ApiController {
         const file = request.removeFile(userCheck.address, hash);
         await this.locRequestRepository.save(request);
 
-        await this.fileDbService.deleteFile(file.oid!);
+        await this.fileStorageService.deleteFile(file);
     }
 
     static confirmFile(spec: OpenAPIV3.Document) {

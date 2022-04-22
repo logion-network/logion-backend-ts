@@ -3,8 +3,13 @@ import { exportFile, deleteFile } from '../lib/db/large_objects';
 import { FileManager, DefaultFileManager, DefaultFileManagerConfiguration } from "../lib/ipfs/FileManager";
 import { DefaultShell } from "../lib/Shell";
 
+export interface FileId {
+    oid?: number
+    cid?: string
+}
+
 @injectable()
-export class FileDbService {
+export class FileStorageService {
 
     constructor() {
         const fileManagerConfiguration: DefaultFileManagerConfiguration = {
@@ -13,7 +18,6 @@ export class FileDbService {
             ipfsClusterHost: process.env.IPFS_CLUSTER_HOST!,
             minReplica: Number(process.env.IPFS_MIN_REPLICA!),
             maxReplica: Number(process.env.IPFS_MAX_REPLICA!),
-            ipfs: process.env.IPFS!,
             ipfsHost: process.env.IPFS_HOST!,
         };
         this.fileManager = new DefaultFileManager(fileManagerConfiguration)
@@ -23,12 +27,24 @@ export class FileDbService {
         return this.fileManager.moveToIpfs(path)
     }
 
-    async exportFile(oid: number, path: string) {
-        return await exportFile(oid, path);
+    async exportFile(id: FileId, path: string): Promise<void> {
+        if (id.oid) {
+            return await exportFile(id.oid, path);
+        }
+        if (id.cid) {
+            return await this.fileManager.downloadFromIpfs(id.cid, path)
+        }
+        throw new Error("File to download has no id")
     }
 
-    async deleteFile(oid: number) {
-        return await deleteFile(oid);
+    async deleteFile(id: FileId): Promise<void> {
+        if (id.oid) {
+            return await deleteFile(id.oid);
+        }
+        if (id.cid) {
+            return await this.fileManager.removeFileFromIpfs(id.cid)
+        }
+        throw new Error("File to delete has no id")
     }
 
     private readonly fileManager: FileManager;

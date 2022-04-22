@@ -1,5 +1,6 @@
-import { rm } from "fs/promises";
+import { rm, writeFile } from "fs/promises";
 import { Shell } from "../Shell";
+import { create } from 'ipfs-client'
 
 export abstract class FileManager {
 
@@ -18,7 +19,6 @@ export interface DefaultFileManagerConfiguration {
     ipfsClusterHost: string;
     minReplica: number;
     maxReplica: number;
-    ipfs: string;
     ipfsHost: string;
 }
 
@@ -27,9 +27,11 @@ export class DefaultFileManager extends FileManager {
     constructor(configuration: DefaultFileManagerConfiguration) {
         super();
         this.configuration = configuration;
+        this.ipfs = create({ http: this.configuration.ipfsHost })
     }
 
-    private configuration: DefaultFileManagerConfiguration;
+    private readonly configuration: DefaultFileManagerConfiguration;
+    private readonly ipfs: any;
 
     async deleteFile(file: string): Promise<void> {
         await rm(file);
@@ -49,7 +51,7 @@ export class DefaultFileManager extends FileManager {
     }
 
     async downloadFromIpfs(cid: string, file: string): Promise<void> {
-        const downloadCommand = `${this.configuration.ipfs} --api ${this.configuration.ipfsHost} get ${cid} -o ${file}`;
-        await this.configuration.shell.exec(downloadCommand);
+        const buffer: AsyncIterable<Uint8Array> = this.ipfs.cat(cid)
+        return writeFile(file, buffer)
     }
 }

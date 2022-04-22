@@ -17,7 +17,7 @@ import {
     ProtectionRequestRepository,
     ProtectionRequestAggregateRoot
 } from "../../../src/logion/model/protectionrequest.model";
-import { FileDbService } from "../../../src/logion/services/filedb.service";
+import { FileStorageService } from "../../../src/logion/services/file.storage.service";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
@@ -559,8 +559,8 @@ function mockModelForReject(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -580,8 +580,8 @@ function mockModelForAccept(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -610,8 +610,8 @@ function mockModelForCreation(container: Container, locType: LocType, hasProtect
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -637,8 +637,8 @@ function mockModelForCreationWithIdentityLoc(container: Container): void {
     const protectionRepository = new Mock<ProtectionRequestRepository>();
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -709,8 +709,8 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -739,10 +739,10 @@ function mockModelForAddFile(container: Container): void {
     const protectionRepository = new Mock<ProtectionRequestRepository>();
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 
-    const fileDbService = new Mock<FileDbService>();
-    fileDbService.setup(instance => instance.importFile(It.IsAny<string>()))
+    const fileStorageService = new Mock<FileStorageService>();
+    fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
         .returns(Promise.resolve("cid-42"));
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -763,11 +763,11 @@ function mockModelForDownloadFile(container: Container): void {
     const protectionRepository = new Mock<ProtectionRequestRepository>();
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
 
-    const fileDbService = new Mock<FileDbService>();
+    const fileStorageService = new Mock<FileStorageService>();
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash;
-    fileDbService.setup(instance => instance.exportFile(SOME_OID, filePath))
+    fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
         .returns(Promise.resolve());
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -808,8 +808,8 @@ function mockModelForGetSingle(container: Container): void {
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -828,9 +828,9 @@ function mockModelForDeleteFile(container: Container) {
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    fileDbService.setup(instance => instance.deleteFile(SOME_OID)).returns(Promise.resolve());
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    fileStorageService.setup(instance => instance.deleteFile({ oid: SOME_OID })).returns(Promise.resolve());
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -849,8 +849,8 @@ function mockModelForConfirmFile(container: Container) {
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -898,8 +898,8 @@ function mockModelForAllItems(container: Container, request: Mock<LocRequestAggr
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -920,8 +920,8 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -940,8 +940,8 @@ function mockModelForPreClose(container: Container) {
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
@@ -960,8 +960,8 @@ function mockModelForPreVoid(container: Container) {
     container.bind(LocRequestFactory).toConstantValue(factory.object());
     container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
 
-    const fileDbService = new Mock<FileDbService>();
-    container.bind(FileDbService).toConstantValue(fileDbService.object());
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockNotificationAndDirectoryService(container)
 }
 
