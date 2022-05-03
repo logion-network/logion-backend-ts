@@ -683,6 +683,23 @@ export interface components {
       /** @description The rejection reason */
       rejectReason?: string;
     };
+    /**
+     * CreateSofRequestView
+     * @description A Statement of Facts Request to create
+     */
+    CreateSofRequestView: {
+      /**
+       * Format: uuid
+       * @description The ID of the LOC
+       * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
+       */
+      locId?: string;
+      /**
+       * @description The ID of the collection item, if the LOC is a collection
+       * @example 0xecdc3920d5cb4d6721f65c6c36f35996faf34eccf8f7948d69004483fddf19e6
+       */
+      itemId?: string;
+    };
   };
 }
 

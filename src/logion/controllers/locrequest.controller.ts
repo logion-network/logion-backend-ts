@@ -34,6 +34,9 @@ import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
+import { UUID } from "logion-api/dist/UUID";
+import { badRequest } from "./errors";
+import { CollectionRepository } from "../model/collection.model";
 
 const { logger } = Log;
 
@@ -63,6 +66,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.addMetadata(spec);
     LocRequestController.deleteMetadata(spec);
     LocRequestController.confirmMetadata(spec);
+    LocRequestController.createSofRequest(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -77,6 +81,7 @@ type VoidLocView = components["schemas"]["VoidLocView"];
 type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
+type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -87,6 +92,7 @@ export class LocRequestController extends ApiController {
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
         private protectionRequestRepository: ProtectionRequestRepository,
+        private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
         private directoryService: DirectoryService) {
@@ -710,6 +716,57 @@ export class LocRequestController extends ApiController {
         await this.locRequestRepository.save(request);
 
         this.response.sendStatus(204);
+    }
+
+    static createSofRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/sof"].post!;
+        operationObject.summary = "Request a LOC aimed at containing a Statement of Fact";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "Sof Request creation data",
+            view: "CreateSofRequestView",
+        });
+        operationObject.responses = getDefaultResponses("LocRequestView");
+    }
+
+    @HttpPost('/sof')
+    @Async()
+    async createSofRequest(createSofRequestView: CreateSofRequestView): Promise<LocRequestView> {
+        const locId = requireDefined(createSofRequestView.locId,
+            () => badRequest("Missing locId"));
+        const loc = requireDefined(await this.locRequestRepository.findById(locId),
+            () => badRequest("LOC not found"));
+        (await this.authenticationService.authenticatedUser(this.request))
+            .requireIs(loc.requesterAddress);
+        const userIdentity = requireDefined(await this.findUserIdentity(loc))
+
+        let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
+        if (loc.locType === 'Collection') {
+            const itemId = requireDefined(createSofRequestView.itemId,
+                () => badRequest("Missing itemId"));
+            requireDefined(await this.collectionRepository.findBy(locId, itemId),
+                () => badRequest("Item not found"));
+            description = `${ description } - ${ itemId }`
+        }
+
+        const requestDescription: LocRequestDescription = {
+            requesterAddress: loc.requesterAddress,
+            ownerAddress: this.authenticationService.nodeOwner,
+            description,
+            locType: loc.locType!,
+            createdOn: moment().toISOString(),
+            userIdentity
+        }
+        let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
+            id: uuid(),
+            description: requestDescription,
+            target: locId,
+        });
+        await this.locRequestRepository.save(request);
+
+        this.notify("LegalOfficer", "sof-requested", request.getDescription(), userIdentity)
+
+        return this.toView(request, userIdentity)
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, loc: LocRequestDescription, userIdentity?: UserIdentity, decision?: LocRequestDecision): void {

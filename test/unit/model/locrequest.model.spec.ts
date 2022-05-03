@@ -154,6 +154,18 @@ describe("LocRequestFactory", () => {
         await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
+    it("creates SOF LOC request", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        const target = "target-loc"
+        await whenCreatingSofRequest(target);
+        thenRequestCreatedWithDescription(description);
+        expect(createdLocRequest.links?.length).toBe(1)
+        expect(createdLocRequest.links![0].target).toEqual(target)
+        expect(createdLocRequest.links![0].nature).toEqual("Original LOC")
+    });
+
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity): LocRequestDescription {
         return {
             requesterAddress,
@@ -697,6 +709,15 @@ async function whenCreatingLocRequest() {
     createdLocRequest = await factory.newLocRequest({
         id: requestId,
         description: locDescription
+    });
+}
+
+async function whenCreatingSofRequest(target: string) {
+    const factory = new LocRequestFactory(repository.object());
+    createdLocRequest = await factory.newSofRequest({
+        id: requestId,
+        description: locDescription,
+        target
     });
 }
 

@@ -10,7 +10,7 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     NewLocRequestParameters,
-    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription, LocType,
+    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription, LocType, NewSofRequestParameters,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import {
@@ -21,6 +21,8 @@ import { FileStorageService } from "../../../src/logion/services/file.storage.se
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
+import { UUID } from "logion-api/dist/UUID";
+import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -101,6 +103,7 @@ const VOID_REASON = "Expired";
 const DECISION_TIMESTAMP = moment().toISOString()
 
 let notificationService: Mock<NotificationService>;
+let collectionRepository: Mock<CollectionRepository>;
 
 describe('LocRequestController', () => {
 
@@ -541,6 +544,46 @@ describe('LocRequestController', () => {
             })
             .expect(204);
     });
+
+    it('creates a SOF request for Transaction LOC', async () => {
+        const factory = new Mock<LocRequestFactory>();
+        const LOC_ID = new UUID("ebf12a7a-f25f-4830-bd91-d0a7051f641e");
+        const app = setupApp(LocRequestController, container => mockModelForCreateSofRequest(container, factory, 'Transaction', LOC_ID))
+        await request(app)
+            .post(`/api/loc-request/sof`)
+            .send({
+                locId: LOC_ID.toString()
+            })
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBe(REQUEST_ID);
+                expect(response.body.status).toBe("REQUESTED");
+            })
+        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(
+            param => param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() }`)))
+    })
+
+    it('creates a SOF request for Collection LOC', async () => {
+        const factory = new Mock<LocRequestFactory>();
+        const LOC_ID = new UUID("ebf12a7a-f25f-4830-bd91-d0a7051f641e");
+        const itemId = "0x6dec991b1b61b44550769ae3c4b7f54f7cd618391f32bab2bc4e3a96cbb2b198";
+        const app = setupApp(LocRequestController, container => mockModelForCreateSofRequest(container, factory, 'Collection', LOC_ID, itemId))
+        await request(app)
+            .post(`/api/loc-request/sof`)
+            .send({
+                locId: LOC_ID.toString(),
+                itemId: itemId
+            })
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.id).toBe(REQUEST_ID);
+                expect(response.body.status).toBe("REQUESTED");
+            })
+        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(
+            param => param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() } - ${ itemId }`)))
+    })
 })
 
 function mockModelForReject(container: Container): void {
@@ -561,7 +604,7 @@ function mockModelForReject(container: Container): void {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForAccept(container: Container): void {
@@ -582,7 +625,7 @@ function mockModelForAccept(container: Container): void {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForCreation(container: Container, locType: LocType, hasProtection: boolean = false): void {
@@ -612,7 +655,7 @@ function mockModelForCreation(container: Container, locType: LocType, hasProtect
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForCreationWithIdentityLoc(container: Container): void {
@@ -639,7 +682,7 @@ function mockModelForCreationWithIdentityLoc(container: Container): void {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepository {
@@ -711,7 +754,7 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 const SOME_DATA = 'some data';
@@ -743,7 +786,7 @@ function mockModelForAddFile(container: Container): void {
     fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
         .returns(Promise.resolve("cid-42"));
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForDownloadFile(container: Container): void {
@@ -768,7 +811,7 @@ function mockModelForDownloadFile(container: Container): void {
     fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
         .returns(Promise.resolve());
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 const SOME_OID = 123456;
@@ -810,7 +853,7 @@ function mockModelForGetSingle(container: Container): void {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForDeleteFile(container: Container) {
@@ -831,7 +874,7 @@ function mockModelForDeleteFile(container: Container) {
     const fileStorageService = new Mock<FileStorageService>();
     fileStorageService.setup(instance => instance.deleteFile({ oid: SOME_OID })).returns(Promise.resolve());
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForConfirmFile(container: Container) {
@@ -851,7 +894,7 @@ function mockModelForConfirmFile(container: Container) {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 const SOME_DATA_NAME = "data name with exotic char !é\"/&'"
@@ -900,7 +943,7 @@ function mockModelForAllItems(container: Container, request: Mock<LocRequestAggr
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForAddLink(container: Container, request: Mock<LocRequestAggregateRoot>) {
@@ -922,7 +965,39 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
+}
+
+function mockModelForCreateSofRequest(container: Container, factory: Mock<LocRequestFactory>, locType: LocType, locId: UUID, itemId?: string) {
+    const repository = new Mock<LocRequestRepository>();
+    const targetLoc = mockRequest("CLOSED", testDataWithUserIdentityWithType(locType))
+    targetLoc.setup(instance => instance.id).returns(locId.toString())
+    targetLoc.setup(instance => instance.locType).returns(locType)
+    repository.setup(instance => instance.findById(locId.toString()))
+        .returns(Promise.resolve(targetLoc.object()))
+
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const request = mockRequest("REQUESTED", testDataWithUserIdentityWithType(locType))
+    request.setup(instance => instance.id).returns(REQUEST_ID)
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve())
+    factory.setup(instance => instance.newSofRequest(It.IsAny<NewSofRequestParameters>()))
+        .returns(Promise.resolve(request.object()))
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
+    mockOtherDependencies(container)
+
+    if (locType === 'Collection' && itemId) {
+        const collectionItem = new Mock<CollectionItemAggregateRoot>()
+        collectionItem.setup(instance => instance.itemId)
+            .returns(itemId)
+        collectionRepository.setup(instance => instance.findBy(locId.toString(), itemId))
+            .returns(Promise.resolve(collectionItem.object()))
+    }
 }
 
 function mockModelForPreClose(container: Container) {
@@ -942,7 +1017,7 @@ function mockModelForPreClose(container: Container) {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
 function mockModelForPreVoid(container: Container) {
@@ -962,10 +1037,10 @@ function mockModelForPreVoid(container: Container) {
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
-    mockNotificationAndDirectoryService(container)
+    mockOtherDependencies(container)
 }
 
-function mockNotificationAndDirectoryService(container: Container) {
+function mockOtherDependencies(container: Container) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
@@ -977,5 +1052,8 @@ function mockNotificationAndDirectoryService(container: Container) {
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
     container.bind(DirectoryService).toConstantValue(directoryService.object())
+
+    collectionRepository = new Mock<CollectionRepository>();
+    container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 }
 
