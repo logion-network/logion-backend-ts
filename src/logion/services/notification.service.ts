@@ -23,6 +23,7 @@ export const templateValues = [
     "vault-transfer-rejected",
     "vault-transfer-accepted",
     "vault-transfer-cancelled",
+    "sof-requested",
 ] as const;
 
 export type Template = typeof templateValues[number];

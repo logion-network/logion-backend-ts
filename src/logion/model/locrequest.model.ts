@@ -343,8 +343,10 @@ export class LocRequestAggregateRoot {
         return this.toFileDescription(removedFile);
     }
 
-    addLink(itemDescription: LinkDescription) {
-        this.ensureOpen();
+    addLink(itemDescription: LinkDescription, ensureOpen: boolean = true) {
+        if (ensureOpen) {
+            this.ensureOpen();
+        }
         if (this.hasLink(itemDescription.target)) {
             throw new Error("A link with given target was already added to this LOC");
         }
@@ -744,6 +746,10 @@ export interface NewLocRequestParameters {
     readonly description: LocRequestDescription;
 }
 
+export interface NewSofRequestParameters extends NewLocRequestParameters {
+    readonly target: string;
+}
+
 @injectable()
 export class LocRequestFactory {
 
@@ -754,6 +760,16 @@ export class LocRequestFactory {
     async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
         const request = await this.newLocRequest(params);
         request.accept(moment())
+        return request;
+    }
+
+    async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
+        const { target } = params
+        const request = await this.newLocRequest(params);
+        request.addLink({
+            target,
+            nature: "Original LOC"
+        }, false)
         return request;
     }
 
