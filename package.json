@@ -39,6 +39,7 @@
         "ipfs-client": "^0.7.8",
         "jose": "^4.6.0",
         "logion-api": "^0.1.1",
+        "moment": "^2.29.3",
         "mongoose": "^6.1.6",
         "mongoose-to-swagger": "^1.4.0",
         "node-fetch": "3.1.1",
