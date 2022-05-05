@@ -753,7 +753,7 @@ export class LocRequestController extends ApiController {
             requesterAddress: loc.requesterAddress,
             ownerAddress: this.authenticationService.nodeOwner,
             description,
-            locType: loc.locType!,
+            locType: 'Transaction',
             createdOn: moment().toISOString(),
             userIdentity
         }
