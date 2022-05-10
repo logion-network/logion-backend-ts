@@ -65,15 +65,14 @@ export class AuthenticationController extends ApiController {
     async signIn(signInRequest: SignInRequestView): Promise<SignInResponseView> {
         const sessionId = uuid();
         const createdOn = moment();
-        signInRequest.addresses?.forEach(address => {
-                const session = this.sessionFactory.newSession({
-                    userAddress: address,
-                    sessionId,
-                    createdOn
-                });
-                this.sessionRepository.save(session);
-            }
-        )
+        for(const address of signInRequest.addresses!) {
+            const session = this.sessionFactory.newSession({
+                userAddress: address,
+                sessionId,
+                createdOn
+            });
+            await this.sessionRepository.save(session);
+        }
         return Promise.resolve({ sessionId });
     }
 
