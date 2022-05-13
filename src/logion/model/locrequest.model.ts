@@ -746,8 +746,7 @@ export interface NewLocRequestParameters {
     readonly description: LocRequestDescription;
 }
 
-export interface NewSofRequestParameters extends NewLocRequestParameters {
-    readonly target: string;
+export interface NewSofRequestParameters extends NewLocRequestParameters, LinkDescription {
 }
 
 @injectable()
@@ -764,12 +763,8 @@ export class LocRequestFactory {
     }
 
     async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
-        const { target } = params
         const request = await this.newLocRequest(params);
-        request.addLink({
-            target,
-            nature: "Original LOC"
-        }, false)
+        request.addLink(params, false)
         return request;
     }
 

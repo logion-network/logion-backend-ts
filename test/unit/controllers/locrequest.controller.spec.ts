@@ -560,8 +560,10 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBe(REQUEST_ID);
                 expect(response.body.status).toBe("REQUESTED");
             })
-        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(
-            param => param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() }`)))
+        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(param =>
+                param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() }` &&
+                param.nature === "Original LOC"))
+        )
     })
 
     it('creates a SOF request for Collection LOC', async () => {
@@ -581,8 +583,10 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBe(REQUEST_ID);
                 expect(response.body.status).toBe("REQUESTED");
             })
-        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(
-            param => param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() } - ${ itemId }`)))
+        factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(param =>
+            param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() } - ${ itemId }` &&
+            param.nature === `Original LOC - Collection Item: ${ itemId }`))
+        )
     })
 })
 

@@ -159,11 +159,12 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         const target = "target-loc"
-        await whenCreatingSofRequest(target);
+        const nature = "Original LOC"
+        await whenCreatingSofRequest(target, nature);
         thenRequestCreatedWithDescription(description);
         expect(createdLocRequest.links?.length).toBe(1)
         expect(createdLocRequest.links![0].target).toEqual(target)
-        expect(createdLocRequest.links![0].nature).toEqual("Original LOC")
+        expect(createdLocRequest.links![0].nature).toEqual(nature)
     });
 
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity): LocRequestDescription {
@@ -712,12 +713,13 @@ async function whenCreatingLocRequest() {
     });
 }
 
-async function whenCreatingSofRequest(target: string) {
+async function whenCreatingSofRequest(target: string, nature: string) {
     const factory = new LocRequestFactory(repository.object());
     createdLocRequest = await factory.newSofRequest({
         id: requestId,
         description: locDescription,
-        target
+        target,
+        nature
     });
 }
 
