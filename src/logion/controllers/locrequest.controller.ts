@@ -741,12 +741,14 @@ export class LocRequestController extends ApiController {
         const userIdentity = requireDefined(await this.findUserIdentity(loc))
 
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
+        let linkNature = `Original LOC`;
         if (loc.locType === 'Collection') {
             const itemId = requireDefined(createSofRequestView.itemId,
                 () => badRequest("Missing itemId"));
             requireDefined(await this.collectionRepository.findBy(locId, itemId),
                 () => badRequest("Item not found"));
             description = `${ description } - ${ itemId }`
+            linkNature = `${ linkNature } - Collection Item: ${ itemId }`
         }
 
         const requestDescription: LocRequestDescription = {
@@ -761,6 +763,7 @@ export class LocRequestController extends ApiController {
             id: uuid(),
             description: requestDescription,
             target: locId,
+            nature: linkNature,
         });
         await this.locRequestRepository.save(request);
 
