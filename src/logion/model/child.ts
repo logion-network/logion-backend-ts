@@ -65,21 +65,23 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
     }
 }
 
-export function deleteChild<T extends Child>(childToDeleteIndex: number, children: T[], childrenToDelete: T[]) {
-    const childToDelete = children[childToDeleteIndex];
+export function deleteChild<T extends Child>(arrayIndex: number, children: T[], childrenToDelete: T[]) {
+    const childToDelete = children[arrayIndex];
     childrenToDelete.push(childToDelete)
-    children.splice(childToDeleteIndex, 1)
+    children.splice(arrayIndex, 1)
 }
 
-export function deleteIndexedChild<T extends Child & HasIndex>(childToDeleteIndex: number, children: T[], childrenToDelete: T[]) {
-    deleteChild(childToDeleteIndex, children, childrenToDelete)
-    reindexChildren(childToDeleteIndex, children)
+export function deleteIndexedChild<T extends Child & HasIndex>(arrayIndex: number, children: T[], childrenToDelete: T[]) {
+    const dbIndex = children[arrayIndex].index!;
+    deleteChild(arrayIndex, children, childrenToDelete);
+    reindexChildren(dbIndex, children)
 }
 
-function reindexChildren<T extends Child & HasIndex>(deletedChildIndex: number, children: T[]) {
-    for (let i = deletedChildIndex; i < children.length; ++i) {
-        const child: T = children[i];
-        child.index = child.index! - 1;
-        child._toUpdate = true;
+function reindexChildren<T extends Child & HasIndex>(dbIndex: number, children: T[]) {
+    for (let child of children) {
+        if (child.index! > dbIndex) {
+            child.index = child.index! - 1;
+            child._toUpdate = true;
+        }
     }
 }
