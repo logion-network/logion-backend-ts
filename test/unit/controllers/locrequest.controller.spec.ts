@@ -21,7 +21,7 @@ import { FileStorageService } from "../../../src/logion/services/file.storage.se
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
-import { UUID } from "logion-api/dist/UUID";
+import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
 
 const testUserIdentity = {

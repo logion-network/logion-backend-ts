@@ -34,7 +34,7 @@ import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
-import { UUID } from "logion-api/dist/UUID";
+import { UUID } from "@logion/node-api/dist/UUID";
 import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
 
