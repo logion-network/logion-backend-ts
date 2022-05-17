@@ -1,5 +1,5 @@
-import { Compact } from '@polkadot/types';
-import { Address, Balance, Block } from '@polkadot/types/interfaces';
+import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
+import { Address, Block } from '@polkadot/types/interfaces';
 import { AnyJson, Registry } from '@polkadot/types/types';
 import { JsonArgs, JsonMethod, toJsonCall } from "./call";
 import { FeesCalculator, FeesService, WeightInfo } from "./fees.service";
@@ -117,7 +117,7 @@ export class ExtrinsicBuilder {
             method: JsonMethod;
             signer: Address | null;
             args: JsonArgs;
-            tip: Compact<Balance> | null;
+            tip: ICompact<INumber> | null;
             paysFee: boolean | null;
             encodedLength: number;
         }
@@ -136,7 +136,7 @@ export class ExtrinsicBuilder {
     public method: JsonMethod;
     public signer: Address | null;
     public args: JsonArgs;
-    public tip: Compact<Balance> | null;
+    public tip: ICompact<INumber> | null;
     public partialFee: () => Promise<bigint>;
     public events: JsonEvent[];
     public paysFee: boolean | null;
