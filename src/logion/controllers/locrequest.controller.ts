@@ -1,6 +1,5 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse, HttpDelete } from "dinoloop";
-import fileUpload from 'express-fileupload';
 import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
@@ -37,6 +36,7 @@ import { DirectoryService } from "../services/directory.service";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
+import { getUploadedFile } from "./fileupload";
 
 const { logger } = Log;
 
@@ -416,17 +416,7 @@ export class LocRequestController extends ApiController {
             .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can submit a file")
             .address
 
-        const files: fileUpload.FileArray = this.request.files;
-        if(files === undefined || files === null) {
-            throw new Error("No file detected");
-        }
-        const uploadedFiles: fileUpload.UploadedFile | fileUpload.UploadedFile[] = files['file'];
-        let file: fileUpload.UploadedFile;
-        if(uploadedFiles instanceof Array) {
-            file = uploadedFiles[0];
-        } else {
-            file = uploadedFiles;
-        }
+        const file = getUploadedFile(this.request);
 
         const hash = await sha256File(file.tempFilePath);
         if(request.hasFile(hash)) {

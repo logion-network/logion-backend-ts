@@ -22,6 +22,7 @@ import { Container } from "inversify";
 import { AppContainer } from "./container/app.container";
 import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
 import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller";
+import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -50,6 +51,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForLoc(spec);
     fillInSpecForHealth(spec);
     fillInSpecForCollection(spec);
+    fillInSpecForLoFile(spec);
     fillInSpecForVaultTransferRequest(spec);
 
     return spec;
@@ -74,6 +76,7 @@ export function setupApp(app: Express) {
     dino.registerController(HealthController);
     dino.registerController(CollectionController);
     dino.registerController(VaultTransferRequestController);
+    dino.registerController(LoFileController);
     dino.registerApplicationError(ApplicationErrorController);
     dino.requestEnd(JsonResponse);
 

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { exportFile, deleteFile } from '../lib/db/large_objects';
+import { exportFile, deleteFile, importFile } from '../lib/db/large_objects';
 import { FileManager, DefaultFileManager, DefaultFileManagerConfiguration } from "../lib/ipfs/FileManager";
 import { DefaultShell } from "../lib/Shell";
 import { EncryptedFileWriter, EncryptedFileReader } from "../lib/crypto/EncryptedFile";
@@ -30,6 +30,10 @@ export class FileStorageService {
     async importFile(path: string): Promise<string> {
         const encrypted = await this.encryptedFileWriter.encrypt({ clearFile: path })
         return this.fileManager.moveToIpfs(encrypted)
+    }
+
+    async importFileInDB(path: string, comment: string): Promise<number> {
+        return await importFile(path, comment);
     }
 
     async exportFile(id: FileId, path: string): Promise<void> {
