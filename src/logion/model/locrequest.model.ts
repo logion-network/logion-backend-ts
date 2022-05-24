@@ -14,8 +14,8 @@ import { injectable } from "inversify";
 import { components } from "../controllers/components";
 import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
-import { order, HasIndex } from "../lib/db/collections";
-import { saveChildren, deleteIndexedChild, Child } from "./child";
+import { orderAndMap, HasIndex } from "../lib/db/collections";
+import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { Log } from "../util/Log";
@@ -192,7 +192,7 @@ export class LocRequestAggregateRoot {
     }
 
     getFiles(includeDraft: boolean = true): FileDescription[] {
-        return order(this.files?.filter(item => includeDraft || ! item.draft), file => this.toFileDescription(file));
+        return orderAndMap(this.files?.filter(item => includeDraft || ! item.draft), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -257,7 +257,7 @@ export class LocRequestAggregateRoot {
     }
 
     getMetadataItems(includeDraft: boolean = true): MetadataItemDescription[] {
-        return order(this.metadata?.filter(item => includeDraft || ! item.draft), this.toMetadataItemDescription);
+        return orderAndMap(this.metadata?.filter(item => includeDraft || ! item.draft), this.toMetadataItemDescription);
     }
 
     setMetadataItemAddedOn(name: string, addedOn: Moment) {
@@ -374,7 +374,7 @@ export class LocRequestAggregateRoot {
     }
 
     getLinks(includeDraft: boolean = true): LinkDescription[] {
-        return order(this.links?.filter(link => includeDraft || ! link.draft), this.toLinkDescription);
+        return orderAndMap(this.links?.filter(link => includeDraft || ! link.draft), this.toLinkDescription);
     }
 
     setLinkAddedOn(target:string, addedOn: Moment) {
@@ -669,7 +669,7 @@ export class LocRequestRepository {
         const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: LocFile) => E = (sql, file) => sql
             .where("request_id = :id", { id: root.id })
             .andWhere("hash = :hash", { hash: file.hash })
-        await saveChildren({
+        await saveIndexedChildren({
             children: root.files!,
             entityManager,
             entityClass: LocFile,
@@ -682,7 +682,7 @@ export class LocRequestRepository {
         const whereExpression: <E extends WhereExpressionBuilder>(sql: E, item: LocMetadataItem) => E = (sql, item) => sql
             .where("request_id = :id", { id: root.id })
             .andWhere("name = :name", { name: item.name })
-        await saveChildren({
+        await saveIndexedChildren({
             children: root.metadata!,
             entityManager,
             entityClass: LocMetadataItem,
@@ -695,7 +695,7 @@ export class LocRequestRepository {
         const whereExpression: <E extends WhereExpressionBuilder>(sql: E, link: LocLink) => E = (sql, link) => sql
             .where("request_id = :id", { id: root.id })
             .andWhere("target = :target", { target: link.target })
-        await saveChildren({
+        await saveIndexedChildren({
             children: root.links!,
             entityManager,
             entityClass: LocLink,

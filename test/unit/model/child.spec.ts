@@ -1,11 +1,10 @@
-import { HasIndex } from "../../../src/logion/lib/db/collections";
-import { deleteIndexedChild, Child } from "../../../src/logion/model/child";
+import { deleteIndexedChild, IndexedChild } from "../../../src/logion/model/child";
 
 describe("child", () => {
 
-    it("deleteIndexedChild", () => {
+    it("deleteIndexedChild with re-indexation", () => {
 
-        type Test = Child & HasIndex & { name: string }
+        type Test = IndexedChild & { name: string }
 
         const children: Test [] = [
             { name: "abc", index: 2 },
@@ -21,5 +20,25 @@ describe("child", () => {
         deleteIndexedChild(1, children, childrenToDelete)
         expect(children).toEqual(expectedChildrenAfterDelete)
         expect(childrenToDelete[0].name).toEqual("def")
+    })
+
+    it("deleteIndexedChild without re-indexation", () => {
+
+        type Test = IndexedChild & { name: string }
+
+        const children: Test [] = [
+            { name: "abc", index: 2 },
+            { name: "ghi", index: 0 },
+            { name: "def", index: 1 },
+        ]
+        const expectedChildrenAfterDelete: Test [] = [
+            { name: "ghi", index: 0 },
+            { name: "def", index: 1 },
+        ]
+        const childrenToDelete: Test[] = [];
+        // delete "abc"
+        deleteIndexedChild(0, children, childrenToDelete)
+        expect(children).toEqual(expectedChildrenAfterDelete)
+        expect(childrenToDelete[0].name).toEqual("abc")
     })
 })

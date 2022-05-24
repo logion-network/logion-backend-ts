@@ -3,7 +3,7 @@ import { EntityTarget } from "typeorm/common/EntityTarget";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
 import { Log } from "../util/Log";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
-import { HasIndex } from "../lib/db/collections";
+import { HasIndex, order } from "../lib/db/collections";
 
 const { logger } = Log;
 
@@ -13,12 +13,21 @@ export abstract class Child {
     public _toUpdate?: boolean
 }
 
+export type IndexedChild = Child & HasIndex;
+
 export interface Parameters<T> {
     children: T[],
     entityClass: EntityTarget<T>,
     entityManager: EntityManager,
     whereExpression?: <E extends WhereExpressionBuilder>(sql: E, child: T) => E,
     childrenToDelete?: T[]
+}
+
+export async function saveIndexedChildren<T extends IndexedChild>(parameters: Parameters<T>) {
+    return saveChildren({
+        ...parameters,
+        children: order(parameters.children),
+    })
 }
 
 export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
@@ -71,13 +80,13 @@ export function deleteChild<T extends Child>(arrayIndex: number, children: T[], 
     children.splice(arrayIndex, 1)
 }
 
-export function deleteIndexedChild<T extends Child & HasIndex>(arrayIndex: number, children: T[], childrenToDelete: T[]) {
+export function deleteIndexedChild<T extends IndexedChild>(arrayIndex: number, children: T[], childrenToDelete: T[]) {
     const dbIndex = children[arrayIndex].index!;
     deleteChild(arrayIndex, children, childrenToDelete);
     reindexChildren(dbIndex, children)
 }
 
-function reindexChildren<T extends Child & HasIndex>(dbIndex: number, children: T[]) {
+function reindexChildren<T extends IndexedChild>(dbIndex: number, children: T[]) {
     for (let child of children) {
         if (child.index! > dbIndex) {
             child.index = child.index! - 1;
