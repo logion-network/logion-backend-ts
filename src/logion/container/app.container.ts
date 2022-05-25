@@ -38,6 +38,7 @@ import { DirectoryService } from "../services/directory.service";
 import { VaultTransferRequestController } from '../controllers/vaulttransferrequest.controller';
 import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../model/vaulttransferrequest.model';
 import { NodeAuthorizationService } from "../services/nodeauthorization.service";
+import { LoFileFactory, LoFileRepository } from "../model/lofile.model";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -74,6 +75,8 @@ container.bind(DirectoryService).toSelf()
 container.bind(VaultTransferRequestRepository).toSelf();
 container.bind(VaultTransferRequestFactory).toSelf();
 container.bind(NodeAuthorizationService).toSelf();
+container.bind(LoFileFactory).toSelf();
+container.bind(LoFileRepository).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();
