@@ -98,7 +98,7 @@ describe('AuthenticationService authenticatedUserIs()', () => {
     it('does not authenticate invalid header', async () => {
         await testForFailure((authenticationService: AuthenticationService, request: Request) =>
             authenticationService.authenticatedUserIs(request, "SOME-OTHER-USER")
-        , "fake-auth-header", "Invalid Authorization header")
+        , "fake-auth-header", "No token found")
     })
 
     it('does not authenticate fake token', async () => {

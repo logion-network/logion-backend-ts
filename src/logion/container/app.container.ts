@@ -39,6 +39,8 @@ import { VaultTransferRequestController } from '../controllers/vaulttransferrequ
 import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../model/vaulttransferrequest.model';
 import { NodeAuthorizationService } from "../services/nodeauthorization.service";
 import { LoFileFactory, LoFileRepository } from "../model/lofile.model";
+import { SettingFactory, SettingRepository } from '../model/setting.model';
+import { SettingController } from '../controllers/setting.controller';
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -77,6 +79,8 @@ container.bind(VaultTransferRequestFactory).toSelf();
 container.bind(NodeAuthorizationService).toSelf();
 container.bind(LoFileFactory).toSelf();
 container.bind(LoFileRepository).toSelf();
+container.bind(SettingFactory).toSelf();
+container.bind(SettingRepository).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();
@@ -86,5 +90,6 @@ container.bind(LocRequestController).toSelf().inTransientScope();
 container.bind(ProtectionRequestController).toSelf().inTransientScope();
 container.bind(TransactionController).toSelf().inTransientScope();
 container.bind(VaultTransferRequestController).toSelf().inTransientScope();
+container.bind(SettingController).toSelf().inTransientScope();
 
 export { container as AppContainer };

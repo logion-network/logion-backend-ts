@@ -141,10 +141,18 @@ export class AuthenticationService {
 
     private extractBearerToken(request: Request): string {
         const header = request.header("Authorization");
-        if (header === undefined || !header.startsWith("Bearer ")) {
-            throw unauthorized("Invalid Authorization header");
+        if (header && header.startsWith("Bearer ")) {
+            return header.split(' ')[1].trim();
+        } else if(request.query) {
+            const token = request.query['jwt_token'];
+            if(typeof token === "string") {
+                return token;
+            } else {
+                throw unauthorized("No token found");
+            }
+        } else {
+            throw unauthorized("No token found");
         }
-        return header.split(' ')[1].trim();
     }
 
     private readonly privateKey: KeyObject

@@ -23,6 +23,7 @@ import { AppContainer } from "./container/app.container";
 import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
 import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller";
 import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller";
+import { SettingController } from "./controllers/setting.controller";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -77,6 +78,7 @@ export function setupApp(app: Express) {
     dino.registerController(CollectionController);
     dino.registerController(VaultTransferRequestController);
     dino.registerController(LoFileController);
+    dino.registerController(SettingController);
     dino.registerApplicationError(ApplicationErrorController);
     dino.requestEnd(JsonResponse);
 
