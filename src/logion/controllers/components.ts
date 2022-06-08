@@ -149,6 +149,8 @@ export interface components {
      * @description The new (recovery) and old (to recover) account data
      */
     RecoveryInfoView: {
+      /** @description The address to recover */
+      addressToRecover?: string;
       accountToRecover?: components["schemas"]["ProtectionRequestView"];
       recoveryAccount?: components["schemas"]["ProtectionRequestView"];
     };
