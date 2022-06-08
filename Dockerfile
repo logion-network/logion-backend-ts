@@ -1,5 +1,5 @@
 # Build backend
-FROM logionnetwork/logion-backend-calc:v1 AS calc
+FROM logionnetwork/logion-backend-calc:v2 AS calc
 FROM node:16 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
