@@ -231,6 +231,8 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('/:id/recovery-info')
     async fetchRecoveryInfo(_body: any, id: string): Promise<RecoveryInfoView> {
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, this.authenticationService.nodeOwner);
+
         const recovery = await this.protectionRequestRepository.findById(id);
         if(recovery === undefined
             || !recovery.isRecovery
@@ -246,18 +248,17 @@ export class ProtectionRequestController extends ApiController {
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(querySpecification);
         if (protectionRequests.length === 0) {
-            throw new Error("Activated protection request to recover not found");
+            return {
+                addressToRecover,
+                recoveryAccount: this.adapt(recovery),
+            };
+        } else {
+            return {
+                addressToRecover,
+                recoveryAccount: this.adapt(recovery),
+                accountToRecover: this.adapt(protectionRequests[0]),
+            };
         }
-        let authorizeUsers = [ this.authenticationService.nodeOwner ];
-        if(protectionRequests[0].addressToRecover) {
-            authorizeUsers.push(protectionRequests[0].addressToRecover);
-        }
-        authorizeUsers.push(protectionRequests[0].requesterAddress!);
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, ...authorizeUsers)
-        return {
-            recoveryAccount: this.adapt(recovery),
-            accountToRecover: this.adapt(protectionRequests[0]),
-        };
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription): void {

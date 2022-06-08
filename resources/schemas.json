@@ -239,6 +239,10 @@
             "RecoveryInfoView": {
                 "type": "object",
                 "properties": {
+                    "addressToRecover": {
+                        "type": "string",
+                        "description": "The address to recover"
+                    },
                     "accountToRecover": {
                         "$ref": "#/components/schemas/ProtectionRequestView"
                     },
