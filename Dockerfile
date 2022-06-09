@@ -1,5 +1,5 @@
 # Build backend
-FROM logionnetwork/logion-backend-calc:v2 AS calc
+FROM logionnetwork/logion-backend-calc:v3 AS calc
 FROM node:16 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
@@ -8,7 +8,7 @@ RUN yarn install
 RUN yarn build
 
 # Backend image
-FROM logionnetwork/logion-backend-base:v3
+FROM logionnetwork/logion-backend-base:v4
 
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules
