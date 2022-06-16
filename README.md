@@ -119,11 +119,8 @@ The backend's Docker image can be built with the following command:
 
 `docker build . -t logionnetwork/logion-backend:latest`
 
-When building `logionnetwork/logion-backend`, 2 images are required (they are publicly available through `hub.docker.com`):
+When building `logionnetwork/logion-backend`, a build image is required (it is publicly available through `hub.docker.com`):
 
-- `logionnetwork/logion-backend-base` which comes with a preconfigured Node.JS distribution
-- `logionnetwork/logion-backend-calc` which contains a pre-built `substrate/calc` package
-
-`logionnetwork/logion-backend-calc` can be rebuilt with `docker build calc -t logionnetwork/logion-backend-calc:latest`
+- `logionnetwork/logion-backend-base` which comes with a preconfigured Node.JS distribution as a pre-installed IPFS Cluster client
 
 `logionnetwork/logion-backend-base` can be rebuilt with `docker build docker/base/ -t logionnetwork/logion-backend-base:latest`

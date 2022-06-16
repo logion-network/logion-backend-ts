@@ -1,6 +1,3 @@
-# Import pre-built calc
-FROM logionnetwork/logion-backend-calc:v3 AS calc
-
 FROM node:16
 RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client ; rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/share/logion-backend

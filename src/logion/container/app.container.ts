@@ -12,7 +12,6 @@ import { ProtectionRequestRepository, ProtectionRequestFactory } from '../model/
 import { TransactionRepository, TransactionFactory } from '../model/transaction.model';
 import { SyncPointRepository, SyncPointFactory } from '../model/syncpoint.model';
 import { BlockExtrinsicsService } from "../services/block.service";
-import { FeesService } from "../services/fees.service";
 import { SignatureService } from '../services/signature.service';
 import { BlockConsumer } from '../services/blockconsumption.service';
 import { ExtrinsicDataExtractor } from '../services/extrinsic.data.extractor';
@@ -50,7 +49,6 @@ container.bind(ProtectionRequestRepository).toSelf();
 container.bind(ProtectionRequestFactory).toSelf();
 container.bind(PolkadotService).toSelf();
 container.bind(BlockExtrinsicsService).toSelf();
-container.bind(FeesService).toSelf();
 container.bind(SignatureService).toSelf();
 container.bind(ExtrinsicDataExtractor).toSelf();
 container.bind(TransactionExtractor).toSelf();
