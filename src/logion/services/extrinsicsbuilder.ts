@@ -1,8 +1,7 @@
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
-import { Address, Block } from '@polkadot/types/interfaces';
+import { Address, Block, Extrinsic } from '@polkadot/types/interfaces';
 import { AnyJson, Registry } from '@polkadot/types/types';
 import { JsonArgs, JsonMethod, toJsonCall } from "./call";
-import { FeesCalculator, FeesService, WeightInfo } from "./fees.service";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ExtrinsicError, JsonExtrinsic } from './types/responses/Extrinsic';
 import { ErrorService, Module } from "./error.service";
@@ -10,19 +9,14 @@ import { ApiPromise } from '@polkadot/api';
 
 export class ExtrinsicsBuilder {
 
-    constructor(feesService: FeesService, errorService: ErrorService, registry: Registry, api: ApiPromise, block: SignedBlockExtended) {
-        this.feesService = feesService;
+    constructor(errorService: ErrorService, registry: Registry, api: ApiPromise, block: SignedBlockExtended) {
         this.errorService = errorService;
         this.registry = registry;
         this.api = api;
         this.block = block;
     }
 
-    private feesService: FeesService;
-
     private errorService: ErrorService;
-
-    private feesCalculator: FeesCalculator | undefined = undefined;
 
     private registry: Registry;
 
@@ -64,7 +58,7 @@ export class ExtrinsicsBuilder {
                         const module: Module = jsonEvent.data[0]['module'];
                         extrinsicBuilder.error = () => this.errorService.findErrorWithApi(this.api, module);
                     }
-                    extrinsicBuilder.partialFee = () => this.calculatePartialFee(extrinsicBuilder.encodedLength, jsonEvent);
+                    extrinsicBuilder.partialFee = () => this.calculatePartialFee(extrinsicBuilder.extrinsic);
                 }
             }
         }
@@ -73,18 +67,15 @@ export class ExtrinsicsBuilder {
             .map(builder => builder.build());
     }
 
-    private createBuilder(extrinsic: TxWithEvent): ExtrinsicBuilder {
-        const { method, signer, isSigned, tip, encodedLength } = extrinsic.extrinsic;
-        const call = this.registry.createType('Call', method);
+    private createBuilder(extrinsicWithEvent: TxWithEvent): ExtrinsicBuilder {
+        const extrinsic = extrinsicWithEvent.extrinsic;
+        const call = this.registry.createType('Call', extrinsic.method);
         const jsonCall = toJsonCall(call, this.registry);
 
         return new ExtrinsicBuilder({
             method: jsonCall.method,
             args: jsonCall.args,
-            encodedLength,
-            signer: isSigned ? signer : null,
-            tip: isSigned ? tip : null,
-            paysFee: isSigned ? null : false,
+            extrinsic,
         });
     }
 
@@ -93,21 +84,10 @@ export class ExtrinsicsBuilder {
         return parentHash.every((byte) => !byte);
     }
 
-    private async calculatePartialFee(extrinsicEncodedLength: number, jsonEvent: JsonEvent): Promise<bigint> {
-        const weightInfo: WeightInfo = jsonEvent.data[jsonEvent.data.length - 1] as WeightInfo;
-        const feesCalculator = await this.feesCalculatorBuilder();
-        if (!weightInfo || !weightInfo.weight || !feesCalculator) {
-            return 0n;
-        } else {
-            return feesCalculator!.getPartialFees(weightInfo, extrinsicEncodedLength).valueOf();
-        }
-    }
-
-    private async feesCalculatorBuilder(): Promise<FeesCalculator | undefined> {
-        if(!this.feesCalculator) {
-            this.feesCalculator = await this.feesService.buildFeesCalculator(this.block.block);
-        }
-        return this.feesCalculator;
+    private async calculatePartialFee(extrinsic: Extrinsic): Promise<bigint> {
+        const dispatchInfo = await this.api.rpc.payment.queryInfo(extrinsic.toHex(), this.block.block.hash);
+        const partialFee = dispatchInfo.partialFee;
+        return partialFee.toBigInt();
     }
 }
 
@@ -115,21 +95,18 @@ export class ExtrinsicBuilder {
     constructor(
         params: {
             method: JsonMethod;
-            signer: Address | null;
             args: JsonArgs;
-            tip: ICompact<INumber> | null;
-            paysFee: boolean | null;
-            encodedLength: number;
+            extrinsic: Extrinsic;
         }
     ) {
         this.method = params.method;
-        this.signer = params.signer;
         this.args = params.args;
-        this.tip = params.tip;
+        this.extrinsic = params.extrinsic;
+        this.signer = params.extrinsic.isSigned ? params.extrinsic.signer : null;
+        this.paysFee = params.extrinsic.isSigned ? null : false;
+        this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null,
         this.partialFee = () => Promise.resolve(0n);
-        this.paysFee = params.paysFee;
         this.events = [];
-        this.encodedLength = params.encodedLength;
         this.error = () => null;
     }
 
@@ -137,10 +114,10 @@ export class ExtrinsicBuilder {
     public signer: Address | null;
     public args: JsonArgs;
     public tip: ICompact<INumber> | null;
+    public extrinsic: Extrinsic;
     public partialFee: () => Promise<bigint>;
     public events: JsonEvent[];
     public paysFee: boolean | null;
-    public encodedLength: number;
     public error: () => ExtrinsicError | null;
 
     build(): JsonExtrinsic {

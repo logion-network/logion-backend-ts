@@ -31,7 +31,7 @@ export function toJsonCall(
                 newArgs[paramName] = toJsonCallArray(argument, registry);
             } else if (argument instanceof GenericCall) {
                 newArgs[paramName] = toJsonCall(argument, registry);
-            } else if (paramName === 'call' && argument?.toRawType() === 'Bytes') {
+            } else if (paramName === 'call' && (argument?.toRawType() === 'Bytes' || argument?.toRawType() === 'WrapperKeepOpaque<Call>')) {
                 try {
                     const call = registry.createType('Call', argument.toHex());
                     newArgs[paramName] = toJsonCall(call, registry);

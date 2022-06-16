@@ -1,19 +1,16 @@
 # Build backend
-FROM logionnetwork/logion-backend-calc:v3 AS calc
 FROM node:16 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
-COPY --from=calc /tmp/calc/pkg calc/pkg
 RUN yarn install
 RUN yarn build
 
 # Backend image
-FROM logionnetwork/logion-backend-base:v4
+FROM logionnetwork/logion-backend-base:v5
 
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules
 COPY --from=build-backend /tmp/logion-backend/resources resources
-COPY --from=build-backend /tmp/logion-backend/calc/pkg calc/pkg
 
 ENV NODE_ENV=production
 ENV WS_PROVIDER_URL=ws://localhost:9944
