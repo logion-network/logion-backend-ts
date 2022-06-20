@@ -4,9 +4,9 @@ import moment from 'moment';
 import {
     ProtectionRequestDescription,
     ProtectionRequestFactory,
-    ProtectionRequestAggregateRoot,
+    ProtectionRequestAggregateRoot, ProtectionRequestStatus,
 } from '../../../src/logion/model/protectionrequest.model';
-import { BOB } from '../../helpers/addresses';
+import { BOB, CHARLY } from '../../helpers/addresses';
 
 describe('ProtectionRequestFactoryTest', () => {
 
@@ -60,6 +60,36 @@ describe('ProtectionRequestAggregateRootTest', () => {
 
         expect(() => request.reject("", decisionOn)).toThrowError();
     });
+
+    it("resubmit", () => {
+        const request = newProtectionRequestUsingFactory("REJECTED");
+        request.resubmit();
+        expect(request.status).toEqual("PENDING")
+    });
+
+    it("cancels a pending protection request ", () => {
+        const request = newProtectionRequestUsingFactory();
+        request.cancel();
+        expect(request.status).toEqual("CANCELLED")
+    });
+
+    it("cancels a rejected protection request", () => {
+        const request = newProtectionRequestUsingFactory("REJECTED");
+        request.cancel();
+        expect(request.status).toEqual("REJECTED_CANCELLED")
+    });
+
+    it("cancels an accepted protection request ", () => {
+        const request = newProtectionRequestUsingFactory("ACCEPTED");
+        request.cancel();
+        expect(request.status).toEqual("ACCEPTED_CANCELLED")
+    });
+
+    it("updates", () => {
+        const request = newProtectionRequestUsingFactory();
+        request.updateOtherLegalOfficer(CHARLY);
+        expect(request.otherLegalOfficerAddress).toEqual(CHARLY);
+    });
 });
 
 
@@ -85,10 +115,14 @@ const description: ProtectionRequestDescription = {
     addressToRecover: null,
 };
 
-function newProtectionRequestUsingFactory(): ProtectionRequestAggregateRoot {
+function newProtectionRequestUsingFactory(status?: ProtectionRequestStatus): ProtectionRequestAggregateRoot {
     const factory = new ProtectionRequestFactory();
-    return factory.newProtectionRequest({
+    const protectionRequest = factory.newProtectionRequest({
         id,
         description,
     });
+    if (status) {
+        protectionRequest.status = status;
+    }
+    return protectionRequest;
 }

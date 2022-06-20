@@ -34,6 +34,14 @@ export interface components {
       userPostalAddress?: components["schemas"]["PostalAddressView"];
     };
     /**
+     * AcceptProtectionRequestView
+     * @description Parameters for Protection Request's acceptance
+     */
+    UpdateProtectionRequestView: {
+      /** @description The SS58 address of the other legal officer a new request is submitted to */
+      otherLegalOfficerAddress?: string;
+    };
+    /**
      * FetchProtectionRequestsResponseView
      * @description The fetched Protection Requests
      */
@@ -47,7 +55,15 @@ export interface components {
      */
     FetchProtectionRequestsSpecificationView: {
       /** @description The statuses of expected Protection Requests */
-      statuses?: ("ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED")[];
+      statuses?: (
+        | "ACCEPTED"
+        | "PENDING"
+        | "REJECTED"
+        | "ACTIVATED"
+        | "CANCELLED"
+        | "REJECTED_CANCELLED"
+        | "ACCEPTED_CANCELLED"
+      )[];
       /**
        * @description The kind of protection request to be returned
        * @enum {string}
@@ -135,10 +151,17 @@ export interface components {
       /** @description The SS58 address of the requester */
       requesterAddress?: string;
       /**
-       * @description The status (retrieved from chain)
+       * @description The status
        * @enum {string}
        */
-      status?: "ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED";
+      status?:
+        | "ACCEPTED"
+        | "PENDING"
+        | "REJECTED"
+        | "ACTIVATED"
+        | "CANCELLED"
+        | "REJECTED_CANCELLED"
+        | "ACCEPTED_CANCELLED";
       /** @description The identification data of the requester */
       userIdentity?: components["schemas"]["UserIdentityView"];
       /** @description The postal address of the requester */

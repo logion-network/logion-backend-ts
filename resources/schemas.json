@@ -49,6 +49,17 @@
                 "title": "CreateProtectionRequestView",
                 "description": "A Protection Request to create"
             },
+            "UpdateProtectionRequestView": {
+                "type": "object",
+                "properties": {
+                    "otherLegalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the other legal officer a new request is submitted to"
+                    }
+                },
+                "title": "AcceptProtectionRequestView",
+                "description": "Parameters for Protection Request's acceptance"
+            },
             "FetchProtectionRequestsResponseView": {
                 "type": "object",
                 "properties": {
@@ -76,7 +87,10 @@
                                 "ACCEPTED",
                                 "PENDING",
                                 "REJECTED",
-                                "ACTIVATED"
+                                "ACTIVATED",
+                                "CANCELLED",
+                                "REJECTED_CANCELLED",
+                                "ACCEPTED_CANCELLED"
                             ]
                         }
                     },
@@ -216,12 +230,15 @@
                     },
                     "status": {
                         "type": "string",
-                        "description": "The status (retrieved from chain)",
+                        "description": "The status",
                         "enum": [
                             "ACCEPTED",
                             "PENDING",
                             "REJECTED",
-                            "ACTIVATED"
+                            "ACTIVATED",
+                            "CANCELLED",
+                            "REJECTED_CANCELLED",
+                            "ACCEPTED_CANCELLED"
                         ]
                     },
                     "userIdentity": {
