@@ -263,7 +263,7 @@ export class LocRequestController extends ApiController {
         const description = request.getDescription();
         if (description.requesterAddress) {
             const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-                expectedStatuses: [ "ACCEPTED", "ACTIVATED" ],
+                expectedStatuses: [ "ACCEPTED", "ACTIVATED", "ACCEPTED_CANCELLED" ],
                 kind: "ANY",
                 expectedRequesterAddress: description.requesterAddress,
             }));

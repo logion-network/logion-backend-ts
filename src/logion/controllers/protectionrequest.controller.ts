@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { ApiController, Controller, HttpPost, HttpPut, Async } from 'dinoloop';
+import { ApiController, Controller, HttpPost, HttpPut, Async, SendsResponse } from 'dinoloop';
 import { v4 as uuid } from 'uuid';
 import moment from 'moment';
 import { OpenAPIV3 } from 'express-oas-generator';
@@ -15,7 +15,14 @@ import {
 
 import { components } from './components';
 
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
+import {
+    addTag,
+    setControllerTag,
+    getRequestBody,
+    getDefaultResponses,
+    setPathParameters,
+    getDefaultResponsesNoContent
+} from './doc';
 import { requireDefined } from '../lib/assertions';
 import { AuthenticationService } from "../services/authentication.service";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
@@ -29,6 +36,7 @@ type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProt
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
 type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
+type UpdateProtectionRequestView = components["schemas"]["UpdateProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 
 const { logger } = Log;
@@ -46,6 +54,9 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     ProtectionRequestController.rejectProtectionRequest(spec);
     ProtectionRequestController.acceptProtectionRequest(spec);
     ProtectionRequestController.fetchRecoveryInfo(spec);
+    ProtectionRequestController.resubmit(spec);
+    ProtectionRequestController.cancel(spec);
+    ProtectionRequestController.update(spec);
 }
 
 @injectable()
@@ -259,6 +270,70 @@ export class ProtectionRequestController extends ApiController {
                 accountToRecover: this.adapt(protectionRequests[0]),
             };
         }
+    }
+
+    static resubmit(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/protection-request/{id}/resubmit"].post!;
+        operationObject.summary = "Re-submit a Protection Request";
+        operationObject.description = "The authenticated user must be the protection requester";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'id': "The ID of the request to resubmit" });
+    }
+
+    @Async()
+    @HttpPost('/:id/resubmit')
+    @SendsResponse()
+    async resubmit(_body: any, id: string): Promise<void> {
+        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
+            () => badRequest("Protection request not found"));
+        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
+        protectionRequest.resubmit();
+        this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-resubmitted' : 'protection-resubmitted', protectionRequest.getDescription())
+        this.response.sendStatus(204);
+    }
+
+    static cancel(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/protection-request/{id}/cancel"].post!;
+        operationObject.summary = "Cancels a Protection Request";
+        operationObject.description = "The authenticated user must be the protection requester";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'id': "The ID of the request to cancel" });
+    }
+
+    @Async()
+    @HttpPost('/:id/cancel')
+    @SendsResponse()
+    async cancel(_body: any, id: string): Promise<void> {
+        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
+            () => badRequest("Protection request not found"));
+        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
+        protectionRequest.cancel();
+        this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-cancelled' : 'protection-cancelled', protectionRequest.getDescription())
+        this.response.sendStatus(204);
+    }
+
+    static update(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/protection-request/{id}/update"].put!;
+        operationObject.summary = "Updates a Protection Request";
+        operationObject.description = "The authenticated user must be the protection requester";
+        operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.requestBody = getRequestBody({
+            description: "Protection Request update data",
+            view: "UpdateProtectionRequestView",
+        });
+        setPathParameters(operationObject, { 'id': "The ID of the request to update" });
+    }
+
+    @Async()
+    @HttpPut('/:id/update')
+    @SendsResponse()
+    async update(updateProtectionRequestView: UpdateProtectionRequestView, id: string): Promise<void> {
+        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
+            () => badRequest("Protection request not found"));
+        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
+        protectionRequest.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
+        this.notify("LegalOfficer", 'protection-updated', protectionRequest.getDescription())
+        this.response.sendStatus(204);
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription): void {

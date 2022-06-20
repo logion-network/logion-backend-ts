@@ -3,10 +3,11 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { UserIdentity } from "./useridentity";
 import { Log } from "../util/Log";
+import { badRequest } from "../controllers/errors";
 
 const { logger } = Log;
 
-export type ProtectionRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED';
+export type ProtectionRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED' | 'CANCELLED' | 'REJECTED_CANCELLED' | 'ACCEPTED_CANCELLED';
 
 export type ProtectionRequestKind = 'RECOVERY' | 'PROTECTION_ONLY' | 'ANY';
 
@@ -20,6 +21,11 @@ export class LegalOfficerDecision {
     accept(decisionOn: Moment, locId: string): void {
         this.decisionOn = decisionOn.toISOString();
         this.locId = locId;
+    }
+
+    clear() {
+        this.decisionOn = undefined;
+        this.rejectReason = undefined;
     }
 
     @Column("timestamp without time zone", { name: "decision_on", nullable: true })
@@ -37,7 +43,7 @@ export class ProtectionRequestAggregateRoot {
 
     reject(reason: string, decisionOn: Moment): void {
         if(this.status !== 'PENDING') {
-            throw new Error("Request is not pending");
+            throw badRequest("Request is not pending");
         }
         this.status = 'REJECTED';
         this.decision!.reject(reason, decisionOn);
@@ -45,7 +51,7 @@ export class ProtectionRequestAggregateRoot {
 
     accept(decisionOn: Moment, locId: string): void {
         if(this.status !== 'PENDING') {
-            throw new Error("Request is not pending");
+            throw badRequest("Request is not pending");
         }
         this.status = 'ACCEPTED';
         this.decision!.accept(decisionOn, locId);
@@ -56,6 +62,37 @@ export class ProtectionRequestAggregateRoot {
             logger.warn("Request is not accepted");
         }
         this.status = 'ACTIVATED';
+    }
+
+    resubmit() {
+        if(this.status !== 'REJECTED') {
+            throw badRequest("Request is not rejected")
+        }
+        this.status = "PENDING";
+        this.decision!.clear();
+    }
+
+    cancel() {
+        if(this.status === 'ACTIVATED') {
+            throw badRequest("Cannot cancel an already activated protection");
+        }
+        if(this.status === 'PENDING') {
+            this.status = 'CANCELLED';
+        } else if (this.status === 'REJECTED') {
+            this.status = 'REJECTED_CANCELLED';
+        } else {
+            this.status = 'ACCEPTED_CANCELLED';
+        }
+    }
+
+    updateOtherLegalOfficer(address: string) {
+        if(this.status === 'ACTIVATED') {
+            throw badRequest("Cannot update the LO of an already activated protection")
+        }
+        if (this.isRecovery) {
+            throw badRequest("Cannot update the LO of a recovery request")
+        }
+        this.otherLegalOfficerAddress = address;
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -70,7 +107,7 @@ export class ProtectionRequestAggregateRoot {
     @Column("boolean", {name: "is_recovery" })
     isRecovery?: boolean;
 
-    @Column({ length: 255, name: "requester_address", unique: true })
+    @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
     @Column({ length: 255 })
