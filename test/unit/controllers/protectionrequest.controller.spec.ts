@@ -265,13 +265,16 @@ describe('rejectProtectionRequest', () => {
 describe("User", () => {
 
     let protectionRequest: Mock<ProtectionRequestAggregateRoot>;
+    let repository = new Mock<ProtectionRequestRepository>();
+
 
     beforeEach(() => {
         protectionRequest = mockProtectionRequest();
+        repository = new Mock<ProtectionRequestRepository>();
     })
 
     it('re-submits', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest));
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest, repository));
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/resubmit")
@@ -280,10 +283,11 @@ describe("User", () => {
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "protection-resubmitted", It.IsAny<any>()))
         protectionRequest.verify(instance => instance.resubmit())
+        repository.verify(instance => instance.save(protectionRequest.object()));
     });
 
     it('fails to re-submit when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest), false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest, repository), false);
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/resubmit")
@@ -293,7 +297,7 @@ describe("User", () => {
     });
 
     it('cancels', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest));
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest, repository));
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/cancel")
@@ -302,10 +306,11 @@ describe("User", () => {
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "protection-cancelled", It.IsAny<any>()))
         protectionRequest.verify(instance => instance.cancel())
+        repository.verify(instance => instance.save(protectionRequest.object()));
     });
 
     it('fails to cancel when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest), false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest, repository), false);
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/cancel")
@@ -315,7 +320,7 @@ describe("User", () => {
     });
 
     it('updates', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest));
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest, repository));
 
         await request(app)
             .put('/api/protection-request/' + REQUEST_ID + "/update")
@@ -326,10 +331,11 @@ describe("User", () => {
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "protection-updated", It.IsAny<any>()))
         protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.Is<string>(value => value === CHARLY)))
+        repository.verify(instance => instance.save(protectionRequest.object()));
     });
 
     it('fails to update when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest), false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest, repository), false);
 
         await request(app)
             .put('/api/protection-request/' + REQUEST_ID + "/update")
@@ -427,31 +433,30 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
     return protectionRequest
 }
 
-function mockModelForUserResubmit(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>): void {
-    mockModelForUser(container, protectionRequest);
+function mockModelForUserResubmit(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>): void {
+    mockModelForUser(container, protectionRequest, repository);
     protectionRequest.setup(instance => instance.resubmit())
         .returns(undefined);
 }
 
-function mockModelForUserCancel(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>): void {
-    mockModelForUser(container, protectionRequest);
+function mockModelForUserCancel(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>): void {
+    mockModelForUser(container, protectionRequest, repository);
     protectionRequest.setup(instance => instance.cancel())
         .returns(undefined);
 }
 
-function mockModelForUserUpdate(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>): void {
-    mockModelForUser(container, protectionRequest);
+function mockModelForUserUpdate(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>): void {
+    mockModelForUser(container, protectionRequest, repository);
     protectionRequest.setup(instance => instance.updateOtherLegalOfficer(CHARLY))
         .returns(undefined);
 }
 
-function mockModelForUser(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>) {
+function mockModelForUser(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>) {
 
-    const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID))
         .returns(Promise.resolve(protectionRequest.object()));
-    repository.setup(instance => instance.save)
-        .returns(() => Promise.resolve());
+    repository.setup(instance => instance.save(protectionRequest.object()))
+        .returns(Promise.resolve());
     container.bind(ProtectionRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<ProtectionRequestFactory>();

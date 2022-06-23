@@ -288,6 +288,7 @@ export class ProtectionRequestController extends ApiController {
             () => badRequest("Protection request not found"));
         await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
         protectionRequest.resubmit();
+        await this.protectionRequestRepository.save(protectionRequest);
         this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-resubmitted' : 'protection-resubmitted', protectionRequest.getDescription())
         this.response.sendStatus(204);
     }
@@ -308,6 +309,7 @@ export class ProtectionRequestController extends ApiController {
             () => badRequest("Protection request not found"));
         await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
         protectionRequest.cancel();
+        await this.protectionRequestRepository.save(protectionRequest);
         this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-cancelled' : 'protection-cancelled', protectionRequest.getDescription())
         this.response.sendStatus(204);
     }
@@ -332,6 +334,7 @@ export class ProtectionRequestController extends ApiController {
             () => badRequest("Protection request not found"));
         await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
         protectionRequest.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
+        await this.protectionRequestRepository.save(protectionRequest);
         this.notify("LegalOfficer", 'protection-updated', protectionRequest.getDescription())
         this.response.sendStatus(204);
     }
