@@ -48,7 +48,7 @@ export class LocSynchronizer {
                 }
                 case "addFile": {
                     const locId = this.extractLocId('loc_id', extrinsic.args);
-                    const hash = extrinsic.args['file'].get('hash').toHex();
+                    const hash = extrinsic.args['file'].get('hash_').toHex();
                     await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                     break;
                 }
