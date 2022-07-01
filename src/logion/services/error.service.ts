@@ -16,8 +16,9 @@ export class ErrorService {
 
     findErrorWithApi(api: ApiPromise, module: Module | null): Error {
         if (module) {
+            const errorNumber = parseInt(module.error) >> 24
             try {
-                const metaError = api.registry.findMetaError(new Uint8Array([ module.index, module.error ]));
+                const metaError = api.registry.findMetaError(new Uint8Array([ module.index, errorNumber ]));
                 if (metaError) {
                     return {
                         section: metaError.section,
@@ -45,7 +46,7 @@ export class ErrorService {
 
 export interface Module {
     readonly index: number
-    readonly error: number
+    readonly error: string
 }
 
 export interface Error {
