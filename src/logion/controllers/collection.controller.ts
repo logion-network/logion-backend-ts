@@ -77,11 +77,12 @@ export class CollectionController extends ApiController {
     }
 
     private toView(collectionItem: CollectionItemAggregateRoot): CollectionItemView {
-        const { collectionLocId, itemId, addedOn } = collectionItem.getDescription();
+        const { collectionLocId, itemId, addedOn, files } = collectionItem.getDescription();
         return {
             collectionLocId,
             itemId,
-            addedOn: addedOn?.toISOString()
+            addedOn: addedOn?.toISOString(),
+            files: files?.map(file => file.hash)
         }
     }
 

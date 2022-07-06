@@ -959,6 +959,15 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "The creation timestamp"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files present in DB",
+                        "items": {
+                            "type": "string",
+                            "description": "The hash of a file present in DB",
+                            "example": "0x6dec991b1b61b44550769ae3c4b7f54f7cd618391f32bab2bc4e3a96cbb2b198"
+                        }
                     }
                 }
             },

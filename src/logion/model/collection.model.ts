@@ -15,7 +15,8 @@ import { injectable } from "inversify";
 export interface CollectionItemDescription {
     readonly collectionLocId: string
     readonly itemId: string
-    readonly addedOn?: Moment;
+    readonly addedOn?: Moment
+    readonly files?: CollectionItemFileDescription[]
 }
 
 export interface CollectionItemFileDescription {
@@ -30,7 +31,8 @@ export class CollectionItemAggregateRoot {
         return {
             collectionLocId: this.collectionLocId!,
             itemId: this.itemId!,
-            addedOn: moment(this.addedOn)
+            addedOn: moment(this.addedOn),
+            files: this.files?.map(file => file.getDescription()) || []
         }
     }
 
@@ -59,14 +61,7 @@ export class CollectionItemAggregateRoot {
     }
 
     getFile(hash: string): CollectionItemFileDescription {
-        return this.toFileDescription(this.file(hash)!);
-    }
-
-    private toFileDescription(file: CollectionItemFile): CollectionItemFileDescription {
-        return {
-            hash: file.hash!,
-            cid: file.cid!,
-        }
+        return this.file(hash)!.getDescription();
     }
 
     setAddedOn(addedOn: Moment) {
@@ -77,6 +72,12 @@ export class CollectionItemAggregateRoot {
 @Entity("collection_item_file")
 export class CollectionItemFile {
 
+    getDescription(): CollectionItemFileDescription {
+        return {
+            hash: this.hash!,
+            cid: this.cid!,
+        }
+    }
     @PrimaryColumn({ type: "uuid", name: "collection_loc_id" })
     collectionLocId?: string;
 

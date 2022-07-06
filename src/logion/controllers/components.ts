@@ -600,6 +600,8 @@ export interface components {
        * @description The creation timestamp
        */
       addedOn?: string;
+      /** @description The files present in DB */
+      files?: string[];
     };
     /**
      * RefreshRequestView
