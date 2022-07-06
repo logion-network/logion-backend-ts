@@ -8,7 +8,8 @@ import { decimalToUuid } from '../../../src/logion/lib/uuid';
 import {
     CollectionFactory,
     CollectionRepository,
-    CollectionItemAggregateRoot, CollectionItemDescription
+    CollectionItemAggregateRoot,
+    CollectionItemDescription
 } from "../../../src/logion/model/collection.model";
 
 describe("LocSynchronizer", () => {

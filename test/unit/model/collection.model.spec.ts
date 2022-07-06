@@ -32,6 +32,6 @@ describe("CollectionItemAggregateRoot", () => {
         const description = collectionItemAggregateRoot.getDescription();
         expect(description.collectionLocId).toEqual(collectionLocId)
         expect(description.itemId).toEqual(itemId)
-        expect(description.addedOn.toISOString()).toEqual(addedOn.toISOString())
+        expect(description.addedOn?.toISOString()).toEqual(addedOn.toISOString())
     })
 })
