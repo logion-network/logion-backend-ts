@@ -36,6 +36,18 @@ export class CollectionItemAggregateRoot {
         }
     }
 
+    addFile(fileDescription: CollectionItemFileDescription): CollectionItemFile {
+        const { hash, cid } = fileDescription
+        const file = new CollectionItemFile();
+        file.collectionLocId = this.collectionLocId;
+        file.itemId = this.itemId;
+        file.hash = hash;
+        file.cid = cid;
+        file.collectionItem = this;
+        this.files?.push(file);
+        return file
+    }
+
     @PrimaryColumn({ type: "uuid", name: "collection_loc_id" })
     collectionLocId?: string;
 
@@ -62,10 +74,6 @@ export class CollectionItemAggregateRoot {
 
     getFile(hash: string): CollectionItemFileDescription {
         return this.file(hash)!.getDescription();
-    }
-
-    setAddedOn(addedOn: Moment) {
-        this.addedOn = addedOn.toDate();
     }
 }
 
@@ -153,17 +161,7 @@ export class CollectionFactory {
         item.collectionLocId = collectionLocId;
         item.itemId = itemId;
         item.addedOn = addedOn?.toDate();
+        item.files = [];
         return item;
-    }
-
-    newFile(params: CollectionItemDescription, fileParams: CollectionItemFileDescription): CollectionItemFile {
-        const { collectionLocId, itemId } = params;
-        const { hash, cid } = fileParams;
-        const file = new CollectionItemFile()
-        file.collectionLocId = collectionLocId;
-        file.itemId = itemId;
-        file.hash = hash;
-        file.cid = cid;
-        return file;
     }
 }

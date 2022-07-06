@@ -22,6 +22,8 @@ import { rm } from "fs/promises";
 import { Log } from "../util/Log";
 import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
 import { ItemFile } from "@logion/node-api/dist/Types";
+import os from "os";
+import path from "path";
 
 const { logger } = Log;
 
@@ -129,7 +131,7 @@ export class CollectionController extends ApiController {
         }
         const cid = await this.fileStorageService.importFile(file.tempFilePath);
 
-        const collectionItemFile = this.collectionFactory.newFile({ collectionLocId, itemId }, { hash, cid });
+        const collectionItemFile = collectionItem.addFile({ hash, cid })
         await this.collectionRepository.saveFile(collectionItemFile);
 
         return { hash };
@@ -174,7 +176,7 @@ export class CollectionController extends ApiController {
             itemId,
             hash
         });
-        const tempFilePath = "/tmp/download-" + collectionLocId + "-" + itemId + "-" + hash;
+        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         if (!collectionItem.hasFile(hash)) {
             throw badRequest("Trying to download a file that is not uploaded yet.")
         }
@@ -186,6 +188,11 @@ export class CollectionController extends ApiController {
                 logger.error("Download failed: %s", error);
             }
         });
+    }
+
+    static tempFilePath(params: { collectionLocId: string, itemId: string, hash: string } ) {
+        const { collectionLocId, itemId, hash } = params
+        return path.join(os.tmpdir(), `download-${ collectionLocId }-${ itemId }-${ hash }`)
     }
 
 }

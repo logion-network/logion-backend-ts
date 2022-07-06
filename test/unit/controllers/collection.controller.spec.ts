@@ -5,7 +5,8 @@ import { Mock, It } from "moq.ts";
 import {
     CollectionRepository,
     CollectionItemAggregateRoot,
-    CollectionFactory, CollectionItemDescription, CollectionItemFileDescription, CollectionItemFile
+    CollectionFactory,
+    CollectionItemFile
 } from "../../../src/logion/model/collection.model";
 import moment from "moment";
 import request from "supertest";
@@ -93,13 +94,47 @@ describe("CollectionController", () => {
             });
     })
 
+    it('fails to adds file to a non-existing collection item', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            fileAlreadyInDB: false,
+            collectionItemPublished: false,
+            filePublished: false
+        }));
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .attach('file', buffer)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.error).toBe("Collection Item not found on chain");
+            });
+    })
+
+    it('fails to adds file to a non-existing collection item file', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            fileAlreadyInDB: false,
+            collectionItemPublished: true,
+            filePublished: false
+        }));
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .attach('file', buffer)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.error).toBe("Collection Item File not found on chain");
+            });
+    })
+
     it('downloads existing file given its hash', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             fileAlreadyInDB: true,
             collectionItemPublished: true,
             filePublished: true
         }));
-        const filePath = "/tmp/download-" + collectionLocId + "-" + itemId + "-" + SOME_DATA_HASH;
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
@@ -112,9 +147,7 @@ describe("CollectionController", () => {
                 break;
             }
         }
-        if (fileReallyExists) {
-            expect(true).toBe(false);
-        }
+        expect(fileReallyExists).toBe(false);
     })
 
     it('fails to download non-existing file', async () => {
@@ -123,7 +156,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true
         }));
-        const filePath = "/tmp/download-" + collectionLocId + "-" + itemId + "-" + SOME_DATA_HASH;
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
@@ -131,6 +164,23 @@ describe("CollectionController", () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.error).toBe("Trying to download a file that is not uploaded yet.");
+            });
+    })
+
+    it('fails to download from a non-existing collection item file', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            fileAlreadyInDB: false,
+            collectionItemPublished: false,
+            filePublished: false
+        }));
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
+        await writeFile(filePath, SOME_DATA);
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.error).toBe("Collection Item File not found on chain");
             });
     })
 })
@@ -176,14 +226,10 @@ function mockModel(container: Container, params: { fileAlreadyInDB: boolean, col
     container.bind(LocRequestRepository).toConstantValue(locRequestRepository.object())
 
     const collectionFactory = new Mock<CollectionFactory>()
-    collectionFactory.setup(instance => instance.newFile(
-        It.IsAny<CollectionItemDescription>(),
-        It.IsAny<CollectionItemFileDescription>()
-    )).returns(collectionItemFile.object())
     container.bind(CollectionFactory).toConstantValue(collectionFactory.object())
 
     const fileStorageService = new Mock<FileStorageService>()
-    const filePath = "/tmp/download-" + collectionLocId + "-" + itemId + "-" + SOME_DATA_HASH;
+    const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH });
     fileStorageService.setup(instance => instance.importFile(filePath))
         .returns(Promise.resolve(CID))
     fileStorageService.setup(instance => instance.exportFile({ cid: CID }, filePath))

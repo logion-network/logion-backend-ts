@@ -17,6 +17,7 @@ describe("CollectionFactory", () => {
         expect(collectionItemAggregateRoot.collectionLocId).toEqual(collectionLocId)
         expect(collectionItemAggregateRoot.itemId).toEqual(itemId)
         expect(collectionItemAggregateRoot.addedOn).toEqual(addedOn.toDate())
+        expect(collectionItemAggregateRoot.hasFile("unknown")).toBeFalse();
     })
 })
 
