@@ -1,5 +1,5 @@
 import { setupApp } from "../../helpers/testapp";
-import { readFile, writeFile } from 'fs/promises';
+import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
 import request, { Response } from "supertest";
@@ -23,6 +23,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
+import { fileExists } from "../../helpers/filehelper";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -828,15 +829,6 @@ const SOME_FILE = {
     nature: "file-nature",
     submitter: SUBMITTER
 };
-
-async function fileExists(filePath: string): Promise<boolean> {
-    try {
-        await readFile(filePath);
-        return true;
-    } catch {
-        return false;
-    }
-}
 
 function mockModelForGetSingle(container: Container): void {
     const request = mockRequest("OPEN",

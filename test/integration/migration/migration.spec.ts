@@ -6,7 +6,7 @@ const { logger } = Log;
 
 describe('Migration', () => {
 
-    const NUM_OF_TABLES = 12;
+    const NUM_OF_TABLES = 13;
 
     beforeEach(async () => {
         await connect([ "src/logion/model/*.model.ts" ], [ "src/logion/migration/*.ts" ], false);

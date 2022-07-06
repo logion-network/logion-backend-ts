@@ -40,6 +40,7 @@ import { NodeAuthorizationService } from "../services/nodeauthorization.service"
 import { LoFileFactory, LoFileRepository } from "../model/lofile.model";
 import { SettingFactory, SettingRepository } from '../model/setting.model';
 import { SettingController } from '../controllers/setting.controller';
+import { CollectionService } from "../services/collection.service";
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -68,6 +69,7 @@ container.bind(ErrorService).toSelf();
 container.bind(JsonResponse).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
+container.bind(CollectionService).toSelf();
 container.bind(AuthorityService).toSelf()
 container.bind(NotificationService).toSelf()
 container.bind(MailService).toSelf()
