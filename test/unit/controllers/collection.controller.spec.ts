@@ -56,7 +56,7 @@ describe("CollectionController", () => {
             .send()
             .expect(400)
             .then(response => {
-                expect(response.body.error).toEqual("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
+                expect(response.body.errorMessage).toEqual("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
             })
     })
 
@@ -90,7 +90,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("File is already uploaded");
+                expect(response.body.errorMessage).toBe("File is already uploaded");
             });
     })
 
@@ -107,7 +107,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item not found on chain");
             });
     })
 
@@ -124,7 +124,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
             });
     })
 
@@ -141,7 +141,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
+                expect(response.body.errorMessage).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
             });
     })
 
@@ -180,7 +180,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Trying to download a file that is not uploaded yet.");
+                expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
             });
     })
 
@@ -197,7 +197,7 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
             });
     })
 })
