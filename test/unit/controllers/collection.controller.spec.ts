@@ -69,7 +69,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .attach('file', buffer)
+            .attach('file', buffer, { filename: FILE_NAME })
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -77,7 +77,7 @@ describe("CollectionController", () => {
             });
     })
 
-    it('fails to adds file to collection item if already in DB', async () => {
+    it('fails to add file to collection item if already in DB', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             fileAlreadyInDB: true,
             collectionItemPublished: true,
@@ -86,7 +86,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .attach('file', buffer)
+            .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -94,7 +94,7 @@ describe("CollectionController", () => {
             });
     })
 
-    it('fails to adds file to a non-existing collection item', async () => {
+    it('fails to add file to a non-existing collection item', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             fileAlreadyInDB: false,
             collectionItemPublished: false,
@@ -103,7 +103,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .attach('file', buffer)
+            .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -111,7 +111,7 @@ describe("CollectionController", () => {
             });
     })
 
-    it('fails to adds file to a non-existing collection item file', async () => {
+    it('fails to add file to a non-existing collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             fileAlreadyInDB: false,
             collectionItemPublished: true,
@@ -120,11 +120,28 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .attach('file', buffer)
+            .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.error).toBe("Collection Item File not found on chain");
+            });
+    })
+
+    it('fails to add file if name does not match', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            fileAlreadyInDB: false,
+            collectionItemPublished: true,
+            filePublished: true
+        }));
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .attach('file', buffer, { filename: "WrongName.pdf" })
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.error).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
             });
     })
 
