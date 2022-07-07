@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
-import { CollectionRepository, CollectionItemAggregateRoot, CollectionFactory } from "../model/collection.model";
+import { CollectionRepository, CollectionFactory, CollectionItemDescription } from "../model/collection.model";
 import { components } from "./components";
 import { requireDefined } from "../lib/assertions";
 import { OpenAPIV3 } from "express-oas-generator";
@@ -72,14 +72,24 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemId')
     @Async()
     async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
-        const collectionItem = requireDefined(
-            await this.collectionRepository.findBy(collectionLocId, itemId),
+        requireDefined(
+            await this.collectionService.getCollectionItem({ collectionLocId, itemId }),
             () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`));
-        return this.toView(collectionItem)
+
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if (collectionItem) {
+            return this.toView(collectionItem.getDescription())
+        } else {
+            return this.toView({
+                collectionLocId,
+                itemId,
+                files: []
+            })
+        }
     }
 
-    private toView(collectionItem: CollectionItemAggregateRoot): CollectionItemView {
-        const { collectionLocId, itemId, addedOn, files } = collectionItem.getDescription();
+    private toView(collectionItem: CollectionItemDescription): CollectionItemView {
+        const { collectionLocId, itemId, addedOn, files } = collectionItem;
         return {
             collectionLocId,
             itemId,
