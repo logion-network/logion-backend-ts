@@ -32,9 +32,9 @@ const CID = "cid-784512";
 
 describe("CollectionController", () => {
 
-    it("gets an existing collection item", async () => {
+    it("gets an existing collection item in DB", async () => {
 
-        const app = setupApp(CollectionController, mockModelForGet);
+        const app = setupApp(CollectionController, container => mockModelForGet(container, true));
 
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }`)
@@ -44,24 +44,42 @@ describe("CollectionController", () => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
                 expect(response.body.itemId).toEqual(itemId)
                 expect(response.body.addedOn).toEqual(timestamp.toISOString())
+                expect(response.body.files[0]).toEqual(SOME_DATA_HASH)
+            })
+    })
+
+    it("gets a collection item existing on Chain only", async () => {
+
+        const app = setupApp(CollectionController, container => mockModelForGet(container, false));
+
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }`)
+            .send()
+            .expect(200)
+            .then(response => {
+                expect(response.body.collectionLocId).toEqual(collectionLocId)
+                expect(response.body.itemId).toEqual(itemId)
+                expect(response.body.addedOn).toBeUndefined()
+                expect(response.body.files).toEqual([])
             })
     })
 
     it("gets an error code when requesting non-existent collection item", async () => {
 
-        const app = setupApp(CollectionController, mockModelForGet);
+        const app = setupApp(CollectionController, container => mockModelForGet(container, false));
 
         await request(app)
             .get(`/api/collection/${ collectionLocId }/0x12345`)
             .send()
             .expect(400)
             .then(response => {
-                expect(response.body.error).toEqual("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
+                expect(response.body.errorMessage).toEqual("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
             })
     })
 
     it('adds file to collection item', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
             filePublished: true
@@ -79,6 +97,7 @@ describe("CollectionController", () => {
 
     it('fails to add file to collection item if already in DB', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
             collectionItemPublished: true,
             filePublished: true
@@ -90,12 +109,13 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("File is already uploaded");
+                expect(response.body.errorMessage).toBe("File is already uploaded");
             });
     })
 
     it('fails to add file to a non-existing collection item', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
             filePublished: false
@@ -107,12 +127,13 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item not found on chain");
             });
     })
 
     it('fails to add file to a non-existing collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
             filePublished: false
@@ -124,12 +145,13 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
             });
     })
 
     it('fails to add file if name does not match', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
             filePublished: true
@@ -141,12 +163,13 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
+                expect(response.body.errorMessage).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
             });
     })
 
     it('downloads existing file given its hash', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
             collectionItemPublished: true,
             filePublished: true
@@ -169,6 +192,7 @@ describe("CollectionController", () => {
 
     it('fails to download non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
             filePublished: true
@@ -180,12 +204,13 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Trying to download a file that is not uploaded yet.");
+                expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
             });
     })
 
     it('fails to download from a non-existing collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
             filePublished: false
@@ -197,17 +222,17 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.error).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
             });
     })
 })
 
-function mockModelForGet(container: Container): void {
-    return mockModel(container, { fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true})
+function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
+    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true})
 }
 
-function mockModel(container: Container, params: { fileAlreadyInDB: boolean, collectionItemPublished: boolean, filePublished: boolean }): void {
-    const { fileAlreadyInDB, collectionItemPublished, filePublished } = params;
+function mockModel(container: Container, params: { collectionItemAlreadyInDB: boolean, fileAlreadyInDB: boolean, collectionItemPublished: boolean, filePublished: boolean }): void {
+    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished } = params;
     const collectionItem = new CollectionItemAggregateRoot()
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
@@ -225,8 +250,13 @@ function mockModel(container: Container, params: { fileAlreadyInDB: boolean, col
     }
     const collectionItemFile = new Mock<CollectionItemFile>()
     const collectionRepository = new Mock<CollectionRepository>()
-    collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
-        .returns(Promise.resolve(collectionItem))
+    if (collectionItemAlreadyInDB) {
+        collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+            .returns(Promise.resolve(collectionItem))
+    } else {
+        collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+            .returns(Promise.resolve(undefined))
+    }
     collectionRepository.setup(instance => instance.createIfNotExist(
         It.Is<string>(param => param === collectionLocId),
         It.Is<string>(param => param === itemId),
