@@ -122,6 +122,9 @@ export class CollectionController extends ApiController {
         if (BigInt(file.size) !== publishedCollectionItemFile.size) {
             throw badRequest(`Invalid size. Actually uploaded ${ file.size } bytes while expecting ${ publishedCollectionItemFile.size } bytes`);
         }
+        if (file.name !== publishedCollectionItemFile.name) {
+            throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ publishedCollectionItemFile.name }`);
+        }
 
         const collectionItem = await this.collectionRepository.createIfNotExist(collectionLocId, itemId, () =>
             this.collectionFactory.newItem({ collectionLocId, itemId } )
