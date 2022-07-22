@@ -1,6 +1,11 @@
 import { It, Mock } from 'moq.ts';
 import { BOB } from '../../helpers/addresses';
-import { SignatureService, VerifyFunction, VerifyFunctionParams } from '../../../src/logion/services/signature.service';
+import {
+    SignatureService,
+    VerifyFunction,
+    VerifyFunctionParams,
+    EthereumSignatureService
+} from '../../../src/logion/services/signature.service';
 
 describe('SignatureService', () => {
 
@@ -62,14 +67,14 @@ async function testVerify(params: {
 }) {
     const verifier = new Mock<VerifyFunction>();
     const signature = "signature";
-    const expectedMessage = `<Bytes>${ params.expectedMessage }</Bytes>`;
+    const expectedMessage = params.expectedMessage;
     verifier.setup(instance => instance(It.Is<VerifyFunctionParams>(params =>
             params.signature === signature
             && params.address === BOB
             && params.message === expectedMessage
         )
     )).returns(Promise.resolve(true));
-    const service = SignatureService.of(verifier.object());
+    const service = new SignatureService(verifier.object());
 
     const result = await service.verify({
         signature,
@@ -82,3 +87,30 @@ async function testVerify(params: {
 
     expect(result || false).toBe(params.expectedResult);
 }
+
+const params = {
+    address: "0x6ef154673a6379b2CDEDeD6aF1c0d705c3c8272a",
+    resource: "authentication",
+    operation: "login",
+    timestamp: "2022-07-21T15:42:36.653+02:00",
+    attributes: [ "a0a9c8f5-743a-458e-8592-dd702bd9b58b" ]
+};
+
+describe("EthereumSignatureService", () => {
+
+    const signatureService = new EthereumSignatureService();
+
+    it("verifies valid signature", async () => {
+        expect(await signatureService.verify({
+            ...params,
+            signature: "0x38fe0c82e7f0fbdcb4c66467fb65360af6ed6384f375968913befe4d2663769f5e8a82982431ef4e0e51186e9a569f2fa485f534b90ba791676ac4f9083456e51c",
+        })).toBeTrue();
+    })
+
+    it("fails to verify invalid signature", async () => {
+        expect(await signatureService.verify({
+            ...params,
+            signature: "0x8807227a68aecb8012994fa6197b36ffa50fe8510edb6ce3f78073deed022da05c272ec6f330f67b1fe6729eb3b66129daa506c18e8ab5eec96b8420711150b61c",
+        })).toBeFalse();
+    })
+})

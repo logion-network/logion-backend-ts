@@ -13,7 +13,11 @@ import {
     NewSessionParameters
 } from "../../../src/logion/model/session.model";
 import moment from "moment";
-import { SignatureService, VerifyParams } from "../../../src/logion/services/signature.service";
+import {
+    VerifyParams,
+    PolkadotSignatureService,
+    EthereumSignatureService
+} from "../../../src/logion/services/signature.service";
 
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 type AuthenticateRequestView = components["schemas"]["AuthenticateRequestView"];
@@ -138,15 +142,18 @@ function mockDependenciesForSignIn(container: Container): void {
     sessionRepository.setup(instance => instance.save)
         .returns(() => Promise.resolve());
 
-    const signatureService = new Mock<SignatureService>();
-    container.bind(SignatureService).toConstantValue(signatureService.object())
+    const signatureService = new Mock<PolkadotSignatureService>();
+    container.bind(PolkadotSignatureService).toConstantValue(signatureService.object())
+
+    const ethereumSignatureService = new Mock<EthereumSignatureService>();
+    container.bind(EthereumSignatureService).toConstantValue(ethereumSignatureService.object());
 }
 
 function mockDependenciesForAuth(container: Container, verifies:boolean, sessionExists:boolean): void {
 
     const sessionAlice = new Mock<SessionAggregateRoot>();
 
-    const signatureService = new Mock<SignatureService>();
+    const signatureService = new Mock<PolkadotSignatureService>();
     signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
         params.address === ALICE
         && params.signature === "signature-ALICE"
@@ -165,7 +172,10 @@ function mockDependenciesForAuth(container: Container, verifies:boolean, session
         && params.attributes[0] === SESSION_ID
     )))
         .returns(Promise.resolve(verifies));
-    container.bind(SignatureService).toConstantValue(signatureService.object());
+    container.bind(PolkadotSignatureService).toConstantValue(signatureService.object());
+
+    const ethereumSignatureService = new Mock<EthereumSignatureService>();
+    container.bind(EthereumSignatureService).toConstantValue(ethereumSignatureService.object());
 
     const authenticationService = new Mock<AuthenticationService>();
     container.rebind(AuthenticationService).toConstantValue(authenticationService.object());

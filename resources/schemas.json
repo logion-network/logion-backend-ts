@@ -429,6 +429,14 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "The signature's timestamp"
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The type of signature. If not set, POLKADOT is assumed.",
+                        "enum": [
+                            "POLKADOT",
+                            "ETHEREUM"
+                        ]
                     }
                 },
                 "title": ""

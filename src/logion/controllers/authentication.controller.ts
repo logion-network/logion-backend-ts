@@ -6,9 +6,16 @@ import { AuthenticationService, Token, unauthorized } from "../services/authenti
 import { SessionRepository, SessionFactory } from "../model/session.model";
 import moment from "moment";
 import { requireDefined } from "../lib/assertions";
-import { SignatureService } from "../services/signature.service";
+import { PolkadotSignatureService, EthereumSignatureService } from "../services/signature.service";
 import { OpenAPIV3 } from "express-oas-generator";
-import { getRequestBody, getBodyContent, getDefaultResponses, setPathParameters, addTag, setControllerTag } from "./doc";
+import {
+    getRequestBody,
+    getBodyContent,
+    getDefaultResponses,
+    setPathParameters,
+    addTag,
+    setControllerTag
+} from "./doc";
 import { Log } from "../util/Log";
 
 const { logger } = Log;
@@ -41,7 +48,8 @@ export class AuthenticationController extends ApiController {
     constructor(
         private sessionRepository: SessionRepository,
         private sessionFactory: SessionFactory,
-        private signatureService: SignatureService,
+        private signatureService: PolkadotSignatureService,
+        private ethereumSignatureService: EthereumSignatureService,
         private authenticationService: AuthenticationService) {
         super();
     }
@@ -126,7 +134,10 @@ export class AuthenticationController extends ApiController {
             throw unauthorized("Invalid session")
         }
         await this.sessionRepository.delete(session);
-        if (!await this.signatureService.verify({
+        const signatureService = signature.type === 'ETHEREUM' ?
+            this.ethereumSignatureService :
+            this.signatureService;
+        if (!await signatureService.verify({
             signature: requireDefined(signature.signature),
             address: address,
             resource: AuthenticationController.RESOURCE,

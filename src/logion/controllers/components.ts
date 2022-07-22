@@ -279,6 +279,11 @@ export interface components {
        * @description The signature's timestamp
        */
       signedOn?: string;
+      /**
+       * @description The type of signature. If not set, POLKADOT is assumed.
+       * @enum {string}
+       */
+      type?: "POLKADOT" | "ETHEREUM";
     };
     TokenView: {
       /** @description The encoded JWT token */
