@@ -414,10 +414,10 @@
     "@jridgewell/resolve-uri" "^3.0.3"
     "@jridgewell/sourcemap-codec" "^1.4.10"
 
-"@logion/node-api@^0.3.0-1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@logion/node-api/-/node-api-0.3.1.tgz#af5ba53c94901246ccade069542364c2fa9b7070"
-  integrity sha512-x6TO7MLZ+And4e1Lyrhj0XxKwT+R3eC6oLN4VhPykfhfxY/lHFRpvM5ftvVsT3RoS6IgYctV2K21hvNeOLiKNw==
+"@logion/node-api@^0.3.2":
+  version "0.3.2"
+  resolved "https://registry.yarnpkg.com/@logion/node-api/-/node-api-0.3.2.tgz#faef8b78a4db9b514ca0259c7d09c45cffb32e8c"
+  integrity sha512-jrkH6n+/EIbnWRr04SLy7ABOeEgpymIOMdudcR3RiMTdPUtbSHi4amEupcivSrxf6aBQOyhGBmUYDgoqxFMp4A==
   dependencies:
     "@polkadot/api" "^8.8.2"
     "@polkadot/util" "^9.4.1"
