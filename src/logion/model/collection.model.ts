@@ -2,15 +2,15 @@ import {
     Entity,
     PrimaryColumn,
     Column,
-    getRepository,
     Repository,
     OneToMany,
     ManyToOne,
     JoinColumn,
-    getManager
 } from "typeorm";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
+
+import { getDataSource, getManager } from "../orm";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string
@@ -111,8 +111,8 @@ export class CollectionItemFile {
 export class CollectionRepository {
 
     constructor() {
-        this.repository = getRepository(CollectionItemAggregateRoot);
-        this.fileRepository = getRepository(CollectionItemFile);
+        this.repository = getDataSource().getRepository(CollectionItemAggregateRoot);
+        this.fileRepository = getDataSource().getRepository(CollectionItemFile);
     }
 
     readonly repository: Repository<CollectionItemAggregateRoot>;
@@ -130,7 +130,7 @@ export class CollectionRepository {
 
         return await getManager().transaction("REPEATABLE READ", async entityManager => {
             try {
-                const existingCollectionItem = await entityManager.findOne(CollectionItemAggregateRoot, {
+                const existingCollectionItem = await entityManager.findOneBy(CollectionItemAggregateRoot, {
                     collectionLocId,
                     itemId
                 });
@@ -148,7 +148,12 @@ export class CollectionRepository {
     }
 
     public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | undefined> {
-        return this.repository.findOne({ collectionLocId, itemId })
+        const result = await this.repository.findOneBy({ collectionLocId, itemId });
+        if(result === null) {
+            return undefined;
+        } else {
+            return result;
+        }
     }
 }
 

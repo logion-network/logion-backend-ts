@@ -72,7 +72,7 @@ function bindMocks(container: Container, up: boolean): void {
 
     const syncPointRepository = new Mock<SyncPointRepository>();
     if(up) {
-        syncPointRepository.setup(instance => instance.findByName(It.IsAny())).returns(Promise.resolve(undefined));
+        syncPointRepository.setup(instance => instance.findByName(It.IsAny())).returns(Promise.resolve(null));
     } else {
         syncPointRepository.setup(instance => instance.findByName(It.IsAny())).throws(new Error("DB is down"));
     }

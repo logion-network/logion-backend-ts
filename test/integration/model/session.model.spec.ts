@@ -24,17 +24,17 @@ describe('SessionRepository', () => {
 
     it("finds existing session", async () => {
         const session = await repository.find(userAddress, existingSessionId);
-        expect(session).toBeDefined();
+        expect(session).not.toBeNull();
     })
 
     it("does not find unknown sessionId", async () => {
         const session = await repository.find(userAddress, unknownSessionId);
-        expect(session).toBeUndefined();
+        expect(session).toBeNull();
     })
 
     it("does not find unknown userAddress", async () => {
         const session = await repository.find('unknown', existingSessionId);
-        expect(session).toBeUndefined();
+        expect(session).toBeNull();
     })
 
     it("saves session", async () => {

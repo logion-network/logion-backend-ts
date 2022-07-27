@@ -35,7 +35,7 @@ export class BlockConsumer {
         const head = this.blockService.getBlockNumber(headBlock.block);
 
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
-        let lastSynced = lastSyncPoint !== undefined ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
+        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
         if (lastSynced === head.valueOf()) {
             return;
         }
@@ -47,7 +47,7 @@ export class BlockConsumer {
 
             await this.syncPointRepository.delete(lastSyncPoint!);
             lastSynced = 0n;
-            lastSyncPoint = undefined;
+            lastSyncPoint = null;
         }
 
         let blocksToSync = head - lastSynced;
@@ -99,9 +99,9 @@ export class BlockConsumer {
         }
     }
 
-    private async sync(lastSyncPoint: SyncPointAggregateRoot | undefined, now: Moment, head: bigint): Promise<SyncPointAggregateRoot> {
+    private async sync(lastSyncPoint: SyncPointAggregateRoot | null, now: Moment, head: bigint): Promise<SyncPointAggregateRoot> {
         let current = lastSyncPoint;
-        if(current === undefined) {
+        if(current === null) {
             current = this.syncPointFactory.newSyncPoint({
                 name: TRANSACTIONS_SYNC_POINT_NAME,
                 latestHeadBlockNumber: head,

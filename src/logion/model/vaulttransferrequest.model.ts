@@ -1,6 +1,7 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository, Unique } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, Unique } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
+import { getDataSource } from "../orm";
 
 export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED' | 'REJECTED_CANCELLED';
 
@@ -144,13 +145,13 @@ export class FetchVaultTransferRequestsSpecification {
 export class VaultTransferRequestRepository {
 
     constructor() {
-        this.repository = getRepository(VaultTransferRequestAggregateRoot);
+        this.repository = getDataSource().getRepository(VaultTransferRequestAggregateRoot);
     }
 
     readonly repository: Repository<VaultTransferRequestAggregateRoot>;
 
-    public findById(id: string): Promise<VaultTransferRequestAggregateRoot | undefined> {
-        return this.repository.findOne(id);
+    public findById(id: string): Promise<VaultTransferRequestAggregateRoot | null> {
+        return this.repository.findOneBy({ id });
     }
 
     public async save(root: VaultTransferRequestAggregateRoot): Promise<void> {

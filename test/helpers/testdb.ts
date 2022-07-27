@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import fs from 'fs';
-import { createConnection, Connection, QueryRunner, MigrationInterface } from "typeorm";
+import { QueryRunner, MigrationInterface, DataSource } from "typeorm";
+import { createConnection } from '../../src/logion/orm';
 
 export async function connect(
     entities: (Function | string)[],
@@ -23,14 +24,14 @@ export async function connect(
     });
 }
 
-let connection: Connection | null = null;
+let connection: DataSource | null = null;
 
 export async function disconnect(): Promise<void> {
     if(connection == null) {
         throw new Error("No connection to close");
     }
     await connection.dropDatabase();
-    await connection.close();
+    await connection.destroy();
     connection = null;
 }
 
