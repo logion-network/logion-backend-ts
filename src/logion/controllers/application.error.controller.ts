@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 import { ErrorController } from 'dinoloop';
 
 import { Log } from "../util/Log";
+import { errorPayload } from './errors';
 
 const { logger } = Log;
 
@@ -12,10 +13,10 @@ export class ApplicationErrorController extends ErrorController {
         logger.error(this.error.stack);
         this.response
             .status(500)
-            .json({
-                message: 'Internal server error 500!',
-                errorMessage: this.error.message,
-                errorStack: this.error.stack
-            });
+            .json(errorPayload(
+                '500 Internal Server Error',
+                this.error.message,
+                this.error.stack
+            ));
     }
 }

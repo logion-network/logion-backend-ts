@@ -38,7 +38,7 @@ describe("LoFileRepository", () => {
         await checkNumOfRows("SELECT * FROM lo_file", 2);
     })
 
-    function check(loFile: LoFileAggregateRoot | null, id: string, contentType: string, oid: number) {
+    function check(loFile: LoFileAggregateRoot | undefined, id: string, contentType: string, oid: number) {
         expect(loFile?.id).toEqual(id)
         expect(loFile?.contentType).toEqual(contentType)
         expect(loFile?.oid).toEqual(oid)

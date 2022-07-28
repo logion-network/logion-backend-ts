@@ -301,16 +301,7 @@ export interface components {
     AuthenticateRequestView: {
       /**
        * @description A map of signatures, index by SS58 addresses of authentication requester
-       * @example {
-       *   "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": {
-       *     "signature": "0xdc54e22464db114b570ea21ec499181fb1fb3c2582529....",
-       *     "signedOn": "2021-09-17T13:13:05.833"
-       *   },
-       *   "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": {
-       *     "signature": "0xdc54e22464db114b570ea21ec499181fb1fb3c2582529....",
-       *     "signedOn": "2021-09-17T13:13:05.833"
-       *   }
-       * }
+       * @example [object Object]
        */
       signatures?: { [key: string]: components["schemas"]["SignatureView"] };
     };
@@ -321,16 +312,7 @@ export interface components {
     AuthenticateResponseView: {
       /**
        * @description A map of tokens, indexed by SS58 address of authentication requester
-       * @example {
-       *   "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": {
-       *     "value": "eyJhbGciOiJIUzM4NCI....",
-       *     "expiredOn": "2021-09-17T14:13:06.000"
-       *   },
-       *   "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": {
-       *     "value": "eyJhbGciOiJIUzM4NCI....",
-       *     "expiredOn": "2021-09-17T14:13:06.000"
-       *   }
-       * }
+       * @example [object Object]
        */
       tokens?: { [key: string]: components["schemas"]["TokenView"] };
     };
@@ -633,10 +615,7 @@ export interface components {
     RefreshRequestView: {
       /**
        * @description A map of tokens, index by SS58 addresses of refresh requester
-       * @example {
-       *   "5GEpejzbL7Ch8hrRuWsTVCfVRLFZm1zKMF989J4NSiH8JwPn": "eyJhbGciOiJIUzM4NCI....",
-       *   "5HQjUUY1uiuWoQyAgHNnYM31vvquBkAHyGpqBQYWqVrGKsdb": "eyJhbGciOiJIUzM4NCI...."
-       * }
+       * @example [object Object]
        */
       tokens?: { [key: string]: string };
     };

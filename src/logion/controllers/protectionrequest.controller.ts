@@ -245,7 +245,7 @@ export class ProtectionRequestController extends ApiController {
         await this.authenticationService.authenticatedUserIsOneOf(this.request, this.authenticationService.nodeOwner);
 
         const recovery = await this.protectionRequestRepository.findById(id);
-        if(recovery === null
+        if(recovery === undefined
             || !recovery.isRecovery
             || recovery.status !== 'PENDING'
             || recovery.addressToRecover === null) {

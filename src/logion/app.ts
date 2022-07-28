@@ -1,16 +1,13 @@
 // tslint:disable-next-line: no-require-imports no-var-requires
-import dotenv from 'dotenv';
+import { createConnection } from "typeorm";
 import express, { Express } from 'express';
 import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
 import { AppContainer } from './container/app.container';
 import { Scheduler } from "./scheduler/scheduler.service";
 import { Log } from "./util/Log";
 import { setupApp, predefinedSpec } from "./app.support";
-import { createConnection } from "./orm";
 
 const { logger } = Log;
-
-dotenv.config()
 
 require('source-map-support').install();
 

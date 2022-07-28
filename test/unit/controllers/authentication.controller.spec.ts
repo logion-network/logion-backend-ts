@@ -198,9 +198,9 @@ function mockDependenciesForAuth(container: Container, verifies:boolean, session
             .returns(Promise.resolve(sessionAlice.object()))
     } else {
         sessionRepository.setup(instance => instance.find(ALICE, SESSION_ID))
-            .returns(Promise.resolve(null))
+            .returns(Promise.resolve(undefined))
         sessionRepository.setup(instance => instance.find(BOB, SESSION_ID))
-            .returns(Promise.resolve(null))
+            .returns(Promise.resolve(undefined))
     }
     container.bind(SessionRepository).toConstantValue(sessionRepository.object());
     sessionRepository.setup(instance => instance.delete)
