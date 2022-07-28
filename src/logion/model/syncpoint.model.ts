@@ -1,7 +1,6 @@
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
-import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
-import { getDataSource } from '../orm';
+import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
 
 export const TRANSACTIONS_SYNC_POINT_NAME = "Transaction";
 
@@ -30,7 +29,7 @@ export class SyncPointAggregateRoot {
 export class SyncPointRepository {
 
     constructor() {
-        this.repository = getDataSource().getRepository(SyncPointAggregateRoot);
+        this.repository = getRepository(SyncPointAggregateRoot);
     }
 
     readonly repository: Repository<SyncPointAggregateRoot>;
@@ -39,8 +38,8 @@ export class SyncPointRepository {
         await this.repository.save(syncPoint);
     }
 
-    async findByName(name: string): Promise<SyncPointAggregateRoot | null> {
-        return await this.repository.findOneBy({ name });
+    async findByName(name: string): Promise<SyncPointAggregateRoot | undefined> {
+        return await this.repository.findOne(name);
     }
 
     async delete(syncPoint: SyncPointAggregateRoot): Promise<void> {

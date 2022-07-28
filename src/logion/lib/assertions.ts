@@ -1,5 +1,5 @@
-export function requireDefined<T>(value: T | undefined | null, errorSupplier?: () => Error): T {
-    if(value === undefined || value === null) {
+export function requireDefined<T>(value: T | undefined, errorSupplier?: () => Error): T {
+    if(value === undefined) {
         if (errorSupplier) {
             throw errorSupplier();
         } else {

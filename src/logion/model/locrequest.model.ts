@@ -2,11 +2,13 @@ import {
     Entity,
     PrimaryColumn,
     Column,
+    getRepository,
     Repository,
     ManyToOne,
     JoinColumn,
     OneToMany,
     Unique,
+    getManager
 } from "typeorm";
 import { injectable } from "inversify";
 import { components } from "../controllers/components";
@@ -17,7 +19,6 @@ import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { Log } from "../util/Log";
-import { getDataSource, getManager } from "../orm";
 
 const { logger } = Log;
 
@@ -641,13 +642,13 @@ export interface FetchLocRequestsSpecification {
 export class LocRequestRepository {
 
     constructor() {
-        this.repository = getDataSource().getRepository(LocRequestAggregateRoot);
+        this.repository = getRepository(LocRequestAggregateRoot);
     }
 
     readonly repository: Repository<LocRequestAggregateRoot>;
 
-    public findById(id: string): Promise<LocRequestAggregateRoot | null> {
-        return this.repository.findOneBy({ id });
+    public findById(id: string): Promise<LocRequestAggregateRoot | undefined> {
+        return this.repository.findOne(id);
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
@@ -776,10 +777,7 @@ export class LocRequestFactory {
         request.status = "REQUESTED";
         request.requesterAddress = description.requesterAddress;
         if(description.requesterIdentityLoc) {
-            const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
-            if(identityLoc !== null) {
-                request._requesterIdentityLoc = identityLoc;
-            }
+            request._requesterIdentityLoc = await this.repository.findById(description.requesterIdentityLoc);
             request.requesterIdentityLocId = description.requesterIdentityLoc;
         }
         request.ownerAddress = description.ownerAddress;
