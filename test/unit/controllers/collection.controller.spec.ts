@@ -20,6 +20,7 @@ import {
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import { writeFile } from "fs/promises";
 import { fileExists } from "../../helpers/filehelper";
+import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const itemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
@@ -82,7 +83,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
-            filePublished: true
+            filePublished: true,
+            restrictedDelivery: false,
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -100,7 +102,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
             collectionItemPublished: true,
-            filePublished: true
+            filePublished: true,
+            restrictedDelivery: false,
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -118,7 +121,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
-            filePublished: false
+            filePublished: false,
+            restrictedDelivery: false,
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -136,7 +140,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
-            filePublished: false
+            filePublished: false,
+            restrictedDelivery: false,
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -154,7 +159,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
-            filePublished: true
+            filePublished: true,
+            restrictedDelivery: false,
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -172,7 +178,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
             collectionItemPublished: true,
-            filePublished: true
+            filePublished: true,
+            restrictedDelivery: false,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
@@ -195,7 +202,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: true,
-            filePublished: true
+            filePublished: true,
+            restrictedDelivery: false,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
@@ -213,7 +221,8 @@ describe("CollectionController", () => {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
-            filePublished: false
+            filePublished: false,
+            restrictedDelivery: false,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
@@ -222,17 +231,54 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
+            });
+    })
+
+    it('downloads existing file given its hash and is owner', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: true,
+        }));
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
+        await writeFile(filePath, SOME_DATA);
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .expect(200, SOME_DATA)
+            .expect('Content-Type', /text\/plain/);
+    })
+
+    it('fails to download existing file given its hash and is not owner', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: false,
+        }));
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
+        await writeFile(filePath, SOME_DATA);
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");
             });
     })
 })
 
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
-    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true})
+    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true, restrictedDelivery: false})
 }
 
-function mockModel(container: Container, params: { collectionItemAlreadyInDB: boolean, fileAlreadyInDB: boolean, collectionItemPublished: boolean, filePublished: boolean }): void {
-    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished } = params;
+function mockModel(container: Container, params: { collectionItemAlreadyInDB: boolean, fileAlreadyInDB: boolean, collectionItemPublished: boolean, filePublished: boolean, restrictedDelivery: boolean, isOwner?: boolean }): void {
+    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished, restrictedDelivery, isOwner } = params;
     const collectionItem = new CollectionItemAggregateRoot()
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
@@ -293,7 +339,8 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     const publishedCollectionItem: CollectionItem = {
         id: itemId,
         description: "Item Description",
-        files: [ publishedCollectionItemFile ]
+        files: [ publishedCollectionItemFile ],
+        restrictedDelivery,
     }
     const collectionService = new Mock<CollectionService>()
     collectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
@@ -306,4 +353,9 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         .returns(Promise.resolve(filePublished ? publishedCollectionItemFile : undefined))
     container.bind(CollectionService).toConstantValue(collectionService.object())
 
+    const ownershipCheckService = new Mock<OwnershipCheckService>();
+    if(restrictedDelivery) {
+        ownershipCheckService.setup(instance => instance.isOwner(It.IsAny(), It.IsAny())).returnsAsync(isOwner || false);
+    }
+    container.bind(OwnershipCheckService).toConstantValue(ownershipCheckService.object())
 }

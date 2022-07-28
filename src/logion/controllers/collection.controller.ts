@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
+import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, ForbiddenException } from "dinoloop";
 import { CollectionRepository, CollectionFactory, CollectionItemDescription } from "../model/collection.model";
 import { components } from "./components";
 import { requireDefined } from "../lib/assertions";
@@ -12,7 +12,7 @@ import {
     getDefaultResponses,
     getDefaultResponsesWithAnyBody
 } from "./doc";
-import { badRequest } from "./errors";
+import { badRequest, forbidden } from "./errors";
 import { LocRequestRepository } from "../model/locrequest.model";
 import { AuthenticationService } from "../services/authentication.service";
 import { getUploadedFile } from "./fileupload";
@@ -24,6 +24,7 @@ import { CollectionService, GetCollectionItemFileParams } from "../services/coll
 import { ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
+import { OwnershipCheckService } from "../services/ownershipcheck.service";
 
 const { logger } = Log;
 
@@ -54,6 +55,7 @@ export class CollectionController extends ApiController {
         private collectionFactory: CollectionFactory,
         private fileStorageService: FileStorageService,
         private collectionService: CollectionService,
+        private ownershipCheckService: OwnershipCheckService,
     ) {
         super();
     }
@@ -175,25 +177,31 @@ export class CollectionController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
-        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
-            () => badRequest(`Collection ${ collectionLocId } not found`));
-        await (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner() || user.is(collectionLoc.requesterAddress), "Only Collection owner or requester can download a file")
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+
+        const publishedCollectionItem = requireDefined(await this.collectionService.getCollectionItem({
+            collectionLocId,
+            itemId
+        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        if(publishedCollectionItem.restrictedDelivery
+                && ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+            throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
+        }
 
         const collectionItem = requireDefined(
             await this.collectionRepository.findBy(collectionLocId, itemId),
             () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
+        if (!collectionItem.hasFile(hash)) {
+            throw badRequest("Trying to download a file that is not uploaded yet.")
+        }
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
             collectionLocId,
             itemId,
             hash
         });
-        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
-        if (!collectionItem.hasFile(hash)) {
-            throw badRequest("Trying to download a file that is not uploaded yet.")
-        }
         const file = collectionItem.getFile(hash);
+        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         await this.fileStorageService.exportFile(file, tempFilePath);
         this.response.download(tempFilePath, publishedCollectionItemFile.name, { headers: { "content-type": publishedCollectionItemFile.contentType } }, (error: any) => {
             rm(tempFilePath);
