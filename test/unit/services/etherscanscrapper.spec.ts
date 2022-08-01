@@ -2,38 +2,18 @@ import { EtherscanScrapper } from "../../../src/logion/services/etherscanscrappe
 
 describe("EtherscanScrapper", () => {
 
-    it("detects empty holder inventory page", () => {
-        testIsEmptyTokenHolderInventoryPage(emptyHolderInventory, true);
-    });
-
-    it("detects non-empty holder inventory page", () => {
-        testIsEmptyTokenHolderInventoryPage(holderInventoryWithToken, false);
-    });
-
     it("detects token in holder inventory page", () => {
-        testPageContainsToken(holderInventoryWithToken, true);
+        testPageContainsToken(tokenInventoryWithHolder, true);
     });
 
     it("does not detect token if not in holder inventory page", () => {
-        testPageContainsToken(holderInventoryWithAnotherToken, false);
-    });
-
-    it("finds last page in holder inventory page", () => {
-        const scrapper = new EtherscanScrapper(holderInventoryWithAnotherToken);
-        const lastPage = scrapper.getLastPage();
-        expect(lastPage).toBe(68);
+        testPageContainsToken(tokenInventoryWithAnotherHolder, false);
     });
 });
 
-function testIsEmptyTokenHolderInventoryPage(pageContent: string, expected: boolean) {
-    const scrapper = new EtherscanScrapper(pageContent);
-    const isEmpty = scrapper.isEmptyTokenHolderInventoryPage();
-    expect(isEmpty).toBe(expected);
-}
-
 function testPageContainsToken(pageContent: string, expected: boolean) {
     const scrapper = new EtherscanScrapper(pageContent);
-    const contains = scrapper.tokenHolderInventoryPageContainsToken("0x765df6da33c1ec1f83be42db171d7ee334a46df5", tokenId);
+    const contains = scrapper.tokenHolderInventoryPageContainsHolder(holderAddress);
     expect(contains).toBe(expected);
 }
 
@@ -239,9 +219,9 @@ export const emptyHolderInventory = `
 </style>
 </html>`;
 
-const tokenId = "4391";
+const holderAddress = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
 
-export const holderInventoryWithToken = `
+export const tokenInventoryWithHolder = `
 <!doctype html>
 <html lang="en">
 <head>
@@ -252,12 +232,12 @@ export const holderInventoryWithToken = `
 <meta name="format-detection" content="telephone=no">
 <meta name="robots" content="noindex">
 <link rel="shortcut icon" href='/images/favicon2.ico'>
-<script src="/assets/vendor/jquery/dist/jquery.min.js?v=22.7.3.1"></script>
-<script src="/assets/vendor/popper.js/dist/umd/popper.min.js?v=22.7.3.1"></script>
-<script src="/assets/vendor/bootstrap/bootstrap.min.js?v=22.7.3.1"></script>
-<script src="/assets/js/hs.core.js?v=22.7.3.1"></script>
-<link rel="stylesheet" href="/assets/vendor/font-awesome/css/fontawesome-all.min.css?v=22.7.3.1">
-<link rel="stylesheet" href="/assets/css/theme.min.css?v=22.7.3.1">
+<script src="/assets/vendor/jquery/dist/jquery.min.js?v=22.7.4.1"></script>
+<script src="/assets/vendor/popper.js/dist/umd/popper.min.js?v=22.7.4.1"></script>
+<script src="/assets/vendor/bootstrap/bootstrap.min.js?v=22.7.4.1"></script>
+<script src="/assets/js/hs.core.js?v=22.7.4.1"></script>
+<link rel="stylesheet" href="/assets/vendor/font-awesome/css/fontawesome-all.min.css?v=22.7.4.1">
+<link rel="stylesheet" href="/assets/css/theme.min.css?v=22.7.4.1">
 <style>
         #overlay {
          
@@ -326,12 +306,12 @@ export const holderInventoryWithToken = `
 <ul class="pagination pagination-sm mb-0"><li class="page-item disabled"><span class="page-link">First</span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-left small"></i></span><span class="sr-only">Previous</span></li><li Class="page-item disabled"><span Class="page-link text-nowrap">Page <strong class="font-weight-medium">1</strong> of <strong class="font-weight-medium">1</strong></span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-right small"></i></span><span class="sr-only">Previous</span></li><li class="page-item disabled"><span class="page-link">Last</span></li>
 </nav>
 </div>
-<div id='grid-container' class='row row-cols-mobile-1 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 mx-0'><div class='col mb-4'><div class='nft-block-wrapper'><a href='/nft/0x765df6da33c1ec1f83be42db171d7ee334a46df5/4391' target='_parent'><span class='nft-block bg-soft-secondary'><img class='nft-block-img' loading='lazy' style='width:64px;' src='/images/main/nft-placeholder.svg' onerror='nftImageErrorHandler(this)'></span></a><div class='font-size-1 text-secondary text-truncate mb-1'>Token ID: <a href='/token/0x765df6da33c1ec1f83be42db171d7ee334a46df5?a=4391' target='_parent' data-toggle='tooltip' title='4391'>4391</a></div><div class='font-size-1 text-secondary text-truncate' data-toggle='tooltip' title='Click to see transaction with last traded price of $1.61 (0.0010ETH)'>Last Traded: <a href='/tx/0xa93457007d2fddd604bd1a9228cd2f1bc99d6d338653b35a163857f5c9b18524' target='_parent'>$1.61 (0.0010 ETH)</a></div></div></div></div>
+<div id='grid-container' class='row row-cols-mobile-1 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 mx-0'><div class='col mb-4'><div class='nft-block-wrapper'><a href='/nft/0x765df6da33c1ec1f83be42db171d7ee334a46df5/4391' target='_parent'><span class='nft-block bg-soft-secondary'><img class='nft-block-img' loading='lazy' style='width:64px;' src='/images/main/nft-placeholder.svg' onerror='nftImageErrorHandler(this)'></span></a><div class='font-size-1 text-secondary text-truncate mb-1'>Token ID: <a href='/token/0x765df6da33c1ec1f83be42db171d7ee334a46df5?a=4391' target='_parent' data-toggle='tooltip' title='4391'>4391</a></div><div class='font-size-1 text-secondary text-truncate' data-toggle='tooltip' title='0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84'>Owner: <a href='/token/0x765df6da33c1ec1f83be42db171d7ee334a46df5?a=0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84' target='_parent'>0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84</a></div><div class='font-size-1 text-secondary text-truncate' data-toggle='tooltip' title='Click to see transaction with last traded price of $1.68 (0.0010ETH)'>Last Traded: <a href='/tx/0xa93457007d2fddd604bd1a9228cd2f1bc99d6d338653b35a163857f5c9b18524' target='_parent'>$1.68 (0.0010 ETH)</a></div></div></div></div>
 <div class="d-flex justify-content-md-end align-items-center text-secondary mb-2 mb-md-0 my-3">
 <div class="d-inline-block">
 </div>
 </div>
-</body>
+<script>(function(){var js = "window['__CF$cv$params']={r:'733ceb5e58d883db',m:'4wWRxK5BdQ0ZwwGEXkBoT8faH3h86EdLp33kbRo8.n8-1659339560-0-AcuzDIinHQuWFvSDPbcN1HijEZXVHL0M9m8LeImAr/YLZf6RXJ+GEho4rvzcB8X89Esflxy/woyh/WIKLbkyusIEpEs2Yth0CCICfjaeEnox52ijsBzfVIB1bxnJPB5SPGK28sAqXrl/F2VTLiSaK7NW8k5C8RCiJsJMEtJg7YdVhVLCX3v6P47NwjjafnsM2N2SOLj+Tt52pWIzD5ObDJ1vFj24rdQ4YpEiR+OE2tUZMSVZrH8xJCX7r2gCISMds5IZg2yBOkZg+tslucdxIds=',s:[0x278a0370ba,0x3efef1554e],u:'/cdn-cgi/challenge-platform/h/g'};var now=Date.now()/1000,offset=14400,ts=''+(Math.floor(now)-Math.floor(now%offset)),_cpo=document.createElement('script');_cpo.nonce='',_cpo.src='/cdn-cgi/challenge-platform/h/g/scripts/alpha/invisible.js?ts='+ts,document.getElementsByTagName('head')[0].appendChild(_cpo);";var _0xh = document.createElement('iframe');_0xh.height = 1;_0xh.width = 1;_0xh.style.position = 'absolute';_0xh.style.top = 0;_0xh.style.left = 0;_0xh.style.border = 'none';_0xh.style.visibility = 'hidden';document.body.appendChild(_0xh);function handler() {var _0xi = _0xh.contentDocument || _0xh.contentWindow.document;if (_0xi) {var _0xj = _0xi.createElement('script');_0xj.nonce = '';_0xj.innerHTML = js;_0xi.getElementsByTagName('head')[0].appendChild(_0xj);}}if (document.readyState !== 'loading') {handler();} else if (window.addEventListener) {document.addEventListener('DOMContentLoaded', handler);} else {var prev = document.onreadystatechange || function () {};document.onreadystatechange = function (e) {prev(e);if (document.readyState !== 'loading') {document.onreadystatechange = prev;handler();}};}})();</script></body>
 <script>
     $(window).on('load', function () {
         $('#overlay').fadeOut();                  
@@ -427,7 +407,7 @@ export const holderInventoryWithToken = `
 </style>
 </html>`;
 
-export const holderInventoryWithAnotherToken = `
+export const tokenInventoryWithAnotherHolder = `
 <!doctype html>
 <html lang="en">
 <head>
@@ -438,12 +418,12 @@ export const holderInventoryWithAnotherToken = `
 <meta name="format-detection" content="telephone=no">
 <meta name="robots" content="noindex">
 <link rel="shortcut icon" href='/images/favicon2.ico'>
-<script src="/assets/vendor/jquery/dist/jquery.min.js?v=22.7.3.1"></script>
-<script src="/assets/vendor/popper.js/dist/umd/popper.min.js?v=22.7.3.1"></script>
-<script src="/assets/vendor/bootstrap/bootstrap.min.js?v=22.7.3.1"></script>
-<script src="/assets/js/hs.core.js?v=22.7.3.1"></script>
-<link rel="stylesheet" href="/assets/vendor/font-awesome/css/fontawesome-all.min.css?v=22.7.3.1">
-<link rel="stylesheet" href="/assets/css/theme.min.css?v=22.7.3.1">
+<script src="/assets/vendor/jquery/dist/jquery.min.js?v=22.7.4.1"></script>
+<script src="/assets/vendor/popper.js/dist/umd/popper.min.js?v=22.7.4.1"></script>
+<script src="/assets/vendor/bootstrap/bootstrap.min.js?v=22.7.4.1"></script>
+<script src="/assets/js/hs.core.js?v=22.7.4.1"></script>
+<link rel="stylesheet" href="/assets/vendor/font-awesome/css/fontawesome-all.min.css?v=22.7.4.1">
+<link rel="stylesheet" href="/assets/css/theme.min.css?v=22.7.4.1">
 <style>
         #overlay {
          
@@ -509,10 +489,10 @@ export const holderInventoryWithAnotherToken = `
 &nbsp;A total of 1 token found
 </p>
 <nav aria-label="page navigation">
-<ul class="pagination pagination-sm mb-0"><li class="page-item disabled"><span class="page-link">First</span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-left small"></i></span><span class="sr-only">Previous</span></li><li Class="page-item disabled"><span Class="page-link text-nowrap">Page <strong class="font-weight-medium">1</strong> of <strong class="font-weight-medium">68</strong></span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-right small"></i></span><span class="sr-only">Previous</span></li><li class="page-item disabled"><span class="page-link">Last</span></li>
+<ul class="pagination pagination-sm mb-0"><li class="page-item disabled"><span class="page-link">First</span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-left small"></i></span><span class="sr-only">Previous</span></li><li Class="page-item disabled"><span Class="page-link text-nowrap">Page <strong class="font-weight-medium">1</strong> of <strong class="font-weight-medium">1</strong></span></li><li class="page-item disabled"><span class="page-link"><i class="fa fa-chevron-right small"></i></span><span class="sr-only">Previous</span></li><li class="page-item disabled"><span class="page-link">Last</span></li>
 </nav>
 </div>
-<div id='grid-container' class='row row-cols-mobile-1 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 mx-0'><div class='col mb-4'><div class='nft-block-wrapper'><a href='/nft/0x8Cef7873425D94E2588f10A08428280a2e6338e3/9985' target='_parent'><span class='nft-block bg-soft-secondary'><img class='nft-block-img' loading='lazy' style='width:64px;' src='/images/main/nft-placeholder.svg' onerror='nftImageErrorHandler(this)'></span></a><div class='font-size-1 text-secondary text-truncate mb-1'>Token ID: <a href='/token/0x8Cef7873425D94E2588f10A08428280a2e6338e3?a=9985' target='_parent' data-toggle='tooltip' title='9985'>9985</a></div><div class='font-size-1 text-secondary text-truncate'>Last Traded: N/A</div></div></div></div>
+<div id='grid-container' class='row row-cols-mobile-1 row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 row-cols-xl-6 mx-0'><div class='col mb-4'><div class='nft-block-wrapper'><a href='/nft/0x765df6da33c1ec1f83be42db171d7ee334a46df5/4392' target='_parent'><span class='nft-block bg-soft-secondary'><img class='nft-block-img' loading='lazy' style='width:64px;' src='/images/main/nft-placeholder.svg' onerror='nftImageErrorHandler(this)'></span></a><div class='font-size-1 text-secondary text-truncate mb-1'>Token ID: <a href='/token/0x765df6da33c1ec1f83be42db171d7ee334a46df5?a=4392' target='_parent' data-toggle='tooltip' title='4392'>4392</a></div><div class='font-size-1 text-secondary text-truncate' data-toggle='tooltip' title='0xe60ee66bd4db2e6da0f0c76275cb318add31fbf1'>Owner: <a href='/token/0x765df6da33c1ec1f83be42db171d7ee334a46df5?a=0xe60ee66bd4db2e6da0f0c76275cb318add31fbf1' target='_parent'>0xe60ee66bd4db2e6da0f0c76275cb318add31fbf1</a></div><div class='font-size-1 text-secondary text-truncate'>Last Traded: N/A</div></div></div></div>
 <div class="d-flex justify-content-md-end align-items-center text-secondary mb-2 mb-md-0 my-3">
 <div class="d-inline-block">
 </div>
