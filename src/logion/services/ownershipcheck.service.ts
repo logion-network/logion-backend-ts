@@ -31,26 +31,12 @@ export class OwnershipCheckService {
 
     private async isOwnerOfEthereumErc721(address: string, token: ItemToken): Promise<boolean> {
         const { contractHash, contractTokenId } = this.parseEthereumErc721TokenId(token.id);
-        let page = 1;
-        let lastPage = 1;
-        do {
-            const inventoryPage = await this.etherscanService.getTokenHolderInventoryPage({
-                contractHash,
-                address,
-                page,
-            });
-            const scrapper = new EtherscanScrapper(inventoryPage);
-            if(page === 1) {
-                lastPage = scrapper.getLastPage();
-            }
-            if(scrapper.isEmptyTokenHolderInventoryPage()) {
-                return false;
-            } else if(scrapper.tokenHolderInventoryPageContainsToken(contractHash, contractTokenId)) {
-                return true;
-            }
-            ++page;
-        } while(page <= lastPage);
-        return false;
+        const inventoryPage = await this.etherscanService.getTokenHolderInventoryPage({
+            contractHash,
+            tokenId: contractTokenId,
+        });
+        const scrapper = new EtherscanScrapper(inventoryPage);
+        return scrapper.tokenHolderInventoryPageContainsHolder(address);
     }
 
     private parseEthereumErc721TokenId(tokenId: string): { contractHash: string, contractTokenId: string } {
