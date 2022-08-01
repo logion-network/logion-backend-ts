@@ -265,7 +265,7 @@ describe("CollectionController", () => {
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
-            .expect(400)
+            .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");

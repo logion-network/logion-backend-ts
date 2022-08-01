@@ -1,4 +1,4 @@
-import { BadRequestException } from "dinoloop/modules/builtin/exceptions/exceptions";
+import { BadRequestException, ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 
 export function badRequest(error: string): Error {
     return new BadRequestException(errorPayload(
@@ -22,7 +22,7 @@ export function errorPayload(httpError: string, errorMessage: string, errorStack
 }
 
 export function forbidden(error: string): Error {
-    return new BadRequestException(errorPayload(
+    return new ForbiddenException(errorPayload(
         '403 Forbidden',
         error
     ));
