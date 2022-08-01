@@ -183,16 +183,18 @@ export class CollectionController extends ApiController {
             collectionLocId,
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
-        if(publishedCollectionItem.restrictedDelivery
-                && ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
-            throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
-        }
 
         const collectionItem = requireDefined(
             await this.collectionRepository.findBy(collectionLocId, itemId),
             () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
         if (!collectionItem.hasFile(hash)) {
             throw badRequest("Trying to download a file that is not uploaded yet.")
+        }
+
+        if(!publishedCollectionItem.restrictedDelivery) {
+            throw forbidden("No delivery allowed for this item's files");
+        } else if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+            throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         }
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({

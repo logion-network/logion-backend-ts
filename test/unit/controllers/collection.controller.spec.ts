@@ -173,7 +173,7 @@ describe("CollectionController", () => {
             });
     })
 
-    it('downloads existing file given its hash', async () => {
+    it('fails to download existing file given its hash if no restricted delivery', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
@@ -185,16 +185,11 @@ describe("CollectionController", () => {
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
-            .expect(200, SOME_DATA)
-            .expect('Content-Type', /text\/plain/);
-        let fileReallyExists = true;
-        for (let i = 0; i < 10; ++i) {
-            if (!await fileExists(filePath)) {
-                fileReallyExists = false;
-                break;
-            }
-        }
-        expect(fileReallyExists).toBe(false);
+            .expect(403)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.errorMessage).toBe("No delivery allowed for this item's files");
+            });
     })
 
     it('fails to download non-existing file', async () => {
@@ -203,7 +198,7 @@ describe("CollectionController", () => {
             fileAlreadyInDB: false,
             collectionItemPublished: true,
             filePublished: true,
-            restrictedDelivery: false,
+            restrictedDelivery: true,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
@@ -250,6 +245,14 @@ describe("CollectionController", () => {
             .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
             .expect(200, SOME_DATA)
             .expect('Content-Type', /text\/plain/);
+        let fileReallyExists = true;
+        for (let i = 0; i < 10; ++i) {
+            if (!await fileExists(filePath)) {
+                fileReallyExists = false;
+                break;
+            }
+        }
+        expect(fileReallyExists).toBe(false);
     })
 
     it('fails to download existing file given its hash and is not owner', async () => {
