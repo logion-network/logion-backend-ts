@@ -81,8 +81,8 @@
     "engines": {
         "node": ">=16"
     },
-    "workspaces": [],
     "resolutions": {
         "node-fetch": "2.6.7"
-    }
+    },
+    "packageManager": "yarn@3.2.2"
 }

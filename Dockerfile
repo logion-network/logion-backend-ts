@@ -2,7 +2,7 @@
 FROM node:16 AS build-backend
 WORKDIR /tmp/logion-backend
 COPY . .
-RUN yarn install
+RUN yarn install --immutable
 RUN yarn build
 
 # Backend image
