@@ -14,7 +14,7 @@ import {
 } from "./doc";
 import { badRequest, forbidden } from "./errors";
 import { LocRequestRepository } from "../model/locrequest.model";
-import { AuthenticationService } from "../services/authentication.service";
+import { AuthenticationService, LogionUserCheck } from "../services/authentication.service";
 import { getUploadedFile } from "./fileupload";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
@@ -25,6 +25,7 @@ import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service";
+import { RestrictedDeliveryService } from "../services/restricteddelivery.service";
 
 const { logger } = Log;
 
@@ -57,6 +58,7 @@ export class CollectionController extends ApiController {
         private fileStorageService: FileStorageService,
         private collectionService: CollectionService,
         private ownershipCheckService: OwnershipCheckService,
+        private restrictedDeliveryService: RestrictedDeliveryService,
     ) {
         super();
     }
@@ -178,16 +180,26 @@ export class CollectionController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
-        const collectionItem = await this.checkCanDownload(collectionLocId, itemId, hash);
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const collectionItem = await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
             collectionLocId,
             itemId,
             hash
         });
+
         const file = collectionItem.getFile(hash);
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         await this.fileStorageService.exportFile(file, tempFilePath);
+
+        await this.restrictedDeliveryService.setMetadata({
+            file: tempFilePath,
+            metadata: {
+                owner: authenticated.address
+            }
+        });
+
         this.response.download(tempFilePath, publishedCollectionItemFile.name, { headers: { "content-type": publishedCollectionItemFile.contentType } }, (error: any) => {
             rm(tempFilePath);
             if(error) {
@@ -196,9 +208,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownload(collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
-        const authenticated = await this.authenticationService.authenticatedUser(this.request);
-
+    private async checkCanDownload(authenticated: LogionUserCheck, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
         const publishedCollectionItem = requireDefined(await this.collectionService.getCollectionItem({
             collectionLocId,
             itemId
@@ -240,6 +250,7 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemId/files/:hash/check')
     @Async()
     async canDownloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
-        await this.checkCanDownload(collectionLocId, itemId, hash);
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
     }
 }

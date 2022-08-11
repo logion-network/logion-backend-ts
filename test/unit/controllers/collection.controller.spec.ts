@@ -21,6 +21,7 @@ import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import { writeFile } from "fs/promises";
 import { fileExists } from "../../helpers/filehelper";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
+import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const itemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
@@ -443,5 +444,9 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     if(restrictedDelivery) {
         ownershipCheckService.setup(instance => instance.isOwner(It.IsAny(), It.IsAny())).returnsAsync(isOwner || false);
     }
-    container.bind(OwnershipCheckService).toConstantValue(ownershipCheckService.object())
+    container.bind(OwnershipCheckService).toConstantValue(ownershipCheckService.object());
+
+    const restrictedDeliveryService = new Mock<RestrictedDeliveryService>();
+    restrictedDeliveryService.setup(instance => instance.setMetadata(It.IsAny())).returnsAsync();
+    container.bind(RestrictedDeliveryService).toConstantValue(restrictedDeliveryService.object());
 }
