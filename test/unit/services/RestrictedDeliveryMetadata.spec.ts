@@ -39,7 +39,7 @@ Some last line coming after the encoded metadata.
 `;
 }
 
-fdescribe("RestrictedDeliveryMetadataUpdater", () => {
+describe("RestrictedDeliveryMetadataUpdater", () => {
 
     it("finds metadata in plain text", () => {
         const description = imageDescription(owner);
