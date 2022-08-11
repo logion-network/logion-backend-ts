@@ -9,7 +9,7 @@
     },
     "license": "Apache-2.0",
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json --traceResolution",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
@@ -41,6 +41,7 @@
         "moment": "^2.29.4",
         "mongoose": "^6.5.0",
         "mongoose-to-swagger": "^1.4.0",
+        "node-exiftool": "^2.3.0",
         "node-fetch": "3.2.9",
         "nodemailer": "^6.7.7",
         "openapi-typescript": "5.1.0",

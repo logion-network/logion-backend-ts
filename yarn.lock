@@ -1994,6 +1994,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"catchment@npm:1.0.0":
+  version: 1.0.0
+  resolution: "catchment@npm:1.0.0"
+  checksum: 0f3dd789b320c44a20b28a84b707efe8fda57a7ad9f9ec8d15ca3e5a4eab2e557b792163e2408c6dc87995086385c5ad74b84af8ab39c67ce3bc21314aac4ad7
+  languageName: node
+  linkType: hard
+
 "cborg@npm:^1.5.4, cborg@npm:^1.6.0":
   version: 1.9.4
   resolution: "cborg@npm:1.9.4"
@@ -3715,6 +3722,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-stream@npm:1.1.0":
+  version: 1.1.0
+  resolution: "is-stream@npm:1.1.0"
+  checksum: 063c6bec9d5647aa6d42108d4c59723d2bd4ae42135a2d4db6eadbd49b7ea05b750fd69d279e5c7c45cf9da753ad2c00d8978be354d65aa9f6bb434969c6a2ae
+  languageName: node
+  linkType: hard
+
 "is-stream@npm:^2.0.0":
   version: 2.0.1
   resolution: "is-stream@npm:2.0.1"
@@ -4139,6 +4153,7 @@ __metadata:
     mongoose: ^6.5.0
     mongoose-to-swagger: ^1.4.0
     moq.ts: ^9.0.2
+    node-exiftool: ^2.3.0
     node-fetch: 3.2.9
     nodemailer: ^6.7.7
     nyc: ^15.1.0
@@ -4228,6 +4243,13 @@ __metadata:
     socks-proxy-agent: ^7.0.0
     ssri: ^9.0.0
   checksum: 2f6c294179972f56fab40fd8618f07841e06550692bb78f6da16e7afaa9dca78c345b08cf44a77a8907ef3948e4dc77e93eb7492b8381f1217d7ac057a7522f8
+  languageName: node
+  linkType: hard
+
+"makepromise@npm:1.0.0":
+  version: 1.0.0
+  resolution: "makepromise@npm:1.0.0"
+  checksum: 13cc460460f7a7de0b3106938c365ca66ca0ec9aa84a757a4cdc6ac469176405e222748c750473e9b2fdb4e71ee1731db1e05fe4509011c7b7f797627bed6e9c
   languageName: node
   linkType: hard
 
@@ -4656,6 +4678,17 @@ __metadata:
   version: 2.1.2
   resolution: "node-cleanup@npm:2.1.2"
   checksum: 584cdc3e42560a998b4579f91ed8f936b27011628f3102e5a1093205f0691cdf8d899287d1f2e4d2071ea4ab1d615810bad6dbe2b988ef173a1cbaa76d8165b3
+  languageName: node
+  linkType: hard
+
+"node-exiftool@npm:^2.3.0":
+  version: 2.3.0
+  resolution: "node-exiftool@npm:2.3.0"
+  dependencies:
+    is-stream: 1.1.0
+    restream: 1.2.0
+    wrote: 0.6.1
+  checksum: 4cc1f4ec037ac3ae0b8a6151a34f4086fa9c53aa360c847d704898d08576de77bab0408c8b40cedbba13666e80eebbda28ea370ad3f1a9b283ae14bf68c90e52
   languageName: node
   linkType: hard
 
@@ -5678,6 +5711,13 @@ __metadata:
   bin:
     resolve: bin/resolve
   checksum: 5656f4d0bedcf8eb52685c1abdf8fbe73a1603bb1160a24d716e27a57f6cecbe2432ff9c89c2bd57542c3a7b9d14b1882b73bfe2e9d7849c9a4c0b8b39f02b8b
+  languageName: node
+  linkType: hard
+
+"restream@npm:1.2.0":
+  version: 1.2.0
+  resolution: "restream@npm:1.2.0"
+  checksum: 6dfa5c39e5b41be9bcf48c62f1f36472e48045d8ab3946cb8789887c1fa400de4bf1d1b866fae83ced35a324e7bf0786dc4e1a5145d96aa9c926393f2e36a342
   languageName: node
   linkType: hard
 
@@ -6974,6 +7014,16 @@ __metadata:
     signal-exit: ^3.0.2
     typedarray-to-buffer: ^3.1.5
   checksum: c55b24617cc61c3a4379f425fc62a386cc51916a9b9d993f39734d005a09d5a4bb748bc251f1304e7abd71d0a26d339996c275955f527a131b1dcded67878280
+  languageName: node
+  linkType: hard
+
+"wrote@npm:0.6.1":
+  version: 0.6.1
+  resolution: "wrote@npm:0.6.1"
+  dependencies:
+    catchment: 1.0.0
+    makepromise: 1.0.0
+  checksum: 76b170330b236f34228e417cfe39111a465685936dab545032b22066c35c2e9f59b3b384c4b53df88239568ed4291ee6af2e882722aa998d74674bbaca542ad3
   languageName: node
   linkType: hard
 
