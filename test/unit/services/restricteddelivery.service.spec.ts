@@ -14,6 +14,7 @@ describe("RestrictedDeliveryService", () => {
         const exifService = new Mock<ExifService>();
         exifService.setup(instance => instance.readImageDescription(original)).returnsAsync(imageDescription);
         exifService.setup(instance => instance.writeImageDescription(It.IsAny())).returnsAsync();
+        exifService.setup(instance => instance.isExifSupported(original)).returnsAsync(true);
 
         const service = new RestrictedDeliveryService(exifService.object());
 

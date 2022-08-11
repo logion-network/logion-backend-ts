@@ -12,6 +12,9 @@ export class RestrictedDeliveryService {
     ) {}
 
     async copyAndSetMetadata(args: { original: string, deliverable: string, metadata: RestrictedDeliveryMetadata }): Promise<void> {
+        if(! await this.exifService.isExifSupported(args.original)) {
+            throw new Error("Cannot set metadata with this file format");
+        }
         await copyFile(args.original, args.deliverable);
         const description = (await this.exifService.readImageDescription(args.original)) || "";
         const updater = new RestrictedDeliveryMetadataUpdater(description);
