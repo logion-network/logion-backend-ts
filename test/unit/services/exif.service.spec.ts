@@ -4,7 +4,7 @@ import path from "path";
 
 import { ExifService } from "../../../src/logion/services/exif.service";
 
-fdescribe("ExifService", () => {
+describe("ExifService", () => {
 
     it("reads all metadata", async () => {
         const exifService = new ExifService();
