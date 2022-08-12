@@ -27,7 +27,12 @@ describe("ExifService", () => {
         await copyFile(jpegFile, tempFile);
 
         const exifService = new ExifService();
-        const newDescription = "Some other description.";
+        const newDescription = `Some other description.
+
+-----BEGIN LOGION METADATA-----
+owner=0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84
+-----END LOGION METADATA-----
+`;
         await exifService.writeImageDescription({
             file: tempFile,
             description: newDescription

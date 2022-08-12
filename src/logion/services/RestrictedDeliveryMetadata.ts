@@ -20,7 +20,7 @@ export class RestrictedDeliveryMetadataCodec {
 owner=${metadata.owner}
 ${ENCODED_METADATA_FOOTER}`;
     }
-    
+
     static decode(encodedMetadata: string): RestrictedDeliveryMetadata {
         if(!encodedMetadata.startsWith(ENCODED_METADATA_HEADER)) {
             throw new Error("Metadata header missing");

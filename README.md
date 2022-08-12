@@ -14,6 +14,14 @@ This project features:
 - Automated API doc with Swagger: [express-oas-generator](https://github.com/mpashkovskiy/express-oas-generator#express-oas-generator)
 - Coverage: [nyc](https://github.com/istanbuljs/nyc#nyc)
 
+## Requirements
+
+- A PostgreSQL database to connect to
+- A PostgreSQL client installed on host
+- A [logion node](https://github.com/logion-network/logion-node) to connect to
+- [IPFS Cluster CLI](https://dist.ipfs.io/#ipfs-cluster-ctl) installed on host
+- [exiftool](https://exiftool.org/) installed on host
+
 ## Logion API
 
 ### Protection requests
@@ -58,16 +66,6 @@ Verify signature: check the "base 64 encoded" box and paste the value of `JWT_SE
 The generated token may be sent to the API with `Authorization: Bearer $TOKEN` header. With `curl`, the command would look like this:
 ```
 curl -v http://localhost:8090/api/$PATH -H "Authorization: Bearer $TOKEN" ...
-```
-
-### Build
-
-The sub-package `calc` must be built first !
-
-```shell
-calc/build.sh
-yarn install
-yarn build
 ```
 
 ## Quick start

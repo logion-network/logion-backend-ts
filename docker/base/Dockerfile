@@ -1,5 +1,5 @@
 FROM node:16
-RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client ; rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client libimage-exiftool-perl ; rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/share/logion-backend
 
 RUN VERSION=0.14.5 \

@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { ExifData, ExiftoolProcess, ReadResult } from "node-exiftool";
+import { ExifData, ExiftoolProcess, ReadWriteResult } from "@logion/node-exiftool";
 
 @injectable()
 export class ExifService {
@@ -9,7 +9,7 @@ export class ExifService {
         return this.getData(result, data => data, {});
     }
 
-    private async _readMetadata(file: string, options: string[]): Promise<ReadResult> {
+    private async _readMetadata(file: string, options: string[]): Promise<ReadWriteResult> {
         const exiftool = await this.openProcess();
         const result = await exiftool.readMetadata(file, options);
         await exiftool.close();
@@ -22,7 +22,7 @@ export class ExifService {
         return exiftool;
     }
 
-    private getData<T>(result: ReadResult, getter: (result: ExifData) => T, defaultValue: T): T {
+    private getData<T>(result: ReadWriteResult, getter: (result: ExifData) => T, defaultValue: T): T {
         if(result.error) {
             throw new Error(result.error);
         } else if(result.data.length > 0 && result.data[0] !== null) {
@@ -39,7 +39,10 @@ export class ExifService {
 
     async writeImageDescription(args: { file: string, description: string }): Promise<void> {
         const exiftool = await this.openProcess();
-        await exiftool.writeMetadata(args.file, { Description: args.description }, [ "overwrite_original" ]);
+        const result = await exiftool.writeMetadata(args.file, { Description: args.description }, [ "overwrite_original" ]);
+        if(result.error && result.error !== "1 image files updated") {
+            throw new Error(result.error);
+        }
         await exiftool.close();
     }
 
