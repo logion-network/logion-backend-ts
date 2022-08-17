@@ -10,46 +10,76 @@ describe("ExifService", () => {
 
     const jsonFile = "./test/resources/block-empty.json";
 
+    const gifFile = "./test/resources/exif.gif";
+
     it("reads all JPEG metadata", async () => {
-        const exifService = new ExifService();
-        const description = await exifService.readAllMetadata(jpegFile);
-        expect(description.Description).toBeDefined();
+        await testReadAll(jpegFile);
     });
 
     it("reads JPEG image description", async () => {
-        const exifService = new ExifService();
-        const description = await exifService.readImageDescription(jpegFile);
-        expect(description).toBe("Some description.");
+        await testReadDescription(jpegFile);
     });
 
     it("writes JPEG image description", async () => {
-        const tempFile = path.join(os.tmpdir(), "exif.jpg");
-        await copyFile(jpegFile, tempFile);
+        await testWriteDescription(jpegFile);
+    });
 
-        const exifService = new ExifService();
-        const newDescription = `Some other description.
+    it("detects JPEG file format is supported", async () => {
+        await testFileSupported(jpegFile, true);
+    });
+
+    it("detects JSON file format is not supported", async () => {
+        await testFileSupported(jsonFile, false);
+    });
+
+    it("reads all GIF metadata", async () => {
+        await testReadAll(gifFile);
+    });
+
+    it("reads GIF image description", async () => {
+        await testReadDescription(gifFile);
+    });
+
+    it("writes GIF image description", async () => {
+        await testWriteDescription(gifFile);
+    });
+
+    it("detects GIF file format is supported", async () => {
+        await testFileSupported(gifFile, true);
+    });
+});
+
+async function testReadAll(path: string) {
+    const exifService = new ExifService();
+    const description = await exifService.readAllMetadata(path);
+    expect(description.MIMEType).toBeDefined();
+}
+
+async function testReadDescription(path: string) {
+    const exifService = new ExifService();
+    const description = await exifService.readImageDescription(path);
+    expect(description).toBe("Some description.");
+}
+
+async function testWriteDescription(relativePath: string) {
+    const tempFile = path.join(os.tmpdir(), path.basename(relativePath));
+    await copyFile(relativePath, tempFile);
+
+    const exifService = new ExifService();
+    const newDescription = `Some other description.
 
 -----BEGIN LOGION METADATA-----
 owner=0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84
 -----END LOGION METADATA-----
 `;
-        await exifService.writeImageDescription({
-            file: tempFile,
-            description: newDescription
-        });
-        const description = await exifService.readImageDescription(tempFile);
-
-        expect(description).toBe(newDescription);
+    await exifService.writeImageDescription({
+        file: tempFile,
+        description: newDescription
     });
+    const description = await exifService.readImageDescription(tempFile);
 
-    it("detects JPEG file format is supported", async () => {
-        testFileSupported(jpegFile, true);
-    });
-
-    it("detects JSON file format is not supported", async () => {
-        testFileSupported(jsonFile, false);
-    });
-});
+    expect(description).toBe(newDescription);
+}
 
 async function testFileSupported(file: string, expected: boolean) {
     const exifService = new ExifService();

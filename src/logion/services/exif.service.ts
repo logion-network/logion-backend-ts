@@ -5,7 +5,7 @@ import { ExifData, ExiftoolProcess, ReadWriteResult } from "@logion/node-exiftoo
 export class ExifService {
 
     async readAllMetadata(file: string): Promise<Record<string, string>> {
-        const result = await this._readMetadata(file, [ "-File:all" ]);
+        const result = await this._readMetadata(file, []);
         return this.getData(result, data => data, {});
     }
 
@@ -33,13 +33,29 @@ export class ExifService {
     }
 
     async readImageDescription(file: string): Promise<string | undefined> {
-        const result = await this._readMetadata(file, [ "Description" ]);
-        return this.getData(result, data => data.Description, undefined);
+        const fieldName = await this.descriptionField(file);
+        const result = await this._readMetadata(file, [ fieldName ]);
+        return this.getData(result, data => data[fieldName], undefined);
+    }
+
+    private async descriptionField(file: string) {
+        const mimeType = await this._readMimeType(file);
+        if(mimeType === "image/jpeg") {
+            return "Description";
+        } else if(mimeType === "image/gif") {
+            return "Comment";
+        } else {
+            throw new Error(`Unsupported file type ${mimeType}`);
+        }
     }
 
     async writeImageDescription(args: { file: string, description: string }): Promise<void> {
+        const metadata: Record<string, string> = {};
+        const fieldName = await this.descriptionField(args.file);
+        metadata[fieldName] = args.description;
+
         const exiftool = await this.openProcess();
-        const result = await exiftool.writeMetadata(args.file, { Description: args.description }, [ "overwrite_original" ]);
+        const result = await exiftool.writeMetadata(args.file, metadata, [ "overwrite_original" ]);
         if(result.error && result.error !== "1 image files updated") {
             throw new Error(result.error);
         }
@@ -48,7 +64,7 @@ export class ExifService {
 
     async isExifSupported(file: string): Promise<boolean> {
         const mimeType = await this._readMimeType(file);
-        return mimeType === "image/jpeg";
+        return mimeType === "image/jpeg" || mimeType === "image/gif";
     }
 
     private async _readMimeType(file: string): Promise<string> {
