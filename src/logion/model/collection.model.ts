@@ -72,8 +72,8 @@ export class CollectionItemAggregateRoot {
         return this.files!.find(file => file.hash === hash)
     }
 
-    getFile(hash: string): CollectionItemFileDescription {
-        return this.file(hash)!.getDescription();
+    getFile(hash: string): CollectionItemFile {
+        return this.file(hash)!;
     }
 }
 
@@ -105,6 +105,66 @@ export class CollectionItemFile {
     ])
     collectionItem?: CollectionItemAggregateRoot;
 
+    addDeliveredFile(params: {
+        deliveredFileHash: string,
+        generatedOn: Moment,
+        owner: string,
+    }): CollectionItemFileDelivered {
+        const { deliveredFileHash, generatedOn, owner } = params;
+        const deliveredFile = new CollectionItemFileDelivered();
+
+        deliveredFile.collectionLocId = this.collectionLocId;
+        deliveredFile.itemId = this.itemId;
+        deliveredFile.hash = this.hash;
+
+        deliveredFile.deliveredFileHash = deliveredFileHash;
+        deliveredFile.generatedOn = generatedOn.toDate();
+        deliveredFile.owner = owner;
+
+        deliveredFile.collectionItemFile = this;
+        this.delivered?.push(deliveredFile);
+        return deliveredFile;
+    }
+
+    @OneToMany(() => CollectionItemFileDelivered, deliveredFile => deliveredFile.collectionItemFile, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    delivered?: CollectionItemFileDelivered[];
+}
+
+@Entity("collection_item_file_delivered")
+export class CollectionItemFileDelivered {
+
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    id?: string;
+
+    @Column({ type: "uuid", name: "collection_loc_id" })
+    collectionLocId?: string;
+
+    @Column({ name: "item_id" })
+    itemId?: string;
+
+    @Column({ name: "hash" })
+    hash?: string;
+
+    @Column({ name: "delivered_file_hash", length: 255 })
+    deliveredFileHash?: string;
+
+    @Column("timestamp without time zone", { name: "generated_on", nullable: true })
+    generatedOn?: Date;
+
+    @Column({ length: 255 })
+    owner?: string;
+
+    @ManyToOne(() => CollectionItemFile, file => file.delivered)
+    @JoinColumn([
+        { name: "collection_loc_id", referencedColumnName: "collectionLocId" },
+        { name: "item_id", referencedColumnName: "itemId" },
+        { name: "hash", referencedColumnName: "hash" },
+    ])
+    collectionItemFile?: CollectionItemFile;
 }
 
 @injectable()
@@ -113,17 +173,23 @@ export class CollectionRepository {
     constructor() {
         this.repository = getRepository(CollectionItemAggregateRoot);
         this.fileRepository = getRepository(CollectionItemFile);
+        this.deliveredRepository = getRepository(CollectionItemFileDelivered);
     }
 
     readonly repository: Repository<CollectionItemAggregateRoot>;
     readonly fileRepository: Repository<CollectionItemFile>;
+    readonly deliveredRepository: Repository<CollectionItemFileDelivered>;
 
     public async save(root: CollectionItemAggregateRoot): Promise<void> {
         await this.repository.save(root);
     }
 
     public async saveFile(file: CollectionItemFile): Promise<void> {
-        await this.fileRepository.insert(file)
+        await this.fileRepository.insert(file);
+    }
+
+    public async saveDelivered(file: CollectionItemFileDelivered): Promise<void> {
+        await this.deliveredRepository.insert(file);
     }
 
     public async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {

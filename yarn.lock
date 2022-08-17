@@ -567,6 +567,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@logion/node-exiftool@npm:^2.3.1-2":
+  version: 2.3.1-2
+  resolution: "@logion/node-exiftool@npm:2.3.1-2"
+  dependencies:
+    is-stream: 1.1.0
+    restream: 1.2.0
+    wrote: 0.6.1
+  checksum: 30708ad6da5d49ef6515e868cf0f273a8c967edd38a99aca3c9639f2634dc6f095a949f064edffc96e13e21eb9eb81c3545ce2700df84eeca9785aecf9d87b8c
+  languageName: node
+  linkType: hard
+
 "@noble/ed25519@npm:^1.5.1":
   version: 1.6.1
   resolution: "@noble/ed25519@npm:1.6.1"
@@ -1991,6 +2002,13 @@ __metadata:
     tslib: ^2.0.3
     upper-case-first: ^2.0.2
   checksum: 41fa8fa87f6d24d0835a2b4a9341a3eaecb64ac29cd7c5391f35d6175a0fa98ab044e7f2602e1ec3afc886231462ed71b5b80c590b8b41af903ec2c15e5c5931
+  languageName: node
+  linkType: hard
+
+"catchment@npm:1.0.0":
+  version: 1.0.0
+  resolution: "catchment@npm:1.0.0"
+  checksum: 0f3dd789b320c44a20b28a84b707efe8fda57a7ad9f9ec8d15ca3e5a4eab2e557b792163e2408c6dc87995086385c5ad74b84af8ab39c67ce3bc21314aac4ad7
   languageName: node
   linkType: hard
 
@@ -3715,6 +3733,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"is-stream@npm:1.1.0":
+  version: 1.1.0
+  resolution: "is-stream@npm:1.1.0"
+  checksum: 063c6bec9d5647aa6d42108d4c59723d2bd4ae42135a2d4db6eadbd49b7ea05b750fd69d279e5c7c45cf9da753ad2c00d8978be354d65aa9f6bb434969c6a2ae
+  languageName: node
+  linkType: hard
+
 "is-stream@npm:^2.0.0":
   version: 2.0.1
   resolution: "is-stream@npm:2.0.1"
@@ -4108,6 +4133,7 @@ __metadata:
     "@ethersproject/transactions": ^5.6.2
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-api": ^0.4.0-3
+    "@logion/node-exiftool": ^2.3.1-2
     "@polkadot/wasm-crypto": ^6.3.1
     "@tsconfig/node16": ^1.0.3
     "@types/cors": ^2.8.12
@@ -4228,6 +4254,13 @@ __metadata:
     socks-proxy-agent: ^7.0.0
     ssri: ^9.0.0
   checksum: 2f6c294179972f56fab40fd8618f07841e06550692bb78f6da16e7afaa9dca78c345b08cf44a77a8907ef3948e4dc77e93eb7492b8381f1217d7ac057a7522f8
+  languageName: node
+  linkType: hard
+
+"makepromise@npm:1.0.0":
+  version: 1.0.0
+  resolution: "makepromise@npm:1.0.0"
+  checksum: 13cc460460f7a7de0b3106938c365ca66ca0ec9aa84a757a4cdc6ac469176405e222748c750473e9b2fdb4e71ee1731db1e05fe4509011c7b7f797627bed6e9c
   languageName: node
   linkType: hard
 
@@ -5681,6 +5714,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"restream@npm:1.2.0":
+  version: 1.2.0
+  resolution: "restream@npm:1.2.0"
+  checksum: 6dfa5c39e5b41be9bcf48c62f1f36472e48045d8ab3946cb8789887c1fa400de4bf1d1b866fae83ced35a324e7bf0786dc4e1a5145d96aa9c926393f2e36a342
+  languageName: node
+  linkType: hard
+
 "retimer@npm:^3.0.0":
   version: 3.0.0
   resolution: "retimer@npm:3.0.0"
@@ -6974,6 +7014,16 @@ __metadata:
     signal-exit: ^3.0.2
     typedarray-to-buffer: ^3.1.5
   checksum: c55b24617cc61c3a4379f425fc62a386cc51916a9b9d993f39734d005a09d5a4bb748bc251f1304e7abd71d0a26d339996c275955f527a131b1dcded67878280
+  languageName: node
+  linkType: hard
+
+"wrote@npm:0.6.1":
+  version: 0.6.1
+  resolution: "wrote@npm:0.6.1"
+  dependencies:
+    catchment: 1.0.0
+    makepromise: 1.0.0
+  checksum: 76b170330b236f34228e417cfe39111a465685936dab545032b22066c35c2e9f59b3b384c4b53df88239568ed4291ee6af2e882722aa998d74674bbaca542ad3
   languageName: node
   linkType: hard
 

@@ -9,13 +9,12 @@
     },
     "license": "Apache-2.0",
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json --traceResolution",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
-        "test": "yarn run unit-test && yarn run integration-test",
-        "unit-test": "jasmine --config=spec/support/jasmine.json",
+        "test": "jasmine --config=spec/support/jasmine.json",
         "integration-test": "yarn run setup-test-db && jasmine --config=spec/support/jasmine-integration.json ; yarn run teardown-test-db",
         "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest",
         "teardown-test-db": "docker stop logion-test-db",
@@ -26,6 +25,7 @@
     "dependencies": {
         "@ethersproject/transactions": "^5.6.2",
         "@logion/node-api": "^0.4.0-3",
+        "@logion/node-exiftool": "^2.3.1-2",
         "@polkadot/wasm-crypto": "^6.3.1",
         "ansi-regex": "^6.0.1",
         "axios": "^0.27.2",
