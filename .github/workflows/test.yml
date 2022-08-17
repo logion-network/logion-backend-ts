@@ -16,5 +16,5 @@ jobs:
         - name: Build and test
           run: |
             yarn install --immutable
-            yarn unit-test
+            yarn test
             yarn build
