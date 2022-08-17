@@ -6,7 +6,8 @@ import {
     CollectionRepository,
     CollectionItemAggregateRoot,
     CollectionFactory,
-    CollectionItemFile
+    CollectionItemFile,
+    CollectionItemFileDelivered
 } from "../../../src/logion/model/collection.model";
 import moment from "moment";
 import request from "supertest";
@@ -382,6 +383,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         collectionItem.files = [];
     }
     const collectionItemFile = new Mock<CollectionItemFile>()
+    const collectionItemFileDelivered = new Mock<CollectionItemFileDelivered>()
     const collectionRepository = new Mock<CollectionRepository>()
     if (collectionItemAlreadyInDB) {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
@@ -396,6 +398,8 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         It.IsAny<() => CollectionItemAggregateRoot>(),
     )).returns(Promise.resolve(collectionItem))
     collectionRepository.setup(instance => instance.saveFile(collectionItemFile.object()))
+        .returns(Promise.resolve())
+    collectionRepository.setup(instance => instance.saveDelivered(collectionItemFileDelivered.object()))
         .returns(Promise.resolve())
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 

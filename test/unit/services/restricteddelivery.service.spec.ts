@@ -3,6 +3,7 @@ import { It, Mock, Times } from "moq.ts";
 import { ExifService } from "../../../src/logion/services/exif.service";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
 import { RestrictedDeliveryMetadata } from "src/logion/services/RestrictedDeliveryMetadata";
+import moment from "moment";
 
 describe("RestrictedDeliveryService", () => {
 
@@ -17,13 +18,16 @@ describe("RestrictedDeliveryService", () => {
         const service = new RestrictedDeliveryService(exifService.object());
 
         const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
+        const generatedOn = "2022-08-17T10:27:00.000Z";
         const metadata: RestrictedDeliveryMetadata = {
             owner,
+            generatedOn: moment(generatedOn),
         };
         const expectedDescription = `Some description.
 
 -----BEGIN LOGION METADATA-----
 owner=${owner}
+generatedOn=${generatedOn}
 -----END LOGION METADATA-----
 `;
         await service.setMetadata({
@@ -44,15 +48,11 @@ owner=${owner}
         const service = new RestrictedDeliveryService(exifService.object());
 
         const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
+        const generatedOn = "2022-08-17T10:27:00.000Z";
         const metadata: RestrictedDeliveryMetadata = {
             owner,
+            generatedOn: moment(generatedOn),
         };
-        const expectedDescription = `Some description.
-
------BEGIN LOGION METADATA-----
-owner=${owner}
------END LOGION METADATA-----
-`;
         await service.setMetadata({
             file,
             metadata,

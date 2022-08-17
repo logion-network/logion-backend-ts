@@ -1,9 +1,12 @@
+import moment, { Moment } from "moment";
+
 /**
  * This interface describes the metadata that are associated to
  * a file provided through restricted delivery.
  */
 export interface RestrictedDeliveryMetadata {
     owner: string;
+    generatedOn: Moment;
 }
 
 const ENCODED_METADATA_HEADER="-----BEGIN LOGION METADATA-----";
@@ -18,6 +21,7 @@ export class RestrictedDeliveryMetadataCodec {
     static encode(metadata: RestrictedDeliveryMetadata): string {
         return `${ENCODED_METADATA_HEADER}
 owner=${metadata.owner}
+generatedOn=${metadata.generatedOn.toISOString()}
 ${ENCODED_METADATA_FOOTER}`;
     }
 
@@ -29,12 +33,15 @@ ${ENCODED_METADATA_FOOTER}`;
             throw new Error("Metadata footer missing");
         }
         let owner = "";
+        let generatedOn = "";
         const lines = encodedMetadata.split("\n");
         for(const line of lines) {
             owner = this.getPropertyValue(line, "owner") || owner;
+            generatedOn = this.getPropertyValue(line, "generatedOn") || generatedOn;
         }
         return {
             owner,
+            generatedOn: moment(generatedOn),
         };
     }
 

@@ -1,9 +1,10 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, ForbiddenException } from "dinoloop";
+import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
 import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot } from "../model/collection.model";
 import { components } from "./components";
 import { requireDefined } from "../lib/assertions";
 import { OpenAPIV3 } from "express-oas-generator";
+import moment from "moment";
 import {
     addTag,
     setControllerTag,
@@ -21,7 +22,7 @@ import { FileStorageService } from "../services/file.storage.service";
 import { rm } from "fs/promises";
 import { Log } from "../util/Log";
 import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
-import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
+import { ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service";
@@ -193,12 +194,19 @@ export class CollectionController extends ApiController {
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         await this.fileStorageService.exportFile(file, tempFilePath);
 
+        const generatedOn = moment();
+        const owner = authenticated.address;
         await this.restrictedDeliveryService.setMetadata({
             file: tempFilePath,
             metadata: {
-                owner: authenticated.address
+                owner,
+                generatedOn,
             }
         });
+
+        const deliveredFileHash = await sha256File(tempFilePath);
+        const delivered = file.addDeliveredFile({ deliveredFileHash, generatedOn, owner });
+        await this.collectionRepository.saveDelivered(delivered);
 
         this.response.download(tempFilePath, publishedCollectionItemFile.name, { headers: { "content-type": publishedCollectionItemFile.contentType } }, (error: any) => {
             rm(tempFilePath);
