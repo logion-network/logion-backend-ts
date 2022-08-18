@@ -6,6 +6,7 @@ import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/excep
 import { ALICE } from "../../helpers/addresses";
 import { AuthorityService } from "../../../src/logion/services/authority.service";
 import { NodeAuthorizationService } from "../../../src/logion/services/nodeauthorization.service";
+import { NodeSignatureService } from "../../../src/logion/services/nodesignature.service";
 
 const USER_TOKEN = "eyJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2MzEyMTc2MTEsImV4cCI6NDc4NDgxNzYxMSwiaXNzIjoiMTJEM0tvb1dEQ3VHVTdXWTNWYVdqQlMxRTQ0eDRFbm1UZ0szSFJ4V0ZxWUczZHFYRGZQMSIsInN1YiI6IjVINE12QXNvYmZaNmJCQ0R5ajVkc3JXWUxyQThIclJ6YXFhOXA2MVVYdHhNaFNDWSJ9.pBYUyYxq2I_HZiYyeJ-rc8ANxVgckLyd2Y1Snu685mDK4fSwanb6EHsMAP47iCtzSxhaB5bDu7zDmY-XMAyuAw"
 const USER_TOKEN_WRONG_SIGNATURE = "eyJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2MzEyMTc2MTEsImV4cCI6NDc4NDgxNzYxMSwiaXNzIjoiMTJEM0tvb1dEQ3VHVTdXWTNWYVdqQlMxRTQ0eDRFbm1UZ0szSFJ4V0ZxWUczZHFYRGZQMSIsInN1YiI6IjVINE12QXNvYmZaNmJCQ0R5ajVkc3JXWUxyQThIclJ6YXFhOXA2MVVYdHhNaFNDWSJ9.GTLJB_uMjsdcuWzM3CWL92n1UNI0WYXFUDW7QQ1Vi6k3TQIEvG_WwMuuZ2d9cexY"
@@ -25,7 +26,8 @@ describe('AuthenticationService createToken()', () => {
         givenNodeAuthorizationService();
         const authenticationService = new AuthenticationService(
             authorityService.object(),
-            nodeAuthorizationService.object()
+            nodeAuthorizationService.object(),
+            new NodeSignatureService(),
         );
         const actual = await authenticationService.createToken(USER_ADDRESS, moment.unix(1631217611), TTL);
         expect(actual.value).toBe(USER_TOKEN)
@@ -56,7 +58,8 @@ describe('AuthenticationService authenticatedUserIs()', () => {
         givenNodeAuthorizationService();
         const authenticationService = new AuthenticationService(
             authorityService.object(),
-            nodeAuthorizationService.object()
+            nodeAuthorizationService.object(),
+            new NodeSignatureService(),
         );
         const request = new Mock<Request>();
         request.setup(instance => instance.header("Authorization")).returns("Bearer " + USER_TOKEN)
@@ -69,7 +72,8 @@ describe('AuthenticationService authenticatedUserIs()', () => {
         givenNodeAuthorizationService();
         const authenticationService = new AuthenticationService(
             authorityService.object(),
-            nodeAuthorizationService.object()
+            nodeAuthorizationService.object(),
+            new NodeSignatureService(),
         );
         const request = new Mock<Request>();
         request.setup(instance => instance.header("Authorization")).returns("Bearer " + ALICE_TOKEN)
@@ -127,7 +131,8 @@ describe('AuthenticationService authenticatedUserIsOneOf()', () => {
         givenNodeAuthorizationService();
         const authenticationService = new AuthenticationService(
             authorityService.object(),
-            nodeAuthorizationService.object()
+            nodeAuthorizationService.object(),
+            new NodeSignatureService(),
         );
         const request = new Mock<Request>();
         request.setup(instance => instance.header("Authorization")).returns("Bearer " + USER_TOKEN)
@@ -139,7 +144,8 @@ describe('AuthenticationService authenticatedUserIsOneOf()', () => {
         givenNodeAuthorizationService();
         const authenticationService = new AuthenticationService(
             authorityService.object(),
-            nodeAuthorizationService.object()
+            nodeAuthorizationService.object(),
+            new NodeSignatureService(),
         );
         const request = new Mock<Request>();
         request.setup(instance => instance.header("Authorization")).returns("Bearer " + ALICE_TOKEN)
@@ -153,7 +159,8 @@ async function testForFailure(fnToCheck: (authenticationService: AuthenticationS
     givenNodeAuthorizationService(isWellKnownNode)
     const authenticationService = new AuthenticationService(
         authorityService.object(),
-        nodeAuthorizationService.object()
+        nodeAuthorizationService.object(),
+        new NodeSignatureService(),
     );
     const request = new Mock<Request>();
     request.setup(instance => instance.header("Authorization")).returns(authHeader)
