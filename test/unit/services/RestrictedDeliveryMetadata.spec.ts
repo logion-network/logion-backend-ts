@@ -9,17 +9,21 @@ const yetAnotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1d";
 
 const generatedOn = "2022-08-17T10:27:00.000Z";
 
+const signature = "c6c5e8dcb0f3f3ae6fcf075a55a8d8bec6936ae1b4ce557ff69880fa8366482319494c6ceb99f98d9919d7b066772fac01826476b9c1175a8cf6b83c0f5a390f";
+
 describe("RestrictedDeliveryMetadataCodec", () => {
 
     it("encodes metadata", () => {
         const metadata: RestrictedDeliveryMetadata = {
             owner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         };
         const encodedMetadata = RestrictedDeliveryMetadataCodec.encode(metadata);
         expect(encodedMetadata).toBe(`-----BEGIN LOGION METADATA-----
 owner=${owner}
 generatedOn=${generatedOn}
+signature=${signature}
 -----END LOGION METADATA-----`);
     });
 
@@ -27,6 +31,7 @@ generatedOn=${generatedOn}
         const encodedMetadata = `-----BEGIN LOGION METADATA-----
 owner=${owner}
 generatedOn=${generatedOn}
+signature=${signature}
 -----END LOGION METADATA-----`;
         const metadata = RestrictedDeliveryMetadataCodec.decode(encodedMetadata);
         expect(metadata.owner).toBe(owner);
@@ -40,6 +45,7 @@ Another line of description.
 -----BEGIN LOGION METADATA-----
 owner=${owner}
 generatedOn=${generatedOn}
+signature=${signature}
 -----END LOGION METADATA-----
 
 Some last line coming after the encoded metadata.
@@ -67,6 +73,7 @@ describe("RestrictedDeliveryMetadataUpdater", () => {
         updater.setMetadata({
             owner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
         expect(updatedText).toBe(`${description}
@@ -74,6 +81,7 @@ describe("RestrictedDeliveryMetadataUpdater", () => {
 -----BEGIN LOGION METADATA-----
 owner=${owner}
 generatedOn=${generatedOn}
+signature=${signature}
 -----END LOGION METADATA-----
 `);
         expect(updater.metadata?.owner).toBe(owner);
@@ -85,14 +93,17 @@ generatedOn=${generatedOn}
         updater.setMetadata({
             owner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         });
         updater.setMetadata({
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         });
         updater.setMetadata({
             owner: yetAnotherOwner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
         expect(updatedText).toBe(`${description}
@@ -100,6 +111,7 @@ generatedOn=${generatedOn}
 -----BEGIN LOGION METADATA-----
 owner=${yetAnotherOwner}
 generatedOn=${generatedOn}
+signature=${signature}
 -----END LOGION METADATA-----
 `);
         expect(updater.metadata?.owner).toBe(yetAnotherOwner);
@@ -111,6 +123,7 @@ generatedOn=${generatedOn}
         updater.setMetadata({
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
         expect(updatedText).toBe(imageDescription(otherOwner));
@@ -122,6 +135,7 @@ generatedOn=${generatedOn}
         const metadata: RestrictedDeliveryMetadata = {
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, "hex"),
         };
         updater.setMetadata(metadata);
         expect(updater.text).toBe(RestrictedDeliveryMetadataCodec.encode(metadata));

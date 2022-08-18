@@ -7,6 +7,7 @@ import moment, { Moment } from "moment";
 export interface RestrictedDeliveryMetadata {
     owner: string;
     generatedOn: Moment;
+    signature: Buffer;
 }
 
 const ENCODED_METADATA_HEADER="-----BEGIN LOGION METADATA-----";
@@ -22,6 +23,7 @@ export class RestrictedDeliveryMetadataCodec {
         return `${ENCODED_METADATA_HEADER}
 owner=${metadata.owner}
 generatedOn=${metadata.generatedOn.toISOString()}
+signature=${metadata.signature.toString("hex")}
 ${ENCODED_METADATA_FOOTER}`;
     }
 
@@ -34,14 +36,17 @@ ${ENCODED_METADATA_FOOTER}`;
         }
         let owner = "";
         let generatedOn = "";
+        let signature = "";
         const lines = encodedMetadata.split("\n");
         for(const line of lines) {
             owner = this.getPropertyValue(line, "owner") || owner;
             generatedOn = this.getPropertyValue(line, "generatedOn") || generatedOn;
+            signature = this.getPropertyValue(line, "signature") || signature;
         }
         return {
             owner,
             generatedOn: moment(generatedOn),
+            signature: Buffer.from(signature, 'hex'),
         };
     }
 

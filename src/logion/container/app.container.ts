@@ -45,6 +45,7 @@ import { OwnershipCheckService } from '../services/ownershipcheck.service';
 import { EtherscanService } from '../services/Etherscan.service';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service';
 import { ExifService } from '../services/exif.service';
+import { NodeSignatureService } from '../services/nodesignature.service';
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -90,6 +91,7 @@ container.bind(EtherscanService).toSelf();
 container.bind(OwnershipCheckService).toSelf();
 container.bind(ExifService).toSelf();
 container.bind(RestrictedDeliveryService).toSelf();
+container.bind(NodeSignatureService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();
