@@ -7,6 +7,7 @@ import { AuthenticationService } from '../../../src/logion/services/authenticati
 import { SyncPointRepository } from '../../../src/logion/model/syncpoint.model';
 import { AuthorityService } from "../../../src/logion/services/authority.service";
 import { NodeAuthorizationService } from "../../../src/logion/services/nodeauthorization.service";
+import { NodeSignatureService } from '../../../src/logion/services/nodesignature.service';
 
 describe('HealthController', () => {
 
@@ -68,7 +69,7 @@ function bindMocks(container: Container, up: boolean): void {
     const authorityService = new Mock<AuthorityService>();
     const nodeAuthorizationService = new Mock<NodeAuthorizationService>()
     container.rebind(AuthenticationService)
-        .toConstantValue(new AuthenticationService(authorityService.object(), nodeAuthorizationService.object()));
+        .toConstantValue(new AuthenticationService(authorityService.object(), nodeAuthorizationService.object(), new NodeSignatureService()));
 
     const syncPointRepository = new Mock<SyncPointRepository>();
     if(up) {

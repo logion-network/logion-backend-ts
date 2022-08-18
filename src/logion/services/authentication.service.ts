@@ -4,10 +4,11 @@ import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/excep
 import moment, { Moment } from "moment";
 import { AuthorityService } from "./authority.service";
 import PeerId from "peer-id";
-import { KeyObject, createPublicKey, createPrivateKey } from "crypto";
-import { base64url, SignJWT, decodeJwt, jwtVerify, JWTPayload } from "jose";
+import { KeyObject } from "crypto";
+import { SignJWT, decodeJwt, jwtVerify, JWTPayload } from "jose";
 import { JWTVerifyResult } from "jose/dist/types/types";
 import { NodeAuthorizationService } from "./nodeauthorization.service";
+import { NodeSignatureService } from "./nodesignature.service";
 
 const ALGORITHM = "EdDSA";
 
@@ -125,7 +126,7 @@ export class AuthenticationService {
             throw unauthorized("Invalid issuer");
         }
 
-        const publicKey = this.createPublicKey(issuer)
+        const publicKey = this.nodeSignatureService.buildPublicJsonWebKey(PeerId.createFromB58String(issuer));
         let result: JWTVerifyResult;
         try {
             result = await jwtVerify(jwtToken, publicKey, { algorithms: [ ALGORITHM ] });
@@ -163,6 +164,7 @@ export class AuthenticationService {
     constructor(
         public authorityService: AuthorityService,
         public nodeAuthorizationService: NodeAuthorizationService,
+        private nodeSignatureService: NodeSignatureService,
     ) {
         if (process.env.JWT_SECRET === undefined) {
             throw Error("No JWT secret set, please set var JWT_SECRET equal to NODE_SECRET_KEY");
@@ -177,40 +179,12 @@ export class AuthenticationService {
             throw Error("No node owner set, please set var OWNER");
         }
         this.issuer = process.env.JWT_ISSUER;
-        this.privateKey = this.createPrivateKey(this.publicKeyBytes(this.issuer), process.env.JWT_SECRET)
+        this.privateKey = nodeSignatureService.buildPrivateJsonWebKey(
+            PeerId.createFromB58String(process.env.JWT_ISSUER),
+            Buffer.from(process.env.JWT_SECRET, "hex")
+        );
         this.ttl = parseInt(process.env.JWT_TTL_SEC);
         this.nodeOwner = process.env.OWNER;
-    }
-
-    private publicKeyBytes(issuer: string): Uint8Array {
-        const peerId = PeerId.createFromB58String(issuer);
-        return peerId.pubKey.bytes.slice(4, 36)
-    }
-
-    private createPrivateKey(publicKeyBytes: Uint8Array, nodeKey: string): KeyObject {
-        const privateKeyBytes = Buffer.from(nodeKey, "hex");
-
-        return createPrivateKey({
-            key: {
-                kty: "OKP",
-                crv: "Ed25519",
-                x: base64url.encode(publicKeyBytes),
-                d: base64url.encode(privateKeyBytes),
-            },
-            format: "jwk"
-        })
-    }
-
-    private createPublicKey(issuer: string): KeyObject {
-
-        return createPublicKey({
-            key: {
-                kty: "OKP",
-                crv: "Ed25519",
-                x: base64url.encode(this.publicKeyBytes(issuer))
-            },
-            format: "jwk"
-        });
     }
 
     async createToken(address: string, issuedAt: Moment, expiresIn?: number): Promise<Token> {
