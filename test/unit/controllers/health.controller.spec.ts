@@ -8,11 +8,16 @@ import { SyncPointRepository } from '../../../src/logion/model/syncpoint.model';
 import { AuthorityService } from "../../../src/logion/services/authority.service";
 import { NodeAuthorizationService } from "../../../src/logion/services/nodeauthorization.service";
 import { NodeSignatureService } from '../../../src/logion/services/nodesignature.service';
+import { ALICE } from '../../helpers/addresses';
 
 describe('HealthController', () => {
 
     beforeEach(() => {
         process.env.HEALTH_TOKEN = EXPECTED_TOKEN;
+        process.env.JWT_SECRET = "1c482e5368b84abe08e1a27d0670d303351989b3aa281cb1abfc2f48e4530b57";
+        process.env.JWT_ISSUER = "12D3KooWDCuGU7WY3VaWjBS1E44x4EnmTgK3HRxWFqYG3dqXDfP1";
+        process.env.JWT_TTL_SEC = "3600";
+        process.env.OWNER = ALICE;
     })
 
     it('OK when authenticated and up', async () => {

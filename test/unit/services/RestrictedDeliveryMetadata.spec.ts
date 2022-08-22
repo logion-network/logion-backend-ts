@@ -1,4 +1,5 @@
 import moment from "moment";
+import PeerId from "peer-id";
 import { RestrictedDeliveryMetadata, RestrictedDeliveryMetadataCodec, RestrictedDeliveryMetadataUpdater } from "../../../src/logion/services/RestrictedDeliveryMetadata";
 
 const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
@@ -9,7 +10,16 @@ const yetAnotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1d";
 
 const generatedOn = "2022-08-17T10:27:00.000Z";
 
+const nodeId = "12D3KooWBmAwcd4PJNJvfV89HwE48nwkRmAgo8Vy3uQEyNNHBox2";
+
 const signature = "c6c5e8dcb0f3f3ae6fcf075a55a8d8bec6936ae1b4ce557ff69880fa8366482319494c6ceb99f98d9919d7b066772fac01826476b9c1175a8cf6b83c0f5a390f";
+
+const metadataBlock = `-----BEGIN LOGION METADATA-----
+owner=${owner}
+generatedOn=${generatedOn}
+nodeId=${nodeId}
+signature=${signature}
+-----END LOGION METADATA-----`;
 
 describe("RestrictedDeliveryMetadataCodec", () => {
 
@@ -17,23 +27,15 @@ describe("RestrictedDeliveryMetadataCodec", () => {
         const metadata: RestrictedDeliveryMetadata = {
             owner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         };
         const encodedMetadata = RestrictedDeliveryMetadataCodec.encode(metadata);
-        expect(encodedMetadata).toBe(`-----BEGIN LOGION METADATA-----
-owner=${owner}
-generatedOn=${generatedOn}
-signature=${signature}
------END LOGION METADATA-----`);
+        expect(encodedMetadata).toBe(metadataBlock);
     });
 
     it("decodes metadata", () => {
-        const encodedMetadata = `-----BEGIN LOGION METADATA-----
-owner=${owner}
-generatedOn=${generatedOn}
-signature=${signature}
------END LOGION METADATA-----`;
-        const metadata = RestrictedDeliveryMetadataCodec.decode(encodedMetadata);
+        const metadata = RestrictedDeliveryMetadataCodec.decode(metadataBlock);
         expect(metadata.owner).toBe(owner);
     });
 });
@@ -45,6 +47,7 @@ Another line of description.
 -----BEGIN LOGION METADATA-----
 owner=${owner}
 generatedOn=${generatedOn}
+nodeId=${nodeId}
 signature=${signature}
 -----END LOGION METADATA-----
 
@@ -73,16 +76,13 @@ describe("RestrictedDeliveryMetadataUpdater", () => {
         updater.setMetadata({
             owner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
         expect(updatedText).toBe(`${description}
 
------BEGIN LOGION METADATA-----
-owner=${owner}
-generatedOn=${generatedOn}
-signature=${signature}
------END LOGION METADATA-----
+${metadataBlock}
 `);
         expect(updater.metadata?.owner).toBe(owner);
     });
@@ -93,16 +93,19 @@ signature=${signature}
         updater.setMetadata({
             owner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         });
         updater.setMetadata({
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         });
         updater.setMetadata({
             owner: yetAnotherOwner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
@@ -111,6 +114,7 @@ signature=${signature}
 -----BEGIN LOGION METADATA-----
 owner=${yetAnotherOwner}
 generatedOn=${generatedOn}
+nodeId=${nodeId}
 signature=${signature}
 -----END LOGION METADATA-----
 `);
@@ -123,6 +127,7 @@ signature=${signature}
         updater.setMetadata({
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         });
         const updatedText = updater.text;
@@ -135,6 +140,7 @@ signature=${signature}
         const metadata: RestrictedDeliveryMetadata = {
             owner: otherOwner,
             generatedOn: moment(generatedOn),
+            nodeId: PeerId.createFromB58String(nodeId),
             signature: Buffer.from(signature, "hex"),
         };
         updater.setMetadata(metadata);

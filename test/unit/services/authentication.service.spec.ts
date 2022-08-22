@@ -14,12 +14,9 @@ const ALICE_TOKEN = "eyJhbGciOiJFZERTQSJ9.eyJpYXQiOjE2MjM2NzQwOTksImV4cCI6MTgyMz
 const USER_ADDRESS = "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"
 const TTL = 100 * 365 * 24 * 3600; // 100 years
 
-process.env.JWT_SECRET = "1c482e5368b84abe08e1a27d0670d303351989b3aa281cb1abfc2f48e4530b57";
-process.env.JWT_ISSUER = "12D3KooWDCuGU7WY3VaWjBS1E44x4EnmTgK3HRxWFqYG3dqXDfP1";
-process.env.JWT_TTL_SEC = "3600";
-process.env.OWNER = ALICE;
-
 describe('AuthenticationService createToken()', () => {
+
+    beforeEach(setupEnv)
 
     it('generates a token for user', async () => {
         givenAuthorityService();
@@ -34,6 +31,13 @@ describe('AuthenticationService createToken()', () => {
         expect(actual.expiredOn.unix).toBe(moment.unix(1631217611 + TTL).unix)
     })
 })
+
+function setupEnv() {
+    process.env.JWT_SECRET = "1c482e5368b84abe08e1a27d0670d303351989b3aa281cb1abfc2f48e4530b57";
+    process.env.JWT_ISSUER = "12D3KooWDCuGU7WY3VaWjBS1E44x4EnmTgK3HRxWFqYG3dqXDfP1";
+    process.env.JWT_TTL_SEC = "3600";
+    process.env.OWNER = ALICE;
+}
 
 function givenAuthorityService(isLegalOfficer?: boolean) {
     authorityService = new Mock<AuthorityService>();
@@ -52,6 +56,8 @@ function givenNodeAuthorizationService(isWellKnownNode: boolean = true) {
 let nodeAuthorizationService: Mock<NodeAuthorizationService>;
 
 describe('AuthenticationService authenticatedUserIs()', () => {
+
+    beforeEach(setupEnv)
 
     it('authenticates user based on token', async () => {
         givenAuthorityService();
@@ -125,6 +131,8 @@ describe('AuthenticationService authenticatedUserIs()', () => {
 })
 
 describe('AuthenticationService authenticatedUserIsOneOf()', () => {
+
+    beforeEach(setupEnv)
 
     it('authenticates user based on token', () => {
         givenAuthorityService();
