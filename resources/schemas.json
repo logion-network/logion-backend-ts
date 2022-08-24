@@ -18,6 +18,24 @@
                 "title": "AcceptProtectionRequestView",
                 "description": "Parameters for Protection Request's acceptance"
             },
+            "CheckLatestDeliveryResponse": {
+                "type": "object",
+                "properties": {
+                    "copyHash": {
+                        "type": "string",
+                        "description": "The hash of the latest delivered copy"
+                    },
+                    "generatedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date/time at which the delivered copy was generated on"
+                    },
+                    "owner": {
+                        "type": "string",
+                        "description": "The address of the owner of the linked token"
+                    }
+                }
+            },
             "CreateProtectionRequestView": {
                 "type": "object",
                 "properties": {

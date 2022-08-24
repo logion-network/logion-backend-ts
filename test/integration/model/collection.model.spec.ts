@@ -83,11 +83,17 @@ describe("CollectionRepository", () => {
         expect(collectionItem?.files?.length).toEqual(2)
         expect(collectionItem?.files?.map(file => file.cid)).toContain("123456")
         expect(collectionItem?.files?.map(file => file.cid)).toContain("78910")
-        expect(collectionItem?.getFile("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83").delivered?.length).toBe(1)
-        const delivered = collectionItem?.getFile("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83").delivered![0]
-        expect(delivered?.generatedOn).toBeDefined()
-        expect(delivered?.owner).toBe("0x900edc98db53508e6742723988B872dd08cd09c2")
-        expect(delivered?.deliveredFileHash).toBe("0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7")
+
+        const deliveredList = collectionItem?.getFile("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83").delivered!;
+        expect(deliveredList.length).toBe(2)
+        
+        const delivered1 = deliveredList.find(delivered => delivered.deliveredFileHash === "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
+        expect(delivered1?.generatedOn).toBeDefined()
+        expect(delivered1?.owner).toBe("0x900edc98db53508e6742723988B872dd08cd09c2")
+
+        const delivered2 = deliveredList.find(delivered => delivered.deliveredFileHash === "0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
+        expect(delivered2?.generatedOn).toBeDefined()
+        expect(delivered2?.owner).toBe("0x900edc98db53508e6742723988B872dd08cd09c3")
     })
 
     it("adds a file to an existing Collection Item", async () => {
@@ -138,5 +144,14 @@ describe("CollectionRepository", () => {
         delivered.generatedOn = new Date();
         delivered.owner = "0x900edc98db53508e6742723988B872dd08cd09c2";
         await repository.saveDelivered(delivered)
+    })
+
+    it("finds latest delivery", async () => {
+        const delivered = await repository.findLatestDelivery({
+            collectionLocId: "296d3d8f-057f-445c-b4c8-59aa7d2d21de",
+            itemId: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+            fileHash: "0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83",
+        });
+        expect(delivered?.deliveredFileHash).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
     })
 })

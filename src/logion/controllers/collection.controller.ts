@@ -32,6 +32,7 @@ const { logger } = Log;
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
+type CheckLatestDeliveryResponse = components["schemas"]["CheckLatestDeliveryResponse"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -45,6 +46,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.addFile(spec)
     CollectionController.downloadFile(spec)
     CollectionController.canDownloadFile(spec)
+    CollectionController.getLatestDelivery(spec)
 }
 
 @injectable()
@@ -260,5 +262,32 @@ export class CollectionController extends ApiController {
     async canDownloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
+    }
+
+    static getLatestDelivery(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}/latest-delivery"].get!;
+        operationObject.summary = "Provides information about the latest copy delivered to its owner";
+        operationObject.description = "";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'itemId': "The ID of the Collection Item",
+            'hash': "The hash of the original file",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/:itemId/files/:hash/latest-delivery')
+    @Async()
+    async getLatestDelivery(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<CheckLatestDeliveryResponse> {
+        const delivered = await this.collectionRepository.findLatestDelivery({ collectionLocId, itemId, fileHash: hash });
+        if(!delivered) {
+            throw badRequest("Original file not found or it was never delivered yet");
+        } else {
+            return {
+                copyHash: delivered.deliveredFileHash,
+                generatedOn: moment(delivered.generatedOn).toISOString(),
+                owner: delivered.owner,
+            }
+        }
     }
 }
