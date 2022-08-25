@@ -33,6 +33,9 @@ const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c78
 const FILE_NAME = "'a-file.pdf'";
 const CID = "cid-784512";
 
+const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
+const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
+
 describe("CollectionController", () => {
 
     it("gets an existing collection item in DB", async () => {
@@ -359,6 +362,38 @@ describe("CollectionController", () => {
                 expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");
             });
     })
+
+    it('retrieves latest deliveries info', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: false,
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/latest-deliveries`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+    })
+
+    it('retrieves deliveries info', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: false,
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/all-deliveries`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+    })
 })
 
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
@@ -401,6 +436,34 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         .returns(Promise.resolve())
     collectionRepository.setup(instance => instance.saveDelivered(collectionItemFileDelivered.object()))
         .returns(Promise.resolve())
+    if(restrictedDelivery) {
+        const delivered: CollectionItemFileDelivered = {
+            collectionLocId,
+            itemId,
+            hash: SOME_DATA_HASH,
+            deliveredFileHash: DELIVERY_HASH,
+            generatedOn: new Date(),
+            owner: ITEM_TOKEN_OWNER,
+            collectionItemFile: collectionItemFile.object(),
+        };
+
+        collectionRepository.setup(instance => instance.findLatestDelivery(
+            It.Is<{ collectionLocId: string, itemId: string, fileHash: string }>(query =>
+                query.collectionLocId === collectionLocId
+                && query.itemId === itemId
+                && query.fileHash === SOME_DATA_HASH
+            ))
+        ).returnsAsync(delivered);
+
+        collectionRepository.setup(instance => instance.findLatestDeliveries(
+            It.Is<{ collectionLocId: string, itemId: string }>(query =>
+                query.collectionLocId === collectionLocId
+                && query.itemId === itemId
+            ))
+        ).returnsAsync({
+            [ SOME_DATA_HASH ]: [ delivered ]
+        });
+    }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
     const collectionLoc = new LocRequestAggregateRoot();
@@ -453,4 +516,10 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     const restrictedDeliveryService = new Mock<RestrictedDeliveryService>();
     restrictedDeliveryService.setup(instance => instance.setMetadata(It.IsAny())).returnsAsync();
     container.bind(RestrictedDeliveryService).toConstantValue(restrictedDeliveryService.object());
+}
+
+function expectDeliveryInfo(responseBody: any) {
+    expect(responseBody.copyHash).toBe(DELIVERY_HASH);
+    expect(responseBody.generatedOn).toBeDefined();
+    expect(responseBody.owner).toBe(ITEM_TOKEN_OWNER);
 }

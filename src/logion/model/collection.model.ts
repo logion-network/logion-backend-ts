@@ -7,7 +7,8 @@ import {
     OneToMany,
     ManyToOne,
     JoinColumn,
-    getManager
+    getManager,
+    Index
 } from "typeorm";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
@@ -135,6 +136,7 @@ export class CollectionItemFile {
 }
 
 @Entity("collection_item_file_delivered")
+@Index([ "collectionLocId", "itemId", "hash" ])
 export class CollectionItemFileDelivered {
 
     @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
@@ -215,6 +217,40 @@ export class CollectionRepository {
 
     public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | undefined> {
         return this.repository.findOne({ collectionLocId, itemId })
+    }
+
+    public async findLatestDelivery(query: { collectionLocId: string, itemId: string, fileHash: string }): Promise<CollectionItemFileDelivered | undefined> {
+        const { collectionLocId, itemId, fileHash } = query;
+        const deliveries = await this.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit: 1 });
+        const deliveriesList = deliveries[fileHash];
+        if(deliveriesList) {
+            return deliveriesList[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    public async findLatestDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<Record<string, CollectionItemFileDelivered[]>> {
+        const { collectionLocId, itemId, fileHash, limit } = query;
+        let builder = this.deliveredRepository.createQueryBuilder("delivery");
+        builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
+        builder.andWhere("delivery.item_id = :itemId", { itemId });
+        if(fileHash) {
+            builder.andWhere("delivery.hash = :fileHash", { fileHash });
+        }
+        builder.orderBy("delivery.generated_on", "DESC");
+        if(limit) {
+            builder.limit(limit);
+        }
+        const deliveriesList = await builder.getMany();
+        const deliveries: Record<string, CollectionItemFileDelivered[]> = {};
+        for(const delivery of deliveriesList) {
+            const hash = delivery.hash!;
+            deliveries[hash] ||= [];
+            const fileDeliveries = deliveries[hash];
+            fileDeliveries.push(delivery);
+        }
+        return deliveries;
     }
 }
 

@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
-import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot } from "../model/collection.model";
+import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model";
 import { components } from "./components";
 import { requireDefined } from "../lib/assertions";
 import { OpenAPIV3 } from "express-oas-generator";
@@ -32,6 +32,8 @@ const { logger } = Log;
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
+type CheckLatestDeliveryResponse = components["schemas"]["CheckLatestDeliveryResponse"];
+type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -45,6 +47,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.addFile(spec)
     CollectionController.downloadFile(spec)
     CollectionController.canDownloadFile(spec)
+    CollectionController.getLatestDeliveries(spec)
+    CollectionController.getAllDeliveries(spec)
 }
 
 @injectable()
@@ -260,5 +264,69 @@ export class CollectionController extends ApiController {
     async canDownloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
+    }
+
+    static getLatestDeliveries(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/latest-deliveries"].get!;
+        operationObject.summary = "Provides information about the latest copies delivered to the item's token owner";
+        operationObject.description = "This is a public resource";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'itemId': "The ID of the Collection Item",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/:itemId/latest-deliveries')
+    @Async()
+    async getLatestDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
+        return this.getDeliveries({ collectionLocId, itemId, limit: 1 });
+    }
+
+    private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<ItemDeliveriesResponse> {
+        const { collectionLocId, itemId, fileHash, limit } = query;
+        const delivered = await this.collectionRepository.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit });
+        if(!delivered) {
+            throw badRequest("Original file not found or it was never delivered yet");
+        } else {
+            return this.mapCollectionItemFilesDelivered(delivered);
+        }
+    }
+
+    private mapCollectionItemFilesDelivered(delivered: Record<string, CollectionItemFileDelivered[]>): ItemDeliveriesResponse {
+        const view: ItemDeliveriesResponse = {};
+        for(const fileHash of Object.keys(delivered)) {
+            view[fileHash] = delivered[fileHash].map(this.mapCollectionItemFileDelivered);
+        }
+        return view;
+    }
+
+    private mapCollectionItemFileDelivered(delivered: CollectionItemFileDelivered): CheckLatestDeliveryResponse {
+        return {
+            copyHash: delivered.deliveredFileHash,
+            generatedOn: moment(delivered.generatedOn).toISOString(),
+            owner: delivered.owner,
+        }
+    }
+
+    static getAllDeliveries(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/all-deliveries"].get!;
+        operationObject.summary = "Provides information about all copies delivered to the item's token owners";
+        operationObject.description = "Only item's collection LOC owner is authorized";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'itemId': "The ID of the Collection Item",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/:itemId/all-deliveries')
+    @Async()
+    async getAllDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`Collection ${ collectionLocId } not found`));
+        await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.ownerAddress);
+
+        return this.getDeliveries({ collectionLocId, itemId });
     }
 }
