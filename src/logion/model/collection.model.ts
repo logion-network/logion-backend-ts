@@ -221,13 +221,36 @@ export class CollectionRepository {
 
     public async findLatestDelivery(query: { collectionLocId: string, itemId: string, fileHash: string }): Promise<CollectionItemFileDelivered | undefined> {
         const { collectionLocId, itemId, fileHash } = query;
+        const deliveries = await this.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit: 1 });
+        const deliveriesList = deliveries[fileHash];
+        if(deliveriesList) {
+            return deliveriesList[0];
+        } else {
+            return undefined;
+        }
+    }
+
+    public async findLatestDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<Record<string, CollectionItemFileDelivered[]>> {
+        const { collectionLocId, itemId, fileHash, limit } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
         builder.andWhere("delivery.item_id = :itemId", { itemId });
-        builder.andWhere("delivery.hash = :fileHash", { fileHash });
+        if(fileHash) {
+            builder.andWhere("delivery.hash = :fileHash", { fileHash });
+        }
         builder.orderBy("delivery.generated_on", "DESC");
-        builder.limit(1);
-        return builder.getOne();
+        if(limit) {
+            builder.limit(limit);
+        }
+        const deliveriesList = await builder.getMany();
+        const deliveries: Record<string, CollectionItemFileDelivered[]> = {};
+        for(const delivery of deliveriesList) {
+            const hash = delivery.hash!;
+            deliveries[hash] ||= [];
+            const fileDeliveries = deliveries[hash];
+            fileDeliveries.push(delivery);
+        }
+        return deliveries;
     }
 }
 

@@ -363,7 +363,7 @@ describe("CollectionController", () => {
             });
     })
 
-    it('retrieves latest delivery info', async () => {
+    it('retrieves latest deliveries info', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: true,
@@ -373,14 +373,26 @@ describe("CollectionController", () => {
             isOwner: false,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/latest-delivery`)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/latest-deliveries`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
-            .then(response => {
-                expect(response.body.copyHash).toBe(DELIVERY_HASH);
-                expect(response.body.generatedOn).toBeDefined();
-                expect(response.body.owner).toBe(ITEM_TOKEN_OWNER);
-            });
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+    })
+
+    it('retrieves deliveries info', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: false,
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/all-deliveries`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
     })
 })
 
@@ -425,13 +437,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     collectionRepository.setup(instance => instance.saveDelivered(collectionItemFileDelivered.object()))
         .returns(Promise.resolve())
     if(restrictedDelivery) {
-        collectionRepository.setup(instance => instance.findLatestDelivery(
-            It.Is<{ collectionLocId: string, itemId: string, fileHash: string }>(query =>
-                query.collectionLocId === collectionLocId
-                && query.itemId === itemId
-                && query.fileHash === SOME_DATA_HASH
-            ))
-        ).returnsAsync({
+        const delivered: CollectionItemFileDelivered = {
             collectionLocId,
             itemId,
             hash: SOME_DATA_HASH,
@@ -439,6 +445,23 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
             generatedOn: new Date(),
             owner: ITEM_TOKEN_OWNER,
             collectionItemFile: collectionItemFile.object(),
+        };
+
+        collectionRepository.setup(instance => instance.findLatestDelivery(
+            It.Is<{ collectionLocId: string, itemId: string, fileHash: string }>(query =>
+                query.collectionLocId === collectionLocId
+                && query.itemId === itemId
+                && query.fileHash === SOME_DATA_HASH
+            ))
+        ).returnsAsync(delivered);
+
+        collectionRepository.setup(instance => instance.findLatestDeliveries(
+            It.Is<{ collectionLocId: string, itemId: string }>(query =>
+                query.collectionLocId === collectionLocId
+                && query.itemId === itemId
+            ))
+        ).returnsAsync({
+            [ SOME_DATA_HASH ]: [ delivered ]
         });
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
@@ -493,4 +516,10 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     const restrictedDeliveryService = new Mock<RestrictedDeliveryService>();
     restrictedDeliveryService.setup(instance => instance.setMetadata(It.IsAny())).returnsAsync();
     container.bind(RestrictedDeliveryService).toConstantValue(restrictedDeliveryService.object());
+}
+
+function expectDeliveryInfo(responseBody: any) {
+    expect(responseBody.copyHash).toBe(DELIVERY_HASH);
+    expect(responseBody.generatedOn).toBeDefined();
+    expect(responseBody.owner).toBe(ITEM_TOKEN_OWNER);
 }

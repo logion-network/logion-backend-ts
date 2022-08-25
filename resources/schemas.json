@@ -18,6 +18,15 @@
                 "title": "AcceptProtectionRequestView",
                 "description": "Parameters for Protection Request's acceptance"
             },
+            "ItemDeliveriesResponse": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/CheckLatestDeliveryResponse"
+                    }
+                }
+            },
             "CheckLatestDeliveryResponse": {
                 "type": "object",
                 "properties": {

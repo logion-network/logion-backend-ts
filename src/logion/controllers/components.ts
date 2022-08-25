@@ -15,6 +15,9 @@ export interface components {
       /** @description ID of the Identity LOC to associate with the protection request */
       locId?: string;
     };
+    ItemDeliveriesResponse: {
+      [key: string]: components["schemas"]["CheckLatestDeliveryResponse"][];
+    };
     CheckLatestDeliveryResponse: {
       /** @description The hash of the latest delivered copy */
       copyHash?: string;

@@ -154,4 +154,16 @@ describe("CollectionRepository", () => {
         });
         expect(delivered?.deliveredFileHash).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
     })
+
+    it("finds latest deliveries", async () => {
+        const delivered = await repository.findLatestDeliveries({
+            collectionLocId: "296d3d8f-057f-445c-b4c8-59aa7d2d21de",
+            itemId: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+        });
+        expect("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83" in delivered).toBe(true);
+        const fileDeliveries = delivered["0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83"];
+        expect(fileDeliveries.length).toBe(2);
+        expect(fileDeliveries[0].deliveredFileHash).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
+        expect(fileDeliveries[1].deliveredFileHash).toBe("0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
+    })
 })
