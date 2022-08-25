@@ -280,23 +280,23 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemId/latest-deliveries')
     @Async()
     async getLatestDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
-        return this.getDeliveries({ collectionLocId, itemId, limit: 1 });
+        return this.getDeliveries({ collectionLocId, itemId, limitPerFile: 1 });
     }
 
-    private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<ItemDeliveriesResponse> {
-        const { collectionLocId, itemId, fileHash, limit } = query;
-        const delivered = await this.collectionRepository.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit });
+    private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
+        const { collectionLocId, itemId, fileHash, limitPerFile } = query;
+        const delivered = await this.collectionRepository.findLatestDeliveries({ collectionLocId, itemId, fileHash });
         if(!delivered) {
             throw badRequest("Original file not found or it was never delivered yet");
         } else {
-            return this.mapCollectionItemFilesDelivered(delivered);
+            return this.mapCollectionItemFilesDelivered(delivered, limitPerFile);
         }
     }
 
-    private mapCollectionItemFilesDelivered(delivered: Record<string, CollectionItemFileDelivered[]>): ItemDeliveriesResponse {
+    private mapCollectionItemFilesDelivered(delivered: Record<string, CollectionItemFileDelivered[]>, limitPerFile?: number): ItemDeliveriesResponse {
         const view: ItemDeliveriesResponse = {};
         for(const fileHash of Object.keys(delivered)) {
-            view[fileHash] = delivered[fileHash].map(this.mapCollectionItemFileDelivered);
+            view[fileHash] = delivered[fileHash].slice(0, limitPerFile).map(this.mapCollectionItemFileDelivered);
         }
         return view;
     }
