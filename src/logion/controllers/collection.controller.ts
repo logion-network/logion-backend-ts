@@ -279,8 +279,8 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/:itemId/latest-deliveries')
     @Async()
-    async getLatestDeliveries(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<ItemDeliveriesResponse> {
-        return this.getDeliveries({ collectionLocId, itemId, fileHash: hash, limit: 1 });
+    async getLatestDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
+        return this.getDeliveries({ collectionLocId, itemId, limit: 1 });
     }
 
     private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<ItemDeliveriesResponse> {
