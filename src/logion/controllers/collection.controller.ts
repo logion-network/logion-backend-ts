@@ -22,7 +22,7 @@ import { FileStorageService } from "../services/file.storage.service";
 import { rm } from "fs/promises";
 import { Log } from "../util/Log";
 import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
-import { ItemFile } from "@logion/node-api/dist/Types";
+import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service";
@@ -285,27 +285,45 @@ export class CollectionController extends ApiController {
 
     private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
         const { collectionLocId, itemId, fileHash, limitPerFile } = query;
+        const item = requireDefined(await this.collectionService.getCollectionItem({
+            collectionLocId,
+            itemId
+        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
         const delivered = await this.collectionRepository.findLatestDeliveries({ collectionLocId, itemId, fileHash });
         if(!delivered) {
             throw badRequest("Original file not found or it was never delivered yet");
         } else {
-            return this.mapCollectionItemFilesDelivered(delivered, limitPerFile);
+            return this.mapCollectionItemFilesDelivered(item, delivered, limitPerFile);
         }
     }
 
-    private mapCollectionItemFilesDelivered(delivered: Record<string, CollectionItemFileDelivered[]>, limitPerFile?: number): ItemDeliveriesResponse {
+    private async mapCollectionItemFilesDelivered(item: CollectionItem, delivered: Record<string, CollectionItemFileDelivered[]>, limitPerFile?: number): Promise<ItemDeliveriesResponse> {
+        const owners = new Set<string>();
+        for(const fileHash of Object.keys(delivered)) {
+            const owner = delivered[fileHash][0].owner; // Only check latest owners
+            if(owner) {
+                owners.add(owner);
+            }
+        }
+
+        const ownershipMap: Record<string, boolean> = {};
+        for(const owner of owners.values()) {
+            ownershipMap[owner] = await this.ownershipCheckService.isOwner(owner, item);
+        }
+
         const view: ItemDeliveriesResponse = {};
         for(const fileHash of Object.keys(delivered)) {
-            view[fileHash] = delivered[fileHash].slice(0, limitPerFile).map(this.mapCollectionItemFileDelivered);
+            view[fileHash] = delivered[fileHash].slice(0, limitPerFile).map(delivery => this.mapCollectionItemFileDelivered(delivery, ownershipMap));
         }
         return view;
     }
 
-    private mapCollectionItemFileDelivered(delivered: CollectionItemFileDelivered): CheckLatestDeliveryResponse {
+    private mapCollectionItemFileDelivered(delivered: CollectionItemFileDelivered, ownershipMap: Record<string, boolean>): CheckLatestDeliveryResponse {
         return {
             copyHash: delivered.deliveredFileHash,
             generatedOn: moment(delivered.generatedOn).toISOString(),
             owner: delivered.owner,
+            belongsToCurrentOwner: ownershipMap[delivered.owner || ""] || false,
         }
     }
 

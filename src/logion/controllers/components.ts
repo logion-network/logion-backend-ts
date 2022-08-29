@@ -28,6 +28,7 @@ export interface components {
       generatedOn?: string;
       /** @description The address of the owner of the linked token */
       owner?: string;
+      belongsToCurrentOwner?: boolean;
     };
     /**
      * CreateProtectionRequestView
