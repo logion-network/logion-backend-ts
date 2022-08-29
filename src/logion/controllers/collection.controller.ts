@@ -343,7 +343,7 @@ export class CollectionController extends ApiController {
     async getAllDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.ownerAddress);
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
 
         return this.getDeliveries({ collectionLocId, itemId });
     }
