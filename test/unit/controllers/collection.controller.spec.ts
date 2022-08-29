@@ -370,7 +370,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: true,
-            isOwner: false,
+            isOwner: true,
         }));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/latest-deliveries`)
@@ -386,7 +386,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: true,
-            isOwner: false,
+            isOwner: true,
         }));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/all-deliveries`)
@@ -522,4 +522,5 @@ function expectDeliveryInfo(responseBody: any) {
     expect(responseBody.copyHash).toBe(DELIVERY_HASH);
     expect(responseBody.generatedOn).toBeDefined();
     expect(responseBody.owner).toBe(ITEM_TOKEN_OWNER);
+    expect(responseBody.belongsToCurrentOwner).toBe(true);
 }

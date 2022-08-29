@@ -42,6 +42,9 @@
                     "owner": {
                         "type": "string",
                         "description": "The address of the owner of the linked token"
+                    },
+                    "belongsToCurrentOwner": {
+                        "type": "boolean"
                     }
                 }
             },
