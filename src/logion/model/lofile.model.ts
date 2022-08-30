@@ -1,5 +1,7 @@
-import { Entity, Column, PrimaryColumn, getRepository, Repository } from "typeorm";
+import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
+
+import { appDataSource } from "../app-datasource";
 
 @Entity("lo_file")
 export class LoFileAggregateRoot {
@@ -29,13 +31,13 @@ export interface LoFileDescription {
 export class LoFileRepository {
 
     constructor() {
-        this.repository = getRepository(LoFileAggregateRoot);
+        this.repository = appDataSource.getRepository(LoFileAggregateRoot);
     }
 
     readonly repository: Repository<LoFileAggregateRoot>;
 
-    public async findById(id: string): Promise<LoFileAggregateRoot | undefined> {
-        return this.repository.findOne(id)
+    public async findById(id: string): Promise<LoFileAggregateRoot | null> {
+        return this.repository.findOneBy({ id })
     }
 
     public async save(root: LoFileAggregateRoot): Promise<void> {

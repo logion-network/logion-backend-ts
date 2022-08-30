@@ -87,7 +87,7 @@ export class LocSynchronizer {
 
     private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
         const loc = await this.locRequestRepository.findById(locId);
-        if(loc !== undefined) {
+        if(loc !== null) {
             logger.info("Mutating LOC %s : %s", locId, mutator)
             mutator(loc);
             await this.locRequestRepository.save(loc);
@@ -96,7 +96,7 @@ export class LocSynchronizer {
 
     private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {
         const loc = await this.locRequestRepository.findById(collectionLocId);
-        if (loc !== undefined) {
+        if (loc !== null) {
             logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId)
             const collectionItem = this.collectionFactory.newItem({
                 collectionLocId,

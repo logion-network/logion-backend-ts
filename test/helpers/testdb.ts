@@ -1,16 +1,17 @@
 import 'reflect-metadata';
 import fs from 'fs';
-import { createConnection, Connection, QueryRunner, MigrationInterface } from "typeorm";
+import { QueryRunner, MigrationInterface, DataSource } from "typeorm";
+import { overrideDataSource } from '../../src/logion/app-datasource';
 
 export async function connect(
     entities: (Function | string)[],
     migrations?: (Function | string)[],
     synchronize: boolean = true): Promise<void>
 {
-    if(connection != null) {
+    if(dataSource != null) {
         throw new Error("Connection already created");
     }
-    connection = await createConnection({
+    dataSource = new DataSource({
         type: "postgres",
         host: "localhost",
         port: 5432,
@@ -21,23 +22,25 @@ export async function connect(
         entities,
         migrations
     });
+    await dataSource.initialize();
+    overrideDataSource(dataSource);
 }
 
-let connection: Connection | null = null;
+let dataSource: DataSource | null = null;
 
 export async function disconnect(): Promise<void> {
-    if(connection == null) {
+    if(dataSource == null) {
         throw new Error("No connection to close");
     }
-    await connection.dropDatabase();
-    await connection.close();
-    connection = null;
+    await dataSource.dropDatabase();
+    await dataSource.destroy();
+    dataSource = null;
 }
 
 export type RawData = any[] | undefined;
 
 export async function query(sql: string): Promise<RawData> {
-    return connection!.query(sql);
+    return dataSource!.query(sql);
 }
 
 export async function executeScript(fileName: string): Promise<void> {
@@ -52,11 +55,9 @@ export async function checkNumOfRows(sql: string, numOfRows: number) {
 }
 
 export function queryRunner(): QueryRunner {
-    return connection?.createQueryRunner()!
+    return dataSource?.createQueryRunner()!
 }
 
 export function allMigrations(): MigrationInterface[] {
-    return connection?.migrations!;
+    return dataSource?.migrations!;
 }
-
-

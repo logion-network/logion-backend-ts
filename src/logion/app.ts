@@ -1,5 +1,5 @@
 // tslint:disable-next-line: no-require-imports no-var-requires
-import { createConnection } from "typeorm";
+import { appDataSource } from "./app-datasource";
 import express, { Express } from 'express';
 import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
 import { AppContainer } from './container/app.container';
@@ -22,7 +22,7 @@ expressOasGenerator.handleResponses(app, {
     alwaysServeDocs: true,
 });
 
-createConnection()
+appDataSource.initialize()
 .then(_ => {
 
     setupApp(app)

@@ -1,6 +1,8 @@
-import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
+
+import { appDataSource } from "../app-datasource";
 import { UserIdentity } from "./useridentity";
 import { Log } from "../util/Log";
 import { badRequest } from "../controllers/errors";
@@ -225,13 +227,13 @@ export class FetchProtectionRequestsSpecification {
 export class ProtectionRequestRepository {
 
     constructor() {
-        this.repository = getRepository(ProtectionRequestAggregateRoot);
+        this.repository = appDataSource.getRepository(ProtectionRequestAggregateRoot);
     }
 
     readonly repository: Repository<ProtectionRequestAggregateRoot>;
 
-    public findById(id: string): Promise<ProtectionRequestAggregateRoot | undefined> {
-        return this.repository.findOne(id);
+    public findById(id: string): Promise<ProtectionRequestAggregateRoot | null> {
+        return this.repository.findOneBy({ id });
     }
 
     public async save(root: ProtectionRequestAggregateRoot): Promise<void> {

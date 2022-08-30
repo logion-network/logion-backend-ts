@@ -1,5 +1,7 @@
 import { injectable } from 'inversify';
-import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
+
+import { appDataSource } from '../app-datasource';
 
 export interface TransactionDescription {
     readonly id: string;
@@ -106,13 +108,13 @@ export class TransactionAggregateRoot {
 export class TransactionRepository {
 
     constructor() {
-        this.repository = getRepository(TransactionAggregateRoot);
+        this.repository = appDataSource.getRepository(TransactionAggregateRoot);
     }
 
     readonly repository: Repository<TransactionAggregateRoot>;
 
-    public findById(id: string): Promise<TransactionAggregateRoot | undefined> {
-        return this.repository.findOne(id);
+    public findById(id: string): Promise<TransactionAggregateRoot | null> {
+        return this.repository.findOneBy({ id });
     }
 
     public async save(root: TransactionAggregateRoot): Promise<void> {
