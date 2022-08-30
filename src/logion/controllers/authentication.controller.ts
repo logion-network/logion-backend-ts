@@ -130,7 +130,7 @@ export class AuthenticationController extends ApiController {
 
     private async authenticateSession(address: string, sessionId: string, signature: SignatureView): Promise<Token> {
         const session = await this.sessionRepository.find(address, sessionId);
-        if (session === undefined) {
+        if (session === null) {
             throw unauthorized("Invalid session")
         }
         await this.sessionRepository.delete(session);

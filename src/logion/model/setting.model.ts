@@ -1,5 +1,7 @@
 import { injectable } from 'inversify';
-import { Entity, PrimaryColumn, Column, getRepository, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
+
+import { appDataSource } from "../app-datasource";
 
 @Entity("setting")
 export class SettingAggregateRoot {
@@ -19,7 +21,7 @@ export class SettingAggregateRoot {
 export class SettingRepository {
 
     constructor() {
-        this.repository = getRepository(SettingAggregateRoot);
+        this.repository = appDataSource.getRepository(SettingAggregateRoot);
     }
 
     readonly repository: Repository<SettingAggregateRoot>;
@@ -32,8 +34,8 @@ export class SettingRepository {
         return await this.repository.find();
     }
 
-    async findById(id: string): Promise<SettingAggregateRoot | undefined> {
-        return await this.repository.findOne(id);
+    async findById(id: string): Promise<SettingAggregateRoot | null> {
+        return await this.repository.findOneBy({ id });
     }
 }
 

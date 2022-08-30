@@ -29,12 +29,12 @@ describe('SessionRepository', () => {
 
     it("does not find unknown sessionId", async () => {
         const session = await repository.find(userAddress, unknownSessionId);
-        expect(session).toBeUndefined();
+        expect(session).toBe(null);
     })
 
     it("does not find unknown userAddress", async () => {
         const session = await repository.find('unknown', existingSessionId);
-        expect(session).toBeUndefined();
+        expect(session).toBe(null);
     })
 
     it("saves session", async () => {

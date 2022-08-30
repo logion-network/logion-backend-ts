@@ -144,7 +144,7 @@ function mockModel(container: Container): void {
     repository.setup(instance => instance.findById(existingFile.id))
         .returns(Promise.resolve(existingEntity.object()));
     repository.setup(instance => instance.findById(newFile.id))
-        .returns(Promise.resolve(undefined))
+        .returns(Promise.resolve(null))
     repository.setup(instance => instance.save(It.IsAny<LoFileAggregateRoot>()))
         .returns(Promise.resolve())
 

@@ -2,16 +2,16 @@ import {
     Entity,
     PrimaryColumn,
     Column,
-    getRepository,
     Repository,
     OneToMany,
     ManyToOne,
     JoinColumn,
-    getManager,
     Index
 } from "typeorm";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
+
+import { appDataSource } from "../app-datasource";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string
@@ -173,9 +173,9 @@ export class CollectionItemFileDelivered {
 export class CollectionRepository {
 
     constructor() {
-        this.repository = getRepository(CollectionItemAggregateRoot);
-        this.fileRepository = getRepository(CollectionItemFile);
-        this.deliveredRepository = getRepository(CollectionItemFileDelivered);
+        this.repository = appDataSource.getRepository(CollectionItemAggregateRoot);
+        this.fileRepository = appDataSource.getRepository(CollectionItemFile);
+        this.deliveredRepository = appDataSource.getRepository(CollectionItemFileDelivered);
     }
 
     readonly repository: Repository<CollectionItemAggregateRoot>;
@@ -196,9 +196,9 @@ export class CollectionRepository {
 
     public async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
 
-        return await getManager().transaction("REPEATABLE READ", async entityManager => {
+        return await appDataSource.manager.transaction("REPEATABLE READ", async entityManager => {
             try {
-                const existingCollectionItem = await entityManager.findOne(CollectionItemAggregateRoot, {
+                const existingCollectionItem = await entityManager.findOneBy(CollectionItemAggregateRoot, {
                     collectionLocId,
                     itemId
                 });
@@ -215,8 +215,8 @@ export class CollectionRepository {
         });
     }
 
-    public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | undefined> {
-        return this.repository.findOne({ collectionLocId, itemId })
+    public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | null> {
+        return this.repository.findOneBy({ collectionLocId, itemId })
     }
 
     public async findLatestDelivery(query: { collectionLocId: string, itemId: string, fileHash: string }): Promise<CollectionItemFileDelivered | undefined> {

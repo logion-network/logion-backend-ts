@@ -425,7 +425,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
             .returns(Promise.resolve(collectionItem))
     } else {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
-            .returns(Promise.resolve(undefined))
+            .returns(Promise.resolve(null))
     }
     collectionRepository.setup(instance => instance.createIfNotExist(
         It.Is<string>(param => param === collectionLocId),

@@ -1,6 +1,8 @@
-import { Entity, Column, PrimaryColumn, getRepository, Repository } from "typeorm";
+import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
 import { Moment } from "moment";
+
+import { appDataSource } from "../app-datasource";
 
 @Entity("session")
 export class SessionAggregateRoot {
@@ -19,7 +21,7 @@ export class SessionAggregateRoot {
 export class SessionRepository {
 
     constructor() {
-        this.repository = getRepository(SessionAggregateRoot);
+        this.repository = appDataSource.getRepository(SessionAggregateRoot);
     }
 
     readonly repository: Repository<SessionAggregateRoot>;
@@ -28,7 +30,7 @@ export class SessionRepository {
         await this.repository.save(session);
     }
 
-    async find(userAddress: string, sessionId: string): Promise<SessionAggregateRoot | undefined> {
+    async find(userAddress: string, sessionId: string): Promise<SessionAggregateRoot | null> {
         let builder = this.repository.createQueryBuilder("session");
         builder
             .where("session.user_address = :userAddress", { userAddress: userAddress })

@@ -1,23 +1,23 @@
+import { injectable } from "inversify";
+import moment, { Moment } from "moment";
 import {
     Entity,
     PrimaryColumn,
     Column,
-    getRepository,
     Repository,
     ManyToOne,
     JoinColumn,
     OneToMany,
     Unique,
-    getManager
 } from "typeorm";
-import { injectable } from "inversify";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
+import { EntityManager } from "typeorm/entity-manager/EntityManager";
+
+import { appDataSource } from "../app-datasource";
 import { components } from "../controllers/components";
-import moment, { Moment } from "moment";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
-import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
-import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { Log } from "../util/Log";
 
 const { logger } = Log;
@@ -642,18 +642,18 @@ export interface FetchLocRequestsSpecification {
 export class LocRequestRepository {
 
     constructor() {
-        this.repository = getRepository(LocRequestAggregateRoot);
+        this.repository = appDataSource.getRepository(LocRequestAggregateRoot);
     }
 
     readonly repository: Repository<LocRequestAggregateRoot>;
 
-    public findById(id: string): Promise<LocRequestAggregateRoot | undefined> {
-        return this.repository.findOne(id);
+    public findById(id: string): Promise<LocRequestAggregateRoot | null> {
+        return this.repository.findOneBy({ id });
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
 
-        return await getManager().transaction(async entityManager => {
+        return await appDataSource.manager.transaction(async entityManager => {
             try {
                 await entityManager.save(root);
                 await this.saveFiles(entityManager, root)
@@ -777,7 +777,8 @@ export class LocRequestFactory {
         request.status = "REQUESTED";
         request.requesterAddress = description.requesterAddress;
         if(description.requesterIdentityLoc) {
-            request._requesterIdentityLoc = await this.repository.findById(description.requesterIdentityLoc);
+            const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
+            request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
             request.requesterIdentityLocId = description.requesterIdentityLoc;
         }
         request.ownerAddress = description.ownerAddress;
