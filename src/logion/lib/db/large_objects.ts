@@ -1,5 +1,5 @@
 import { ChildProcess, exec } from 'child_process';
-import { getConnectionOptions } from 'typeorm';
+import { appDataSource } from '../../app-datasource';
 import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
 
 export async function importFile(path: string, comment: string): Promise<number> {
@@ -28,7 +28,7 @@ async function getPsqlEnvironment(): Promise<NodeJS.ProcessEnv> {
 }
 
 async function getPostgresConnectionOptions(): Promise<PostgresConnectionOptions> {
-    const connectionOptions = await getConnectionOptions();
+    const connectionOptions = appDataSource.options;
     if(connectionOptions.type !== 'postgres') {
         throw new Error("Only PostgreSQL is supported");
     }

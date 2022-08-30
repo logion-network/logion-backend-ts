@@ -17,11 +17,15 @@ function buildDefaultDataSource(): DataSource {
 function buildDefaultDataSourceOptions(): DataSourceOptions {
     const fileConfig = getFileConfig();
     const envConfig = getEnvConfig();
-    return {
+    const config = {
         ...fileConfig,
         ...envConfig,
         namingStrategy: new LogionNamingStrategy(),
     };
+    if(!config.type) {
+        config.type = "postgres";
+    }
+    return config;
 }
 
 function getFileConfig(): any {
