@@ -10,7 +10,12 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     NewLocRequestParameters,
-    LocRequestStatus, FileDescription, LinkDescription, MetadataItemDescription, LocType, NewSofRequestParameters,
+    LocRequestStatus,
+    FileDescription,
+    LinkDescription,
+    MetadataItemDescription,
+    LocType,
+    NewSofRequestParameters,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import {
@@ -71,7 +76,7 @@ const testFile:FileDescription = {
     hash: "0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9",
     oid: 123,
     submitter: SUBMITTER,
-    addedOn: moment()
+    addedOn: moment("2022-08-31T15:53:12.741Z")
 }
 
 const testLink:LinkDescription = {
@@ -101,7 +106,7 @@ const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction")
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 const VOID_REASON = "Expired";
-const DECISION_TIMESTAMP = moment().toISOString()
+const DECISION_TIMESTAMP = "2022-08-31T16:01:15.652Z"
 
 let notificationService: Mock<NotificationService>;
 let collectionRepository: Mock<CollectionRepository>;
@@ -445,6 +450,23 @@ describe('LocRequestController', () => {
             });
     });
 
+    it('succeeds to get CSV-formatted loc request', async () => {
+        const app = setupApp(LocRequestController, mockModelForGetSingle)
+        await request(app)
+            .get(`/api/loc-request/${REQUEST_ID}/csv`)
+            .expect(200)
+            .expect('Content-Type', /text\/csv/)
+            .then(response => {
+                console.log(response.text)
+                const csv = response.text.split("\n")
+                expect(csv[0]).toEqual("loc.id,loc.ownerAddress,loc.requesterAddress,loc.requesterIdentityLoc,loc.description,loc.createdOn,loc.decisionOn,loc.closedOn,loc.status,loc.rejectReason,loc.locType,userIdentity.firstName,userIdentity.lastName,userIdentity.email,userIdentity.phoneNumber,voidInfo.reason,voidInfo.voidedOn,file.name,file.hash,file.nature,file.addedOn,file.submitter,link.target,link.addedOn,link.nature,metadata.name,metadata.value,metadata.addedOn,metadata.submitter")
+                expect(csv[1]).toEqual("3e67427a-d80f-41d7-9c86-75a63b8563a1,5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY,5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ,,I want to open a case,2022-08-31T16:01:15.651Z,,,OPEN,,Transaction,,,,,,,,,,,,,,,,,,");
+                expect(csv[2]).toEqual(",,,,,,,,,,,,,,,,,test-file,0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9,file-nature,2022-08-31T15:53:12.741Z,5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw,,,,,,,");
+                expect(csv[3]).toEqual(",,,,,,,,,,,,,,,,,,,,,,507a00a1-7387-44b8-ac4d-fa57ccbf6da5,,link-nature,,,,");
+                expect(csv[4]).toEqual(",,,,,,,,,,,,,,,,,,,,,,,,,test-data,test-data-value,,5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+            });
+    });
+
     it('deletes a file', async () => {
         const app = setupApp(LocRequestController, mockModelForDeleteFile)
         await request(app)
@@ -732,7 +754,7 @@ function mockRequest(status: LocRequestStatus,
     request.setup(instance => instance.getDescription())
         .returns({
             ...data,
-            createdOn: moment().toISOString(),
+            createdOn: "2022-08-31T16:01:15.651Z",
             ownerAddress: ALICE
         });
     request.setup(instance => instance.getFiles()).returns(files);
