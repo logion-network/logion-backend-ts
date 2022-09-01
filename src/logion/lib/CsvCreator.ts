@@ -31,10 +31,12 @@ export class CsvCreator<P extends string> {
                 ...this.map(prefix, parent[prefix])
             }
         }
-        let records: ObjectMap<Field>[] = [ mappedParent ];
+        let records: ObjectMap<Field>[] = [];
         for (const prefix in children) {
             if (children[prefix] !== undefined) {
-                const items = children[prefix]!.map(item => this.map(prefix, item));
+                const items = children[prefix]!
+                    .map(item => this.map(prefix, item))
+                    .map(item => ({ ...item, ...mappedParent }))
                 records = records.concat(items);
             }
         }
