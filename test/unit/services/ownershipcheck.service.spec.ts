@@ -35,7 +35,7 @@ const ownerItem: CollectionItem = {
     files: [{
         name: "image.png",
         contentType: "image/png",
-        hash: "0x7d6fd7774f0d87624da6dcf16d0d3d104c3191e771fbe2f39c86aed4b2bf1a0f",
+        hash: "0x7D6fd7774f0d87624da6dCF16d0d3d104c3191e771fbe2f39c86aed4b2bf1a0F",
         size: 1234n
     }],
     token: {

@@ -23,7 +23,7 @@ export class OwnershipCheckService {
                 if(tokenType === 'ethereum_erc721') {
                     return this.isOwnerOfEthereumErc721(address, item.token);
                 } else if(tokenType === 'owner') {
-                    return address === item.token.id;
+                    return address.toLowerCase() === item.token.id.toLowerCase();
                 } else {
                     throw new Error(`Unsupported token type ${tokenType}`);
                 }
