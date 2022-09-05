@@ -15,10 +15,18 @@ import {
 } from "../../../src/logion/model/locrequest.model";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock } from "moq.ts";
+import { PostalAddress } from "../../../src/logion/model/postaladdress";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
 describe("LocRequestFactory", () => {
+
+    const userIdentity = {
+        firstName: "Scott",
+        lastName: "Tiger",
+        email: "scott@logion.network",
+        phoneNumber: "+789"
+    };
 
     it("creates Transaction LOC request", async () => {
         givenRequestId(uuid());
@@ -104,12 +112,29 @@ describe("LocRequestFactory", () => {
         await expectAsyncToThrow(whenCreatingOpenLoc);
     });
 
-    it("creates Identity LOC request", async () => {
+    it("creates Identity LOC", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
+        await whenCreatingOpenLoc();
+        thenOpenLocCreatedWithDescription(description);
+    });
+
+    it("creates Identity LOC request", async () => {
+        givenRequestId(uuid());
+        const userPostalAddress: PostalAddress = {
+            line1: "Rue de la Paix",
+            line2: "",
+            postalCode: "4000",
+            city: "Liège",
+            country: "Belgium"
+        }
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress);
+        givenLocDescription(description);
         await whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
+        expect(description.userIdentity).toEqual(userIdentity)
+        expect(description.userPostalAddress).toEqual(userPostalAddress)
     });
 
     it("creates an open Identity LOC with requester address", async () => {
@@ -136,12 +161,6 @@ describe("LocRequestFactory", () => {
 
     it("creates an open Identity LOC with no requester", async () => {
         givenRequestId(uuid());
-        const userIdentity = {
-            firstName: "Scott",
-            lastName: "Tiger",
-            email: "scott@logion.network",
-            phoneNumber: "+789"
-        };
         const description = createDescription('Identity', undefined, undefined, userIdentity);
         givenLocDescription(description);
         await whenCreatingOpenLoc();
@@ -167,7 +186,7 @@ describe("LocRequestFactory", () => {
         expect(createdLocRequest.links![0].nature).toEqual(nature)
     });
 
-    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity): LocRequestDescription {
+    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress): LocRequestDescription {
         return {
             requesterAddress,
             requesterIdentityLoc,
@@ -175,6 +194,7 @@ describe("LocRequestFactory", () => {
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
             userIdentity,
+            userPostalAddress,
             locType
         };
     }

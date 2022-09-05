@@ -364,6 +364,8 @@ export interface components {
       locType?: components["schemas"]["LocType"];
       /** @description The identification data of the requester */
       userIdentity?: components["schemas"]["UserIdentityView"];
+      /** @description The postal address of the requester */
+      userPostalAddress?: components["schemas"]["PostalAddressView"];
     };
     /**
      * LocRequestView
@@ -383,6 +385,8 @@ export interface components {
       description?: string;
       /** @description The identification data of the requester */
       userIdentity?: components["schemas"]["UserIdentityView"];
+      /** @description The postal address of the requester */
+      userPostalAddress?: components["schemas"]["PostalAddressView"];
       /**
        * Format: date-time
        * @description The creation timestamp

@@ -6,6 +6,7 @@ import { appDataSource } from "../app-datasource";
 import { UserIdentity } from "./useridentity";
 import { Log } from "../util/Log";
 import { badRequest } from "../controllers/errors";
+import { PostalAddress } from "./postaladdress";
 
 const { logger } = Log;
 
@@ -265,14 +266,6 @@ export class ProtectionRequestRepository {
 
         return await builder.getMany();
     }
-}
-
-export interface PostalAddress {
-    line1: string,
-    line2: string,
-    postalCode: string,
-    city: string,
-    country: string,
 }
 
 export interface ProtectionRequestDescription {

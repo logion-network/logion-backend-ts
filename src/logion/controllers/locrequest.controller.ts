@@ -37,6 +37,7 @@ import { UUID } from "@logion/node-api/dist/UUID";
 import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
+import { PostalAddress } from "../model/postaladdress";
 
 const { logger } = Log;
 
@@ -76,6 +77,7 @@ type FetchLocRequestsSpecificationView = components["schemas"]["FetchLocRequests
 type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
+type PostalAddressView = components["schemas"]["PostalAddressView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
 type VoidLocView = components["schemas"]["VoidLocView"];
 type AddFileView = components["schemas"]["AddFileView"];
@@ -124,7 +126,8 @@ export class LocRequestController extends ApiController {
             description: requireDefined(createLocRequestView.description),
             locType: requireDefined(createLocRequestView.locType),
             createdOn: moment().toISOString(),
-            userIdentity: this.fromUserView(createLocRequestView.userIdentity)
+            userIdentity: this.fromUserIdentityView(createLocRequestView.userIdentity),
+            userPostalAddress: this.fromUserPostalAddressView(createLocRequestView.userPostalAddress),
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
@@ -171,7 +174,8 @@ export class LocRequestController extends ApiController {
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
             locType: locDescription.locType,
-            userIdentity: this.toUserView(userIdentity),
+            userIdentity: this.toUserIdentityView(userIdentity),
+            userPostalAddress: this.toUserPostalAddressView(locDescription.userPostalAddress),
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
             rejectReason: request.rejectReason || undefined,
@@ -206,7 +210,7 @@ export class LocRequestController extends ApiController {
         return view;
     }
 
-    private toUserView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
+    private toUserIdentityView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
         if (userIdentity === undefined) {
             return undefined;
         }
@@ -218,7 +222,7 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    private fromUserView(userIdentityView: UserIdentityView | undefined): UserIdentity | undefined {
+    private fromUserIdentityView(userIdentityView: UserIdentityView | undefined): UserIdentity | undefined {
         if (userIdentityView === undefined) {
             return undefined;
         }
@@ -227,6 +231,32 @@ export class LocRequestController extends ApiController {
             lastName: userIdentityView.lastName || "",
             email: userIdentityView.email || "",
             phoneNumber: userIdentityView.phoneNumber || "",
+        }
+    }
+
+    private toUserPostalAddressView(userPostalAddress: PostalAddress | undefined): PostalAddressView | undefined {
+        if (userPostalAddress === undefined) {
+            return undefined;
+        }
+        return {
+            line1: userPostalAddress.line1,
+            line2: userPostalAddress.line2,
+            postalCode: userPostalAddress.postalCode,
+            city: userPostalAddress.city,
+            country: userPostalAddress.country,
+        }
+    }
+
+    private fromUserPostalAddressView(userPostalAddressView: PostalAddressView | undefined): PostalAddress | undefined {
+        if (userPostalAddressView === undefined) {
+            return undefined;
+        }
+        return {
+            line1: userPostalAddressView.line1 || "",
+            line2: userPostalAddressView.line2 || "",
+            postalCode: userPostalAddressView.postalCode || "",
+            city: userPostalAddressView.city || "",
+            country: userPostalAddressView.country || "",
         }
     }
 
@@ -747,7 +777,8 @@ export class LocRequestController extends ApiController {
             description,
             locType: 'Transaction',
             createdOn: moment().toISOString(),
-            userIdentity
+            userIdentity,
+            userPostalAddress: undefined
         }
         let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),

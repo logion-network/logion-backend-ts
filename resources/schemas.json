@@ -583,6 +583,10 @@
                     "userIdentity": {
                         "description": "The identification data of the requester",
                         "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "description": "The postal address of the requester",
+                        "$ref": "#/components/schemas/PostalAddressView"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -611,6 +615,10 @@
                     "userIdentity": {
                         "description": "The identification data of the requester",
                         "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "description": "The postal address of the requester",
+                        "$ref": "#/components/schemas/PostalAddressView"
                     },
                     "createdOn": {
                         "type": "string",
