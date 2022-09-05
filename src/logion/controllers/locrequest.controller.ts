@@ -37,7 +37,6 @@ import { UUID } from "@logion/node-api/dist/UUID";
 import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
-import { CsvCreator } from "../lib/CsvCreator";
 
 const { logger } = Log;
 
@@ -52,7 +51,6 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.createLocRequest(spec);
     LocRequestController.fetchRequests(spec);
     LocRequestController.getLocRequest(spec);
-    LocRequestController.getCsvLocRequest(spec);
     LocRequestController.getPublicLoc(spec);
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
@@ -303,95 +301,6 @@ export class LocRequestController extends ApiController {
             logger.error(e);
             throw e;
         }
-    }
-
-    static getCsvLocRequest(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}"].get!;
-        operationObject.summary = "Gets a single LOC Request CSV file";
-        operationObject.description = "The authenticated user must be either expected requester or expected owner.";
-        operationObject.responses = {
-            "200": {
-                description: "OK",
-                content: {
-                    "text/csv": {
-                        example: "loc.id,loc.ownerAddress\n3e67427a-d80f-41d7-9c86-75a63b8563a1,5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-                    }
-                }
-            }
-        };
-        setPathParameters(operationObject, { 'requestId': "The ID of the LOC request" })
-    }
-
-    @HttpGet('/:requestId/csv')
-    @Async()
-    @SendsResponse()
-    async getCsvLocRequest(_body: any, requestId: string): Promise<void> {
-
-        type Prefix = "loc" | "userIdentity" | "voidInfo" | "file" | "link" | "metadata";
-
-        const csvCreator = new CsvCreator<Prefix>({
-            "loc": [
-                "id",
-                "ownerAddress",
-                "requesterAddress",
-                "requesterIdentityLoc",
-                "description",
-                "createdOn",
-                "decisionOn",
-                "closedOn",
-                "status",
-                "rejectReason",
-                "locType",
-            ],
-            "userIdentity": [
-                "firstName",
-                "lastName",
-                "email",
-                "phoneNumber"
-            ],
-            "voidInfo": [
-                "reason",
-                "voidedOn"
-            ],
-            "file": [
-                "name",
-                "hash",
-                "nature",
-                "addedOn",
-                "submitter"
-            ],
-            "link": [
-                "target",
-                "addedOn",
-                "nature"
-            ],
-            "metadata": [
-                "name",
-                "value",
-                "addedOn",
-                "submitter"
-            ],
-        });
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        await this.authenticationService.authenticatedUserIsOneOf(this.request,
-            request.requesterAddress, request.ownerAddress);
-        const ui = await this.findUserIdentity(request);
-        const locRequestView = this.toView(request, ui);
-        this.response.type('text/csv')
-        const csv =
-            csvCreator.getHeaderString() +
-            csvCreator.stringifyRecords(
-                {
-                    "loc": locRequestView,
-                    "userIdentity": locRequestView.userIdentity,
-                    "voidInfo": locRequestView.voidInfo
-                },
-                {
-                    "file": locRequestView.files,
-                    "link": locRequestView.links,
-                    "metadata": locRequestView.metadata
-                })
-        this.response.send(csv)
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {
