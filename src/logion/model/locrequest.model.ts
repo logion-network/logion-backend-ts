@@ -19,6 +19,7 @@ import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { Log } from "../util/Log";
+import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
 
 const { logger } = Log;
 
@@ -33,6 +34,7 @@ export interface LocRequestDescription {
     readonly description: string;
     readonly createdOn: string;
     readonly userIdentity: UserIdentity | undefined;
+    readonly userPostalAddress: PostalAddress | undefined;
     readonly locType: LocType;
 }
 
@@ -110,6 +112,15 @@ export class LocRequestAggregateRoot {
                 email: this.userIdentity.email || "",
                 phoneNumber: this.userIdentity.phoneNumber || "",
             } : undefined;
+        const userPostalAddress = this.userPostalAddress &&
+            (this.userPostalAddress.line1 || this.userPostalAddress.line2 || this.userPostalAddress.postalCode || this.userPostalAddress.city || this.userPostalAddress.country) ?
+            {
+                line1: this.userPostalAddress.line1 || "",
+                line2: this.userPostalAddress.line2 || "",
+                postalCode: this.userPostalAddress.postalCode || "",
+                city: this.userPostalAddress.city || "",
+                country: this.userPostalAddress.country || "",
+            } : undefined;
         return {
             requesterAddress: this.requesterAddress,
             requesterIdentityLoc: this.requesterIdentityLocId,
@@ -117,6 +128,7 @@ export class LocRequestAggregateRoot {
             description: this.description!,
             createdOn: this.createdOn!,
             userIdentity,
+            userPostalAddress,
             locType: this.locType!,
         }
     }
@@ -494,6 +506,9 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
 
+    @Column(() => EmbeddablePostalAddress, { prefix: "" })
+    userPostalAddress?: EmbeddablePostalAddress;
+
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,
         cascade: false,
@@ -757,7 +772,7 @@ export class LocRequestFactory {
     ) {}
 
     async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest(params);
+        const request = await this.newLocRequest(params, false);
         request.accept(moment())
         return request;
     }
@@ -768,10 +783,10 @@ export class LocRequestFactory {
         return request;
     }
 
-    async newLocRequest(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
+    async newLocRequest(params: NewLocRequestParameters, isUserRequest: boolean = true): Promise<LocRequestAggregateRoot> {
         const { description } = params;
         this.ensureCorrectRequester(description)
-        this.ensureUserIdentityPresent(description)
+        this.ensureUserIdentityPresent(description, isUserRequest)
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
         request.status = "REQUESTED";
@@ -792,6 +807,15 @@ export class LocRequestFactory {
             request.userIdentity.lastName = userIdentity.lastName;
             request.userIdentity.email = userIdentity.email;
             request.userIdentity.phoneNumber = userIdentity.phoneNumber;
+        }
+        const userPostalAddress = description.userPostalAddress
+        if (userPostalAddress !== undefined) {
+            request.userPostalAddress = new EmbeddablePostalAddress();
+            request.userPostalAddress.line1 = userPostalAddress.line1;
+            request.userPostalAddress.line2 = userPostalAddress.line2;
+            request.userPostalAddress.postalCode = userPostalAddress.postalCode;
+            request.userPostalAddress.city = userPostalAddress.city;
+            request.userPostalAddress.country = userPostalAddress.country;
         }
         request.files = [];
         request.metadata = [];
@@ -816,8 +840,8 @@ export class LocRequestFactory {
         }
     }
 
-    private ensureUserIdentityPresent(description: LocRequestDescription) {
-        if (description.locType === 'Identity' && !description.requesterAddress) {
+    private ensureUserIdentityPresent(description: LocRequestDescription, isUserRequest: boolean) {
+        if (description.locType === 'Identity' && (!description.requesterAddress || isUserRequest)) {
             const userIdentity = description.userIdentity;
             if (!userIdentity
                 || !userIdentity.firstName

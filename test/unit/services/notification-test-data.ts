@@ -65,7 +65,8 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
             decisionOn: "2021-06-10T16:25:23.668294",
             rejectReason: "Failed to provide some data",
         },
-        userIdentity: undefined
+        userIdentity: undefined,
+        userPostalAddress: undefined,
     }
 }
 
