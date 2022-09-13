@@ -16,6 +16,7 @@ import {
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress";
+import { Seal } from "../../../src/logion/services/seal.service";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
@@ -249,6 +250,18 @@ describe("LocRequestAggregateRoot", () => {
         givenRequestWithStatus('OPEN');
         whenPreClosing();
         thenRequestStatusIs('CLOSED');
+        thenRequestSaltIs(undefined);
+    });
+
+    it("pre-closes with seal", () => {
+        givenRequestWithStatus('OPEN');
+        const seal:Seal = {
+            hash: "0xaab9726bdea51dfd83382de1dcafe792c229649bb51b311ed0677b6acb5a8a46",
+            salt: "Some salt"
+        }
+        whenPreClosing(seal);
+        thenRequestStatusIs('CLOSED');
+        thenRequestSaltIs(seal.salt);
     });
 
     it("closes", () => {
@@ -705,6 +718,10 @@ function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
 }
 
+function thenRequestSaltIs(expectedSalt: string | undefined) {
+    expect(request.salt).toBe(expectedSalt);
+}
+
 function thenRequestRejectReasonIs(rejectReason: string | undefined) {
     expect(request.rejectReason).toBe(rejectReason);
 }
@@ -963,8 +980,8 @@ function thenHasExpectedLinkIndices() {
     }
 }
 
-function whenPreClosing() {
-    request.preClose();
+function whenPreClosing(seal?: Seal) {
+    request.preClose(seal);
 }
 
 function whenPreVoiding(reason: string) {
