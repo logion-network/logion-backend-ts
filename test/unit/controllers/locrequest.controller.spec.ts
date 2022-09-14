@@ -29,6 +29,8 @@ import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
 import { fileExists } from "../../helpers/filehelper";
+import { UserIdentitySealService, Seal } from "../../../src/logion/services/seal.service";
+import { UserIdentity } from "../../../src/logion/model/useridentity";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -107,6 +109,10 @@ const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 const VOID_REASON = "Expired";
 const DECISION_TIMESTAMP = "2022-08-31T16:01:15.652Z"
+const SEAL: Seal = {
+    hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
+    salt: ""
+}
 
 let notificationService: Mock<NotificationService>;
 let collectionRepository: Mock<CollectionRepository>;
@@ -544,11 +550,31 @@ describe('LocRequestController', () => {
         locRequest.verify(instance => instance.confirmLink(SOME_LINK_TARGET))
     })
 
-    it('pre-closes', async () => {
-        const app = setupApp(LocRequestController, mockModelForPreClose)
+    it('pre-closes a Transaction LOC', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Transaction"))
         await request(app)
             .post(`/api/loc-request/${REQUEST_ID}/close`)
-            .expect(204);
+            .expect(200);
+    });
+
+    it('pre-closes an Identity LOC', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Identity", testUserIdentity))
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/close`)
+            .expect(200)
+            .then(response => {
+                expect(response.body.seal).toEqual(SEAL.hash)
+            })
+    });
+
+    it('pre-closes an Identity LOC with missing user identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Identity"))
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/close`)
+            .expect(400)
+            .then(response => {
+                expect(response.body.errorMessage).toEqual("Cannot close Identity LOC with missing user identity")
+            })
     });
 
     it('pre-voids', async () => {
@@ -1011,8 +1037,13 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
     }
 }
 
-function mockModelForPreClose(container: Container) {
-    const request = mockRequest("OPEN", testData);
+function mockModelForPreClose(container: Container, locType: LocType, userIdentity?: UserIdentity) {
+    const data = {
+        ...testDataWithType(locType),
+        userIdentity
+    };
+    const request = mockRequest("OPEN", data);
+    request.setup(instance => instance.locType).returns(locType);
     request.setup(instance => instance.preClose()).returns(undefined);
 
     const repository = new Mock<LocRequestRepository>();
@@ -1066,5 +1097,11 @@ function mockOtherDependencies(container: Container) {
 
     collectionRepository = new Mock<CollectionRepository>();
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
+
+    const sealService = new Mock<UserIdentitySealService>();
+    sealService
+        .setup(instance => instance.seal(testUserIdentity))
+        .returns(SEAL);
+    container.bind(UserIdentitySealService).toConstantValue(sealService.object());
 }
 

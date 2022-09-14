@@ -38,6 +38,7 @@ import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";
+import { UserIdentitySealService } from "../services/seal.service";
 
 const { logger } = Log;
 
@@ -84,6 +85,7 @@ type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
+type CloseView = components["schemas"]["CloseView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -97,7 +99,8 @@ export class LocRequestController extends ApiController {
         private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService) {
+        private directoryService: DirectoryService,
+        private sealService: UserIdentitySealService) {
         super();
     }
 
@@ -550,23 +553,34 @@ export class LocRequestController extends ApiController {
 
     static closeLoc(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/close"].post!;
-        operationObject.summary = "Closes a LOC";
+        operationObject.summary = "Closes a LOC, and optionally provides a seal.";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
-        operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.responses = getDefaultResponses("CloseView");
         setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/close')
     @Async()
-    @SendsResponse()
-    async closeLoc(_body: any, requestId: string) {
+    async closeLoc(_body: any, requestId: string): Promise<CloseView> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
 
-        request.preClose();
-        await this.locRequestRepository.save(request);
-
-        this.response.sendStatus(204);
+        if (request.locType === 'Identity') {
+            const userIdentity = requireDefined(
+                request.getDescription().userIdentity,
+                () => badRequest("Cannot close Identity LOC with missing user identity")
+            );
+            const seal = this.sealService.seal(userIdentity);
+            request.preClose(seal);
+            await this.locRequestRepository.save(request);
+            return {
+                seal: seal.hash
+            }
+        } else {
+            request.preClose();
+            await this.locRequestRepository.save(request);
+            return {}
+        }
     }
 
     static voidLoc(spec: OpenAPIV3.Document) {
