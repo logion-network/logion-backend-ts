@@ -1,8 +1,8 @@
 import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
-import { Moment } from "moment";
 
 import { appDataSource } from "../app-datasource";
+import { DateTime } from "luxon";
 
 @Entity("session")
 export class SessionAggregateRoot {
@@ -46,7 +46,7 @@ export class SessionRepository {
 export interface NewSessionParameters {
     userAddress: string,
     sessionId: string,
-    createdOn: Moment,
+    createdOn: DateTime,
 }
 
 @injectable()
@@ -56,7 +56,7 @@ export class SessionFactory {
         const root = new SessionAggregateRoot();
         root.userAddress = params.userAddress;
         root.sessionId = params.sessionId;
-        root.createdOn = params.createdOn.toDate();
+        root.createdOn = params.createdOn.toJSDate();
         return root;
     }
 }

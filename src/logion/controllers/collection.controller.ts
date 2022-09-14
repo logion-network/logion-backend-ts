@@ -1,3 +1,4 @@
+import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
 import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model";
@@ -15,7 +16,7 @@ import {
 } from "./doc";
 import { badRequest, forbidden } from "./errors";
 import { LocRequestRepository } from "../model/locrequest.model";
-import { AuthenticationService, LogionUserCheck } from "../services/authentication.service";
+import { AuthenticationService } from "../services/authentication.service";
 import { getUploadedFile } from "./fileupload";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
@@ -220,7 +221,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownload(authenticated: LogionUserCheck, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
+    private async checkCanDownload(authenticated: AuthenticatedUser, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
         const publishedCollectionItem = requireDefined(await this.collectionService.getCollectionItem({
             collectionLocId,
             itemId

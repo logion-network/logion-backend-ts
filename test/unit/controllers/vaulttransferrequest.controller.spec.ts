@@ -2,7 +2,7 @@ import { Container } from 'inversify';
 import { Mock, It } from 'moq.ts';
 import request from 'supertest';
 
-import { setupApp } from '../../helpers/testapp';
+import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } from '../../helpers/testapp';
 
 import {
     VaultTransferRequestRepository,
@@ -27,7 +27,9 @@ import {
 describe('VaultTransferRequestController', () => {
 
     it('creates with valid request', async () => {
-        const app = setupApp(VaultTransferRequestController, mockModelForRequest);
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+        const app = setupApp(VaultTransferRequestController, mockModelForRequest, mock);
 
         await request(app)
             .post('/api/vault-transfer-request')
@@ -87,7 +89,8 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('fails on authentication failure upon fetch', async  () => {
-        const app = setupApp(VaultTransferRequestController, mockModelForFetch, false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(VaultTransferRequestController, mockModelForFetch, mock);
 
         await request(app)
             .put('/api/vault-transfer-request')
@@ -130,7 +133,9 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('lets requester cancel', async () => {
-        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/cancel")
@@ -140,7 +145,8 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('cancel fails on auth failure', async () => {
-        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/cancel")
@@ -148,7 +154,9 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('lets requester resubmit', async () => {
-        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/resubmit")
@@ -158,7 +166,8 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('cancel fails on auth failure', async () => {
-        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
         await request(app)
             .post('/api/vault-transfer-request/' + REQUEST_ID + "/resubmit")

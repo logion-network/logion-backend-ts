@@ -58,8 +58,8 @@ export class LoFileController extends ApiController {
     @SendsResponse()
     async uploadFile(_body: any, id: string): Promise<void> {
 
-        await (await this.authenticationService.authenticatedUser(this.request))
-            .requireNodeOwner();
+        (await this.authenticationService.authenticatedUser(this.request))
+            .require(user => user.isNodeOwner());
 
         const existingLoFile = await this.loFileRepository.findById(id);
         const file = getUploadedFile(this.request)
@@ -98,8 +98,8 @@ export class LoFileController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadFile(_body: any, id: string): Promise<void> {
-        await (await this.authenticationService.authenticatedUser(this.request))
-            .requireNodeOwner();
+        (await this.authenticationService.authenticatedUser(this.request))
+            .require(user => user.isNodeOwner());
         const file = requireDefined(
             await this.loFileRepository.findById(id),
             () => badRequest(`LO has not yet uploaded file with id ${ id }`)

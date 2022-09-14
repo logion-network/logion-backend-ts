@@ -1,4 +1,4 @@
-import { setupApp } from "../../helpers/testapp";
+import { mockAuthenticationForUserOrLegalOfficer, setupApp } from "../../helpers/testapp";
 import { LoFileController } from "../../../src/logion/controllers/lofile.controller";
 import { Container } from "inversify";
 import { Mock, It, Times } from "moq.ts";
@@ -33,8 +33,8 @@ const buffer = Buffer.from(fileContent);
 describe("LoFileController", () => {
 
     it("uploads an new file", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, true)
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
+        const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
             .put(`/api/lo-file/${ newFile.id }`)
@@ -52,8 +52,8 @@ describe("LoFileController", () => {
     });
 
     it("uploads an existing file", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, true)
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
+        const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
             .put(`/api/lo-file/${ existingFile.id }`)
@@ -67,8 +67,8 @@ describe("LoFileController", () => {
     });
 
     it("downloads", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, true)
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
+        const app = setupApp(LoFileController, mockModel, mock);
 
         const filePath = `/tmp/download-${ existingFile.id }`;
         await writeFile(filePath, fileContent);
@@ -80,8 +80,8 @@ describe("LoFileController", () => {
     });
 
     it("fails to upload an new file if not owner", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, false)
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+        const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
             .put(`/api/lo-file/${ newFile.id }`)
@@ -94,8 +94,8 @@ describe("LoFileController", () => {
     });
 
     it("fails to upload an existing file if not owner", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, false)
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+        const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
             .put(`/api/lo-file/${ existingFile.id }`)
@@ -108,9 +108,8 @@ describe("LoFileController", () => {
     });
 
     it("fails to download if not owner", async () => {
-
-        const app = setupApp(LoFileController, mockModel, true, false)
-
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+        const app = setupApp(LoFileController, mockModel, mock);
         await request(app)
             .get(`/api/lo-file/${ existingFile.id }`)
             .expect(401);

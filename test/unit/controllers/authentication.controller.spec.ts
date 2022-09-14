@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import { setupApp } from "../../helpers/testapp";
 import { AuthenticationController } from "../../../src/logion/controllers/authentication.controller";
 import request from "supertest";
@@ -12,12 +13,8 @@ import {
     SessionAggregateRoot,
     NewSessionParameters
 } from "../../../src/logion/model/session.model";
-import moment from "moment";
-import {
-    VerifyParams,
-    PolkadotSignatureService,
-    EthereumSignatureService
-} from "../../../src/logion/services/signature.service";
+import { Authenticator, Session, SessionManager, SessionSignature, SignedSession, Token } from "@logion/authenticator";
+import { UnauthorizedException } from "dinoloop";
 
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 type AuthenticateRequestView = components["schemas"]["AuthenticateRequestView"];
@@ -52,11 +49,13 @@ describe("AuthenticationController", () => {
         };
         authenticateRequest.signatures![ALICE] = {
             signature: "signature-ALICE",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         authenticateRequest.signatures![BOB] = {
             signature: "signature-BOB",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,true, true));
         await request(app)
@@ -78,11 +77,13 @@ describe("AuthenticationController", () => {
         };
         authenticateRequest.signatures![ALICE] = {
             signature: "signature-ALICE",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         authenticateRequest.signatures![BOB] = {
             signature: "signature-BOB",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,false, true));
         await request(app)
@@ -102,11 +103,13 @@ describe("AuthenticationController", () => {
         };
         authenticateRequest.signatures![ALICE] = {
             signature: "signature-ALICE",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         authenticateRequest.signatures![BOB] = {
             signature: "signature-BOB",
-            signedOn: TIMESTAMP
+            signedOn: TIMESTAMP,
+            type: "POLKADOT",
         };
         const app = setupApp(AuthenticationController, (container) => mockDependenciesForAuth(container,true, false));
         await request(app)
@@ -141,54 +144,61 @@ function mockDependenciesForSignIn(container: Container): void {
 
     sessionRepository.setup(instance => instance.save)
         .returns(() => Promise.resolve());
-
-    const signatureService = new Mock<PolkadotSignatureService>();
-    container.bind(PolkadotSignatureService).toConstantValue(signatureService.object())
-
-    const ethereumSignatureService = new Mock<EthereumSignatureService>();
-    container.bind(EthereumSignatureService).toConstantValue(ethereumSignatureService.object());
 }
 
-function mockDependenciesForAuth(container: Container, verifies:boolean, sessionExists:boolean): void {
+function mockDependenciesForAuth(container: Container, verifies: boolean, sessionExists:boolean): void {
 
     const sessionAlice = new Mock<SessionAggregateRoot>();
-
-    const signatureService = new Mock<PolkadotSignatureService>();
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === ALICE
-        && params.signature === "signature-ALICE"
-        && params.operation === "login"
-        && params.resource === AuthenticationController.RESOURCE
-        && params.attributes.length === 1
-        && params.attributes[0] === SESSION_ID
-    )))
-        .returns(Promise.resolve(verifies));
-    signatureService.setup(instance => instance.verify(It.Is<VerifyParams>(params =>
-        params.address === BOB
-        && params.signature === "signature-BOB"
-        && params.operation === "login"
-        && params.resource === AuthenticationController.RESOURCE
-        && params.attributes.length === 1
-        && params.attributes[0] === SESSION_ID
-    )))
-        .returns(Promise.resolve(verifies));
-    container.bind(PolkadotSignatureService).toConstantValue(signatureService.object());
-
-    const ethereumSignatureService = new Mock<EthereumSignatureService>();
-    container.bind(EthereumSignatureService).toConstantValue(ethereumSignatureService.object());
+    sessionAlice.setup(instance => instance.createdOn).returns(DateTime.now().toJSDate());
 
     const authenticationService = new Mock<AuthenticationService>();
     container.rebind(AuthenticationService).toConstantValue(authenticationService.object());
 
-    authenticationService
-        .setup(instance => instance.createToken(ALICE, It.IsAny<number>())).returns(Promise.resolve({
-        value: TOKEN_ALICE,
-        expiredOn: moment()
-    }))
-        .setup(instance => instance.createToken(BOB, It.IsAny<number>())).returns(Promise.resolve({
-        value: TOKEN_BOB,
-        expiredOn: moment()
-    }));
+    const sessionManager = new Mock<SessionManager>();
+    const authenticator = new Mock<Authenticator>();
+
+    authenticationService.setup(instance => instance.authenticationSystem()).returnsAsync({
+        sessionManager: sessionManager.object(),
+        authenticator: authenticator.object(),
+    });
+
+    const session = new Mock<Session>();
+    session.setup(instance => instance.addresses).returns([ ALICE, BOB ]);
+
+    if(verifies) {
+        const signatures: Record<string, SessionSignature> = {
+            [ ALICE ]: {
+                signature: "SIG_ALICE",
+                signedOn: DateTime.now(),
+                type: "POLKADOT",
+            },
+            [ BOB ]: {
+                signature: "SIG_BOB",
+                signedOn: DateTime.now(),
+                type: "POLKADOT",
+            }
+        };
+        sessionManager.setup(instance => instance.signedSessionOrThrow(It.IsAny(), It.IsAny())).returnsAsync({
+            session: session.object(),
+            signatures
+        });
+        const tokens: Record<string, Token> = {
+            [ALICE]: {
+                value: TOKEN_ALICE,
+                expiredOn: DateTime.now(),
+            },
+            [BOB]: {
+                value: TOKEN_BOB,
+                expiredOn: DateTime.now(),
+            }
+        };
+        authenticator.setup(instance => instance.createTokens(It.Is<SignedSession>(
+            args => args.session === session.object() && args.signatures === signatures
+        ), It.IsAny())).returnsAsync(tokens);
+    } else {
+        sessionManager.setup(instance => instance.signedSessionOrThrow)
+            .returns(() => { throw new UnauthorizedException({error: "Invalid signature"}) });
+    }
 
     const sessionRepository = new Mock<SessionRepository>();
     if (sessionExists) {

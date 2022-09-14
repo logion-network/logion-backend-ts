@@ -2,7 +2,7 @@ import { Container } from 'inversify';
 import { Mock, It, Times } from 'moq.ts';
 import request from 'supertest';
 
-import { setupApp } from '../../helpers/testapp';
+import { mockAuthenticationWithCondition, setupApp } from '../../helpers/testapp';
 
 import {
     ProtectionRequestRepository,
@@ -153,7 +153,8 @@ describe('fetchProtectionRequests', () => {
     });
 
     it('fails on authentication failure', async  () => {
-        const app = setupApp(ProtectionRequestController, mockModelForFetch, false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(ProtectionRequestController, mockModelForFetch, mock);
 
         await request(app)
             .put('/api/protection-request')
@@ -287,7 +288,8 @@ describe("User", () => {
     });
 
     it('fails to re-submit when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest, repository), false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserResubmit(container, protectionRequest, repository), mock);
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/resubmit")
@@ -310,7 +312,8 @@ describe("User", () => {
     });
 
     it('fails to cancel when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest, repository), false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserCancel(container, protectionRequest, repository), mock);
 
         await request(app)
             .post('/api/protection-request/' + REQUEST_ID + "/cancel")
@@ -335,7 +338,8 @@ describe("User", () => {
     });
 
     it('fails to update when auth fails', async () => {
-        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest, repository), false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(ProtectionRequestController, container => mockModelForUserUpdate(container, protectionRequest, repository), mock);
 
         await request(app)
             .put('/api/protection-request/' + REQUEST_ID + "/update")

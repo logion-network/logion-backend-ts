@@ -133,9 +133,9 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
-        await this.authenticationService.authenticatedUserIsOneOf(this.request,
-            body.requesterAddress,
-            this.authenticationService.nodeOwner);
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.isNodeOwner() || user.is(body.requesterAddress));
+
         const specification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: body.requesterAddress,
             expectedStatuses: body.statuses,
