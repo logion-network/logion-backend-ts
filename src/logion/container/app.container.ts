@@ -12,7 +12,6 @@ import { ProtectionRequestRepository, ProtectionRequestFactory } from '../model/
 import { TransactionRepository, TransactionFactory } from '../model/transaction.model';
 import { SyncPointRepository, SyncPointFactory } from '../model/syncpoint.model';
 import { BlockExtrinsicsService } from "../services/block.service";
-import { PolkadotSignatureService, EthereumSignatureService } from '../services/signature.service';
 import { BlockConsumer } from '../services/blockconsumption.service';
 import { ExtrinsicDataExtractor } from '../services/extrinsic.data.extractor';
 import { TransactionExtractor } from '../services/transaction.extractor';
@@ -30,13 +29,11 @@ import { ErrorService } from "../services/error.service";
 import { HealthController } from '../controllers/health.controller';
 import { TransactionController } from '../controllers/transaction.controller';
 import { CollectionRepository, CollectionFactory } from "../model/collection.model";
-import { AuthorityService } from "../services/authority.service";
 import { NotificationService } from "../services/notification.service";
 import { MailService } from "../services/mail.service";
 import { DirectoryService } from "../services/directory.service";
 import { VaultTransferRequestController } from '../controllers/vaulttransferrequest.controller';
 import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../model/vaulttransferrequest.model';
-import { NodeAuthorizationService } from "../services/nodeauthorization.service";
 import { LoFileFactory, LoFileRepository } from "../model/lofile.model";
 import { SettingFactory, SettingRepository } from '../model/setting.model';
 import { SettingController } from '../controllers/setting.controller';
@@ -45,7 +42,7 @@ import { OwnershipCheckService } from '../services/ownershipcheck.service';
 import { EtherscanService } from '../services/Etherscan.service';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service';
 import { ExifService } from '../services/exif.service';
-import { NodeSignatureService } from '../services/nodesignature.service';
+import { AuthenticationSystemFactory } from '../services/authenticationsystemfactory.service';
 
 let container = new Container({ defaultScope: "Singleton" });
 container.bind(AuthenticationService).toSelf();
@@ -55,8 +52,6 @@ container.bind(ProtectionRequestRepository).toSelf();
 container.bind(ProtectionRequestFactory).toSelf();
 container.bind(PolkadotService).toSelf();
 container.bind(BlockExtrinsicsService).toSelf();
-container.bind(PolkadotSignatureService).toSelf();
-container.bind(EthereumSignatureService).toSelf();
 container.bind(ExtrinsicDataExtractor).toSelf();
 container.bind(TransactionExtractor).toSelf();
 container.bind(TransactionSynchronizer).toSelf();
@@ -76,13 +71,11 @@ container.bind(JsonResponse).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
 container.bind(CollectionService).toSelf();
-container.bind(AuthorityService).toSelf()
 container.bind(NotificationService).toSelf()
 container.bind(MailService).toSelf()
 container.bind(DirectoryService).toSelf()
 container.bind(VaultTransferRequestRepository).toSelf();
 container.bind(VaultTransferRequestFactory).toSelf();
-container.bind(NodeAuthorizationService).toSelf();
 container.bind(LoFileFactory).toSelf();
 container.bind(LoFileRepository).toSelf();
 container.bind(SettingFactory).toSelf();
@@ -91,7 +84,7 @@ container.bind(EtherscanService).toSelf();
 container.bind(OwnershipCheckService).toSelf();
 container.bind(ExifService).toSelf();
 container.bind(RestrictedDeliveryService).toSelf();
-container.bind(NodeSignatureService).toSelf();
+container.bind(AuthenticationSystemFactory).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(ApplicationErrorController).toSelf().inTransientScope();

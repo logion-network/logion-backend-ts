@@ -1,4 +1,4 @@
-@startuml
+@startuml Auth
 'https://plantuml.com/sequence-diagram
 
 actor Alice

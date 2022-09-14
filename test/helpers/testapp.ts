@@ -1,3 +1,4 @@
+import { DateTime } from "luxon";
 import '../../src/logion/container/inversify.decorate';
 import express, { Express } from 'express';
 import bodyParser from 'body-parser';
@@ -6,17 +7,16 @@ import { Dino } from 'dinoloop';
 import { Container } from 'inversify';
 import { ApplicationErrorController } from '../../src/logion/controllers/application.error.controller';
 import { JsonResponse } from '../../src/logion/middlewares/json.response';
-import { Mock } from "moq.ts";
-import { AuthenticationService, LogionUserCheck } from "../../src/logion/services/authentication.service";
+import { It, Mock } from "moq.ts";
+import { AuthenticationService } from "../../src/logion/services/authentication.service";
 import { UnauthorizedException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { ALICE } from "./addresses";
+import { AuthenticatedUser, AuthenticationSystem, Authenticator, SessionManager } from '@logion/authenticator';
 
 export function setupApp<T>(
     controller: Function & { prototype: T; },
     mockBinder: (container: Container) => void,
-    authSucceed: boolean = true,
-    isNodeOwner: boolean = true,
-    conditionFulfilled: boolean = true
+    mock?: AuthenticationServiceMock,
 ): Express {
 
     const app = express();
@@ -36,8 +36,7 @@ export function setupApp<T>(
 
     let container = new Container({ defaultScope: "Singleton" });
 
-    container.bind(AuthenticationService)
-        .toConstantValue(authSucceed ? mockAuthenticationSuccess(isNodeOwner, conditionFulfilled) : mockAuthenticationFailure());
+    container.bind(AuthenticationService).toConstantValue(mockAuthenticationService(mock ? mock : mockAuthenticationWithCondition(true)));
 
     mockBinder(container);
 
@@ -51,61 +50,100 @@ export function setupApp<T>(
     return app;
 }
 
-function mockAuthenticationSuccess(isNodeOwner: boolean, conditionFulfilled: boolean): AuthenticationService {
+export interface AuthenticationServiceMock {
+    authenticatedUser: () => Promise<AuthenticatedUser>;
+    authenticatedUserIs: () => Promise<AuthenticatedUser>;
+    authenticatedUserIsOneOf: () => Promise<AuthenticatedUser>;
+    nodeOwner: string;
+    ensureAuthorizationBearer: () => void;
+}
 
-    const authenticatedUser = new Mock<LogionUserCheck>();
-    authenticatedUser.setup(instance => instance.address).returns(ALICE);
-    authenticatedUser.setup(instance => instance.is).returns(() => conditionFulfilled);
-    authenticatedUser.setup(instance => instance.require).returns(() => {
+export function mockAuthenticationWithCondition(conditionFulfilled: boolean): AuthenticationServiceMock {
+    const authenticatedUser = mockAuthenticatedUser(conditionFulfilled);
+    const ensureAuthorizationBearerMock = () => {
         if (!conditionFulfilled) {
-            throw new UnauthorizedException("")
+            throw new UnauthorizedException();
         }
-        return authenticatedUser.object()
-    });
-    authenticatedUser.setup(instance => instance.requireIs).returns(() => {
-        if (!conditionFulfilled) {
-            throw new UnauthorizedException("")
-        }
-    });
-    authenticatedUser.setup(instance => instance.requireNodeOwner).returns(() => {
-        if (!isNodeOwner) {
-            throw new UnauthorizedException("")
-        }
-        return Promise.resolve()
-    });
-    authenticatedUser.setup(instance => instance.isNodeOwner).returns(() => isNodeOwner);
+    };
+    return mockAuthenticationWithAuthenticatedUser(authenticatedUser, ensureAuthorizationBearerMock);
+}
 
+export function mockAuthenticationWithAuthenticatedUser(authenticatedUser: AuthenticatedUser, ensureAuthorizationBearer?: () => void): AuthenticationServiceMock {
+    return {
+        authenticatedUser: () => Promise.resolve(authenticatedUser),
+        authenticatedUserIs: throwOrReturn(authenticatedUser.is(null), authenticatedUser),
+        authenticatedUserIsOneOf: throwOrReturn(authenticatedUser.isOneOf([]), authenticatedUser),
+        nodeOwner: ALICE,
+        ensureAuthorizationBearer: ensureAuthorizationBearer ? ensureAuthorizationBearer : () => {},
+    };
+}
+
+function throwOrReturn(condition: boolean, authenticatedUser: AuthenticatedUser): () => Promise<AuthenticatedUser> {
+    return () => {
+        if(condition) {
+            return Promise.resolve(authenticatedUser);
+        } else {
+            throw new UnauthorizedException();
+        }
+    };
+}
+
+export function mockAuthenticationForUserOrLegalOfficer(isLegalOfficer: boolean) {
+    const authenticatedUser = new Mock<AuthenticatedUser>();
+    authenticatedUser.setup(instance => instance.is).returns(() => true);
+    authenticatedUser.setup(instance => instance.isOneOf).returns(() => true);
+    authenticatedUser.setup(instance => instance.require).returns((predicate) => {
+        if(!predicate(authenticatedUser.object())) {
+            throw new UnauthorizedException();
+        } else {
+            return authenticatedUser.object();
+        }
+    });
+    authenticatedUser.setup(instance => instance.isNodeOwner()).returns(isLegalOfficer);
+    return mockAuthenticationWithAuthenticatedUser(authenticatedUser.object());
+}
+
+function mockAuthenticationService(mock: AuthenticationServiceMock): AuthenticationService {
+    const authenticationSystem = mockAuthenticationSystem(mock);
     const authenticationService = new Mock<AuthenticationService>();
-    authenticationService.setup(instance => instance.authenticatedUserIs)
-        .returns(() => Promise.resolve(authenticatedUser.object()));
-    authenticationService.setup(instance => instance.authenticatedUserIsOneOf)
-        .returns(() => Promise.resolve(authenticatedUser.object()));
-    authenticationService.setup(instance => instance.authenticatedUser)
-        .returns(() => Promise.resolve(authenticatedUser.object()));
-    authenticationService.setup(instance => instance.nodeOwner)
-        .returns(ALICE);
+    authenticationService.setup(instance => instance.authenticationSystem()).returnsAsync(authenticationSystem);
+    authenticationService.setup(instance => instance.authenticatedUserIs).returns(mock.authenticatedUserIs);
+    authenticationService.setup(instance => instance.authenticatedUserIsOneOf).returns(mock.authenticatedUserIsOneOf);
+    authenticationService.setup(instance => instance.authenticatedUser).returns(mock.authenticatedUser);
+    authenticationService.setup(instance => instance.nodeOwner).returns(mock.nodeOwner);
+    authenticationService.setup(instance => instance.ensureAuthorizationBearer).returns(mock.ensureAuthorizationBearer);
     return authenticationService.object();
 }
 
-function mockAuthenticationFailure(): AuthenticationService {
-
-    const authenticationService = new Mock<AuthenticationService>();
-    authenticationService.setup(instance => instance.authenticatedUserIs)
-        .returns(() => {
+export function mockAuthenticatedUser(conditionFulfilled: boolean, address?: string): AuthenticatedUser {
+    const authenticatedUser = new Mock<AuthenticatedUser>();
+    authenticatedUser.setup(instance => instance.address).returns(address ? address : ALICE);
+    authenticatedUser.setup(instance => instance.is).returns(() => conditionFulfilled);
+    authenticatedUser.setup(instance => instance.isOneOf).returns(() => conditionFulfilled);
+    authenticatedUser.setup(instance => instance.require).returns((predicate) => {
+        if(!predicate(authenticatedUser.object())) {
             throw new UnauthorizedException();
-        });
-    authenticationService.setup(instance => instance.authenticatedUserIsOneOf)
-        .returns(() => {
-            throw new UnauthorizedException();
-        });
-
-    const authenticatedUser = new Mock<LogionUserCheck>();
-    authenticatedUser.setup(instance => instance.require).returns(() => {
-        throw new UnauthorizedException();
+        } else {
+            return authenticatedUser.object();
+        }
     });
+    authenticatedUser.setup(instance => instance.isNodeOwner).returns(() => conditionFulfilled);
+    return authenticatedUser.object();
+}
 
-    authenticationService.setup(instance => instance.authenticatedUser)
-        .returns(() => Promise.resolve(authenticatedUser.object()));
-    authenticationService.setup(instance => instance.nodeOwner).returns(ALICE);
-    return authenticationService.object();
+function mockAuthenticationSystem(mock: AuthenticationServiceMock): AuthenticationSystem {
+    const sessionManager = new Mock<SessionManager>();
+    sessionManager.setup(instance => instance.createNewSession).returns(addresses => ({
+        addresses,
+        id: "testSessionId",
+        createdOn: DateTime.now(),
+    }));
+
+    const authenticator = new Mock<Authenticator>();
+    authenticator.setup(instance => instance.ensureAuthenticatedUserOrThrow).returns(() => mock.authenticatedUser());
+
+    return {
+        sessionManager: sessionManager.object(),
+        authenticator: authenticator.object(),
+    };
 }

@@ -552,9 +552,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.5.0-1":
-  version: 0.5.0-1
-  resolution: "@logion/node-api@npm:0.5.0-1"
+"@logion/authenticator@npm:^0.1.0-3":
+  version: 0.1.0-3
+  resolution: "@logion/authenticator@npm:0.1.0-3"
+  dependencies:
+    "@ethersproject/transactions": ^5.6.2
+    "@logion/node-api": ^0.5.0-2
+    "@types/luxon": ^3.0.0
+    jose: ^4.8.3
+    luxon: ^3.0.1
+    peer-id: ^0.16.0
+    web3-utils: ^1.7.4
+  checksum: 6cdafa57d6183e82d65be572c08a654d9c9c55be1f7fbf2502d786b8f6d4cf8613d37436ef8270fb3840eae990e0f56e518a303808390224679788bd9e50902e
+  languageName: node
+  linkType: hard
+
+"@logion/node-api@npm:^0.5.0-2":
+  version: 0.5.0-2
+  resolution: "@logion/node-api@npm:0.5.0-2"
   dependencies:
     "@polkadot/api": ^8.14.1
     "@polkadot/util": ^10.1.1
@@ -562,7 +577,7 @@ __metadata:
     "@types/uuid": ^8.3.4
     fast-sha256: ^1.3.0
     uuid: ^8.3.2
-  checksum: 6c394383a1a8adae6450329c0a2c7ba21f706ee5030789f81cc6506a8f11ca642c98f512cefaaeb79ad91df8f0b8f5fd0f3a4e23ec248d623e96394ae03e0881
+  checksum: cfc0b521b7357f9d1db2da32bc24ff240e4dc386e795ae508bd2af4ea908872626ce78fa5b496e483019be0315192182ce9f7572e36be7b18931fa6b07acd2c2
   languageName: node
   linkType: hard
 
@@ -1274,6 +1289,13 @@ __metadata:
   version: 4.0.2
   resolution: "@types/long@npm:4.0.2"
   checksum: d16cde7240d834cf44ba1eaec49e78ae3180e724cd667052b194a372f350d024cba8dd3f37b0864931683dab09ca935d52f0c4c1687178af5ada9fc85b0635f4
+  languageName: node
+  linkType: hard
+
+"@types/luxon@npm:^3.0.0":
+  version: 3.0.1
+  resolution: "@types/luxon@npm:3.0.1"
+  checksum: a81444f9b474ea9b3063ab4cc68b917a2634e38b4e229f86c78c35023a32bf5e8d1044d7c229c011291662c976cb6c4cf109dc3d2077c571790a31779a554178
   languageName: node
   linkType: hard
 
@@ -4122,9 +4144,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "logion-backend-ts@workspace:."
   dependencies:
-    "@ethersproject/transactions": ^5.6.2
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.5.0-1
+    "@logion/authenticator": ^0.1.0-3
     "@logion/node-exiftool": ^2.3.1-2
     "@polkadot/wasm-crypto": ^6.3.1
     "@tsconfig/node16": ^1.0.3
@@ -4152,7 +4173,6 @@ __metadata:
     ipfs-client: ^0.7.9
     jasmine: ^4.3.0
     jasmine-spec-reporter: ^7.0.0
-    jose: ^4.8.3
     moment: ^2.29.4
     mongoose: ^6.5.0
     mongoose-to-swagger: ^1.4.0
@@ -4161,7 +4181,6 @@ __metadata:
     nodemailer: ^6.7.7
     nyc: ^15.1.0
     openapi-typescript: 5.1.0
-    peer-id: ^0.16.0
     pg: ^8.8.0
     pug: ^3.0.2
     rimraf: ^3.0.2
@@ -4173,7 +4192,6 @@ __metadata:
     tsc-watch: ^5.0.3
     typeorm: ^0.3.9
     typescript: ^4.7.4
-    web3-utils: ^1.7.4
   languageName: unknown
   linkType: soft
 
@@ -4206,6 +4224,13 @@ __metadata:
   version: 7.13.2
   resolution: "lru-cache@npm:7.13.2"
   checksum: dfed24e52bae95edf490d0f28f4f14552319ac7e7dc37ae0b84a72e084949233821b33227271abe81d8361ac079810f9d171a706f316cfdeda135012e4311015
+  languageName: node
+  linkType: hard
+
+"luxon@npm:^3.0.1":
+  version: 3.0.3
+  resolution: "luxon@npm:3.0.3"
+  checksum: 67d143f102f520761c4202086579a5cf30b230ea299da27cacb31e9f9d372cadef90f14cbe7e2621b70825b267fe00128b8176ed8b7172b48f77a403a662d5aa
   languageName: node
   linkType: hard
 

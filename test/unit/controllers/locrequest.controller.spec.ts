@@ -1,4 +1,4 @@
-import { setupApp } from "../../helpers/testapp";
+import { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition, setupApp } from "../../helpers/testapp";
 import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
@@ -114,11 +114,11 @@ let collectionRepository: Mock<CollectionRepository>;
 describe('LocRequestController', () => {
 
     async function testLocRequestCreationWithEmbeddedUserIdentity(locType: LocType) {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, locType),
-            true,
-            false
+            mock
         )
         await request(app)
             .post('/api/loc-request')
@@ -146,11 +146,11 @@ describe('LocRequestController', () => {
     });
 
     async function testOpenLocCreation(locType: LocType) {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, locType, true),
-            true,
-            true,
+            mock,
         )
         await request(app)
             .post('/api/loc-request')
@@ -178,11 +178,11 @@ describe('LocRequestController', () => {
     });
 
     async function testOpenLocCreationWithEmbeddedUserIdentity(locType: LocType) {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, locType),
-            true,
-            true,
+            mock,
         )
         await request(app)
             .post('/api/loc-request')
@@ -210,11 +210,11 @@ describe('LocRequestController', () => {
     });
 
     it('succeeds to create open loc with identity LOC', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
             mockModelForCreationWithIdentityLoc,
-            true,
-            true,
+            mock,
         )
         await request(app)
             .post('/api/loc-request')
@@ -236,11 +236,11 @@ describe('LocRequestController', () => {
     });
 
     async function testLocRequestCreation(locType: LocType) {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, locType, true),
-            true,
-            false
+            mock,
         )
         await request(app)
             .post('/api/loc-request')
@@ -313,7 +313,11 @@ describe('LocRequestController', () => {
     });
 
     it('fails to create loc request - authentication failure', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForCreation(container, "Transaction"), false)
+        const app = setupApp(
+            LocRequestController,
+            container => mockModelForCreation(container, "Transaction"),
+            mockAuthenticationWithCondition(false),
+        );
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -334,7 +338,11 @@ describe('LocRequestController', () => {
     }
 
     it('fails to fetch loc requests - authentication failure', async () => {
-        const app = setupApp(LocRequestController, mockModelForFetch, false)
+        const app = setupApp(
+            LocRequestController,
+            mockModelForFetch,
+            mockAuthenticationWithCondition(false),
+        );
         await request(app)
             .put('/api/loc-request')
             .send({
@@ -392,7 +400,8 @@ describe('LocRequestController', () => {
     })
 
     it('fails to add file to loc when neither owner nor requester', async () => {
-        const app = setupApp(LocRequestController, mockModelForAddFile, true, false, false);
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(LocRequestController, mockModelForAddFile, mock);
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
@@ -477,7 +486,8 @@ describe('LocRequestController', () => {
 
     it('fails to adds a metadata item when neither owner nor requester', async () => {
         const locRequest = mockRequestForMetadata();
-        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest), true, false, false)
+        const mock = mockAuthenticationWithCondition(false);
+        const app = setupApp(LocRequestController, (container) => mockModelForAllItems(container, locRequest), mock);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
             .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })

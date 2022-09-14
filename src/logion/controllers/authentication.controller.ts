@@ -1,13 +1,13 @@
-import { injectable } from "inversify";
+import { Session, SessionSignature, Token } from "@logion/authenticator";
 import { Controller, ApiController, HttpPost, Async, HttpPut } from "dinoloop";
-import { components } from "./components";
-import { v4 as uuid } from "uuid";
-import { AuthenticationService, Token, unauthorized } from "../services/authentication.service";
-import { SessionRepository, SessionFactory } from "../model/session.model";
-import moment from "moment";
-import { requireDefined } from "../lib/assertions";
-import { PolkadotSignatureService, EthereumSignatureService } from "../services/signature.service";
 import { OpenAPIV3 } from "express-oas-generator";
+import { injectable } from "inversify";
+import { DateTime } from "luxon";
+
+import { components } from "./components";
+import { AuthenticationService } from "../services/authentication.service";
+import { SessionRepository, SessionFactory } from "../model/session.model";
+import { requireDefined } from "../lib/assertions";
 import {
     getRequestBody,
     getBodyContent,
@@ -17,6 +17,7 @@ import {
     setControllerTag
 } from "./doc";
 import { Log } from "../util/Log";
+import { unauthorized } from "../services/authenticationsystemfactory.service";
 
 const { logger } = Log;
 
@@ -36,7 +37,6 @@ type SignInRequestView = components["schemas"]["SignInRequestView"];
 type SignInResponseView = components["schemas"]["SignInResponseView"];
 type AuthenticateRequestView = components["schemas"]["AuthenticateRequestView"];
 type AuthenticateResponseView = components["schemas"]["AuthenticateResponseView"];
-type SignatureView = components["schemas"]["SignatureView"];
 type RefreshRequestView = components["schemas"]["RefreshRequestView"];
 
 @injectable()
@@ -48,8 +48,6 @@ export class AuthenticationController extends ApiController {
     constructor(
         private sessionRepository: SessionRepository,
         private sessionFactory: SessionFactory,
-        private signatureService: PolkadotSignatureService,
-        private ethereumSignatureService: EthereumSignatureService,
         private authenticationService: AuthenticationService) {
         super();
     }
@@ -71,17 +69,17 @@ export class AuthenticationController extends ApiController {
     @HttpPost('/sign-in')
     @Async()
     async signIn(signInRequest: SignInRequestView): Promise<SignInResponseView> {
-        const sessionId = uuid();
-        const createdOn = moment();
-        for(const address of signInRequest.addresses!) {
-            const session = this.sessionFactory.newSession({
+        const { sessionManager } = await this.authenticationService.authenticationSystem();
+        const session = sessionManager.createNewSession(signInRequest.addresses!);
+        for(const address of session.addresses) {
+            const sessionAggregate = this.sessionFactory.newSession({
                 userAddress: address,
-                sessionId,
-                createdOn
+                sessionId: session.id,
+                createdOn: session.createdOn,
             });
-            await this.sessionRepository.save(session);
+            await this.sessionRepository.save(sessionAggregate);
         }
-        return Promise.resolve({ sessionId });
+        return Promise.resolve({ sessionId: session.id });
     }
 
     static authenticate(spec: OpenAPIV3.Document) {
@@ -100,54 +98,77 @@ export class AuthenticationController extends ApiController {
     @Async()
     async authenticate(
         authenticateRequest: AuthenticateRequestView,
-        sessionId: string): Promise<AuthenticateResponseView> {
+        sessionId: string
+    ): Promise<AuthenticateResponseView> {
 
-        let response: AuthenticateResponseView = { tokens: {} };
+        const { session, signatures } = await this.sessionAndSignatures(authenticateRequest, sessionId);
+        const { sessionManager, authenticator } = await this.authenticationService.authenticationSystem();
+
+        const signedSession = await sessionManager.signedSessionOrThrow(session, signatures);
+        const tokens = await authenticator.createTokens(signedSession, DateTime.now());
+
+        return this.toAuthenticateResponseView(tokens);
+    }
+
+    private async sessionAndSignatures(
+        authenticateRequest: AuthenticateRequestView,
+        sessionId: string
+    ): Promise<{ session: Session, signatures: Record<string, SessionSignature> }> {
+        const signatures: Record<string, SessionSignature> = {};
+        let createdOn: DateTime | undefined;
         for (let address in authenticateRequest.signatures) {
-            const signature: SignatureView = authenticateRequest.signatures[address];
-            const token = await this.authenticateSession(address, sessionId, signature);
-            response.tokens![address] = { value: token.value, expiredOn: token.expiredOn.toISOString() }
+            createdOn = await this.clearSession(address, sessionId);
+
+            const signature = authenticateRequest.signatures[address];
+            signatures[address] = {
+                signature: requireDefined(signature.signature),
+                signedOn: DateTime.fromISO(requireDefined(signature.signedOn), {setZone: true}),
+                type: requireDefined(signature.type),
+            };
         }
-        return Promise.resolve(response);
+        const session: Session = {
+            addresses: Object.keys(signatures),
+            createdOn: DateTime.now(),
+            id: sessionId,
+        };
+        return { session, signatures };
     }
 
-    @HttpPut('/refresh')
-    @Async()
-    async refresh(refreshRequest: RefreshRequestView): Promise<AuthenticateResponseView> {
-
-        let response: AuthenticateResponseView = { tokens: {} };
-        for (let address in refreshRequest.tokens) {
-            const oldToken = refreshRequest.tokens[address];
-            try {
-                const refreshedToken = await this.authenticationService.refreshToken(oldToken)
-                response.tokens![address] = { value: refreshedToken.value, expiredOn: refreshedToken.expiredOn.toISOString() }
-            } catch (e) {
-                logger.warn("Failed to refresh token for %s: %s", address, e)
-            }
-        }
-        return Promise.resolve(response);
-    }
-
-    private async authenticateSession(address: string, sessionId: string, signature: SignatureView): Promise<Token> {
+    private async clearSession(address: string, sessionId: string): Promise<DateTime> {
         const session = await this.sessionRepository.find(address, sessionId);
         if (session === null) {
             throw unauthorized("Invalid session")
         }
         await this.sessionRepository.delete(session);
-        const signatureService = signature.type === 'ETHEREUM' ?
-            this.ethereumSignatureService :
-            this.signatureService;
-        if (!await signatureService.verify({
-            signature: requireDefined(signature.signature),
-            address: address,
-            resource: AuthenticationController.RESOURCE,
-            operation: "login",
-            timestamp: requireDefined(signature.signedOn),
-            attributes: [ sessionId ]
-        })) {
-            throw unauthorized("Invalid signature");
-        } else {
-            return this.authenticationService.createToken(address, moment());
+        return DateTime.fromJSDate(requireDefined(session.createdOn));
+    }
+
+    private toAuthenticateResponseView(tokens: Record<string, Token>): AuthenticateResponseView {
+        let response: AuthenticateResponseView = { tokens: {} };
+        for (let address in tokens) {
+            const token = tokens[address];
+            response.tokens![address] = {
+                value: token.value,
+                expiredOn: token.expiredOn.toISO({ includeOffset: false }),
+            }
         }
+        return response;
+    }
+
+    @HttpPut('/refresh')
+    @Async()
+    async refresh(refreshRequest: RefreshRequestView): Promise<AuthenticateResponseView> {
+        const { authenticator } = await this.authenticationService.authenticationSystem();
+        let response: AuthenticateResponseView = { tokens: {} };
+        for (let address in refreshRequest.tokens) {
+            const oldToken = refreshRequest.tokens[address];
+            try {
+                const refreshedToken = await authenticator.refreshToken(oldToken);
+                response.tokens![address] = { value: refreshedToken.value, expiredOn: refreshedToken.expiredOn.toISO({ includeOffset: false }) }
+            } catch (e) {
+                logger.warn("Failed to refresh token for %s: %s", address, e)
+            }
+        }
+        return response;
     }
 }
