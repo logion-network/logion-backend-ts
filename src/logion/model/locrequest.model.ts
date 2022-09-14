@@ -20,6 +20,7 @@ import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { Log } from "../util/Log";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
+import { Seal } from "../services/seal.service";
 
 const { logger } = Log;
 
@@ -221,9 +222,12 @@ export class LocRequestAggregateRoot {
         return moment(this.locCreatedOn!);
     }
 
-    preClose() {
+    preClose(seal?: Seal) {
         this.ensureOpen();
         this.status = 'CLOSED';
+        if (seal) {
+            this.salt = seal.salt;
+        }
     }
 
     close(timestamp: Moment) {
@@ -531,6 +535,9 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddableVoidInfo, { prefix: "" })
     voidInfo?: EmbeddableVoidInfo;
+
+    @Column({ nullable: true, type: "uuid" })
+    salt?: string | null
 
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];

@@ -627,6 +627,13 @@ export interface components {
       /** @description The files present in DB */
       files?: string[];
     };
+    CloseView: {
+      /**
+       * @description The seal of the given LOC
+       * @example 0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a
+       */
+      seal?: string;
+    };
     /**
      * RefreshRequestView
      * @description the refresh request

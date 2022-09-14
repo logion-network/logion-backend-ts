@@ -1,19 +1,25 @@
-import crypto from 'crypto';
+import crypto, { BinaryToTextEncoding } from 'crypto';
 import fs from 'fs';
 import Stream from 'stream';
 
+const algorithm = "sha256";
+
 export function sha256(attributes: any[]): string {
-    return hash("sha256", attributes);
+    return hash(algorithm, attributes);
 }
 
-function hash(algorithm: string, attributes: any[]): string {
-    var hash = crypto.createHash(algorithm);
+export function sha256String(message: string): string {
+    return "0x" + hash(algorithm, [ message ], "hex");
+}
+
+function hash(algorithm: string, attributes: any[], encoding: BinaryToTextEncoding = "base64"): string {
+    const hash = crypto.createHash(algorithm);
     attributes.forEach(attribute => hash.update(Buffer.from(attribute.toString(), 'utf8')));
-    return hash.digest('base64');
+    return hash.digest(encoding);
 }
 
 export function sha256File(fileName: string): Promise<string> {
-    var hash = crypto.createHash("sha256");
+    const hash = crypto.createHash(algorithm);
     const stream = fs.createReadStream(fileName);
     const hasherStream = new Stream.Writable();
     hasherStream._write = (chunk, _encoding, next) => {
@@ -21,7 +27,7 @@ export function sha256File(fileName: string): Promise<string> {
         next();
     }
     const promise = new Promise<string>((success, error) => {
-        stream.on('end', function() {
+        stream.on('end', function () {
             success("0x" + hash.digest('hex'));
         });
         stream.on('error', error);
