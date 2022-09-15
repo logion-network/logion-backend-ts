@@ -3,25 +3,26 @@ import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
 import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model";
 import { components } from "./components";
-import { requireDefined } from "../lib/assertions";
 import { OpenAPIV3 } from "express-oas-generator";
 import moment from "moment";
+import { LocRequestRepository } from "../model/locrequest.model";
+import { getUploadedFile } from "./fileupload";
+import { sha256File } from "../lib/crypto/hashing";
+import { FileStorageService } from "../services/file.storage.service";
+import { rm } from "fs/promises";
 import {
+    Log,
+    requireDefined,
+    badRequest,
+    forbidden,
     addTag,
     setControllerTag,
     getPublicResponses,
     setPathParameters,
     getDefaultResponses,
-    getDefaultResponsesWithAnyBody
-} from "./doc";
-import { badRequest, forbidden } from "./errors";
-import { LocRequestRepository } from "../model/locrequest.model";
-import { AuthenticationService } from "../services/authentication.service";
-import { getUploadedFile } from "./fileupload";
-import { sha256File } from "../lib/crypto/hashing";
-import { FileStorageService } from "../services/file.storage.service";
-import { rm } from "fs/promises";
-import { Log } from "../util/Log";
+    getDefaultResponsesWithAnyBody,
+    AuthenticationService,
+} from "@logion/rest-api-core";
 import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";

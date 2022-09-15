@@ -1,8 +1,9 @@
+import { Log } from "@logion/rest-api-core";
 import { readFileSync } from 'fs';
-import { MailService } from "./mail.service";
-import { Log } from "../util/Log";
 import { injectable } from "inversify";
 import { compileTemplate, compile, Options } from "pug";
+
+import { MailService } from "./mail.service";
 
 const { logger } = Log;
 

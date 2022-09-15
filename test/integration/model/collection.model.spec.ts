@@ -1,4 +1,4 @@
-import { connect, disconnect, checkNumOfRows, executeScript } from "../../helpers/testdb";
+import { TestDb } from "@logion/rest-api-core";
 import {
     CollectionItemAggregateRoot,
     CollectionRepository,
@@ -6,6 +6,8 @@ import {
     CollectionItemFileDelivered
 } from "../../../src/logion/model/collection.model";
 import moment from "moment";
+
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe("CollectionRepository", () => {
 

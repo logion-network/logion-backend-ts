@@ -1,8 +1,7 @@
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
-
-import { appDataSource } from '../app-datasource';
+import { appDataSource } from "@logion/rest-api-core";
 
 export const TRANSACTIONS_SYNC_POINT_NAME = "Transaction";
 

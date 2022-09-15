@@ -1,4 +1,4 @@
-import { setupApp } from '../../helpers/testapp';
+import { TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { TransactionController } from '../../../src/logion/controllers/transaction.controller';
 import { Container } from "inversify";
@@ -13,7 +13,7 @@ import { ALICE } from "../../helpers/addresses";
 describe('TransactionController', () => {
 
     it('fetchTransactions returns expected list', async () => {
-        const app = setupApp(TransactionController, mockModelForFetch);
+        const app = TestApp.setupApp(TransactionController, mockModelForFetch);
 
         await request(app)
             .put('/api/transaction')

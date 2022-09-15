@@ -1,10 +1,11 @@
 import { readFileSync } from 'fs';
+import { PolkadotService } from '@logion/rest-api-core';
+import { Mock } from 'moq.ts';
+
 import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Block";
 import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
 import { TransactionError } from "../../../src/logion/services/transaction.vo";
-import { PolkadotService } from 'src/logion/services/polkadot.service';
-import { It, Mock } from 'moq.ts';
 
 let transactionExtractor: TransactionExtractor;
 let polkadotServiceMock: Mock<PolkadotService>;
@@ -12,11 +13,6 @@ let polkadotServiceMock: Mock<PolkadotService>;
 beforeAll(() => {
     let extrinsicDataExtractor = new ExtrinsicDataExtractor();
     polkadotServiceMock = new Mock<PolkadotService>();
-    polkadotServiceMock.setup(instance => instance.getVaultAddress(It.Is<string[]>(params =>
-        params[0] === "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"
-        && params[1] === "5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty"
-        && params[2] === "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"
-    ))).returns("5GsjmoJBjbKpjQiUHeVmSHuUvgonLvJUyLSHfbKDRYz4GK3V");
     transactionExtractor = new TransactionExtractor(extrinsicDataExtractor, polkadotServiceMock.object());
 })
 

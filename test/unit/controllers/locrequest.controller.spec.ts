@@ -1,4 +1,4 @@
-import { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition, setupApp } from "../../helpers/testapp";
+import { TestApp } from "@logion/rest-api-core";
 import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
@@ -116,6 +116,8 @@ const SEAL: Seal = {
 
 let notificationService: Mock<NotificationService>;
 let collectionRepository: Mock<CollectionRepository>;
+
+const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('LocRequestController', () => {
 

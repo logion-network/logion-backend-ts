@@ -1,10 +1,12 @@
-import { connect, disconnect, executeScript, checkNumOfRows } from '../../helpers/testdb';
+import { TestDb } from "@logion/rest-api-core";
 import {
     FetchVaultTransferRequestsSpecification,
     VaultTransferRequestAggregateRoot,
     VaultTransferRequestRepository,
     VaultTransferRequestStatus,
 } from "../../../src/logion/model/vaulttransferrequest.model";
+
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe('VaultTransferRequestRepository queries', () => {
 

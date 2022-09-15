@@ -1,5 +1,5 @@
 import { DataSource, DataSourceOptions } from 'typeorm';
-import { LogionNamingStrategy } from "./LogionNamingStrategy";
+import { LogionNamingStrategy } from "@logion/rest-api-core";
 
 const config: DataSourceOptions = require("../../../ormconfig.json")
 

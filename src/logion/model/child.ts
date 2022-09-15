@@ -1,8 +1,9 @@
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityTarget } from "typeorm/common/EntityTarget";
 import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
-import { Log } from "../util/Log";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { Log } from "@logion/rest-api-core";
+
 import { HasIndex, order } from "../lib/db/collections";
 
 const { logger } = Log;

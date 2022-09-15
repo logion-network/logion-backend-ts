@@ -1,9 +1,10 @@
 import { injectable } from 'inversify';
+import { Log } from "@logion/rest-api-core";
+
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model';
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
-import { Log } from "../util/Log";
 
 const { logger } = Log;
 

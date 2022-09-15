@@ -1,8 +1,7 @@
 import { Entity, PrimaryColumn, Column, Repository, Unique } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
-
-import { appDataSource } from "../app-datasource";
+import { appDataSource } from "@logion/rest-api-core";
 
 export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED' | 'REJECTED_CANCELLED';
 

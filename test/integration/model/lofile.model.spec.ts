@@ -1,5 +1,7 @@
 import { LoFileRepository, LoFileAggregateRoot } from "../../../src/logion/model/lofile.model";
-import { connect, executeScript, disconnect, checkNumOfRows } from "../../helpers/testdb";
+import { TestDb } from "@logion/rest-api-core";
+
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe("LoFileRepository", () => {
 

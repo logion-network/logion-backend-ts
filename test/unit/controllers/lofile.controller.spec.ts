@@ -1,4 +1,4 @@
-import { mockAuthenticationForUserOrLegalOfficer, setupApp } from "../../helpers/testapp";
+import { TestApp } from "@logion/rest-api-core";
 import { LoFileController } from "../../../src/logion/controllers/lofile.controller";
 import { Container } from "inversify";
 import { Mock, It, Times } from "moq.ts";
@@ -29,6 +29,7 @@ let repository: Mock<LoFileRepository>;
 
 const fileContent = "file content";
 const buffer = Buffer.from(fileContent);
+const { mockAuthenticationForUserOrLegalOfficer, setupApp } = TestApp;
 
 describe("LoFileController", () => {
 

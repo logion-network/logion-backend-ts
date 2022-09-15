@@ -1,7 +1,7 @@
 import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
 
-import { appDataSource } from "../app-datasource";
+import { appDataSource } from "@logion/rest-api-core";
 
 @Entity("lo_file")
 export class LoFileAggregateRoot {

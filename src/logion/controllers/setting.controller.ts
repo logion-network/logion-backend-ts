@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, HttpPut, Async, HttpGet } from 'dinoloop';
 import { SettingFactory, SettingRepository } from '../model/setting.model';
-import { AuthenticationService } from '../services/authentication.service';
+import { AuthenticationService } from '@logion/rest-api-core';
 
 @injectable()
 @Controller('/setting')

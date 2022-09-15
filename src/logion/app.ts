@@ -1,17 +1,16 @@
-// tslint:disable-next-line: no-require-imports no-var-requires
-import { appDataSource } from "./app-datasource";
-import express, { Express } from 'express';
+import { appDataSource, Log } from "@logion/rest-api-core";
+import express from 'express';
 import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
+
 import { AppContainer } from './container/app.container';
 import { Scheduler } from "./scheduler/scheduler.service";
-import { Log } from "./util/Log";
 import { setupApp, predefinedSpec } from "./app.support";
 
 const { logger } = Log;
 
 require('source-map-support').install();
 
-const app:Express = express();
+const app = express();
 
 expressOasGenerator.handleResponses(app, {
     predefinedSpec,
@@ -23,7 +22,7 @@ expressOasGenerator.handleResponses(app, {
 });
 
 appDataSource.initialize()
-.then(_ => {
+.then(() => {
 
     setupApp(app)
 

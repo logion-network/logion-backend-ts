@@ -1,5 +1,5 @@
 import moment from "moment";
-import { connect, executeScript, disconnect, checkNumOfRows } from "../../helpers/testdb";
+import { TestDb } from "@logion/rest-api-core";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
@@ -12,6 +12,7 @@ import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe('LocRequestRepository - read accesses', () => {
 

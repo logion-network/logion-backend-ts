@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import { createTransport } from "nodemailer";
 import { Options as TransportOptions } from "nodemailer/lib/smtp-connection";
 import Mail from "nodemailer/lib/mailer";
-import { Log } from "../util/Log";
+import { Log } from "@logion/rest-api-core";
 
 const { logger } = Log;
 

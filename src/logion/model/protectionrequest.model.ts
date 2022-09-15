@@ -1,11 +1,9 @@
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
+import { appDataSource, Log, badRequest } from "@logion/rest-api-core";
 
-import { appDataSource } from "../app-datasource";
 import { UserIdentity } from "./useridentity";
-import { Log } from "../util/Log";
-import { badRequest } from "../controllers/errors";
 import { PostalAddress } from "./postaladdress";
 
 const { logger } = Log;

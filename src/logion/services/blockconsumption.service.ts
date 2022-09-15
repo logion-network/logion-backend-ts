@@ -1,16 +1,17 @@
 import { injectable } from "inversify";
 import { Moment } from "moment";
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
+import { SignedBlock } from "@polkadot/types/interfaces";
+import { Log } from "@logion/rest-api-core";
+
 import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
 import { BlockExtrinsicsService } from "./block.service";
 import { LocSynchronizer } from "./locsynchronization.service";
-import { Log } from "../util/Log";
 import { TransactionSynchronizer } from "./transactionsync.service";
 import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toStringWithoutError } from "./types/responses/Extrinsic";
 import { ProgressRateLogger } from "./progressratelogger";
-import { SignedBlock } from "@polkadot/types/interfaces";
 
 const { logger } = Log;
 
