@@ -267,71 +267,6 @@ export interface components {
       phoneNumber?: string;
     };
     /**
-     * SignInRequestView
-     * @description the sign-in request
-     */
-    SignInRequestView: {
-      /** @description Addresses of the accounts to be signed in */
-      addresses?: string[];
-    };
-    /**
-     * SignInResponseView
-     * @description the sign-in response
-     */
-    SignInResponseView: {
-      /**
-       * Format: uuid
-       * @description Session identifier
-       * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
-       */
-      sessionId?: string;
-    };
-    SignatureView: {
-      /** @description <p>A base64-encoded SHA256 hash of a concatenation of</p><ol><li>a resource</li><li>an operation</li><li>the <code>signedOn</code> field</li><li>additional fields in function of the request</li></ol> */
-      signature?: string;
-      /**
-       * Format: date-time
-       * @description The signature's timestamp
-       */
-      signedOn?: string;
-      /**
-       * @description The type of signature. If not set, POLKADOT is assumed.
-       * @enum {string}
-       */
-      type?: "POLKADOT" | "ETHEREUM";
-    };
-    TokenView: {
-      /** @description The encoded JWT token */
-      value?: string;
-      /**
-       * Format: date-time
-       * @description The token expiration timestamp
-       */
-      expiredOn?: string;
-    };
-    /**
-     * AuthenticateRequestView
-     * @description the authentication request
-     */
-    AuthenticateRequestView: {
-      /**
-       * @description A map of signatures, index by SS58 addresses of authentication requester
-       * @example [object Object]
-       */
-      signatures?: { [key: string]: components["schemas"]["SignatureView"] };
-    };
-    /**
-     * AuthenticateResponseView
-     * @description the authentication response
-     */
-    AuthenticateResponseView: {
-      /**
-       * @description A map of tokens, indexed by SS58 address of authentication requester
-       * @example [object Object]
-       */
-      tokens?: { [key: string]: components["schemas"]["TokenView"] };
-    };
-    /**
      * @description The request's status
      * @enum {string}
      */
@@ -633,17 +568,6 @@ export interface components {
        * @example 0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a
        */
       seal?: string;
-    };
-    /**
-     * RefreshRequestView
-     * @description the refresh request
-     */
-    RefreshRequestView: {
-      /**
-       * @description A map of tokens, index by SS58 addresses of refresh requester
-       * @example [object Object]
-       */
-      tokens?: { [key: string]: string };
     };
     /**
      * CreateVaultTransferRequestView

@@ -1,9 +1,11 @@
-import { connect, disconnect, executeScript, checkNumOfRows } from '../../helpers/testdb';
+import { TestDb } from "@logion/rest-api-core";
 import {
     TransactionAggregateRoot,
     TransactionRepository,
 } from "../../../src/logion/model/transaction.model";
 import moment from "moment";
+
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe('TransactionRepository', () => {
 

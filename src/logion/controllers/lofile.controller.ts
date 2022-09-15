@@ -1,21 +1,22 @@
 import { ApiController, Controller, HttpPut, Async, HttpGet, SendsResponse } from "dinoloop";
 import { injectable } from "inversify";
-import { LoFileRepository, LoFileFactory } from "../model/lofile.model";
-import { FileStorageService } from "../services/file.storage.service";
-import { getUploadedFile } from "./fileupload";
-import { AuthenticationService } from "../services/authentication.service";
-import { requireDefined } from "../lib/assertions";
-import { badRequest } from "./errors";
-import { rm } from "fs/promises";
-import { Log } from "../util/Log";
-import { OpenAPIV3 } from "express-oas-generator";
 import {
+    badRequest,
+    Log,
     setPathParameters,
     getDefaultResponsesNoContent,
     addTag,
     setControllerTag,
-    getDefaultResponsesWithAnyBody
-} from "./doc";
+    getDefaultResponsesWithAnyBody,
+    requireDefined,
+    AuthenticationService,
+} from "@logion/rest-api-core";
+import { rm } from "fs/promises";
+import { OpenAPIV3 } from "express-oas-generator";
+
+import { LoFileRepository, LoFileFactory } from "../model/lofile.model";
+import { FileStorageService } from "../services/file.storage.service";
+import { getUploadedFile } from "./fileupload";
 
 const { logger } = Log;
 

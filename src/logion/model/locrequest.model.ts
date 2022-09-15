@@ -12,13 +12,12 @@ import {
 } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { appDataSource, Log } from "@logion/rest-api-core";
 
-import { appDataSource } from "../app-datasource";
 import { components } from "../controllers/components";
 import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
-import { Log } from "../util/Log";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
 import { Seal } from "../services/seal.service";
 

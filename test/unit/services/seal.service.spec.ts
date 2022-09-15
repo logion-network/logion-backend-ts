@@ -1,9 +1,9 @@
-import { SealService, UserIdentitySealService } from "../../../src/logion/services/seal.service";
+import { UserIdentitySealService } from "../../../src/logion/services/seal.service";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 
 describe("UserIdentitySealService", () => {
 
-    const sealService: SealService<UserIdentity> = new UserIdentitySealService();
+    const sealService = new UserIdentitySealService();
 
     const userIdentity: UserIdentity = {
         firstName: "Scott",

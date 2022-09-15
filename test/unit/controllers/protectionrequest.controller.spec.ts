@@ -2,7 +2,7 @@ import { Container } from 'inversify';
 import { Mock, It, Times } from 'moq.ts';
 import request from 'supertest';
 
-import { mockAuthenticationWithCondition, setupApp } from '../../helpers/testapp';
+import { TestApp } from '@logion/rest-api-core';
 
 import {
     ProtectionRequestRepository,
@@ -20,7 +20,8 @@ import { now } from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
 
-const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294"
+const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
+const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('createProtectionRequest', () => {
 

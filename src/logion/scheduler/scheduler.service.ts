@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import { ToadScheduler, SimpleIntervalJob, AsyncTask } from 'toad-scheduler';
 import moment from 'moment';
 
-import { Log } from '../util/Log';
+import { Log } from '@logion/rest-api-core';
 import { BlockConsumer } from "../services/blockconsumption.service";
 
 const { logger } = Log;

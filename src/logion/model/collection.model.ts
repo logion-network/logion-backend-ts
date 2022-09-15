@@ -11,7 +11,7 @@ import {
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
 
-import { appDataSource } from "../app-datasource";
+import { appDataSource } from "@logion/rest-api-core";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string

@@ -1,9 +1,11 @@
-import { mockAuthenticationWithCondition, setupApp } from '../../helpers/testapp';
+import { TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { Container } from "inversify";
 import { It, Mock } from "moq.ts";
 import { HealthController } from '../../../src/logion/controllers/health.controller';
 import { SyncPointRepository } from '../../../src/logion/model/syncpoint.model';
+
+const { setupApp, mockAuthenticationWithCondition } = TestApp;
 
 describe('HealthController', () => {
 

@@ -1,10 +1,12 @@
 import moment from 'moment';
-import { connect, disconnect, executeScript, query } from '../../helpers/testdb';
+import { TestDb } from "@logion/rest-api-core";
 import {
     SyncPointAggregateRoot,
     SyncPointRepository,
     TRANSACTIONS_SYNC_POINT_NAME,
 } from "../../../src/logion/model/syncpoint.model";
+
+const { connect, disconnect, query, executeScript } = TestDb;
 
 describe('SyncPointRepository', () => {
 

@@ -1,4 +1,4 @@
-import { connect, disconnect, executeScript, checkNumOfRows } from '../../helpers/testdb';
+import { TestDb } from "@logion/rest-api-core";
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
@@ -7,6 +7,8 @@ import {
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model";
 import { ALICE } from "../../helpers/addresses";
+
+const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
 describe('ProtectionRequestRepositoryTest', () => {
 

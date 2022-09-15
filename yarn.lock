@@ -592,6 +592,25 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@logion/rest-api-core@npm:^0.1.0-2":
+  version: 0.1.0-2
+  resolution: "@logion/rest-api-core@npm:0.1.0-2"
+  dependencies:
+    "@logion/authenticator": ^0.1.0-3
+    dinoloop: ^2.4.0
+    express: ^4.17.2
+    express-fileupload: ^1.2.1
+    express-oas-generator: ^1.0.44
+    inversify: ^6.0.1
+    mongoose: ^6.5.0
+    mongoose-to-swagger: ^1.4.0
+    openapi-typescript: 5.1.0
+    swagger-ui-express: ^4.5.0
+    typeorm: ^0.3.9
+  checksum: 85b6c18699b99cdff9f608742bbf76ec73f06c57774205a21b924efed79c6105ec3ac4bb067f2869d0ed584693e53e978a94b90c4e4a2ef0ae9ecc5c826f3879
+  languageName: node
+  linkType: hard
+
 "@noble/ed25519@npm:^1.5.1":
   version: 1.6.1
   resolution: "@noble/ed25519@npm:1.6.1"
@@ -4145,8 +4164,8 @@ __metadata:
   resolution: "logion-backend-ts@workspace:."
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/authenticator": ^0.1.0-3
     "@logion/node-exiftool": ^2.3.1-2
+    "@logion/rest-api-core": ^0.1.0-2
     "@polkadot/wasm-crypto": ^6.3.1
     "@tsconfig/node16": ^1.0.3
     "@types/cors": ^2.8.12
@@ -4164,33 +4183,23 @@ __metadata:
     body-parser: ^1.19.1
     bson: ^4.6.5
     cors: ^2.8.5
-    dinoloop: ^2.4.0
     dotenv: ^16.0.1
-    express: ^4.17.2
-    express-fileupload: ^1.2.1
-    express-oas-generator: ^1.0.44
-    inversify: ^6.0.1
     ipfs-client: ^0.7.9
     jasmine: ^4.3.0
     jasmine-spec-reporter: ^7.0.0
     moment: ^2.29.4
-    mongoose: ^6.5.0
-    mongoose-to-swagger: ^1.4.0
     moq.ts: ^9.0.2
     node-fetch: 3.2.9
     nodemailer: ^6.7.7
     nyc: ^15.1.0
-    openapi-typescript: 5.1.0
     pg: ^8.8.0
     pug: ^3.0.2
     rimraf: ^3.0.2
     source-map-support: ^0.5.21
     supertest: ^6.2.4
-    swagger-ui-express: ^4.5.0
     toad-scheduler: ^1.6.0
     ts-node: ^10.9.1
     tsc-watch: ^5.0.3
-    typeorm: ^0.3.9
     typescript: ^4.7.4
   languageName: unknown
   linkType: soft

@@ -3,7 +3,13 @@ import { ApiController, Controller, HttpPost, HttpPut, Async } from 'dinoloop';
 import { v4 as uuid } from 'uuid';
 import moment from 'moment';
 import { OpenAPIV3 } from 'express-oas-generator';
-import { Log } from "../util/Log";
+import {
+    Log,
+    addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters,
+    requireDefined,
+    badRequest,
+    AuthenticationService,
+} from "@logion/rest-api-core";
 
 const { logger } = Log;
 
@@ -13,16 +19,10 @@ import {
     VaultTransferRequestAggregateRoot,
     VaultTransferRequestFactory, VaultTransferRequestDescription, VaultTransferRequestDecision
 } from '../model/vaulttransferrequest.model';
-
 import { components } from './components';
-
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, setPathParameters } from './doc';
-import { requireDefined } from '../lib/assertions';
-import { AuthenticationService } from "../services/authentication.service";
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model';
-import { badRequest } from './errors';
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
 type VaultTransferRequestView = components["schemas"]["VaultTransferRequestView"];

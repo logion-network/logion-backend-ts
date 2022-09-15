@@ -1,6 +1,5 @@
 import { injectable } from "inversify";
-import { PolkadotService } from "./polkadot.service";
-import { Log } from "../util/Log";
+import { Log, PolkadotService } from "@logion/rest-api-core";
 import { ApiPromise } from "@polkadot/api";
 
 const { logger } = Log;

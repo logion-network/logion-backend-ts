@@ -1,4 +1,4 @@
-import { setupApp } from "../../helpers/testapp";
+import { TestApp } from "@logion/rest-api-core";
 import { CollectionController } from "../../../src/logion/controllers/collection.controller";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
@@ -35,6 +35,8 @@ const CID = "cid-784512";
 
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
 const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
+
+const setupApp = TestApp.setupApp;
 
 describe("CollectionController", () => {
 

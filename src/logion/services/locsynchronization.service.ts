@@ -1,10 +1,11 @@
 import { injectable } from 'inversify';
+import { Log } from "@logion/rest-api-core";
+import { Moment } from "moment";
+
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { decimalToUuid } from '../lib/uuid';
 import { JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
-import { Moment } from "moment";
-import { Log } from "../util/Log";
 import { CollectionRepository, CollectionFactory } from "../model/collection.model";
 
 const { logger } = Log;

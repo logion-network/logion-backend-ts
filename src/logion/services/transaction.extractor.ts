@@ -1,12 +1,12 @@
 import { injectable } from "inversify";
+import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
+import { getVaultAddress } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo";
 import { BlockExtrinsics } from "./types/responses/Block";
 import { JsonExtrinsic } from "./types/responses/Extrinsic";
 import { JsonMethod, JsonArgs } from "./call";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
-import { Log } from "../util/Log";
-import { PolkadotService } from "./polkadot.service";
 
 enum ExtrinsicType {
     TIMESTAMP,
@@ -69,10 +69,9 @@ export class TransactionExtractor {
             transferValue = this.transferValue(call)
             to = this.to(call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
-            const signer = extrinsic.signer;
+            const signer = requireDefined(extrinsic.signer);
             const otherSignatories = extrinsic.args['other_signatories'].map((signatory: any) => signatory.toJSON());
-            const allSignatories = [ signer, ...otherSignatories ].sort();
-            const vaultAddress = this.polkadotService.getVaultAddress(allSignatories);
+            const vaultAddress = getVaultAddress(signer, otherSignatories);
 
             const call = this.extrinsicDataExtractor.getCall(extrinsic);
             const vaultTransferValue = this.transferValue(call);

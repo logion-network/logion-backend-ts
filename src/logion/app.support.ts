@@ -1,14 +1,10 @@
 import { OpenAPIV3 } from "openapi-types";
-import { setOpenApi3, loadSchemasIntoSpec } from "./controllers/doc";
 import {
     fillInSpec as fillInSpecForProtectionController,
     ProtectionRequestController
 } from "./controllers/protectionrequest.controller";
 import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller";
-import {
-    fillInSpec as fillInSpecForAuthentication,
-    AuthenticationController
-} from "./controllers/authentication.controller";
+import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec } from "@logion/rest-api-core";
 import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller";
 import { fillInSpec as fillInSpecForHealth, HealthController } from "./controllers/health.controller";
 import express, { Express } from "express";
@@ -16,8 +12,6 @@ import bodyParser from "body-parser";
 import fileUpload from "express-fileupload";
 import cors from "cors";
 import { Dino } from "dinoloop";
-import { ApplicationErrorController } from "./controllers/application.error.controller";
-import { JsonResponse } from "./middlewares/json.response";
 import { Container } from "inversify";
 import { AppContainer } from "./container/app.container";
 import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
@@ -28,6 +22,7 @@ import { SettingController } from "./controllers/setting.controller";
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
     loadSchemasIntoSpec(spec, "./resources/schemas.json");
+    configureOpenApi(spec);
 
     spec.info = {
         title: "Logion off-chain service API",
@@ -48,7 +43,6 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
 
     fillInSpecForProtectionController(spec);
     fillInSpecForTransaction(spec);
-    fillInSpecForAuthentication(spec);
     fillInSpecForLoc(spec);
     fillInSpecForHealth(spec);
     fillInSpecForCollection(spec);
@@ -70,7 +64,8 @@ export function setupApp(app: Express) {
     const dino = new Dino(app, '/api');
 
     dino.useRouter(() => express.Router());
-    dino.registerController(AuthenticationController);
+    configureDinoloop(dino);
+
     dino.registerController(ProtectionRequestController);
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
@@ -79,8 +74,6 @@ export function setupApp(app: Express) {
     dino.registerController(VaultTransferRequestController);
     dino.registerController(LoFileController);
     dino.registerController(SettingController);
-    dino.registerApplicationError(ApplicationErrorController);
-    dino.requestEnd(JsonResponse);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {

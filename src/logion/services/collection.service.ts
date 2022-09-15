@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { PolkadotService } from "./polkadot.service";
+import { PolkadotService } from "@logion/rest-api-core";
 import { ItemFile, CollectionItem } from "@logion/node-api/dist/Types";
 import { getCollectionItem } from "@logion/node-api/dist/LogionLoc";
 import { UUID } from "@logion/node-api/dist/UUID";

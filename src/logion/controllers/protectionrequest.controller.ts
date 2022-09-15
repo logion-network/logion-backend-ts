@@ -3,6 +3,18 @@ import { ApiController, Controller, HttpPost, HttpPut, Async, SendsResponse } fr
 import { v4 as uuid } from 'uuid';
 import moment from 'moment';
 import { OpenAPIV3 } from 'express-oas-generator';
+import {
+    addTag,
+    setControllerTag,
+    getRequestBody,
+    getDefaultResponses,
+    setPathParameters,
+    getDefaultResponsesNoContent,
+    requireDefined,
+    badRequest,
+    Log,
+    AuthenticationService,
+} from '@logion/rest-api-core';
 
 import {
     ProtectionRequestRepository,
@@ -12,23 +24,9 @@ import {
     ProtectionRequestDescription,
     LegalOfficerDecisionDescription,
 } from '../model/protectionrequest.model';
-
 import { components } from './components';
-
-import {
-    addTag,
-    setControllerTag,
-    getRequestBody,
-    getDefaultResponses,
-    setPathParameters,
-    getDefaultResponsesNoContent
-} from './doc';
-import { requireDefined } from '../lib/assertions';
-import { AuthenticationService } from "../services/authentication.service";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
-import { badRequest } from "./errors";
 import { DirectoryService } from "../services/directory.service";
-import { Log } from "../util/Log";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];

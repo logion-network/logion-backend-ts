@@ -1,8 +1,7 @@
 import { Container } from 'inversify';
 import { Mock, It } from 'moq.ts';
 import request from 'supertest';
-
-import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } from '../../helpers/testapp';
+import { TestApp } from '@logion/rest-api-core';
 
 import {
     VaultTransferRequestRepository,
@@ -23,6 +22,8 @@ import {
     ProtectionRequestDescription,
     ProtectionRequestRepository
 } from '../../../src/logion/model/protectionrequest.model';
+
+const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('VaultTransferRequestController', () => {
 

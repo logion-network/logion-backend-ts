@@ -10,7 +10,7 @@ export interface Seal {
     salt: string
 }
 
-export abstract class SealService<T> {
+abstract class SealService<T> {
 
     private readonly separator: string
 

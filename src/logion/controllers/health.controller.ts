@@ -1,9 +1,8 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, Async, HttpGet } from 'dinoloop';
 import { OpenAPIV3 } from 'express-oas-generator';
+import { addTag, setControllerTag, getDefaultResponses, AuthenticationService } from '@logion/rest-api-core';
 
-import { addTag, setControllerTag, getDefaultResponses } from './doc';
-import { AuthenticationService } from "../services/authentication.service";
 import { SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from '../model/syncpoint.model';
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {

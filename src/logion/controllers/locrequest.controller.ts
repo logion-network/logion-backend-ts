@@ -21,20 +21,22 @@ import {
     setControllerTag,
     getDefaultResponsesNoContent,
     setPathParameters,
-    getDefaultResponsesWithAnyBody
-} from "./doc";
-import { AuthenticationService } from "../services/authentication.service";
-import { requireDefined, requireLength } from "../lib/assertions";
+    getDefaultResponsesWithAnyBody,
+    Log,
+    badRequest,
+    requireDefined,
+    requireLength,
+    AuthenticationService,
+} from "@logion/rest-api-core";
+import { UUID } from "@logion/node-api";
+
 import { UserIdentity } from "../model/useridentity";
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
-import { Log } from "../util/Log";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
-import { UUID } from "@logion/node-api/dist/UUID";
-import { badRequest } from "./errors";
 import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";

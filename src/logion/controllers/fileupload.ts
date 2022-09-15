@@ -1,5 +1,5 @@
 import { UploadedFile, FileArray } from "express-fileupload";
-import { badRequest } from "./errors";
+import { badRequest } from "@logion/rest-api-core";
 
 export function getUploadedFile(request: Express.Request): UploadedFile {
     const files: FileArray | undefined = request.files;
