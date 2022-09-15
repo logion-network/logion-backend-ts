@@ -6,7 +6,6 @@ import {
 import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller";
 import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec } from "@logion/rest-api-core";
 import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller";
-import { fillInSpec as fillInSpecForHealth, HealthController } from "./controllers/health.controller";
 import express, { Express } from "express";
 import bodyParser from "body-parser";
 import fileUpload from "express-fileupload";
@@ -44,7 +43,6 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForProtectionController(spec);
     fillInSpecForTransaction(spec);
     fillInSpecForLoc(spec);
-    fillInSpecForHealth(spec);
     fillInSpecForCollection(spec);
     fillInSpecForLoFile(spec);
     fillInSpecForVaultTransferRequest(spec);
@@ -69,7 +67,6 @@ export function setupApp(app: Express) {
     dino.registerController(ProtectionRequestController);
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
-    dino.registerController(HealthController);
     dino.registerController(CollectionController);
     dino.registerController(VaultTransferRequestController);
     dino.registerController(LoFileController);
