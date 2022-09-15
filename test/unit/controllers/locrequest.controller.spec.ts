@@ -41,6 +41,10 @@ const testUserIdentity = {
 
 const IDENTITY_LOC_ID = "6b00b9f2-4439-4c4a-843e-2ea3ce2016fd";
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const SEAL: Seal = {
+    hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
+    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c"
+}
 
 const identityInIdentityLoc = {
     firstName: "Felix",
@@ -100,6 +104,9 @@ const testDataWithUserIdentityWithType = (locType: LocType) => {
         lastName: "Doe",
         email: "john.doe@logion.network",
         phoneNumber: "+1234"
+    },
+    seal: {
+        hash: SEAL.hash
     }
 }};
 
@@ -109,10 +116,6 @@ const REJECT_REASON = "Illegal";
 const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1"
 const VOID_REASON = "Expired";
 const DECISION_TIMESTAMP = "2022-08-31T16:01:15.652Z"
-const SEAL: Seal = {
-    hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
-    salt: ""
-}
 
 let notificationService: Mock<NotificationService>;
 let collectionRepository: Mock<CollectionRepository>;
@@ -142,6 +145,7 @@ describe('LocRequestController', () => {
                 expect(userIdentity.lastName).toBe("Doe");
                 expect(userIdentity.email).toBe("john.doe@logion.network");
                 expect(userIdentity.phoneNumber).toBe("+1234");
+                expect(response.body.seal).toEqual(SEAL.hash)
             });
     }
 
@@ -151,6 +155,10 @@ describe('LocRequestController', () => {
 
     it('succeeds to create a Collection loc request with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity("Collection")
+    });
+
+    it('succeeds to create an Identity loc request with embedded user identity', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Identity")
     });
 
     async function testOpenLocCreation(locType: LocType) {
@@ -556,27 +564,14 @@ describe('LocRequestController', () => {
         const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Transaction"))
         await request(app)
             .post(`/api/loc-request/${REQUEST_ID}/close`)
-            .expect(200);
+            .expect(204);
     });
 
     it('pre-closes an Identity LOC', async () => {
         const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Identity", testUserIdentity))
         await request(app)
             .post(`/api/loc-request/${REQUEST_ID}/close`)
-            .expect(200)
-            .then(response => {
-                expect(response.body.seal).toEqual(SEAL.hash)
-            })
-    });
-
-    it('pre-closes an Identity LOC with missing user identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Identity"))
-        await request(app)
-            .post(`/api/loc-request/${REQUEST_ID}/close`)
-            .expect(400)
-            .then(response => {
-                expect(response.body.errorMessage).toEqual("Cannot close Identity LOC with missing user identity")
-            })
+            .expect(204);
     });
 
     it('pre-voids', async () => {

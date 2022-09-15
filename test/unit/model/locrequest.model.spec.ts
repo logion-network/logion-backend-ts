@@ -14,11 +14,16 @@ import {
     LocRequestRepository
 } from "../../../src/logion/model/locrequest.model";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
-import { Mock } from "moq.ts";
+import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress";
-import { Seal } from "../../../src/logion/services/seal.service";
+import { Seal, UserIdentitySealService } from "../../../src/logion/services/seal.service";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+
+const SEAL: Seal = {
+    hash: "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a",
+    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c"
+}
 
 describe("LocRequestFactory", () => {
 
@@ -130,10 +135,11 @@ describe("LocRequestFactory", () => {
             city: "Liège",
             country: "Belgium"
         }
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress);
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress, SEAL.hash);
         givenLocDescription(description);
         await whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
+        thenRequestSealIs(SEAL);
         expect(description.userIdentity).toEqual(userIdentity)
         expect(description.userPostalAddress).toEqual(userPostalAddress)
     });
@@ -187,7 +193,7 @@ describe("LocRequestFactory", () => {
         expect(createdLocRequest.links![0].nature).toEqual(nature)
     });
 
-    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress): LocRequestDescription {
+    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, sealHash?: string): LocRequestDescription {
         return {
             requesterAddress,
             requesterIdentityLoc,
@@ -196,7 +202,8 @@ describe("LocRequestFactory", () => {
             createdOn: moment().toISOString(),
             userIdentity,
             userPostalAddress,
-            locType
+            locType,
+            seal: sealHash !== undefined ? { hash: sealHash} : undefined
         };
     }
 });
@@ -250,18 +257,6 @@ describe("LocRequestAggregateRoot", () => {
         givenRequestWithStatus('OPEN');
         whenPreClosing();
         thenRequestStatusIs('CLOSED');
-        thenRequestSaltIs(undefined);
-    });
-
-    it("pre-closes with seal", () => {
-        givenRequestWithStatus('OPEN');
-        const seal:Seal = {
-            hash: "0xaab9726bdea51dfd83382de1dcafe792c229649bb51b311ed0677b6acb5a8a46",
-            salt: "Some salt"
-        }
-        whenPreClosing(seal);
-        thenRequestStatusIs('CLOSED');
-        thenRequestSaltIs(seal.salt);
     });
 
     it("closes", () => {
@@ -718,8 +713,9 @@ function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
 }
 
-function thenRequestSaltIs(expectedSalt: string | undefined) {
-    expect(request.salt).toBe(expectedSalt);
+function thenRequestSealIs(expectedSeal: Seal) {
+    expect(createdLocRequest.seal?.hash).toEqual(expectedSeal.hash);
+    expect(createdLocRequest.seal?.salt).toEqual(expectedSeal.salt);
 }
 
 function thenRequestRejectReasonIs(rejectReason: string | undefined) {
@@ -743,7 +739,11 @@ function givenLocDescription(value: LocRequestDescription) {
 let locDescription: LocRequestDescription;
 
 async function whenCreatingLocRequest() {
-    const factory = new LocRequestFactory(repository.object());
+    const sealService = new Mock<UserIdentitySealService>();
+    sealService
+        .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
+        .returns(SEAL);
+    const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newLocRequest({
         id: requestId,
         description: locDescription
@@ -751,7 +751,8 @@ async function whenCreatingLocRequest() {
 }
 
 async function whenCreatingSofRequest(target: string, nature: string) {
-    const factory = new LocRequestFactory(repository.object());
+    const sealService = new Mock<UserIdentitySealService>();
+    const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newSofRequest({
         id: requestId,
         description: locDescription,
@@ -761,7 +762,11 @@ async function whenCreatingSofRequest(target: string, nature: string) {
 }
 
 async function whenCreatingOpenLoc() {
-    const factory = new LocRequestFactory(repository.object());
+    const sealService = new Mock<UserIdentitySealService>();
+    sealService
+        .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
+        .returns(SEAL);
+    const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newOpenLoc({
         id: requestId,
         description: locDescription
@@ -980,8 +985,8 @@ function thenHasExpectedLinkIndices() {
     }
 }
 
-function whenPreClosing(seal?: Seal) {
-    request.preClose(seal);
+function whenPreClosing() {
+    request.preClose();
 }
 
 function whenPreVoiding(reason: string) {

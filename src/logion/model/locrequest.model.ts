@@ -19,7 +19,7 @@ import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
-import { Seal } from "../services/seal.service";
+import { UserIdentitySealService, PublicSeal, Seal } from "../services/seal.service";
 
 const { logger } = Log;
 
@@ -36,6 +36,7 @@ export interface LocRequestDescription {
     readonly userIdentity: UserIdentity | undefined;
     readonly userPostalAddress: PostalAddress | undefined;
     readonly locType: LocType;
+    readonly seal?: PublicSeal;
 }
 
 export interface LocRequestDecision {
@@ -81,11 +82,29 @@ class EmbeddableVoidInfo {
     voidedOn?: string | null;
 }
 
+class EmbeddableSeal {
+    @Column({ type: "uuid", nullable: true })
+    salt?: string | null
+
+    @Column({ type: "varchar", length: 255, nullable: true })
+    hash?: string | null
+
+    static from(seal: Seal | undefined): EmbeddableSeal | undefined {
+        if (!seal) {
+            return undefined;
+        }
+        const result = new EmbeddableSeal();
+        result.hash = seal.hash;
+        result.salt = seal.salt;
+        return result;
+    }
+}
+
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
     reject(reason: string, rejectedOn: Moment): void {
-        if(this.status != 'REQUESTED') {
+        if (this.status != 'REQUESTED') {
             throw new Error("Cannot reject already decided request");
         }
 
@@ -95,7 +114,7 @@ export class LocRequestAggregateRoot {
     }
 
     accept(decisionOn: Moment): void {
-        if(this.status != 'REQUESTED') {
+        if (this.status != 'REQUESTED') {
             throw new Error("Cannot accept already decided request");
         }
 
@@ -105,7 +124,7 @@ export class LocRequestAggregateRoot {
 
     getDescription(): LocRequestDescription {
         const userIdentity = this.userIdentity &&
-            (this.userIdentity.firstName || this.userIdentity.lastName || this.userIdentity.email || this.userIdentity.phoneNumber) ?
+        (this.userIdentity.firstName || this.userIdentity.lastName || this.userIdentity.email || this.userIdentity.phoneNumber) ?
             {
                 firstName: this.userIdentity.firstName || "",
                 lastName: this.userIdentity.lastName || "",
@@ -113,7 +132,7 @@ export class LocRequestAggregateRoot {
                 phoneNumber: this.userIdentity.phoneNumber || "",
             } : undefined;
         const userPostalAddress = this.userPostalAddress &&
-            (this.userPostalAddress.line1 || this.userPostalAddress.line2 || this.userPostalAddress.postalCode || this.userPostalAddress.city || this.userPostalAddress.country) ?
+        (this.userPostalAddress.line1 || this.userPostalAddress.line2 || this.userPostalAddress.postalCode || this.userPostalAddress.city || this.userPostalAddress.country) ?
             {
                 line1: this.userPostalAddress.line1 || "",
                 line2: this.userPostalAddress.line2 || "",
@@ -130,6 +149,7 @@ export class LocRequestAggregateRoot {
             userIdentity,
             userPostalAddress,
             locType: this.locType!,
+            seal: this.seal && this.seal.hash ? { hash: this.seal.hash } : undefined,
         }
     }
 
@@ -144,7 +164,7 @@ export class LocRequestAggregateRoot {
 
     addFile(fileDescription: FileDescription) {
         this.ensureOpen();
-        if(this.hasFile(fileDescription.hash)) {
+        if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
         }
         const file = new LocFile();
@@ -204,7 +224,7 @@ export class LocRequestAggregateRoot {
     }
 
     getFiles(includeDraft: boolean = true): FileDescription[] {
-        return orderAndMap(this.files?.filter(item => includeDraft || ! item.draft), file => this.toFileDescription(file));
+        return orderAndMap(this.files?.filter(item => includeDraft || !item.draft), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -212,7 +232,7 @@ export class LocRequestAggregateRoot {
             logger.warn("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
-        if(this.status === "REQUESTED") {
+        if (this.status === "REQUESTED") {
             this.accept(timestamp);
         }
     }
@@ -221,12 +241,9 @@ export class LocRequestAggregateRoot {
         return moment(this.locCreatedOn!);
     }
 
-    preClose(seal?: Seal) {
+    preClose() {
         this.ensureOpen();
         this.status = 'CLOSED';
-        if (seal) {
-            this.salt = seal.salt;
-        }
     }
 
     close(timestamp: Moment) {
@@ -272,7 +289,7 @@ export class LocRequestAggregateRoot {
     }
 
     getMetadataItems(includeDraft: boolean = true): MetadataItemDescription[] {
-        return orderAndMap(this.metadata?.filter(item => includeDraft || ! item.draft), this.toMetadataItemDescription);
+        return orderAndMap(this.metadata?.filter(item => includeDraft || !item.draft), this.toMetadataItemDescription);
     }
 
     setMetadataItemAddedOn(name: string, addedOn: Moment) {
@@ -296,7 +313,7 @@ export class LocRequestAggregateRoot {
             throw new Error("No metadata item with given name");
         }
         const removedItem: LocMetadataItem = this.metadata![removedItemIndex];
-        if(!this.canRemove(removerAddress, removedItem)) {
+        if (!this.canRemove(removerAddress, removedItem)) {
             throw new Error("Item removal not allowed");
         }
         if (!removedItem.draft) {
@@ -306,7 +323,7 @@ export class LocRequestAggregateRoot {
     }
 
     private canRemove(address: string, item: Submitted | LocLink): boolean {
-        if(item instanceof LocLink) {
+        if (item instanceof LocLink) {
             return address === this.ownerAddress;
         } else {
             return address === this.ownerAddress || address === item.submitter;
@@ -319,7 +336,7 @@ export class LocRequestAggregateRoot {
         metadataItem._toUpdate = true;
     }
 
-    hasMetadataItem(name: string):boolean {
+    hasMetadataItem(name: string): boolean {
         return this.metadataItem(name) !== undefined;
     }
 
@@ -344,14 +361,14 @@ export class LocRequestAggregateRoot {
     removeFile(removerAddress: string, hash: string): FileDescription {
         this.ensureOpen();
         const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
-        if(removedFileIndex === -1) {
+        if (removedFileIndex === -1) {
             throw new Error("No file with given hash");
         }
         const removedFile: LocFile = this.files![removedFileIndex];
-        if(!this.canRemove(removerAddress, removedFile)) {
+        if (!this.canRemove(removerAddress, removedFile)) {
             throw new Error("Item removal not allowed");
         }
-        if(!removedFile.draft) {
+        if (!removedFile.draft) {
             throw new Error("Only draft files can be removed");
         }
         deleteIndexedChild(removedFileIndex, this.files!, this._filesToDelete)
@@ -389,10 +406,10 @@ export class LocRequestAggregateRoot {
     }
 
     getLinks(includeDraft: boolean = true): LinkDescription[] {
-        return orderAndMap(this.links?.filter(link => includeDraft || ! link.draft), this.toLinkDescription);
+        return orderAndMap(this.links?.filter(link => includeDraft || !link.draft), this.toLinkDescription);
     }
 
-    setLinkAddedOn(target:string, addedOn: Moment) {
+    setLinkAddedOn(target: string, addedOn: Moment) {
         const link = this.link(target);
         if (!link) {
             logger.error(`Link with target ${ target } not found`);
@@ -413,7 +430,7 @@ export class LocRequestAggregateRoot {
             throw new Error("No link with given target");
         }
         const removedLink: LocLink = this.links![removedLinkIndex];
-        if(!this.canRemove(removerAddress, removedLink)) {
+        if (!this.canRemove(removerAddress, removedLink)) {
             throw new Error("Item removal not allowed");
         }
         if (!removedLink.draft) {
@@ -428,7 +445,7 @@ export class LocRequestAggregateRoot {
         link._toUpdate = true;
     }
 
-    hasLink(target: string):boolean {
+    hasLink(target: string): boolean {
         return this.link(target) !== undefined;
     }
 
@@ -437,7 +454,7 @@ export class LocRequestAggregateRoot {
     }
 
     preVoid(reason: string) {
-        if(this.voidInfo !== undefined && this.voidInfo.reason !== null && this.voidInfo.reason !== undefined) {
+        if (this.voidInfo !== undefined && this.voidInfo.reason !== null && this.voidInfo.reason !== undefined) {
             throw new Error("LOC is already void")
         }
         this.voidInfo = new EmbeddableVoidInfo();
@@ -456,7 +473,7 @@ export class LocRequestAggregateRoot {
     }
 
     getVoidInfo(): VoidInfo | null {
-        if(this.voidInfo !== undefined && this.voidInfo.reason !== null) {
+        if (this.voidInfo !== undefined && this.voidInfo.reason !== null) {
             return {
                 reason: this.voidInfo.reason || "",
                 voidedOn: this.voidInfo.voidedOn ? moment(this.voidInfo.voidedOn) : null
@@ -464,6 +481,15 @@ export class LocRequestAggregateRoot {
         } else {
             return null;
         }
+    }
+
+    updateIdentity(userIdentity: UserIdentity, seal: Seal | undefined) {
+        this.userIdentity = new EmbeddableUserIdentity();
+        this.userIdentity.firstName = userIdentity.firstName;
+        this.userIdentity.lastName = userIdentity.lastName;
+        this.userIdentity.email = userIdentity.email;
+        this.userIdentity.phoneNumber = userIdentity.phoneNumber;
+        this.seal = EmbeddableSeal.from(seal);
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -515,7 +541,8 @@ export class LocRequestAggregateRoot {
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,
         cascade: false,
-        persistence: false })
+        persistence: false
+    })
     files?: LocFile[];
 
     @OneToMany(() => LocMetadataItem, item => item.request, {
@@ -535,8 +562,8 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableVoidInfo, { prefix: "" })
     voidInfo?: EmbeddableVoidInfo;
 
-    @Column({ nullable: true, type: "uuid" })
-    salt?: string | null
+    @Column(() => EmbeddableSeal, { prefix: "seal"} )
+    seal?: EmbeddableSeal;
 
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
@@ -544,7 +571,7 @@ export class LocRequestAggregateRoot {
 }
 
 @Entity("loc_request_file")
-@Unique(["requestId", "index"])
+@Unique([ "requestId", "index" ])
 export class LocFile extends Child implements HasIndex, Submitted {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
@@ -587,7 +614,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
 }
 
 @Entity("loc_metadata_item")
-@Unique(["requestId", "index"])
+@Unique([ "requestId", "index" ])
 export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
@@ -602,7 +629,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @PrimaryColumn({ length: 255 })
     name?: string;
 
-    @Column({ name: "value",  length: 255, nullable: true})
+    @Column({ name: "value", length: 255, nullable: true })
     deprecated_value?: string;
 
     @Column("text", { name: "value_text", default: "" })
@@ -624,7 +651,7 @@ interface Submitted {
 }
 
 @Entity("loc_link")
-@Unique(["requestId", "index"])
+@Unique([ "requestId", "index" ])
 export class LocLink extends Child implements HasIndex {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
@@ -774,8 +801,10 @@ export interface NewSofRequestParameters extends NewLocRequestParameters, LinkDe
 export class LocRequestFactory {
 
     constructor(
-        private repository: LocRequestRepository
-    ) {}
+        private repository: LocRequestRepository,
+        private sealService: UserIdentitySealService,
+    ) {
+    }
 
     async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
         const request = await this.newLocRequest(params, false);
@@ -797,7 +826,7 @@ export class LocRequestFactory {
         request.id = params.id;
         request.status = "REQUESTED";
         request.requesterAddress = description.requesterAddress;
-        if(description.requesterIdentityLoc) {
+        if (description.requesterIdentityLoc) {
             const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
             request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
             request.requesterIdentityLocId = description.requesterIdentityLoc;
@@ -808,11 +837,8 @@ export class LocRequestFactory {
         request.createdOn = description.createdOn;
         const userIdentity = description.userIdentity;
         if (userIdentity !== undefined) {
-            request.userIdentity = new EmbeddableUserIdentity();
-            request.userIdentity.firstName = userIdentity.firstName;
-            request.userIdentity.lastName = userIdentity.lastName;
-            request.userIdentity.email = userIdentity.email;
-            request.userIdentity.phoneNumber = userIdentity.phoneNumber;
+            const seal = request.locType === 'Identity' ? this.sealService.seal(userIdentity) : undefined;
+            request.updateIdentity(userIdentity, seal);
         }
         const userPostalAddress = description.userPostalAddress
         if (userPostalAddress !== undefined) {

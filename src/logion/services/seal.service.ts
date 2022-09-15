@@ -5,8 +5,11 @@ import { UserIdentity } from "../model/useridentity";
 
 const SEPARATOR: string = "-";
 
-export interface Seal {
+export interface PublicSeal {
     hash: string
+}
+
+export interface Seal extends PublicSeal {
     salt: string
 }
 
