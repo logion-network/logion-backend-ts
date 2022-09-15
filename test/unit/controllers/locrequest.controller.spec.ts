@@ -29,8 +29,9 @@ import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
 import { fileExists } from "../../helpers/filehelper";
-import { UserIdentitySealService, Seal } from "../../../src/logion/services/seal.service";
+import { PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
+import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 
 const testUserIdentity = {
     firstName: "Scott",
@@ -1095,10 +1096,10 @@ function mockOtherDependencies(container: Container) {
     collectionRepository = new Mock<CollectionRepository>();
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
-    const sealService = new Mock<UserIdentitySealService>();
+    const sealService = new Mock<PersonalInfoSealService>();
     sealService
-        .setup(instance => instance.seal(testUserIdentity))
+        .setup(instance => instance.seal(It.IsAny<PersonalInfo>()))
         .returns(SEAL);
-    container.bind(UserIdentitySealService).toConstantValue(sealService.object());
+    container.bind(PersonalInfoSealService).toConstantValue(sealService.object());
 }
 

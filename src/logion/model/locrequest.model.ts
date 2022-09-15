@@ -19,7 +19,8 @@ import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
-import { UserIdentitySealService, PublicSeal, Seal } from "../services/seal.service";
+import { PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service";
+import { PersonalInfo } from "./personalinfo.model";
 
 const { logger } = Log;
 
@@ -83,10 +84,10 @@ class EmbeddableVoidInfo {
 }
 
 class EmbeddableSeal {
-    @Column({ type: "uuid", nullable: true })
+    @Column({ name: "seal_salt", type: "uuid", nullable: true })
     salt?: string | null
 
-    @Column({ type: "varchar", length: 255, nullable: true })
+    @Column({ name: "seal_hash", type: "varchar", length: 255, nullable: true })
     hash?: string | null
 
     static from(seal: Seal | undefined): EmbeddableSeal | undefined {
@@ -483,12 +484,31 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    updateIdentity(userIdentity: UserIdentity, seal: Seal | undefined) {
-        this.userIdentity = new EmbeddableUserIdentity();
-        this.userIdentity.firstName = userIdentity.firstName;
-        this.userIdentity.lastName = userIdentity.lastName;
-        this.userIdentity.email = userIdentity.email;
-        this.userIdentity.phoneNumber = userIdentity.phoneNumber;
+    updateUserIdentity(userIdentity: UserIdentity | undefined) {
+        if (userIdentity !== undefined) {
+            this.userIdentity = new EmbeddableUserIdentity();
+            this.userIdentity.firstName = userIdentity.firstName;
+            this.userIdentity.lastName = userIdentity.lastName;
+            this.userIdentity.email = userIdentity.email;
+            this.userIdentity.phoneNumber = userIdentity.phoneNumber;
+        }
+    }
+
+    updateUserPostalAddress(userPostalAddress: PostalAddress | undefined) {
+        if (userPostalAddress !== undefined) {
+            this.userPostalAddress = new EmbeddablePostalAddress();
+            this.userPostalAddress.line1 = userPostalAddress.line1;
+            this.userPostalAddress.line2 = userPostalAddress.line2;
+            this.userPostalAddress.postalCode = userPostalAddress.postalCode;
+            this.userPostalAddress.city = userPostalAddress.city;
+            this.userPostalAddress.country = userPostalAddress.country;
+        }
+    }
+
+    updateSealedPersonalInfo(personalInfo: PersonalInfo, seal: Seal) {
+        const { userIdentity, userPostalAddress } = personalInfo;
+        this.updateUserIdentity(userIdentity);
+        this.updateUserPostalAddress(userPostalAddress)
         this.seal = EmbeddableSeal.from(seal);
     }
 
@@ -562,7 +582,7 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableVoidInfo, { prefix: "" })
     voidInfo?: EmbeddableVoidInfo;
 
-    @Column(() => EmbeddableSeal, { prefix: "seal"} )
+    @Column(() => EmbeddableSeal, { prefix: ""} )
     seal?: EmbeddableSeal;
 
     _filesToDelete: LocFile[] = [];
@@ -802,7 +822,7 @@ export class LocRequestFactory {
 
     constructor(
         private repository: LocRequestRepository,
-        private sealService: UserIdentitySealService,
+        private sealService: PersonalInfoSealService,
     ) {
     }
 
@@ -836,18 +856,20 @@ export class LocRequestFactory {
         request.locType = description.locType;
         request.createdOn = description.createdOn;
         const userIdentity = description.userIdentity;
-        if (userIdentity !== undefined) {
-            const seal = request.locType === 'Identity' ? this.sealService.seal(userIdentity) : undefined;
-            request.updateIdentity(userIdentity, seal);
+        const userPostalAddress = description.userPostalAddress || {
+            line1: "",
+            line2: "",
+            postalCode: "",
+            city: "",
+            country: ""
         }
-        const userPostalAddress = description.userPostalAddress
-        if (userPostalAddress !== undefined) {
-            request.userPostalAddress = new EmbeddablePostalAddress();
-            request.userPostalAddress.line1 = userPostalAddress.line1;
-            request.userPostalAddress.line2 = userPostalAddress.line2;
-            request.userPostalAddress.postalCode = userPostalAddress.postalCode;
-            request.userPostalAddress.city = userPostalAddress.city;
-            request.userPostalAddress.country = userPostalAddress.country;
+        if (request.locType === 'Identity' && userIdentity !== undefined) {
+            const personalInfo: PersonalInfo = { userIdentity, userPostalAddress }
+            const seal = this.sealService.seal(personalInfo);
+            request.updateSealedPersonalInfo(personalInfo, seal);
+        } else {
+            request.updateUserIdentity(userIdentity);
+            request.updateUserPostalAddress(userPostalAddress);
         }
         request.files = [];
         request.metadata = [];

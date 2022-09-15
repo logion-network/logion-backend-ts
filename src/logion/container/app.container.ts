@@ -32,7 +32,7 @@ import { OwnershipCheckService } from '../services/ownershipcheck.service';
 import { EtherscanService } from '../services/Etherscan.service';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service';
 import { ExifService } from '../services/exif.service';
-import { UserIdentitySealService } from "../services/seal.service";
+import { PersonalInfoSealService } from "../services/seal.service";
 import { BackendHealthService } from "../services/health.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
@@ -72,7 +72,7 @@ container.bind(EtherscanService).toSelf();
 container.bind(OwnershipCheckService).toSelf();
 container.bind(ExifService).toSelf();
 container.bind(RestrictedDeliveryService).toSelf();
-container.bind(UserIdentitySealService).toSelf();
+container.bind(PersonalInfoSealService).toSelf();
 container.bind(BackendHealthService).toSelf();
 container.bind(HealthService).toService(BackendHealthService);
 

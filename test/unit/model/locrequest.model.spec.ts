@@ -16,7 +16,7 @@ import {
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress";
-import { Seal, UserIdentitySealService } from "../../../src/logion/services/seal.service";
+import { Seal, PersonalInfoSealService } from "../../../src/logion/services/seal.service";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
@@ -739,7 +739,7 @@ function givenLocDescription(value: LocRequestDescription) {
 let locDescription: LocRequestDescription;
 
 async function whenCreatingLocRequest() {
-    const sealService = new Mock<UserIdentitySealService>();
+    const sealService = new Mock<PersonalInfoSealService>();
     sealService
         .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
         .returns(SEAL);
@@ -751,7 +751,7 @@ async function whenCreatingLocRequest() {
 }
 
 async function whenCreatingSofRequest(target: string, nature: string) {
-    const sealService = new Mock<UserIdentitySealService>();
+    const sealService = new Mock<PersonalInfoSealService>();
     const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newSofRequest({
         id: requestId,
@@ -762,7 +762,7 @@ async function whenCreatingSofRequest(target: string, nature: string) {
 }
 
 async function whenCreatingOpenLoc() {
-    const sealService = new Mock<UserIdentitySealService>();
+    const sealService = new Mock<PersonalInfoSealService>();
     sealService
         .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
         .returns(SEAL);
