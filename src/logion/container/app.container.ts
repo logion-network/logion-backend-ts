@@ -1,8 +1,7 @@
-import { configureContainer } from "@logion/rest-api-core";
+import { configureContainer, HealthService } from "@logion/rest-api-core";
 import { Container } from 'inversify';
 
 import { ProtectionRequestController } from '../controllers/protectionrequest.controller';
-
 import { ProtectionRequestRepository, ProtectionRequestFactory } from '../model/protectionrequest.model';
 import { TransactionRepository, TransactionFactory } from '../model/transaction.model';
 import { SyncPointRepository, SyncPointFactory } from '../model/syncpoint.model';
@@ -18,7 +17,6 @@ import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.mod
 import { FileStorageService } from '../services/file.storage.service';
 import { ProtectionSynchronizer } from '../services/protectionsynchronization.service';
 import { ErrorService } from "../services/error.service";
-import { HealthController } from '../controllers/health.controller';
 import { TransactionController } from '../controllers/transaction.controller';
 import { CollectionRepository, CollectionFactory } from "../model/collection.model";
 import { NotificationService } from "../services/notification.service";
@@ -35,6 +33,7 @@ import { EtherscanService } from '../services/Etherscan.service';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service';
 import { ExifService } from '../services/exif.service';
 import { UserIdentitySealService } from "../services/seal.service";
+import { BackendHealthService } from "../services/health.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -74,9 +73,10 @@ container.bind(OwnershipCheckService).toSelf();
 container.bind(ExifService).toSelf();
 container.bind(RestrictedDeliveryService).toSelf();
 container.bind(UserIdentitySealService).toSelf();
+container.bind(BackendHealthService).toSelf();
+container.bind(HealthService).toService(BackendHealthService);
 
 // Controllers are stateful so they must not be injected with singleton scope
-container.bind(HealthController).toSelf().inTransientScope();
 container.bind(LocRequestController).toSelf().inTransientScope();
 container.bind(ProtectionRequestController).toSelf().inTransientScope();
 container.bind(TransactionController).toSelf().inTransientScope();
