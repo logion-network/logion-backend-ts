@@ -36,7 +36,7 @@ import { RestrictedDeliveryService } from '../services/restricteddelivery.servic
 import { ExifService } from '../services/exif.service';
 import { UserIdentitySealService } from "../services/seal.service";
 
-let container = new Container({ defaultScope: "Singleton" });
+let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
 
 container.bind(ProtectionRequestRepository).toSelf();
