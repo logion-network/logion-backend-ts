@@ -2,11 +2,16 @@ import { injectable } from "inversify";
 import { sha256String } from "../lib/crypto/hashing";
 import { v4 as uuid } from "uuid";
 import { UserIdentity } from "../model/useridentity";
+import { PostalAddress } from "../model/postaladdress";
+import { PersonalInfo } from "../model/personalinfo.model";
 
 const SEPARATOR: string = "-";
 
-export interface Seal {
+export interface PublicSeal {
     hash: string
+}
+
+export interface Seal extends PublicSeal {
     salt: string
 }
 
@@ -47,14 +52,23 @@ abstract class SealService<T> {
 }
 
 @injectable()
-export class UserIdentitySealService extends SealService<UserIdentity> {
+export class PersonalInfoSealService extends SealService<PersonalInfo> {
 
     constructor() {
         super(SEPARATOR);
     }
 
-    values(userIdentity: UserIdentity): string[] {
-        return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email ];
+    values(personalInfo: PersonalInfo): string[] {
+        return this.userIdentityValues(personalInfo.userIdentity)
+            .concat(this.postalAddressValue(personalInfo.userPostalAddress));
+    }
+
+    private userIdentityValues(userIdentity: UserIdentity): string[] {
+        return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber ];
+    }
+
+    private postalAddressValue(postalAddress: PostalAddress): string[] {
+        return [ postalAddress.line1, postalAddress.line2, postalAddress.postalCode, postalAddress.city, postalAddress.country ];
     }
 }
 

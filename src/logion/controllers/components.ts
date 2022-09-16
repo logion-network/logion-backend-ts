@@ -345,6 +345,11 @@ export interface components {
       status?: components["schemas"]["LocRequestStatus"];
       /** @description If status is 'REJECTED', the reason of the rejection */
       rejectReason?: string;
+      /**
+       * @description The seal of the given LOC
+       * @example 0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a
+       */
+      seal?: string;
       /** @description The files attached to this request's LOC */
       files?: {
         /** @description The file's name */

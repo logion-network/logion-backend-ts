@@ -59,7 +59,8 @@ export class LocSynchronizer {
                     await this.mutateLoc(locId, loc => loc.setLinkAddedOn(target, timestamp));
                     break;
                 }
-                case "close": {
+                case "close":
+                case "closeAndSeal": {
                     const locId = this.extractLocId('loc_id', extrinsic.args);
                     await this.mutateLoc(locId, loc => loc.close(timestamp));
                     break;
