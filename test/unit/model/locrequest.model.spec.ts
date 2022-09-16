@@ -120,7 +120,7 @@ describe("LocRequestFactory", () => {
 
     it("creates Identity LOC", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a");
         givenLocDescription(description);
         await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description);
@@ -146,7 +146,7 @@ describe("LocRequestFactory", () => {
 
     it("creates an open Identity LOC with requester address", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a");
         givenLocDescription(description);
         await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)

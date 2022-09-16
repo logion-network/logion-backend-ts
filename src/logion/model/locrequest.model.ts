@@ -855,7 +855,12 @@ export class LocRequestFactory {
         request.description = description.description;
         request.locType = description.locType;
         request.createdOn = description.createdOn;
-        const userIdentity = description.userIdentity;
+        const userIdentity = description.userIdentity || {
+            firstName: "",
+            lastName: "",
+            email: "",
+            phoneNumber: "",
+        }
         const userPostalAddress = description.userPostalAddress || {
             line1: "",
             line2: "",
@@ -863,7 +868,7 @@ export class LocRequestFactory {
             city: "",
             country: ""
         }
-        if (request.locType === 'Identity' && userIdentity !== undefined) {
+        if (request.locType === 'Identity') {
             const personalInfo: PersonalInfo = { userIdentity, userPostalAddress }
             const seal = this.sealService.seal(personalInfo);
             request.updateSealedPersonalInfo(personalInfo, seal);
