@@ -552,24 +552,24 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/authenticator@npm:^0.1.0-3":
-  version: 0.1.0-3
-  resolution: "@logion/authenticator@npm:0.1.0-3"
+"@logion/authenticator@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@logion/authenticator@npm:0.1.0"
   dependencies:
     "@ethersproject/transactions": ^5.6.2
-    "@logion/node-api": ^0.5.0-2
+    "@logion/node-api": ^0.5.0
     "@types/luxon": ^3.0.0
     jose: ^4.8.3
     luxon: ^3.0.1
     peer-id: ^0.16.0
     web3-utils: ^1.7.4
-  checksum: 6cdafa57d6183e82d65be572c08a654d9c9c55be1f7fbf2502d786b8f6d4cf8613d37436ef8270fb3840eae990e0f56e518a303808390224679788bd9e50902e
+  checksum: 69868a33e7cf9012634059be68a4b03f7eb645d984549dd5a80b3bcce96a07a0a036744ecb66797d1ee393a0deac870b51462b4f9e5e28491c77d2dd01b79eaf
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.5.0-2":
-  version: 0.5.0-2
-  resolution: "@logion/node-api@npm:0.5.0-2"
+"@logion/node-api@npm:^0.5.0":
+  version: 0.5.0
+  resolution: "@logion/node-api@npm:0.5.0"
   dependencies:
     "@polkadot/api": ^8.14.1
     "@polkadot/util": ^10.1.1
@@ -577,7 +577,7 @@ __metadata:
     "@types/uuid": ^8.3.4
     fast-sha256: ^1.3.0
     uuid: ^8.3.2
-  checksum: cfc0b521b7357f9d1db2da32bc24ff240e4dc386e795ae508bd2af4ea908872626ce78fa5b496e483019be0315192182ce9f7572e36be7b18931fa6b07acd2c2
+  checksum: de154d19add32f2213e45af9d267e62aa7a4c2a1695dc25157f6a759dcebfed2a4b7c79fd2ae2b5cc7983f0a65275d12760d9aaff5a407836f20decd18a00b04
   languageName: node
   linkType: hard
 
@@ -592,11 +592,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.1.0-5":
-  version: 0.1.0-5
-  resolution: "@logion/rest-api-core@npm:0.1.0-5"
+"@logion/rest-api-core@npm:^0.1.0":
+  version: 0.1.0
+  resolution: "@logion/rest-api-core@npm:0.1.0"
   dependencies:
-    "@logion/authenticator": ^0.1.0-3
+    "@logion/authenticator": ^0.1.0
     dinoloop: ^2.4.0
     express: ^4.17.2
     express-fileupload: ^1.2.1
@@ -607,7 +607,7 @@ __metadata:
     openapi-typescript: 5.1.0
     swagger-ui-express: ^4.5.0
     typeorm: ^0.3.9
-  checksum: f8a85800ca5dfa06cd36753662ee7322f73ed68be763a00f8c41cebe360627639ac0586e4584d6aabc34200ed93ef6cb00dd2e9b2928d76f7e12f28815d4bab1
+  checksum: 472b33b519985f873436ebf255498dca938e59e34b37f6c9396420eb7d941411a5bc1e32b1ecd4f7a7293581dd46aa65e119d656a197200654cfa79712f2eba7
   languageName: node
   linkType: hard
 
@@ -4165,7 +4165,7 @@ __metadata:
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.1.0-5
+    "@logion/rest-api-core": ^0.1.0
     "@polkadot/wasm-crypto": ^6.3.1
     "@tsconfig/node16": ^1.0.3
     "@types/cors": ^2.8.12
