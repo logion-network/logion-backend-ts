@@ -114,6 +114,15 @@ describe("LocSynchronizer", () => {
         await whenConsumingBlock();
         thenCollectionItemSaved();
     });
+
+    it("adds Collection Item with terms and conditions", async () => {
+        givenLocExtrinsic("addCollectionItemWithTermsAndConditions", { collection_loc_id: locId, item_id: itemId});
+        givenLocRequest();
+        givenCollectionItem();
+        givenCollectionFactory();
+        await whenConsumingBlock();
+        thenCollectionItemSaved();
+    });
 });
 
 const locId = {

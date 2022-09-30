@@ -49,6 +49,13 @@ export class CollectionItemAggregateRoot {
         return file
     }
 
+    setAddedOn(addedOn: Moment) {
+        if(this.addedOn) {
+            throw new Error("Already set");
+        }
+        this.addedOn = addedOn.toDate();
+    }
+
     @PrimaryColumn({ type: "uuid", name: "collection_loc_id" })
     collectionLocId?: string;
 

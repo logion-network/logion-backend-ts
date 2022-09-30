@@ -1,5 +1,4 @@
 import { It, Mock } from 'moq.ts';
-import { ExtrinsicDataExtractor } from '../../../src/logion/services/extrinsic.data.extractor';
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
@@ -14,7 +13,6 @@ process.env.OWNER = ALICE;
 describe("ProtectionSynchronizer", () => {
 
     beforeEach(() => {
-        extrinsicDataExtractor = new Mock<ExtrinsicDataExtractor>();
         protectionRequestRepository = new Mock<ProtectionRequestRepository>();
     });
 
@@ -27,7 +25,6 @@ describe("ProtectionSynchronizer", () => {
     });
 });
 
-let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
 let protectionRequestRepository: Mock<ProtectionRequestRepository>;
 
 function givenCreateRecoveryExtrinsic() {
@@ -71,7 +68,6 @@ async function whenConsumingBlock() {
 
 function synchronizer(): ProtectionSynchronizer {
     return new ProtectionSynchronizer(
-        extrinsicDataExtractor.object(),
         protectionRequestRepository.object(),
     );
 }

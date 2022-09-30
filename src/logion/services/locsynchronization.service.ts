@@ -71,14 +71,15 @@ export class LocSynchronizer {
                     await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
                     break;
                 }
-                case "addCollectionItem": {
+                case "addCollectionItem":
+                case "addCollectionItemWithTermsAndConditions": {
                     const locId = this.extractLocId('collection_loc_id', extrinsic.args);
                     const itemId = extrinsic.args['item_id'].toHex();
                     await this.addCollectionItem(locId, itemId, timestamp)
                     break;
                 }
                 default:
-                    logger.warn("Unexpected method in pallet logionLoc: %s", extrinsic.method.method)
+                    throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.method.method}`)
             }
         }
     }
@@ -99,13 +100,19 @@ export class LocSynchronizer {
     private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
-            logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId)
-            const collectionItem = this.collectionFactory.newItem({
-                collectionLocId,
-                itemId,
-                addedOn: timestamp
-            });
-            await this.collectionRepository.save(collectionItem)
+            logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId);
+            let collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+            if(!collectionItem) {
+                collectionItem = this.collectionFactory.newItem({
+                    collectionLocId,
+                    itemId,
+                    addedOn: timestamp
+                });
+                await this.collectionRepository.save(collectionItem);
+            } else if(!collectionItem.addedOn) {
+                collectionItem.setAddedOn(timestamp);
+                await this.collectionRepository.save(collectionItem);
+            }
         }
     }
 }
