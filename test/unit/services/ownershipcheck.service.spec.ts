@@ -27,6 +27,7 @@ const ethereumErc721Item: CollectionItem = {
         id: `{"contract":"${contractHash}","id":"${tokenId}"}`
     },
     restrictedDelivery: true,
+    termsAndConditions: [],
 };
 
 const ownerItem: CollectionItem = {
@@ -43,6 +44,7 @@ const ownerItem: CollectionItem = {
         id: `${owner}`
     },
     restrictedDelivery: true,
+    termsAndConditions: [],
 };
 
 describe("OwnershipCheckService", () => {

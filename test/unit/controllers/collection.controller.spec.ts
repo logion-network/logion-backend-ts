@@ -497,6 +497,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         description: "Item Description",
         files: [ publishedCollectionItemFile ],
         restrictedDelivery,
+        termsAndConditions: [],
     }
     const collectionService = new Mock<CollectionService>()
     collectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
