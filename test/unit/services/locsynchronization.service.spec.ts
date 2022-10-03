@@ -114,6 +114,23 @@ describe("LocSynchronizer", () => {
         await whenConsumingBlock();
         thenCollectionItemSaved();
     });
+
+    it("adds Collection Item with terms and conditions", async () => {
+        givenLocExtrinsic("addCollectionItemWithTermsAndConditions", { collection_loc_id: locId, item_id: itemId });
+        givenLocRequest();
+        givenCollectionItem();
+        givenCollectionFactory();
+        await whenConsumingBlock();
+        thenCollectionItemSaved();
+    });
+
+    it("throws with unknown extrinsic", async () => {
+        givenLocExtrinsic("unknownExtrinsic", {});
+        givenLocRequest();
+        givenCollectionItem();
+        givenCollectionFactory();
+        await expectAsync(whenConsumingBlock()).toBeRejected();
+    });
 });
 
 const locId = {
@@ -149,6 +166,7 @@ function givenLocRequest() {
 
 function givenCollectionItem() {
     collectionItem = new Mock<CollectionItemAggregateRoot>()
+    collectionRepository.setup(instance => instance.findBy(decimalToUuid(locDecimalUuid), itemIdHex)).returns(Promise.resolve(null));
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
 }
 

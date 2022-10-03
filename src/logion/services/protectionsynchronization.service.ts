@@ -2,7 +2,6 @@ import { injectable } from 'inversify';
 import { Log } from "@logion/rest-api-core";
 
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model';
-import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
 
@@ -12,7 +11,6 @@ const { logger } = Log;
 export class ProtectionSynchronizer {
 
     constructor(
-        private extrinsicDataExtractor: ExtrinsicDataExtractor,
         private protectionRequestRepository: ProtectionRequestRepository,
     ) {
         if (process.env.OWNER === undefined) {
