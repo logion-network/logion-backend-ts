@@ -11,4 +11,9 @@ export class EtherscanScrapper {
         const regex = new RegExp(`${address}`);
         return regex.test(this.pageContent);
     }
+
+    isEmptyPage(): boolean {
+        const regex = new RegExp("no matching entries");
+        return regex.test(this.pageContent);
+    }
 }
