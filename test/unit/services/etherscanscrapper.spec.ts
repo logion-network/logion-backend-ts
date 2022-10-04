@@ -9,12 +9,25 @@ describe("EtherscanScrapper", () => {
     it("does not detect token if not in holder inventory page", () => {
         testPageContainsToken(tokenInventoryWithAnotherHolder, false);
     });
+
+    it("detects empty holder inventory page", () => {
+        testPageIsEmpty(emptyHolderInventory, true);
+    });
+
+    it("does not detect holder inventory page as empty", () => {
+        testPageIsEmpty(tokenInventoryWithHolder, false);
+    });
 });
 
 function testPageContainsToken(pageContent: string, expected: boolean) {
     const scrapper = new EtherscanScrapper(pageContent);
     const contains = scrapper.tokenHolderInventoryPageContainsHolder(holderAddress);
     expect(contains).toBe(expected);
+}
+
+function testPageIsEmpty(content: string, expected: boolean) {
+    const scrapper = new EtherscanScrapper(content);
+    expect(scrapper.isEmptyPage()).toBe(expected);
 }
 
 export const emptyHolderInventory = `
