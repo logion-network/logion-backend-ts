@@ -1,9 +1,9 @@
 import { TestApp } from "@logion/rest-api-core";
 import { writeFile } from 'fs/promises';
-import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController, UserPrivateData } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
-import request, { Response } from "supertest";
-import { ALICE, BOB } from "../../helpers/addresses";
+import request from "supertest";
+import { ALICE } from "../../helpers/addresses";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -16,12 +16,10 @@ import {
     MetadataItemDescription,
     LocType,
     NewSofRequestParameters,
+    FetchLocRequestsSpecification,
+    IdentityLocType,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
-import {
-    ProtectionRequestRepository,
-    ProtectionRequestAggregateRoot
-} from "../../../src/logion/model/protectionrequest.model";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
@@ -33,25 +31,63 @@ import { PersonalInfoSealService, Seal } from "../../../src/logion/services/seal
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 
-const testUserIdentity = {
-    firstName: "Scott",
-    lastName: "Tiger",
-    email: "scott.tiger@logion.network",
-    phoneNumber: "+6789"
+type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
+
+const userIdentities: Record<IdentityLocation, UserPrivateData> = {
+    "Logion": {
+        userIdentity: {
+            firstName: "Felix",
+            lastName: "the Cat",
+            email: "felix@logion.network",
+            phoneNumber: "+0101"
+        },
+        userPostalAddress: {
+            line1: "Rue de la Paix, 1",
+            line2: "line2.1",
+            postalCode: "1234",
+            city: "Liège",
+            country: "Belgium"
+        },
+    },
+    "Polkadot": {
+        userIdentity: {
+            firstName: "Scott",
+            lastName: "Tiger",
+            email: "scott.tiger@logion.network",
+            phoneNumber: "+6789"
+        },
+        userPostalAddress: {
+            line1: "Rue de la Paix, 2",
+            line2: "line2.2",
+            postalCode: "5678",
+            city: "Liège",
+            country: "Belgium"
+        },
+    },
+    "EmbeddedInLoc": {
+        userIdentity: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@logion.network",
+            phoneNumber: "+1234"
+        },
+        userPostalAddress: {
+            line1: "Rue de la Paix, 3",
+            line2: "line2.3",
+            postalCode: "9012",
+            city: "Liège",
+            country: "Belgium"
+        },
+    }
 }
+
+const testUserIdentity = userIdentities["Polkadot"].userIdentity!;
 
 const IDENTITY_LOC_ID = "6b00b9f2-4439-4c4a-843e-2ea3ce2016fd";
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const SEAL: Seal = {
     hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
     salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c"
-}
-
-const identityInIdentityLoc = {
-    firstName: "Felix",
-    lastName: "the Cat",
-    email: "felix@logion.network",
-    phoneNumber: "+0101"
 }
 
 const testDataWithType = (locType: LocType) => {
@@ -64,13 +100,14 @@ const testDataWithType = (locType: LocType) => {
 
 const testData = testDataWithType("Transaction");
 
-const identityLoc = {
+const logionIdentityLoc = {
     description: "Identity LOC",
     locType: "Identity",
-    userIdentity: identityInIdentityLoc
+    userIdentity: userIdentities["Logion"].userIdentity,
+    userPostalAddress: userIdentities["Logion"].userPostalAddress,
 }
 
-const transactionLoc = {
+const testDataWithLogionIdentity = {
     requesterIdentityLoc: IDENTITY_LOC_ID,
     description: "I want to open a case",
     locType: "Transaction"
@@ -98,18 +135,16 @@ const testMetadataItem:MetadataItemDescription = {
 }
 
 const testDataWithUserIdentityWithType = (locType: LocType) => {
+    const { userIdentity, userPostalAddress } = userIdentities["EmbeddedInLoc"];
     return {
-    ...testDataWithType(locType),
-    userIdentity: {
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@logion.network",
-        phoneNumber: "+1234"
-    },
-    seal: {
-        hash: SEAL.hash
+        ...testDataWithType(locType),
+        userIdentity,
+        userPostalAddress,
+        seal: {
+            hash: SEAL.hash
+        }
     }
-}};
+};
 
 const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction")
 
@@ -132,6 +167,7 @@ describe('LocRequestController', () => {
             container => mockModelForCreation(container, locType),
             mock
         )
+        const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
         await request(app)
             .post('/api/loc-request')
             .send(testDataWithUserIdentity)
@@ -142,10 +178,9 @@ describe('LocRequestController', () => {
                 expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
-                expect(userIdentity.firstName).toBe("John");
-                expect(userIdentity.lastName).toBe("Doe");
-                expect(userIdentity.email).toBe("john.doe@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+1234");
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
                 expect(response.body.seal).toEqual(SEAL.hash)
             });
     }
@@ -169,6 +204,7 @@ describe('LocRequestController', () => {
             container => mockModelForCreation(container, locType, true),
             mock,
         )
+        const expectedUserPrivateData = userIdentities["Polkadot"];
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -179,18 +215,17 @@ describe('LocRequestController', () => {
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
-                expect(userIdentity.firstName).toBe("Scott");
-                expect(userIdentity.lastName).toBe("Tiger");
-                expect(userIdentity.email).toBe("scott.tiger@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+6789");
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
     }
 
-    it('succeeds to create open Transaction loc with existing protection request', async () => {
+    it('succeeds to create open Transaction loc with existing existing identity LOC', async () => {
         await testOpenLocCreation("Transaction")
     });
 
-    it('succeeds to create open Collection loc with existing protection request', async () => {
+    it('succeeds to create open Collection loc with existing existing identity LOC', async () => {
         await testOpenLocCreation("Collection")
     });
 
@@ -201,6 +236,7 @@ describe('LocRequestController', () => {
             container => mockModelForCreation(container, locType),
             mock,
         )
+        const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
         await request(app)
             .post('/api/loc-request')
             .send(testDataWithUserIdentity)
@@ -211,10 +247,9 @@ describe('LocRequestController', () => {
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
-                expect(userIdentity.firstName).toBe("John");
-                expect(userIdentity.lastName).toBe("Doe");
-                expect(userIdentity.email).toBe("john.doe@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+1234");
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
     }
 
@@ -226,16 +261,17 @@ describe('LocRequestController', () => {
         await testOpenLocCreationWithEmbeddedUserIdentity("Collection")
     });
 
-    it('succeeds to create open loc with identity LOC', async () => {
+    it('succeeds to create open loc with a Logion identity LOC', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
-            mockModelForCreationWithIdentityLoc,
+            mockModelForCreationWithLogionIdentityLoc,
             mock,
         )
+        const expectedUserPrivateData = userIdentities["Logion"];
         await request(app)
             .post('/api/loc-request')
-            .send(transactionLoc)
+            .send(testDataWithLogionIdentity)
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -245,10 +281,9 @@ describe('LocRequestController', () => {
                 expect(response.body.requesterAddress).toBeUndefined();
                 expect(response.body.requesterIdentityLoc).toBe(IDENTITY_LOC_ID);
                 const userIdentity = response.body.userIdentity;
-                expect(userIdentity.firstName).toBe("Felix");
-                expect(userIdentity.lastName).toBe("the Cat");
-                expect(userIdentity.email).toBe("felix@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+0101");
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
     });
 
@@ -259,6 +294,7 @@ describe('LocRequestController', () => {
             container => mockModelForCreation(container, locType, true),
             mock,
         )
+        const expectedUserPrivateData = userIdentities["Polkadot"];
         await request(app)
             .post('/api/loc-request')
             .send(testData)
@@ -269,10 +305,9 @@ describe('LocRequestController', () => {
                 expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe(locType);
                 const userIdentity = response.body.userIdentity;
-                expect(userIdentity.firstName).toBe("Scott");
-                expect(userIdentity.lastName).toBe("Tiger");
-                expect(userIdentity.email).toBe("scott.tiger@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+6789");
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
@@ -281,11 +316,11 @@ describe('LocRequestController', () => {
 
     }
 
-    it('succeeds to create Transaction loc request with existing protection request', async () => {
+    it('succeeds to create Transaction loc request with existing identity LOC', async () => {
         await testLocRequestCreation("Transaction")
     });
 
-    it('succeeds to create Collection loc request with existing protection request', async () => {
+    it('succeeds to create Collection loc request with existing identity LOC', async () => {
         await testLocRequestCreation("Collection")
     });
 
@@ -300,32 +335,18 @@ describe('LocRequestController', () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                checkResponse(response);
-                const userIdentity = response.body.requests[0].userIdentity;
-                expect(userIdentity.firstName).toBe("John");
-                expect(userIdentity.lastName).toBe("Doe");
-                expect(userIdentity.email).toBe("john.doe@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+1234");
-            });
-    });
-
-    it('succeeds to fetch loc requests with existing protection request', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForFetch(container, true))
-        await request(app)
-            .put('/api/loc-request')
-            .send({
-                requesterAddress: testData.requesterAddress,
-                statuses: [ "OPEN", "REJECTED" ]
-            })
-            .expect(200)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                checkResponse(response);
-                const userIdentity = response.body.requests[0].userIdentity;
-                expect(userIdentity.firstName).toBe("Scott");
-                expect(userIdentity.lastName).toBe("Tiger");
-                expect(userIdentity.email).toBe("scott.tiger@logion.network");
-                expect(userIdentity.phoneNumber).toBe("+6789");
+                const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
+                expect(response.body.requests.length).toBe(1);
+                const request1 = response.body.requests[0];
+                expect(request1.id).toBe(REQUEST_ID);
+                expect(request1.requesterAddress).toBe(testData.requesterAddress);
+                expect(request1.ownerAddress).toBe(ALICE);
+                expect(request1.status).toBe("REJECTED");
+                expect(request1.rejectReason).toBe(REJECT_REASON);
+                const userIdentity = request1.userIdentity;
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = request1.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
     });
 
@@ -344,15 +365,6 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeUndefined();
             });
     });
-
-    function checkResponse(response: Response) {
-        expect(response.body.requests.length).toBe(1);
-        expect(response.body.requests[0].id).toBe(REQUEST_ID)
-        expect(response.body.requests[0].requesterAddress).toBe(testData.requesterAddress)
-        expect(response.body.requests[0].ownerAddress).toBe(ALICE)
-        expect(response.body.requests[0].status).toBe("REJECTED")
-        expect(response.body.requests[0].rejectReason).toBe(REJECT_REASON)
-    }
 
     it('fails to fetch loc requests - authentication failure', async () => {
         const app = setupApp(
@@ -450,10 +462,44 @@ describe('LocRequestController', () => {
         }
     })
 
-    it('succeeds to get single loc request', async () => {
-        const app = setupApp(LocRequestController, mockModelForGetSingle)
+    it('succeeds to get single Transaction Loc request with embedded Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction', 'EmbeddedInLoc'))
+        await testGet(app, userIdentities["EmbeddedInLoc"])
+    });
+
+    it('succeeds to get single Transaction Loc request with Polkadot Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Polkadot'))
+        await testGet(app, userIdentities["Polkadot"])
+    });
+
+    it('succeeds to get single Transaction Loc request with Logion Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Logion'))
+        await testGet(app, userIdentities["Logion"])
+    });
+
+    it('succeeds to get single Collection Loc request with embedded Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection', 'EmbeddedInLoc'))
+        await testGet(app, userIdentities["EmbeddedInLoc"])
+    });
+
+    it('succeeds to get single Collection Loc request with Polkadot Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection','Polkadot'))
+        await testGet(app, userIdentities["Polkadot"])
+    });
+
+    it('succeeds to get single Collection Loc request with Logion Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection','Logion'))
+        await testGet(app, userIdentities["Logion"])
+    });
+
+    it('succeeds to get single Identity Loc request', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc'))
+        await testGet(app, userIdentities["EmbeddedInLoc"])
+    });
+
+    async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData) {
         await request(app)
-            .get(`/api/loc-request/${REQUEST_ID}`)
+            .get(`/api/loc-request/${ REQUEST_ID }`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -473,8 +519,12 @@ describe('LocRequestController', () => {
                 expect(metadataItem.value).toBe(testMetadataItem.value)
                 expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
                 expect(metadataItem.submitter).toBe(SUBMITTER)
+                const userIdentity = response.body.userIdentity;
+                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
+                const userPostalAddress = response.body.userPostalAddress;
+                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
             });
-    });
+    }
 
     it('deletes a file', async () => {
         const app = setupApp(LocRequestController, mockModelForDeleteFile)
@@ -644,7 +694,7 @@ function mockModelForReject(container: Container): void {
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
+    mockPolkadotIdentityLoc(repository, true);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -665,14 +715,14 @@ function mockModelForAccept(container: Container): void {
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(true));
+    mockPolkadotIdentityLoc(repository, true);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockOtherDependencies(container)
 }
 
-function mockModelForCreation(container: Container, locType: LocType, hasProtection: boolean = false): void {
+function mockModelForCreation(container: Container, locType: LocType, hasPolkadotIdentityLoc: boolean = false): void {
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save)
@@ -680,14 +730,14 @@ function mockModelForCreation(container: Container, locType: LocType, hasProtect
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
-    const request = mockRequest("REQUESTED", hasProtection ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
+    const request = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
     factory.setup(instance => instance.newLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
         .returns(Promise.resolve(request.object()))
-    const openLoc = mockRequest("OPEN", hasProtection ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
+    const openLoc = mockRequest("OPEN", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
@@ -695,25 +745,24 @@ function mockModelForCreation(container: Container, locType: LocType, hasProtect
     )))
         .returns(Promise.resolve(openLoc.object()))
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
+    mockPolkadotIdentityLoc(repository, hasPolkadotIdentityLoc);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockOtherDependencies(container)
 }
 
-function mockModelForCreationWithIdentityLoc(container: Container): void {
+function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.save)
         .returns(() => Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
-    const identityLocRequest = mockRequest("CLOSED", identityLoc)
-    repository.setup(instance => instance.findById(IDENTITY_LOC_ID))
-        .returns(Promise.resolve(identityLocRequest.object()))
+
+    mockLogionIdentityLoc(repository, true);
 
     const factory = new Mock<LocRequestFactory>();
-    const request = mockRequest("OPEN", transactionLoc)
+    const request = mockRequest("OPEN", testDataWithLogionIdentity)
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === IDENTITY_LOC_ID &&
         params.description.ownerAddress == ALICE
@@ -721,40 +770,36 @@ function mockModelForCreationWithIdentityLoc(container: Container): void {
         .returns(Promise.resolve(request.object()))
     container.bind(LocRequestFactory).toConstantValue(factory.object());
 
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
-
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
     mockOtherDependencies(container)
 }
 
-function mockProtectionRepository(hasProtection: boolean): ProtectionRequestRepository {
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    if (hasProtection) {
-        const protection = new Mock<ProtectionRequestAggregateRoot>()
-        protection.setup(instance => instance.getDescription()).returns({
-            otherLegalOfficerAddress: BOB,
-            userIdentity: testUserIdentity,
-            userPostalAddress: {
-                line1: "",
-                line2: "",
-                postalCode: "",
-                city: "",
-                country: "",
-            },
-            isRecovery: false,
-            createdOn: "",
-            requesterAddress: "5CSYdyGLF84KKvieonBoANeqPiUXZBn8CbnJFmpHiXzcG5Ft",
-            addressToRecover: null
-        })
-        protectionRepository.setup(instance => instance.findBy(It.IsAny()))
-            .returns(Promise.resolve([ protection.object() ]))
-    } else {
-        protectionRepository.setup(instance => instance.findBy(It.IsAny()))
-            .returns(Promise.resolve([]))
-    }
-    return protectionRepository.object();
+function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
+    const identityLocRequest = exists ?
+        mockRequest("CLOSED", logionIdentityLoc).object() :
+        null;
+    repository.setup(instance => instance.findById(IDENTITY_LOC_ID))
+        .returns(Promise.resolve(identityLocRequest))
+}
+
+function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
+    const { userIdentity, userPostalAddress } = userIdentities["Polkadot"]
+    const identityLocs = exists ?
+        [ mockRequest("CLOSED",
+            {
+                userIdentity,
+                userPostalAddress,
+            }).object() ] :
+        [];
+
+    repository.setup(instance => instance.findBy(It.Is<FetchLocRequestsSpecification>(spec =>
+        spec.expectedStatuses !== undefined &&
+        spec.expectedStatuses.includes("CLOSED") &&
+        spec.expectedLocTypes !== undefined &&
+        spec.expectedLocTypes.includes("Identity") &&
+        spec.expectedIdentityLocType === "Polkadot"
+    ))).returns(Promise.resolve(identityLocs));
 }
 
 function mockRequest(status: LocRequestStatus,
@@ -781,8 +826,8 @@ function mockRequest(status: LocRequestStatus,
     return request;
 }
 
-function mockModelForFetch(container: Container, hasProtection: boolean = false): void {
-    const request = mockRequest("REJECTED", hasProtection ? testData : testDataWithUserIdentity)
+function mockModelForFetch(container: Container): void {
+    const request = mockRequest("REJECTED", testDataWithUserIdentity)
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
     const requests: LocRequestAggregateRoot[] = [ request.object() ]
@@ -794,7 +839,6 @@ function mockModelForFetch(container: Container, hasProtection: boolean = false)
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(hasProtection));
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -823,9 +867,6 @@ function mockModelForAddFile(container: Container): void {
         .returns(Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
-
     const fileStorageService = new Mock<FileStorageService>();
     fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
         .returns(Promise.resolve("cid-42"));
@@ -847,9 +888,6 @@ function mockModelForDownloadFile(container: Container): void {
         .returns(Promise.resolve(request.object()));
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
-    const protectionRepository = new Mock<ProtectionRequestRepository>();
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRepository.object());
-
     const fileStorageService = new Mock<FileStorageService>();
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash;
     fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
@@ -869,12 +907,18 @@ const SOME_FILE = {
     submitter: SUBMITTER
 };
 
-function mockModelForGetSingle(container: Container): void {
+function mockModelForGetSingle(container: Container, locType: LocType, identityLocation: IdentityLocation): void {
+    const data =
+        identityLocation === "EmbeddedInLoc" ?
+            testDataWithUserIdentityWithType(locType) :
+            identityLocation === "Polkadot" ? testDataWithType(locType) :
+                testDataWithLogionIdentity;
+
     const request = mockRequest("OPEN",
-        testData,
+        data,
         [ testFile ],
         [ testMetadataItem ],
-        [ testLink ]
+        [ testLink ],
     );
 
     const repository = new Mock<LocRequestRepository>();
@@ -884,7 +928,8 @@ function mockModelForGetSingle(container: Container): void {
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
+    mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -904,7 +949,7 @@ function mockModelForDeleteFile(container: Container) {
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     fileStorageService.setup(instance => instance.deleteFile({ oid: SOME_OID })).returns(Promise.resolve());
@@ -925,7 +970,7 @@ function mockModelForConfirmFile(container: Container) {
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -974,7 +1019,7 @@ function mockModelForAllItems(container: Container, request: Mock<LocRequestAggr
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -996,7 +1041,7 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -1020,7 +1065,7 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
     factory.setup(instance => instance.newSofRequest(It.IsAny<NewSofRequestParameters>()))
         .returns(Promise.resolve(request.object()))
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -1053,7 +1098,7 @@ function mockModelForPreClose(container: Container, locType: LocType, userIdenti
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
@@ -1073,7 +1118,7 @@ function mockModelForPreVoid(container: Container) {
 
     const factory = new Mock<LocRequestFactory>();
     container.bind(LocRequestFactory).toConstantValue(factory.object());
-    container.bind(ProtectionRequestRepository).toConstantValue(mockProtectionRepository(false));
+    mockPolkadotIdentityLoc(repository, false);
 
     const fileStorageService = new Mock<FileStorageService>();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
