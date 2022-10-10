@@ -33,6 +33,7 @@ import { RestrictedDeliveryService } from "../services/restricteddelivery.servic
 const { logger } = Log;
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
+type CollectionItemsView = components["schemas"]["CollectionItemsView"];
 type AddFileResultView = components["schemas"]["AddFileResultView"];
 type CheckLatestDeliveryResponse = components["schemas"]["CheckLatestDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
@@ -45,6 +46,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     });
     setControllerTag(spec, /^\/api\/collection.*/, tagName);
 
+    CollectionController.getCollectionItems(spec)
     CollectionController.getCollectionItem(spec)
     CollectionController.addFile(spec)
     CollectionController.downloadFile(spec)
@@ -68,6 +70,40 @@ export class CollectionController extends ApiController {
         private restrictedDeliveryService: RestrictedDeliveryService,
     ) {
         super();
+    }
+
+    static getCollectionItems(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}"].get!;
+        operationObject.summary = "Gets the info of all published Collection Items in a collection";
+        operationObject.description = "Must be authenticated as the owner or requested of the collection.";
+        operationObject.responses = getPublicResponses("CollectionItemsView");
+        setPathParameters(operationObject, {
+            'collectionLocId': "The id of the collection loc",
+        });
+    }
+
+    @HttpGet('/:collectionLocId')
+    @Async()
+    async getCollectionItems(_body: any, collectionLocId: string): Promise<CollectionItemsView> {
+        const loc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`No LOC with ID ${collectionLocId}`));
+        (await this.authenticationService.authenticatedUser(this.request))
+            .isOneOf([ loc.ownerAddress, loc.requesterAddress ]);
+
+        const collectionItems = await this.collectionRepository.findAllBy(collectionLocId);
+        return {
+            items: collectionItems.map(item => item.getDescription()).map(this.toView),
+        }
+    }
+
+    private toView(collectionItem: CollectionItemDescription): CollectionItemView {
+        const { collectionLocId, itemId, addedOn, files } = collectionItem;
+        return {
+            collectionLocId,
+            itemId,
+            addedOn: addedOn?.toISOString(),
+            files: files?.map(file => file.hash)
+        }
     }
 
     static getCollectionItem(spec: OpenAPIV3.Document) {
@@ -97,16 +133,6 @@ export class CollectionController extends ApiController {
                 itemId,
                 files: []
             })
-        }
-    }
-
-    private toView(collectionItem: CollectionItemDescription): CollectionItemView {
-        const { collectionLocId, itemId, addedOn, files } = collectionItem;
-        return {
-            collectionLocId,
-            itemId,
-            addedOn: addedOn?.toISOString(),
-            files: files?.map(file => file.hash)
         }
     }
 

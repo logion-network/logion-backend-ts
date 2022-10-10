@@ -168,4 +168,11 @@ describe("CollectionRepository", () => {
         expect(fileDeliveries[0].deliveredFileHash).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
         expect(fileDeliveries[1].deliveredFileHash).toBe("0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
     })
+
+    it("finds all items of a collection", async () => {
+        const items = await repository.findAllBy("296d3d8f-057f-445c-b4c8-59aa7d2d21de");
+        expect(items.length).toBe(2);
+        expect(items[0].itemId).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
+        expect(items[1].itemId).toBe("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+    })
 })
