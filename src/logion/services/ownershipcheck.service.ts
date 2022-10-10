@@ -2,17 +2,17 @@ import { injectable } from 'inversify';
 import { ItemToken } from '@logion/node-api';
 import { CollectionItem } from '@logion/node-api/dist/Types';
 
-import { EtherscanScrapper } from './etherscanscrapper';
-import { EtherscanService, NetworkType } from './Etherscan.service';
+import { Network, AlchemyService } from './alchemy.service';
 
 @injectable()
 export class OwnershipCheckService {
 
     constructor(
-        private etherscanService: EtherscanService,
+        private alchemyService: AlchemyService,
     ) {}
 
     async isOwner(address: string, item: CollectionItem): Promise<boolean> {
+        const normalizedAddress = address.toLowerCase();
         if(!item.restrictedDelivery) {
             return true;
         } else {
@@ -21,11 +21,11 @@ export class OwnershipCheckService {
             } else {
                 const tokenType = item.token.type;
                 if(tokenType === 'ethereum_erc721' || tokenType === 'ethereum_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155('mainnet', address, item.token);
+                    return this.isOwnerOfErc721OrErc1155(Network.ETH_MAINNET, normalizedAddress, item.token);
                 } else if(tokenType === 'goerli_erc721' || tokenType === 'goerli_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155('goerli', address, item.token);
+                    return this.isOwnerOfErc721OrErc1155(Network.ETH_GOERLI, normalizedAddress, item.token);
                 } else if(tokenType === 'owner') {
-                    return address.toLowerCase() === item.token.id.toLowerCase();
+                    return normalizedAddress === item.token.id.toLowerCase();
                 } else {
                     throw new Error(`Unsupported token type ${tokenType}`);
                 }
@@ -33,31 +33,11 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc721OrErc1155(network: NetworkType, address: string, token: ItemToken): Promise<boolean> {
+    private async isOwnerOfErc721OrErc1155(network: Network, address: string, token: ItemToken): Promise<boolean> {
         const { contractHash, contractTokenId: tokenId } = this.parseErc721Or1155TokenId(token.id);
-        let page = 1;
-        while(page < OwnershipCheckService.MAX_PAGES) {
-            const inventoryPage = await this.etherscanService.getTokenHolderInventoryPage({
-                network,
-                contractHash,
-                tokenId,
-                page,
-            });
-
-            const scrapper = new EtherscanScrapper(inventoryPage);
-            if(scrapper.tokenHolderInventoryPageContainsHolder(address)) {
-                return true;
-            } else if(scrapper.isEmptyPage()) {
-                return false;
-            }
-
-            ++page;
-        }
-
-        return false;
+        const owners = await this.alchemyService.getOwners(network, contractHash, tokenId);
+        return owners.find(owner => owner.toLowerCase() === address) !== undefined;
     }
-
-    private static MAX_PAGES = 100;
 
     private parseErc721Or1155TokenId(tokenId: string): { contractHash: string, contractTokenId: string } {
         let tokenIdObject;
