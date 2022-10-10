@@ -25,6 +25,7 @@
         "@logion/node-exiftool": "^2.3.1-2",
         "@logion/rest-api-core": "^0.1.2",
         "@polkadot/wasm-crypto": "^6.3.1",
+        "alchemy-sdk": "^2.1.0",
         "ansi-regex": "^6.0.1",
         "axios": "^0.27.2",
         "body-parser": "^1.19.1",

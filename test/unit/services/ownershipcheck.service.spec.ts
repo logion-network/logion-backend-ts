@@ -1,17 +1,57 @@
 import { CollectionItem } from "@logion/node-api/dist/Types";
-import { It, Mock } from "moq.ts";
+import { Mock } from "moq.ts";
 
-import { EtherscanService } from "../../../src/logion/services/Etherscan.service";
+import { AlchemyService, Network } from "../../../src/logion/services/alchemy.service";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
-import { emptyHolderInventory, tokenInventoryWithAnotherHolder, tokenInventoryWithHolder } from "./etherscanscrapper.spec";
+
+describe("OwnershipCheckService", () => {
+    it("detects ethereum_erc721 ownership", () => testDetectsOwnership(ethereumErc721Item, Network.ETH_MAINNET));
+    it("detects no ethereum_erc721 ownership", () => testDetectsNoOwnership(ethereumErc721Item, Network.ETH_MAINNET));
+    it("detects ethereum_erc1155 ownership", () => testDetectsOwnership(ethereumErc1155Item, Network.ETH_MAINNET));
+    it("detects no ethereum_erc1155 ownership", () => testDetectsNoOwnership(ethereumErc1155Item, Network.ETH_MAINNET));
+
+    it("detects goerli_erc721 ownership", () => testDetectsOwnership(goerliErc721Item, Network.ETH_GOERLI));
+    it("detects no goerli_erc721 ownership", () => testDetectsNoOwnership(goerliErc721Item, Network.ETH_GOERLI));
+    it("detects goerli_erc1155 ownership", () => testDetectsOwnership(goerliErc1155Item, Network.ETH_GOERLI));
+    it("detects no goerli_erc1155 ownership", () => testDetectsNoOwnership(goerliErc1155Item, Network.ETH_GOERLI));
+
+    it("detects owner ownership", () => testDetectsOwnership(ownerItem));
+    it("detects no owner ownership", () => testDetectsNoOwnership(ownerItem));
+});
+
+async function testDetectsOwnership(item: CollectionItem, network?: Network) {
+    const alchemyService = mockAlchemyService(network);
+    const ownershipCheckService = new OwnershipCheckService(alchemyService);
+    const result = await ownershipCheckService.isOwner(owner, item);
+    expect(result).toBe(true);
+}
+
+function mockAlchemyService(network?: Network): AlchemyService {
+    const service = new Mock<AlchemyService>();
+    service.setup(instance => instance.getOwners).returns((_network: Network, _contractHash: string, _tokenId: string) => {
+        if(network === _network && contractHash === _contractHash && tokenId === _tokenId) {
+            return Promise.resolve([ owner ]);
+        } else {
+            return Promise.resolve([]);
+        }
+    });
+    return service.object();
+}
 
 const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
-
-const anotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c";
 
 const contractHash = "0x765df6da33c1ec1f83be42db171d7ee334a46df5";
 
 const tokenId = "4391";
+
+async function testDetectsNoOwnership(item: CollectionItem, network?: Network) {
+    const alchemyService = mockAlchemyService(network);
+    const ownershipCheckService = new OwnershipCheckService(alchemyService);
+    const result = await ownershipCheckService.isOwner(anotherOwner, item);
+    expect(result).toBe(false);
+}
+
+const anotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c";
 
 const ethereumErc721Item: CollectionItem = {
     id: "0xf2ca1bb6c7e907d06dafe4687e579fce76b37e4e93b7605022da52e6ccc26fd2",
@@ -57,7 +97,7 @@ const goerliErc721Item: CollectionItem = {
         size: 1234n
     }],
     token: {
-        type: "ethereum_erc721",
+        type: "goerli_erc721",
         id: `{"contract":"${contractHash}","id":"${tokenId}"}`
     },
     restrictedDelivery: true,
@@ -74,7 +114,7 @@ const goerliErc1155Item: CollectionItem = {
         size: 1234n
     }],
     token: {
-        type: "ethereum_erc1155",
+        type: "goerli_erc1155",
         id: `{"contract":"${contractHash}","id":"${tokenId}"}`
     },
     restrictedDelivery: true,
@@ -97,94 +137,3 @@ const ownerItem: CollectionItem = {
     restrictedDelivery: true,
     termsAndConditions: [],
 };
-
-describe("OwnershipCheckService", () => {
-
-    it("detects ethereum_erc721 ownership", async () => {
-        await testDetectsOwnership(ethereumErc721Item);
-    });
-
-    it("detects no ethereum_erc721 ownership", async () => {
-        await testDetectsNoOwnership(ethereumErc721Item);
-    });
-
-    it("detects ethereum_erc1155 ownership", async () => {
-        await testDetectsOwnership(ethereumErc1155Item);
-    });
-
-    it("detects no ethereum_erc1155 ownership", async () => {
-        await testDetectsNoOwnership(ethereumErc1155Item);
-    });
-
-    it("detects goerli_erc721 ownership", async () => {
-        await testDetectsOwnership(goerliErc721Item);
-    });
-
-    it("detects no goerli_erc721 ownership", async () => {
-        await testDetectsNoOwnership(goerliErc721Item);
-    });
-
-    it("detects goerli_erc1155 ownership", async () => {
-        await testDetectsOwnership(goerliErc1155Item);
-    });
-
-    it("detects no goerli_erc1155 ownership", async () => {
-        await testDetectsNoOwnership(goerliErc1155Item);
-    });
-
-    it("detects owner ownership", async () => {
-        await testDetectsOwnership(ownerItem);
-    });
-
-    it("detects no owner ownership", async () => {
-        await testDetectsNoOwnership(ownerItem);
-    });
-});
-
-function mockEtherscanService(): EtherscanService {
-    const service = new Mock<EtherscanService>();
-
-    // First page does not contain holder
-    service.setup(instance => instance.getTokenHolderInventoryPage(It.Is<{
-        contractHash: string,
-        tokenId: string,
-        page: number,
-    }>(param => param.contractHash === contractHash && param.tokenId === tokenId && param.page === 1))).returnsAsync(tokenInventoryWithAnotherHolder);
-
-    // Second page contains expected holder
-    service.setup(instance => instance.getTokenHolderInventoryPage(It.Is<{
-        contractHash: string,
-        tokenId: string,
-        page: number,
-    }>(param => param.contractHash === contractHash && param.tokenId === tokenId && param.page === 2))).returnsAsync(tokenInventoryWithHolder);
-
-    // Next pages are empty
-    service.setup(instance => instance.getTokenHolderInventoryPage(It.Is<{
-        contractHash: string,
-        tokenId: string,
-        page: number,
-    }>(param => param.contractHash === contractHash && param.tokenId === tokenId && param.page > 2))).returnsAsync(emptyHolderInventory);
-
-    // Any other page is empty
-    service.setup(instance => instance.getTokenHolderInventoryPage(It.Is<{
-        contractHash: string,
-        tokenId: string,
-        page: number,
-    }>(param => param.contractHash === contractHash && param.tokenId !== tokenId))).returnsAsync(emptyHolderInventory);
-
-    return service.object();
-}
-
-async function testDetectsOwnership(item: CollectionItem) {
-    const etherscanService = mockEtherscanService();
-    const ownershipCheckService = new OwnershipCheckService(etherscanService);
-    const result = await ownershipCheckService.isOwner(owner, item);
-    expect(result).toBe(true);
-}
-
-async function testDetectsNoOwnership(item: CollectionItem) {
-    const etherscanService = mockEtherscanService();
-        const ownershipCheckService = new OwnershipCheckService(etherscanService);
-        const result = await ownershipCheckService.isOwner(anotherOwner, item);
-        expect(result).toBe(false);
-}
