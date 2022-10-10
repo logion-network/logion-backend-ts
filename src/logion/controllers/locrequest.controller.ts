@@ -31,7 +31,6 @@ import {
 import { UUID } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity";
-import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from "../model/protectionrequest.model";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
@@ -86,6 +85,10 @@ type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
+export type UserPrivateData = {
+    userIdentity: UserIdentity | undefined,
+    userPostalAddress: PostalAddress | undefined
+};
 
 @injectable()
 @Controller('/loc-request')
@@ -95,7 +98,6 @@ export class LocRequestController extends ApiController {
         private locRequestRepository: LocRequestRepository,
         private locRequestFactory: LocRequestFactory,
         private authenticationService: AuthenticationService,
-        private protectionRequestRepository: ProtectionRequestRepository,
         private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
@@ -145,11 +147,11 @@ export class LocRequestController extends ApiController {
         }
         await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
-        const userIdentity = await this.findUserIdentity(request);
+        const { userIdentity, userPostalAddress } = await this.findUserPrivateData(request);
         if (!authenticatedUser.isNodeOwner()) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
-        return this.toView(request, userIdentity);
+        return this.toView(request, { userIdentity, userPostalAddress });
     }
 
     private async checkIdentityLoc(identityLocId:string | undefined) {
@@ -167,7 +169,7 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    private toView(request: LocRequestAggregateRoot, userIdentity: UserIdentity | undefined): LocRequestView {
+    private toView(request: LocRequestAggregateRoot, userPrivateData: UserPrivateData): LocRequestView {
         const locDescription = request.getDescription();
         const view: LocRequestView = {
             id: request.id,
@@ -176,8 +178,8 @@ export class LocRequestController extends ApiController {
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
             locType: locDescription.locType,
-            userIdentity: this.toUserIdentityView(userIdentity),
-            userPostalAddress: this.toUserPostalAddressView(locDescription.userPostalAddress),
+            userIdentity: this.toUserIdentityView(userPrivateData.userIdentity),
+            userPostalAddress: this.toUserPostalAddressView(userPrivateData.userPostalAddress),
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
             rejectReason: request.rejectReason || undefined,
@@ -286,31 +288,35 @@ export class LocRequestController extends ApiController {
             expectedIdentityLocType: specificationView.identityLocType
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
-            const userIdentity = await this.findUserIdentity(request);
-            return this.toView(request, userIdentity);
+            const { userIdentity, userPostalAddress } = await this.findUserPrivateData(request);
+            return this.toView(request, { userIdentity, userPostalAddress });
         }));
         return requests.then(requestViews => Promise.resolve({requests: requestViews}))
     }
 
-    private async findUserIdentity(request: LocRequestAggregateRoot): Promise<UserIdentity | undefined> {
+    private async findUserPrivateData(request: LocRequestAggregateRoot): Promise<UserPrivateData> {
         const description = request.getDescription();
+        if (description.locType === 'Identity') {
+            return description;
+        }
         if (description.requesterAddress) {
-            const protections = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-                expectedStatuses: [ "ACCEPTED", "ACTIVATED", "ACCEPTED_CANCELLED" ],
-                kind: "ANY",
+            const identityLoc = (await this.locRequestRepository.findBy({
+                expectedLocTypes: [ "Identity" ],
+                expectedIdentityLocType: "Polkadot",
                 expectedRequesterAddress: description.requesterAddress,
-            }));
-            if (protections.length > 0) {
-                return protections[0].getDescription().userIdentity;
+                expectedStatuses: [ "CLOSED" ]
+            })).find(loc => loc.getVoidInfo() === null);
+            if (identityLoc) {
+                return identityLoc.getDescription();
             }
         }
         if (description.requesterIdentityLoc) {
             const identityLoc = await this.locRequestRepository.findById(description.requesterIdentityLoc)
             if (identityLoc) {
-                return identityLoc.getDescription().userIdentity;
+                return identityLoc.getDescription();
             }
         }
-        return request.getDescription().userIdentity;
+        return request.getDescription();
     }
 
     static getLocRequest(spec: OpenAPIV3.Document) {
@@ -328,7 +334,7 @@ export class LocRequestController extends ApiController {
             const request = requireDefined(await this.locRequestRepository.findById(requestId));
             await this.authenticationService.authenticatedUserIsOneOf(this.request,
                 request.requesterAddress, request.ownerAddress);
-            const userIdentity = await this.findUserIdentity(request);
+            const userIdentity = await this.findUserPrivateData(request);
             return this.toView(request, userIdentity);
         } catch (e) {
             logger.error(e);
@@ -408,7 +414,7 @@ export class LocRequestController extends ApiController {
         await this.authenticatedUserIsNodeOwner();
         request.reject(rejectLocRequestView.rejectReason!, moment());
         await this.locRequestRepository.save(request)
-        const userIdentity = await this.findUserIdentity(request)
+        const { userIdentity } = await this.findUserPrivateData(request)
         this.notify("WalletUser", "loc-rejected", request.getDescription(), userIdentity, request.getDecision())
     }
 
@@ -432,7 +438,7 @@ export class LocRequestController extends ApiController {
         await this.authenticatedUserIsNodeOwner();
         request.accept(moment());
         await this.locRequestRepository.save(request)
-        const userIdentity = await this.findUserIdentity(request)
+        const { userIdentity } = await this.findUserPrivateData(request)
         this.notify("WalletUser", "loc-accepted", request.getDescription(), userIdentity, request.getDecision())
     }
 
@@ -758,7 +764,7 @@ export class LocRequestController extends ApiController {
             () => badRequest("LOC not found"));
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.is(loc.requesterAddress));
-        const userIdentity = requireDefined(await this.findUserIdentity(loc))
+        const { userIdentity, userPostalAddress } = requireDefined(await this.findUserPrivateData(loc))
 
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
         let linkNature = `Original LOC`;
@@ -778,7 +784,7 @@ export class LocRequestController extends ApiController {
             locType: 'Transaction',
             createdOn: moment().toISOString(),
             userIdentity,
-            userPostalAddress: undefined
+            userPostalAddress,
         }
         let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),
@@ -790,7 +796,7 @@ export class LocRequestController extends ApiController {
 
         this.notify("LegalOfficer", "sof-requested", request.getDescription(), userIdentity)
 
-        return this.toView(request, userIdentity)
+        return this.toView(request, { userIdentity, userPostalAddress })
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, loc: LocRequestDescription, userIdentity?: UserIdentity, decision?: LocRequestDecision): void {
