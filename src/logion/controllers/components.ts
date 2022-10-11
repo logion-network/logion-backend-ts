@@ -567,6 +567,10 @@ export interface components {
       /** @description The files present in DB */
       files?: string[];
     };
+    CollectionItemsView: {
+      /** @description The items of a given collection */
+      items?: components["schemas"]["CollectionItemView"][];
+    };
     CloseView: {
       /**
        * @description The seal of the given LOC

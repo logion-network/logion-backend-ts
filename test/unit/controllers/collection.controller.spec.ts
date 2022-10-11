@@ -40,6 +40,19 @@ const setupApp = TestApp.setupApp;
 
 describe("CollectionController", () => {
 
+    it("gets all items in a collection", async () => {
+
+        const app = setupApp(CollectionController, container => mockModelForGet(container, true));
+
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }`)
+            .send()
+            .expect(200)
+            .then(response => {
+                expect(response.body.items.length).toBe(1)
+            })
+    })
+
     it("gets an existing collection item in DB", async () => {
 
         const app = setupApp(CollectionController, container => mockModelForGet(container, true));
@@ -425,9 +438,13 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     if (collectionItemAlreadyInDB) {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
             .returns(Promise.resolve(collectionItem))
+        collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
+            .returns(Promise.resolve([ collectionItem ]))
     } else {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
             .returns(Promise.resolve(null))
+        collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
+            .returns(Promise.resolve([]))
     }
     collectionRepository.setup(instance => instance.createIfNotExist(
         It.Is<string>(param => param === collectionLocId),

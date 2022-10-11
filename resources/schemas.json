@@ -908,6 +908,18 @@
                     }
                 }
             },
+            "CollectionItemsView": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "description": "The items of a given collection",
+                        "items": {
+                            "$ref": "#/components/schemas/CollectionItemView"
+                        }
+                    }
+                }
+            },
             "CloseView": {
                 "type": "object",
                 "properties": {

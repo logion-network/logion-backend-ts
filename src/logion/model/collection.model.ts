@@ -226,6 +226,13 @@ export class CollectionRepository {
         return this.repository.findOneBy({ collectionLocId, itemId })
     }
 
+    public async findAllBy(collectionLocId: string): Promise<CollectionItemAggregateRoot[]> {
+        const builder = this.repository.createQueryBuilder("item");
+        builder.where("item.collection_loc_id = :collectionLocId", { collectionLocId });
+        builder.orderBy("item.added_on", "DESC");
+        return builder.getMany();
+    }
+
     public async findLatestDelivery(query: { collectionLocId: string, itemId: string, fileHash: string }): Promise<CollectionItemFileDelivered | undefined> {
         const { collectionLocId, itemId, fileHash } = query;
         const deliveries = await this.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit: 1 });
