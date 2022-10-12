@@ -487,12 +487,12 @@
                     },
                     "requesterAddress": {
                         "type": "string",
-                        "description": "The SS58 address of the LOC requester"
+                        "description": "The SS58 address of the LOC requester (populated for POLKADOT identity only)"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of the LOC identifying the requester"
+                        "description": "The ID of the LOC identifying the requester (populated for LOGION identity only)"
                     },
                     "description": {
                         "type": "string",
@@ -537,6 +537,11 @@
                         "type": "string",
                         "description": "The seal of the given LOC",
                         "example": "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a"
+                    },
+                    "identityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester (populated for both LOGION and POLKADOT identity)"
                     },
                     "files": {
                         "type": "array",

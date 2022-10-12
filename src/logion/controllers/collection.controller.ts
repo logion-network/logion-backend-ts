@@ -9,9 +9,7 @@ import { LocRequestRepository } from "../model/locrequest.model";
 import { getUploadedFile } from "./fileupload";
 import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
-import { rm } from "fs/promises";
 import {
-    Log,
     requireDefined,
     badRequest,
     forbidden,
@@ -30,8 +28,6 @@ import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service";
 import { downloadAndClean } from "../lib/http";
-
-const { logger } = Log;
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];

@@ -3,7 +3,6 @@ import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResp
 import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
-import { rm } from 'fs/promises';
 
 import { components } from "./components";
 import {
@@ -87,6 +86,7 @@ type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 export type UserPrivateData = {
+    identityLocId: string | undefined,
     userIdentity: UserIdentity | undefined,
     userPostalAddress: PostalAddress | undefined
 };
@@ -148,11 +148,11 @@ export class LocRequestController extends ApiController {
         }
         await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
-        const { userIdentity, userPostalAddress } = await this.findUserPrivateData(request);
+        const { userIdentity, userPostalAddress, identityLocId } = await this.findUserPrivateData(request);
         if (!authenticatedUser.isNodeOwner()) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
-        return this.toView(request, { userIdentity, userPostalAddress });
+        return this.toView(request, { userIdentity, userPostalAddress, identityLocId });
     }
 
     private async checkIdentityLoc(identityLocId:string | undefined) {
@@ -179,6 +179,7 @@ export class LocRequestController extends ApiController {
             ownerAddress: locDescription.ownerAddress,
             description: locDescription.description,
             locType: locDescription.locType,
+            identityLoc: userPrivateData.identityLocId,
             userIdentity: this.toUserIdentityView(userPrivateData.userIdentity),
             userPostalAddress: this.toUserPostalAddressView(userPrivateData.userPostalAddress),
             createdOn: locDescription.createdOn || undefined,
@@ -289,8 +290,8 @@ export class LocRequestController extends ApiController {
             expectedIdentityLocType: specificationView.identityLocType
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
-            const { userIdentity, userPostalAddress } = await this.findUserPrivateData(request);
-            return this.toView(request, { userIdentity, userPostalAddress });
+            const userPrivateData = await this.findUserPrivateData(request);
+            return this.toView(request, userPrivateData);
         }));
         return requests.then(requestViews => Promise.resolve({requests: requestViews}))
     }
@@ -298,7 +299,10 @@ export class LocRequestController extends ApiController {
     private async findUserPrivateData(request: LocRequestAggregateRoot): Promise<UserPrivateData> {
         const description = request.getDescription();
         if (description.locType === 'Identity') {
-            return description;
+            return {
+                identityLocId: undefined,
+                ...description
+            };
         }
         if (description.requesterAddress) {
             const identityLoc = (await this.locRequestRepository.findBy({
@@ -308,16 +312,25 @@ export class LocRequestController extends ApiController {
                 expectedStatuses: [ "CLOSED" ]
             })).find(loc => loc.getVoidInfo() === null);
             if (identityLoc) {
-                return identityLoc.getDescription();
+                return {
+                    identityLocId: identityLoc.id,
+                    ...identityLoc.getDescription()
+                }
             }
         }
         if (description.requesterIdentityLoc) {
             const identityLoc = await this.locRequestRepository.findById(description.requesterIdentityLoc)
             if (identityLoc) {
-                return identityLoc.getDescription();
+                return {
+                    identityLocId: identityLoc.id,
+                    ...identityLoc.getDescription()
+                }
             }
         }
-        return request.getDescription();
+        return {
+            identityLocId: undefined,
+            ...description
+        };
     }
 
     static getLocRequest(spec: OpenAPIV3.Document) {
@@ -765,7 +778,7 @@ export class LocRequestController extends ApiController {
             () => badRequest("LOC not found"));
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.is(loc.requesterAddress));
-        const { userIdentity, userPostalAddress } = requireDefined(await this.findUserPrivateData(loc))
+        const { userIdentity, userPostalAddress, identityLocId } = requireDefined(await this.findUserPrivateData(loc))
 
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
         let linkNature = `Original LOC`;
@@ -797,7 +810,7 @@ export class LocRequestController extends ApiController {
 
         this.notify("LegalOfficer", "sof-requested", request.getDescription(), userIdentity)
 
-        return this.toView(request, { userIdentity, userPostalAddress })
+        return this.toView(request, { userIdentity, userPostalAddress, identityLocId })
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, loc: LocRequestDescription, userIdentity?: UserIdentity, decision?: LocRequestDecision): void {
