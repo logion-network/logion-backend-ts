@@ -309,11 +309,11 @@ export interface components {
     LocRequestView: {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
-      /** @description The SS58 address of the LOC requester */
+      /** @description The SS58 address of the LOC requester (populated for POLKADOT identity only) */
       requesterAddress?: string;
       /**
        * Format: uuid
-       * @description The ID of the LOC identifying the requester
+       * @description The ID of the LOC identifying the requester (populated for LOGION identity only)
        */
       requesterIdentityLoc?: string;
       /** @description A description of the LOC */
@@ -350,6 +350,11 @@ export interface components {
        * @example 0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a
        */
       seal?: string;
+      /**
+       * Format: uuid
+       * @description The ID of the LOC identifying the requester (populated for both LOGION and POLKADOT identity)
+       */
+      identityLoc?: string;
       /** @description The files attached to this request's LOC */
       files?: {
         /** @description The file's name */

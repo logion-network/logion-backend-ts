@@ -35,6 +35,7 @@ type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
 const userIdentities: Record<IdentityLocation, UserPrivateData> = {
     "Logion": {
+        identityLocId: "2d0f662f-2fd1-4ad8-8019-1db74bfc5972",
         userIdentity: {
             firstName: "Felix",
             lastName: "the Cat",
@@ -50,6 +51,7 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
         },
     },
     "Polkadot": {
+        identityLocId: "eb1b554e-f8de-4ea2-bcff-64d0c1f1f237",
         userIdentity: {
             firstName: "Scott",
             lastName: "Tiger",
@@ -65,6 +67,7 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
         },
     },
     "EmbeddedInLoc": {
+        identityLocId: undefined,
         userIdentity: {
             firstName: "John",
             lastName: "Doe",
@@ -83,7 +86,6 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
 
 const testUserIdentity = userIdentities["Polkadot"].userIdentity!;
 
-const IDENTITY_LOC_ID = "6b00b9f2-4439-4c4a-843e-2ea3ce2016fd";
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const SEAL: Seal = {
     hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
@@ -108,7 +110,7 @@ const logionIdentityLoc = {
 }
 
 const testDataWithLogionIdentity = {
-    requesterIdentityLoc: IDENTITY_LOC_ID,
+    requesterIdentityLoc: userIdentities["Logion"].identityLocId,
     description: "I want to open a case",
     locType: "Transaction"
 };
@@ -177,12 +179,17 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe(locType);
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                checkPrivateData(response, expectedUserPrivateData);
                 expect(response.body.seal).toEqual(SEAL.hash)
             });
+    }
+
+    function checkPrivateData(response: request.Response, expectedUserPrivateData: UserPrivateData) {
+        expect(response.body.identityLoc).toEqual(expectedUserPrivateData.identityLocId);
+        const userIdentity = response.body.userIdentity;
+        expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity);
+        const userPostalAddress = response.body.userPostalAddress;
+        expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
     }
 
     it('succeeds to create a Transaction loc request with embedded user identity', async () => {
@@ -214,10 +221,7 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe(locType);
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                checkPrivateData(response, expectedUserPrivateData);
             });
     }
 
@@ -246,10 +250,7 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe(locType);
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                checkPrivateData(response, expectedUserPrivateData);
             });
     }
 
@@ -279,11 +280,8 @@ describe('LocRequestController', () => {
                 expect(response.body.status).toBe("OPEN");
                 expect(response.body.locType).toBe("Transaction");
                 expect(response.body.requesterAddress).toBeUndefined();
-                expect(response.body.requesterIdentityLoc).toBe(IDENTITY_LOC_ID);
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                expect(response.body.requesterIdentityLoc).toBe(expectedUserPrivateData.identityLocId);
+                checkPrivateData(response, expectedUserPrivateData);
             });
     });
 
@@ -304,10 +302,7 @@ describe('LocRequestController', () => {
                 expect(response.body.id).toBeDefined();
                 expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe(locType);
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                checkPrivateData(response, expectedUserPrivateData);
             });
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
@@ -519,10 +514,7 @@ describe('LocRequestController', () => {
                 expect(metadataItem.value).toBe(testMetadataItem.value)
                 expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
                 expect(metadataItem.submitter).toBe(SUBMITTER)
-                const userIdentity = response.body.userIdentity;
-                expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
-                const userPostalAddress = response.body.userPostalAddress;
-                expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress)
+                checkPrivateData(response, expectedUserPrivateData);
             });
     }
 
@@ -764,7 +756,7 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     const factory = new Mock<LocRequestFactory>();
     const request = mockRequest("OPEN", testDataWithLogionIdentity)
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
-        params.description.requesterIdentityLoc === IDENTITY_LOC_ID &&
+        params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
         params.description.ownerAddress == ALICE
     )))
         .returns(Promise.resolve(request.object()))
@@ -776,17 +768,20 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
 }
 
 function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
+    const identityLocId = userIdentities["Logion"].identityLocId!;
     const identityLocRequest = exists ?
-        mockRequest("CLOSED", logionIdentityLoc).object() :
+        mockRequestWithId(identityLocId, "CLOSED", logionIdentityLoc).object() :
         null;
-    repository.setup(instance => instance.findById(IDENTITY_LOC_ID))
+    repository.setup(instance => instance.findById(identityLocId))
         .returns(Promise.resolve(identityLocRequest))
 }
 
 function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
     const { userIdentity, userPostalAddress } = userIdentities["Polkadot"]
     const identityLocs = exists ?
-        [ mockRequest("CLOSED",
+        [ mockRequestWithId(
+            userIdentities["Polkadot"].identityLocId!,
+            "CLOSED",
             {
                 userIdentity,
                 userPostalAddress,
@@ -802,17 +797,29 @@ function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, exists:
     ))).returns(Promise.resolve(identityLocs));
 }
 
-function mockRequest(status: LocRequestStatus,
-                     data: any,
-                     files: FileDescription[] = [],
-                     metadataItems: MetadataItemDescription[] = [],
-                     links: LinkDescription[] = [],
-                     ): Mock<LocRequestAggregateRoot> {
+function mockRequest(
+    status: LocRequestStatus,
+    data: any,
+    files: FileDescription[] = [],
+    metadataItems: MetadataItemDescription[] = [],
+    links: LinkDescription[] = [],
+): Mock<LocRequestAggregateRoot> {
+    return mockRequestWithId(REQUEST_ID, status, data, files, metadataItems, links)
+}
+
+function mockRequestWithId(
+    id: string,
+    status: LocRequestStatus,
+    data: any,
+    files: FileDescription[] = [],
+    metadataItems: MetadataItemDescription[] = [],
+    links: LinkDescription[] = [],
+): Mock<LocRequestAggregateRoot> {
     const request = new Mock<LocRequestAggregateRoot>();
     request.setup(instance => instance.status)
         .returns(status);
     request.setup(instance => instance.id)
-        .returns(REQUEST_ID);
+        .returns(id);
     request.setup(instance => instance.getDescription())
         .returns({
             ...data,
