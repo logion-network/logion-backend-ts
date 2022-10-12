@@ -29,6 +29,7 @@ import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service";
+import { downloadAndClean } from "../lib/http";
 
 const { logger } = Log;
 
@@ -240,11 +241,11 @@ export class CollectionController extends ApiController {
         const delivered = file.addDeliveredFile({ deliveredFileHash, generatedOn, owner });
         await this.collectionRepository.saveDelivered(delivered);
 
-        this.response.download(tempFilePath, publishedCollectionItemFile.name, { headers: { "content-type": publishedCollectionItemFile.contentType } }, (error: any) => {
-            rm(tempFilePath);
-            if(error) {
-                logger.error("Download failed: %s", error);
-            }
+        downloadAndClean({
+            response: this.response,
+            path: tempFilePath,
+            name: publishedCollectionItemFile.name,
+            contentType: publishedCollectionItemFile.contentType,
         });
     }
 
@@ -254,12 +255,7 @@ export class CollectionController extends ApiController {
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
 
-        const collectionItem = requireDefined(
-            await this.collectionRepository.findBy(collectionLocId, itemId),
-            () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
-        if (!collectionItem.hasFile(hash)) {
-            throw badRequest("Trying to download a file that is not uploaded yet.")
-        }
+        const collectionItem = await this.getCollectionItemWithFile(collectionLocId, itemId, hash);
 
         if(!publishedCollectionItem.restrictedDelivery) {
             throw forbidden("No delivery allowed for this item's files");
@@ -268,6 +264,16 @@ export class CollectionController extends ApiController {
         } else {
             return collectionItem;
         }
+    }
+
+    private async getCollectionItemWithFile(collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
+        const collectionItem = requireDefined(
+            await this.collectionRepository.findBy(collectionLocId, itemId),
+            () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
+        if (!collectionItem.hasFile(hash)) {
+            throw badRequest("Trying to download a file that is not uploaded yet.")
+        }
+        return collectionItem;
     }
 
     static tempFilePath(params: { collectionLocId: string, itemId: string, hash: string } ) {
@@ -374,5 +380,36 @@ export class CollectionController extends ApiController {
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
 
         return this.getDeliveries({ collectionLocId, itemId });
+    }
+
+    @HttpGet('/:collectionLocId/:itemId/files/:hash/source')
+    @Async()
+    @SendsResponse()
+    async downloadFileSource(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest("Collection LOC not found"));
+        authenticated.require(user => user.isOneOf([
+            collectionLoc.ownerAddress,
+            requireDefined(collectionLoc.requesterAddress)
+        ]));
+
+        const publishedCollectionItemFile = await this.getCollectionItemFile({
+            collectionLocId,
+            itemId,
+            hash
+        });
+
+        const collectionItem = await this.getCollectionItemWithFile(collectionLocId, itemId, hash);
+        const file = collectionItem.getFile(hash);
+        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
+        await this.fileStorageService.exportFile(file, tempFilePath);
+
+        downloadAndClean({
+            response: this.response,
+            path: tempFilePath,
+            name: publishedCollectionItemFile.name,
+            contentType: publishedCollectionItemFile.contentType,
+        });
     }
 }
