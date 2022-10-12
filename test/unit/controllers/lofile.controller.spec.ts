@@ -132,6 +132,7 @@ function mockModel(container: Container): void {
     container.bind(LoFileFactory).toConstantValue(factory.object());
 
     const existingEntity = new Mock<LoFileAggregateRoot>()
+    existingEntity.setup(instance => instance.id).returns(existingFile.id);
     existingEntity.setup(instance => instance.contentType)
         .returns(existingFile.contentType)
     existingEntity.setup(instance => instance.oid)

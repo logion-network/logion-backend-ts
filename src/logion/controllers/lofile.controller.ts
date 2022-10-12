@@ -17,6 +17,7 @@ import { OpenAPIV3 } from "express-oas-generator";
 import { LoFileRepository, LoFileFactory } from "../model/lofile.model";
 import { FileStorageService } from "../services/file.storage.service";
 import { getUploadedFile } from "./fileupload";
+import { downloadAndClean } from "../lib/http";
 
 const { logger } = Log;
 
@@ -107,11 +108,12 @@ export class LoFileController extends ApiController {
         )
         const tempFilePath = "/tmp/download-" + id;
         await this.fileStorageService.exportFile(file, tempFilePath);
-        this.response.download(tempFilePath, file.id, { headers: { "content-type": file.contentType } }, (error: any) => {
-            rm(tempFilePath);
-            if(error) {
-                logger.error("Download failed: %s", error);
-            }
+
+        downloadAndClean({
+            response: this.response,
+            path: tempFilePath,
+            name: requireDefined(file.id),
+            contentType: requireDefined(file.contentType),
         });
     }
 }

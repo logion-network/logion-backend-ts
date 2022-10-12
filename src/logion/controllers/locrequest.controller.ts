@@ -39,6 +39,7 @@ import { DirectoryService } from "../services/directory.service";
 import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";
+import { downloadAndClean } from "../lib/http";
 
 const { logger } = Log;
 
@@ -501,11 +502,11 @@ export class LocRequestController extends ApiController {
         const file = request.getFile(hash);
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
         await this.fileStorageService.exportFile(file, tempFilePath);
-        this.response.download(tempFilePath, file.name, { headers: { "content-type": file.contentType } }, (error: any) => {
-            rm(tempFilePath);
-            if(error) {
-                logger.error("Download failed: %s", error);
-            }
+        downloadAndClean({
+            response: this.response,
+            path: tempFilePath,
+            name: file.name,
+            contentType: file.contentType,
         });
     }
 

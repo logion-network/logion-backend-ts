@@ -23,8 +23,11 @@ import { writeFile } from "fs/promises";
 import { fileExists } from "../../helpers/filehelper";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
+import { ALICE } from "../../helpers/addresses";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
+const collectionLocOwner = ALICE;
+const collectionRequester = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
 const itemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
 const timestamp = moment();
 
@@ -36,7 +39,7 @@ const CID = "cid-784512";
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
 const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
 
-const setupApp = TestApp.setupApp;
+const { setupApp, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
 describe("CollectionController", () => {
 
@@ -409,6 +412,32 @@ describe("CollectionController", () => {
             .expect('Content-Type', /application\/json/)
             .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
     })
+
+    it('downloads existing file source given its hash and is owner', async () => {
+        const mock = mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, collectionLocOwner));
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: true,
+        }), mock);
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
+        await writeFile(filePath, SOME_DATA);
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/source`)
+            .expect(200, SOME_DATA)
+            .expect('Content-Type', /text\/plain/);
+        let fileReallyExists = true;
+        for (let i = 0; i < 10; ++i) {
+            if (!await fileExists(filePath)) {
+                fileReallyExists = false;
+                break;
+            }
+        }
+        expect(fileReallyExists).toBe(false);
+    })
 })
 
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
@@ -486,6 +515,8 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
     const collectionLoc = new LocRequestAggregateRoot();
+    collectionLoc.ownerAddress = collectionLocOwner;
+    collectionLoc.requesterAddress = collectionRequester;
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(collectionLocId))
         .returns(Promise.resolve(collectionLoc))
