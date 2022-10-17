@@ -162,25 +162,29 @@ const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition
 
 describe('LocRequestController', () => {
 
-    async function testLocRequestCreationWithEmbeddedUserIdentity(locType: LocType) {
+    async function testLocRequestCreationWithEmbeddedUserIdentity(locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
         const mock = mockAuthenticationForUserOrLegalOfficer(false);
         const app = setupApp(
             LocRequestController,
-            container => mockModelForCreation(container, locType),
+            container => mockModelForCreation(container, locType, hasPolkadotIdentityLoc),
             mock
         )
         const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
         await request(app)
             .post('/api/loc-request')
-            .send(testDataWithUserIdentity)
-            .expect(200)
+            .send(testDataWithUserIdentityWithType(locType))
+            .expect(expectedStatus)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe("REQUESTED");
-                expect(response.body.locType).toBe(locType);
-                checkPrivateData(response, expectedUserPrivateData);
-                expect(response.body.seal).toEqual(SEAL.hash)
+                if (expectedStatus === 200) {
+                    expect(response.body.id).toBeDefined();
+                    expect(response.body.status).toBe("REQUESTED");
+                    expect(response.body.locType).toBe(locType);
+                    checkPrivateData(response, expectedUserPrivateData);
+                    expect(response.body.seal).toEqual(SEAL.hash)
+                } else {
+                    expect(response.body.errorMessage).toEqual(expectedErrorMessage);
+                }
             });
     }
 
@@ -192,16 +196,20 @@ describe('LocRequestController', () => {
         expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
     }
 
-    it('succeeds to create a Transaction loc request with embedded user identity', async () => {
-        await testLocRequestCreationWithEmbeddedUserIdentity("Transaction")
+    it('fails to create a Transaction loc request with embedded user identity', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Transaction", 400, "Unable to find a valid (closed) identity LOC.")
     });
 
-    it('succeeds to create a Collection loc request with embedded user identity', async () => {
-        await testLocRequestCreationWithEmbeddedUserIdentity("Collection")
+    it('fails to create a Collection loc request with embedded user identity', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Collection", 400, "Unable to find a valid (closed) identity LOC.")
     });
 
-    it('succeeds to create an Identity loc request with embedded user identity', async () => {
-        await testLocRequestCreationWithEmbeddedUserIdentity("Identity")
+    it('succeeds to create a Polkadot Identity loc request', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Identity", 200)
+    });
+
+    it('fails to create twice the same Polkadot Identity loc request', async () => {
+        await testLocRequestCreationWithEmbeddedUserIdentity("Identity", 400, "Only one Polkadot Identity LOC is allowed per Legal Officer.", true)
     });
 
     async function testOpenLocCreation(locType: LocType) {
@@ -214,7 +222,7 @@ describe('LocRequestController', () => {
         const expectedUserPrivateData = userIdentities["Polkadot"];
         await request(app)
             .post('/api/loc-request')
-            .send(testData)
+            .send(testDataWithType(locType))
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -233,33 +241,45 @@ describe('LocRequestController', () => {
         await testOpenLocCreation("Collection")
     });
 
-    async function testOpenLocCreationWithEmbeddedUserIdentity(locType: LocType) {
+    async function testOpenLocCreationWithEmbeddedUserIdentity(locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
         const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
-            container => mockModelForCreation(container, locType),
+            container => mockModelForCreation(container, locType, hasPolkadotIdentityLoc),
             mock,
         )
         const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
         await request(app)
             .post('/api/loc-request')
-            .send(testDataWithUserIdentity)
-            .expect(200)
+            .send(testDataWithUserIdentityWithType(locType))
+            .expect(expectedStatus)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe("OPEN");
-                expect(response.body.locType).toBe(locType);
-                checkPrivateData(response, expectedUserPrivateData);
+                if (expectedStatus === 200) {
+                    expect(response.body.id).toBeDefined();
+                    expect(response.body.status).toBe("OPEN");
+                    expect(response.body.locType).toBe(locType);
+                    checkPrivateData(response, expectedUserPrivateData);
+                } else {
+                    expect(response.body.errorMessage).toEqual(expectedErrorMessage);
+                }
             });
     }
 
-    it('succeeds to create open Transaction loc with embedded user identity', async () => {
-        await testOpenLocCreationWithEmbeddedUserIdentity("Transaction")
+    it('fails to create open Transaction loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Transaction", 400, "Unable to find a valid (closed) identity LOC.")
     });
 
-    it('succeeds to create open Collection loc with embedded user identity', async () => {
-        await testOpenLocCreationWithEmbeddedUserIdentity("Collection")
+    it('fails to create open Collection loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Collection", 400, "Unable to find a valid (closed) identity LOC.")
+    });
+
+    it('succeeds to create open Identity loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Identity", 200)
+    });
+
+    it('fails to create twice the same open Identity loc with embedded user identity', async () => {
+        await testOpenLocCreationWithEmbeddedUserIdentity("Identity", 400, "Only one Polkadot Identity LOC is allowed per Legal Officer.", true)
     });
 
     it('succeeds to create open loc with a Logion identity LOC', async () => {
@@ -295,7 +315,7 @@ describe('LocRequestController', () => {
         const expectedUserPrivateData = userIdentities["Polkadot"];
         await request(app)
             .post('/api/loc-request')
-            .send(testData)
+            .send(testDataWithType(locType))
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -353,7 +373,7 @@ describe('LocRequestController', () => {
         );
         await request(app)
             .post('/api/loc-request')
-            .send(testData)
+            .send(testDataWithType("Transaction"))
             .expect(401)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -752,9 +772,10 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     mockLogionIdentityLoc(repository, true);
+    mockPolkadotIdentityLoc(repository, false);
 
     const factory = new Mock<LocRequestFactory>();
-    const request = mockRequest("OPEN", testDataWithLogionIdentity)
+    const request = mockRequest("OPEN", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
         params.description.ownerAddress == ALICE
@@ -770,7 +791,7 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
 function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
     const identityLocId = userIdentities["Logion"].identityLocId!;
     const identityLocRequest = exists ?
-        mockRequestWithId(identityLocId, "CLOSED", logionIdentityLoc).object() :
+        mockRequestWithId(identityLocId, "Identity", "CLOSED", logionIdentityLoc).object() :
         null;
     repository.setup(instance => instance.findById(identityLocId))
         .returns(Promise.resolve(identityLocRequest))
@@ -781,6 +802,7 @@ function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, exists:
     const identityLocs = exists ?
         [ mockRequestWithId(
             userIdentities["Polkadot"].identityLocId!,
+            "Identity",
             "CLOSED",
             {
                 userIdentity,
@@ -804,11 +826,12 @@ function mockRequest(
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
 ): Mock<LocRequestAggregateRoot> {
-    return mockRequestWithId(REQUEST_ID, status, data, files, metadataItems, links)
+    return mockRequestWithId(REQUEST_ID, undefined, status, data, files, metadataItems, links)
 }
 
 function mockRequestWithId(
     id: string,
+    locType: LocType | undefined,
     status: LocRequestStatus,
     data: any,
     files: FileDescription[] = [],
@@ -816,6 +839,10 @@ function mockRequestWithId(
     links: LinkDescription[] = [],
 ): Mock<LocRequestAggregateRoot> {
     const request = new Mock<LocRequestAggregateRoot>();
+    if (locType) {
+        request.setup(instance => instance.locType)
+            .returns(locType);
+    }
     request.setup(instance => instance.status)
         .returns(status);
     request.setup(instance => instance.id)

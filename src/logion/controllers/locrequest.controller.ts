@@ -124,15 +124,26 @@ export class LocRequestController extends ApiController {
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         authenticatedUser.require(user => user.is(createLocRequestView.requesterAddress) || user.isNodeOwner());
+        const locType = requireDefined(createLocRequestView.locType);
         const description: LocRequestDescription = {
             requesterAddress: createLocRequestView.requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
             ownerAddress: this.authenticationService.nodeOwner,
             description: requireDefined(createLocRequestView.description),
-            locType: requireDefined(createLocRequestView.locType),
+            locType,
             createdOn: moment().toISOString(),
-            userIdentity: this.fromUserIdentityView(createLocRequestView.userIdentity),
-            userPostalAddress: this.fromUserPostalAddressView(createLocRequestView.userPostalAddress),
+            userIdentity: locType === "Identity" ? this.fromUserIdentityView(createLocRequestView.userIdentity) : undefined,
+            userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
+        }
+        if (locType === "Identity") {
+            if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress))) {
+                throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
+            }
+        } else {
+            if (!(await this.existsValidPolkadotIdentityLoc(description.requesterAddress)) &&
+                !(await this.existsValidLogionIdentityLoc(description.requesterIdentityLoc))) {
+                throw badRequest("Unable to find a valid (closed) identity LOC.");
+            }
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
@@ -146,7 +157,6 @@ export class LocRequestController extends ApiController {
                 description
             });
         }
-        await this.checkIdentityLoc(request.requesterIdentityLocId)
         await this.locRequestRepository.save(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.findUserPrivateData(request);
         if (!authenticatedUser.isNodeOwner()) {
@@ -155,19 +165,26 @@ export class LocRequestController extends ApiController {
         return this.toView(request, { userIdentity, userPostalAddress, identityLocId });
     }
 
-    private async checkIdentityLoc(identityLocId:string | undefined) {
+    private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined): Promise<boolean> {
+        const identityLoc = (await this.locRequestRepository.findBy({
+            expectedLocTypes: [ "Identity" ],
+            expectedIdentityLocType: "Polkadot",
+            expectedRequesterAddress: requesterAddress,
+            expectedStatuses: [ "CLOSED" ]
+        })).find(loc => loc.getVoidInfo() === null);
+        return identityLoc !== undefined;
+    }
+
+    private async existsValidLogionIdentityLoc(identityLocId:string | undefined): Promise<boolean> {
         if (!identityLocId) {
-            return
+            return false;
         }
         const identityLoc = await this.locRequestRepository.findById(identityLocId);
-        if (
-            !identityLoc ||
-            identityLoc.locType !== 'Identity' ||
-            identityLoc.status !== 'CLOSED' ||
-            identityLoc.getVoidInfo() ||
-            identityLoc.requesterAddress) {
-            throw new Error("UnexpectedRequester: Identity must be an existing Closed, not Void, Logion Identity LOC.")
-        }
+        return identityLoc !== null &&
+            identityLoc.locType === 'Identity' &&
+            identityLoc.status === 'CLOSED' &&
+            identityLoc.getVoidInfo() === null &&
+            !identityLoc.requesterAddress;
     }
 
     private toView(request: LocRequestAggregateRoot, userPrivateData: UserPrivateData): LocRequestView {
