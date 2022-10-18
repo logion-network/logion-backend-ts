@@ -8,11 +8,12 @@ import { PersonalInfo } from "../model/personalinfo.model";
 const SEPARATOR: string = "-";
 
 export interface PublicSeal {
-    hash: string
+    hash: string;
+    version: number;
 }
 
 export interface Seal extends PublicSeal {
-    salt: string
+    salt: string;
 }
 
 abstract class SealService<T> {
@@ -23,24 +24,25 @@ abstract class SealService<T> {
         this.separator = separator;
     }
 
-    public seal(obj: T, salt: string = uuid()): Seal {
-        return this._seal(this.values(obj), salt);
+    public seal(obj: T, version: number, salt: string = uuid()): Seal {
+        return this._seal(this.values(obj, version), salt, version);
     }
 
-    protected _seal(values: string[], salt: string): Seal {
+    protected _seal(values: string[], salt: string, version: number): Seal {
         const hash = sha256String(this.serialize(values, salt))
         return {
             hash,
             salt,
+            version,
         }
     }
 
     public verify(obj: T, seal: Seal): boolean {
-        return this._verify(this.values(obj), seal)
+        return this._verify(this.values(obj, seal.version), seal)
     }
 
     protected _verify(sealable: string[], seal: Seal): boolean {
-        const { hash } = this._seal(sealable, seal.salt)
+        const { hash } = this._seal(sealable, seal.salt, seal.version)
         return hash === seal.hash;
     }
 
@@ -48,8 +50,10 @@ abstract class SealService<T> {
         return values.concat([ salt ]).join(this.separator)
     }
 
-    abstract values(obj: T): string[];
+    abstract values(obj: T, version: number): string[];
 }
+
+export const LATEST_SEAL_VERSION = 1;
 
 @injectable()
 export class PersonalInfoSealService extends SealService<PersonalInfo> {
@@ -58,18 +62,26 @@ export class PersonalInfoSealService extends SealService<PersonalInfo> {
         super(SEPARATOR);
     }
 
-    values(personalInfo: PersonalInfo): string[] {
-        return this.userIdentityValues(personalInfo.userIdentity)
-            .concat(this.postalAddressValue(personalInfo.userPostalAddress));
+    override values(personalInfo: PersonalInfo, version: number): string[] {
+        return this.userIdentityValues(personalInfo.userIdentity, version)
+            .concat(this.postalAddressValue(personalInfo.userPostalAddress, version));
     }
 
-    private userIdentityValues(userIdentity: UserIdentity): string[] {
-        return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber ];
+    private userIdentityValues(userIdentity: UserIdentity, version: number): string[] {
+        if(version === LATEST_SEAL_VERSION) {
+            return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber, userIdentity.company.toString() ];
+        } else if(version === 0) {
+            return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber ];
+        } else {
+            throw new Error(`Unsupported seal version ${version}`);
+        }
     }
 
-    private postalAddressValue(postalAddress: PostalAddress): string[] {
-        return [ postalAddress.line1, postalAddress.line2, postalAddress.postalCode, postalAddress.city, postalAddress.country ];
+    private postalAddressValue(postalAddress: PostalAddress, version: number): string[] {
+        if(version === 0 || version === LATEST_SEAL_VERSION) {
+            return [ postalAddress.line1, postalAddress.line2, postalAddress.postalCode, postalAddress.city, postalAddress.country ];
+        } else {
+            throw new Error(`Unsupported seal version ${version}`);
+        }
     }
 }
-
-

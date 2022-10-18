@@ -16,22 +16,28 @@ import {
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress";
-import { Seal, PersonalInfoSealService } from "../../../src/logion/services/seal.service";
+import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
-const SEAL: Seal = {
+const PUBLIC_SEAL: PublicSeal = {
     hash: "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a",
-    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c"
+    version: 0,
+}
+
+const SEAL: Seal = {
+    ...PUBLIC_SEAL,
+    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c",
 }
 
 describe("LocRequestFactory", () => {
 
-    const userIdentity = {
+    const userIdentity: UserIdentity = {
         firstName: "Scott",
         lastName: "Tiger",
         email: "scott@logion.network",
-        phoneNumber: "+789"
+        phoneNumber: "+789",
+        company: false,
     };
 
     it("creates Transaction LOC request", async () => {
@@ -120,7 +126,7 @@ describe("LocRequestFactory", () => {
 
     it("creates Identity LOC", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a");
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description);
@@ -135,7 +141,7 @@ describe("LocRequestFactory", () => {
             city: "Liège",
             country: "Belgium"
         }
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress, SEAL.hash);
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingLocRequest();
         thenRequestCreatedWithDescription(description);
@@ -146,7 +152,7 @@ describe("LocRequestFactory", () => {
 
     it("creates an open Identity LOC with requester address", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a");
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingOpenLoc();
         thenOpenLocCreatedWithDescription(description)
@@ -193,7 +199,7 @@ describe("LocRequestFactory", () => {
         expect(createdLocRequest.links![0].nature).toEqual(nature)
     });
 
-    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, sealHash?: string): LocRequestDescription {
+    function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, seal?: PublicSeal): LocRequestDescription {
         return {
             requesterAddress,
             requesterIdentityLoc,
@@ -203,7 +209,7 @@ describe("LocRequestFactory", () => {
             userIdentity,
             userPostalAddress,
             locType,
-            seal: sealHash !== undefined ? { hash: sealHash} : undefined
+            seal,
         };
     }
 });
@@ -741,7 +747,7 @@ let locDescription: LocRequestDescription;
 async function whenCreatingLocRequest() {
     const sealService = new Mock<PersonalInfoSealService>();
     sealService
-        .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
+        .setup(instance => instance.seal(It.IsAny<UserIdentity>(), LATEST_SEAL_VERSION))
         .returns(SEAL);
     const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newLocRequest({
@@ -764,7 +770,7 @@ async function whenCreatingSofRequest(target: string, nature: string) {
 async function whenCreatingOpenLoc() {
     const sealService = new Mock<PersonalInfoSealService>();
     sealService
-        .setup(instance => instance.seal(It.IsAny<UserIdentity>()))
+        .setup(instance => instance.seal(It.IsAny(), LATEST_SEAL_VERSION))
         .returns(SEAL);
     const factory = new LocRequestFactory(repository.object(), sealService.object());
     createdLocRequest = await factory.newOpenLoc({

@@ -17,7 +17,8 @@ export const notifiedProtection: ProtectionRequestDescription & { decision: Lega
         firstName: "John",
         lastName: "Doe",
         email: "john.doe@logion.network",
-        phoneNumber: "123456"
+        phoneNumber: "123456",
+        company: false,
     },
     userPostalAddress: {
         line1: "Rue de la Paix",
@@ -42,7 +43,8 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
             firstName: address === BOB ? "Bob": "Alice",
             lastName: "Network",
             email: address === BOB ? "bob@logion.network" : "alice@logion.network",
-            phoneNumber: "123465"
+            phoneNumber: "123465",
+            company: false,
         },
         postalAddress: {
             company: "Alice & Co",

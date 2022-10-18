@@ -3,8 +3,8 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource, Log, badRequest } from "@logion/rest-api-core";
 
-import { UserIdentity } from "./useridentity";
-import { PostalAddress } from "./postaladdress";
+import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity";
+import { EmbeddablePostalAddress, PostalAddress, toPostalAddress } from "./postaladdress";
 
 const { logger } = Log;
 
@@ -111,32 +111,11 @@ export class ProtectionRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
-    @Column({ length: 255 })
-    email?: string;
+    @Column(() => EmbeddableUserIdentity, { prefix: "" })
+    userIdentity?: EmbeddableUserIdentity;
 
-    @Column({ length: 255, name: "first_name" })
-    firstName?: string;
-
-    @Column({ length: 255, name: "last_name" })
-    lastName?: string;
-
-    @Column({ length: 255, name: "phone_number" })
-    phoneNumber?: string;
-
-    @Column({ length: 255 })
-    city?: string;
-
-    @Column({ length: 255 })
-    country?: string;
-
-    @Column({ length: 255 })
-    line1?: string;
-
-    @Column({ length: 255, nullable: true })
-    line2?: string;
-
-    @Column({ length: 255, name: "postal_code" })
-    postalCode?: string;
+    @Column(() => EmbeddablePostalAddress, { prefix: "" })
+    userPostalAddress?: EmbeddablePostalAddress;
 
     @Column({ length: 255 })
     status?: ProtectionRequestStatus;
@@ -151,16 +130,8 @@ export class ProtectionRequestAggregateRoot {
         this.requesterAddress = description.requesterAddress;
         this.otherLegalOfficerAddress = description.otherLegalOfficerAddress;
 
-        this.firstName = description.userIdentity.firstName;
-        this.lastName = description.userIdentity.lastName;
-        this.email = description.userIdentity.email;
-        this.phoneNumber = description.userIdentity.phoneNumber;
-
-        this.line1 = description.userPostalAddress.line1;
-        this.line2 = description.userPostalAddress.line2;
-        this.city = description.userPostalAddress.city;
-        this.postalCode = description.userPostalAddress.postalCode;
-        this.country = description.userPostalAddress.country;
+        this.userIdentity = EmbeddableUserIdentity.from(description.userIdentity);
+        this.userPostalAddress = EmbeddablePostalAddress.from(description.userPostalAddress);
 
         this.createdOn = description.createdOn;
         this.isRecovery = description.isRecovery;
@@ -173,19 +144,8 @@ export class ProtectionRequestAggregateRoot {
         return {
             requesterAddress: this.requesterAddress || "",
             otherLegalOfficerAddress: this.otherLegalOfficerAddress || "",
-            userIdentity: {
-                firstName: this.firstName || "",
-                lastName: this.lastName || "",
-                email: this.email || "",
-                phoneNumber: this.phoneNumber || "",
-            },
-            userPostalAddress: {
-                line1: this.line1 || "",
-                line2: this.line2 || "",
-                postalCode: this.postalCode || "",
-                city: this.city || "",
-                country: this.country || "",
-            },
+            userIdentity: toUserIdentity(this.userIdentity)!,
+            userPostalAddress: toPostalAddress(this.userPostalAddress)!,
             createdOn: this.createdOn!,
             isRecovery: this.isRecovery!,
             addressToRecover: this.addressToRecover || null,

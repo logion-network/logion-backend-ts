@@ -19,6 +19,8 @@ import { NotificationService, Template } from "../../../src/logion/services/noti
 import { now } from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service";
 import { notifiedLegalOfficer } from "../services/notification-test-data";
+import { EmbeddableUserIdentity, UserIdentity } from '../../../src/logion/model/useridentity';
+import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/model/postaladdress';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -75,14 +77,15 @@ describe('createProtectionRequest', () => {
     });
 });
 
-const IDENTITY = {
+const IDENTITY: UserIdentity = {
     email: "john.doe@logion.network",
     firstName: "John",
     lastName: "Doe",
-    phoneNumber: "+1234"
+    phoneNumber: "+1234",
+    company: false,
 };
 
-const POSTAL_ADDRESS = {
+const POSTAL_ADDRESS: PostalAddress = {
     line1: "Place de le République Française, 10",
     line2: "boite 15",
     postalCode: "4000",
@@ -422,18 +425,8 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
     protectionRequest.setup(instance => instance.requesterAddress).returns(description.requesterAddress)
     protectionRequest.setup(instance => instance.isRecovery).returns(description.isRecovery)
     protectionRequest.setup(instance => instance.otherLegalOfficerAddress).returns(description.otherLegalOfficerAddress)
-    const userIdentity = description.userIdentity
-    protectionRequest.setup(instance => instance.firstName).returns(userIdentity.firstName);
-    protectionRequest.setup(instance => instance.lastName).returns(userIdentity.lastName);
-    protectionRequest.setup(instance => instance.email).returns(userIdentity.email);
-    protectionRequest.setup(instance => instance.phoneNumber).returns(userIdentity.phoneNumber);
-    const userPostalAddress = description.userPostalAddress
-    protectionRequest.setup(instance => instance.line1).returns(userPostalAddress.line1);
-    protectionRequest.setup(instance => instance.line2).returns(userPostalAddress.line2);
-    protectionRequest.setup(instance => instance.postalCode).returns(userPostalAddress.postalCode);
-    protectionRequest.setup(instance => instance.city).returns(userPostalAddress.city);
-    protectionRequest.setup(instance => instance.country).returns(userPostalAddress.country);
-
+    protectionRequest.setup(instance => instance.userIdentity).returns(EmbeddableUserIdentity.from(description.userIdentity));
+    protectionRequest.setup(instance => instance.userPostalAddress).returns(EmbeddablePostalAddress.from(description.userPostalAddress));
     protectionRequest.setup(instance => instance.getDescription()).returns(description)
     return protectionRequest
 }

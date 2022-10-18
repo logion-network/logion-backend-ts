@@ -1,4 +1,6 @@
 import { TestDb } from "@logion/rest-api-core";
+import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress";
+import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity";
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
@@ -114,14 +116,16 @@ describe('ProtectionRequestRepositoryTest', () => {
         protectionRequest.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639'
         protectionRequest.isRecovery = false
         protectionRequest.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'
-        protectionRequest.email = 'john.doe@logion.network'
-        protectionRequest.phoneNumber = '+1234897'
-        protectionRequest.firstName = 'John'
-        protectionRequest.lastName = 'Doe'
-        protectionRequest.line1 = '15 Rue du Bois'
-        protectionRequest.postalCode = '75000'
-        protectionRequest.city = 'Paris'
-        protectionRequest.country = 'France'
+        protectionRequest.userIdentity = new EmbeddableUserIdentity()
+        protectionRequest.userIdentity.email = 'john.doe@logion.network'
+        protectionRequest.userIdentity.phoneNumber = '+1234897'
+        protectionRequest.userIdentity.firstName = 'John'
+        protectionRequest.userIdentity.lastName = 'Doe'
+        protectionRequest.userPostalAddress = new EmbeddablePostalAddress()
+        protectionRequest.userPostalAddress.line1 = '15 Rue du Bois'
+        protectionRequest.userPostalAddress.postalCode = '75000'
+        protectionRequest.userPostalAddress.city = 'Paris'
+        protectionRequest.userPostalAddress.country = 'France'
         protectionRequest.status = 'PENDING'
         protectionRequest.otherLegalOfficerAddress = ALICE
         // When

@@ -22,6 +22,8 @@ import {
     ProtectionRequestDescription,
     ProtectionRequestRepository
 } from '../../../src/logion/model/protectionrequest.model';
+import { UserIdentity } from '../../../src/logion/model/useridentity';
+import { PostalAddress } from '../../../src/logion/model/postaladdress';
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -252,14 +254,15 @@ const description: VaultTransferRequestDescription = {
     },
 }
 
-const IDENTITY = {
+const IDENTITY: UserIdentity = {
     email: "john.doe@logion.network",
     firstName: "John",
     lastName: "Doe",
-    phoneNumber: "+1234"
+    phoneNumber: "+1234",
+    company: false,
 };
 
-const POSTAL_ADDRESS = {
+const POSTAL_ADDRESS: PostalAddress = {
     line1: "Place de le République Française, 10",
     line2: "boite 15",
     postalCode: "4000",
