@@ -15,11 +15,11 @@ import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components";
-import { EmbeddableUserIdentity, UserIdentity } from "./useridentity";
+import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity";
 import { orderAndMap, HasIndex } from "../lib/db/collections";
 import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
-import { PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service";
 import { PersonalInfo } from "./personalinfo.model";
 
 const { logger } = Log;
@@ -85,10 +85,13 @@ class EmbeddableVoidInfo {
 
 class EmbeddableSeal {
     @Column({ name: "seal_salt", type: "uuid", nullable: true })
-    salt?: string | null
+    salt?: string | null;
 
     @Column({ name: "seal_hash", type: "varchar", length: 255, nullable: true })
-    hash?: string | null
+    hash?: string | null;
+
+    @Column({ name: "seal_version", type: "integer", default: 0 })
+    version?: number | null;
 
     static from(seal: Seal | undefined): EmbeddableSeal | undefined {
         if (!seal) {
@@ -97,8 +100,19 @@ class EmbeddableSeal {
         const result = new EmbeddableSeal();
         result.hash = seal.hash;
         result.salt = seal.salt;
+        result.version = seal.version;
         return result;
     }
+}
+
+function toPublicSeal(embedded: EmbeddableSeal | undefined): PublicSeal | undefined {
+    return embedded && embedded.hash && embedded.version !== undefined && embedded.version !== null
+        ?
+        {
+            hash: embedded.hash,
+            version: embedded.version
+        }
+        : undefined;
 }
 
 @Entity("loc_request")
@@ -124,14 +138,7 @@ export class LocRequestAggregateRoot {
     }
 
     getDescription(): LocRequestDescription {
-        const userIdentity = this.userIdentity &&
-        (this.userIdentity.firstName || this.userIdentity.lastName || this.userIdentity.email || this.userIdentity.phoneNumber) ?
-            {
-                firstName: this.userIdentity.firstName || "",
-                lastName: this.userIdentity.lastName || "",
-                email: this.userIdentity.email || "",
-                phoneNumber: this.userIdentity.phoneNumber || "",
-            } : undefined;
+        const userIdentity = toUserIdentity(this.userIdentity);
         const userPostalAddress = this.userPostalAddress &&
         (this.userPostalAddress.line1 || this.userPostalAddress.line2 || this.userPostalAddress.postalCode || this.userPostalAddress.city || this.userPostalAddress.country) ?
             {
@@ -150,7 +157,7 @@ export class LocRequestAggregateRoot {
             userIdentity,
             userPostalAddress,
             locType: this.locType!,
-            seal: this.seal && this.seal.hash ? { hash: this.seal.hash } : undefined,
+            seal: toPublicSeal(this.seal),
         }
     }
 
@@ -485,24 +492,11 @@ export class LocRequestAggregateRoot {
     }
 
     updateUserIdentity(userIdentity: UserIdentity | undefined) {
-        if (userIdentity !== undefined) {
-            this.userIdentity = new EmbeddableUserIdentity();
-            this.userIdentity.firstName = userIdentity.firstName;
-            this.userIdentity.lastName = userIdentity.lastName;
-            this.userIdentity.email = userIdentity.email;
-            this.userIdentity.phoneNumber = userIdentity.phoneNumber;
-        }
+        this.userIdentity = EmbeddableUserIdentity.from(userIdentity);
     }
 
     updateUserPostalAddress(userPostalAddress: PostalAddress | undefined) {
-        if (userPostalAddress !== undefined) {
-            this.userPostalAddress = new EmbeddablePostalAddress();
-            this.userPostalAddress.line1 = userPostalAddress.line1;
-            this.userPostalAddress.line2 = userPostalAddress.line2;
-            this.userPostalAddress.postalCode = userPostalAddress.postalCode;
-            this.userPostalAddress.city = userPostalAddress.city;
-            this.userPostalAddress.country = userPostalAddress.country;
-        }
+        this.userPostalAddress = EmbeddablePostalAddress.from(userPostalAddress);
     }
 
     updateSealedPersonalInfo(personalInfo: PersonalInfo, seal: Seal) {
@@ -860,6 +854,7 @@ export class LocRequestFactory {
             lastName: "",
             email: "",
             phoneNumber: "",
+            company: false,
         }
         const userPostalAddress = description.userPostalAddress || {
             line1: "",
@@ -870,7 +865,7 @@ export class LocRequestFactory {
         }
         if (request.locType === 'Identity') {
             const personalInfo: PersonalInfo = { userIdentity, userPostalAddress }
-            const seal = this.sealService.seal(personalInfo);
+            const seal = this.sealService.seal(personalInfo, LATEST_SEAL_VERSION);
             request.updateSealedPersonalInfo(personalInfo, seal);
         } else {
             request.updateUserIdentity(userIdentity);

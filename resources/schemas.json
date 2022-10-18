@@ -414,6 +414,10 @@
                     "phoneNumber": {
                         "type": "string",
                         "description": "Phone number"
+                    },
+                    "company": {
+                        "type": "boolean",
+                        "description": "True if the user is representing a company, false otherwise"
                     }
                 },
                 "title": "UserIdentityView",

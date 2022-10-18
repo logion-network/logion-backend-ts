@@ -226,6 +226,7 @@ export class LocRequestController extends ApiController {
             lastName: userIdentity.lastName,
             email: userIdentity.email,
             phoneNumber: userIdentity.phoneNumber,
+            company: userIdentity.company,
         }
     }
 
@@ -238,6 +239,7 @@ export class LocRequestController extends ApiController {
             lastName: userIdentityView.lastName || "",
             email: userIdentityView.email || "",
             phoneNumber: userIdentityView.phoneNumber || "",
+            company: userIdentityView.company || false,
         }
     }
 

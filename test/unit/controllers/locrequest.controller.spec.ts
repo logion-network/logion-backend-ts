@@ -27,7 +27,7 @@ import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionRepository, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
 import { fileExists } from "../../helpers/filehelper";
-import { PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 
@@ -40,7 +40,8 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             firstName: "Felix",
             lastName: "the Cat",
             email: "felix@logion.network",
-            phoneNumber: "+0101"
+            phoneNumber: "+0101",
+            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 1",
@@ -56,7 +57,8 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             firstName: "Scott",
             lastName: "Tiger",
             email: "scott.tiger@logion.network",
-            phoneNumber: "+6789"
+            phoneNumber: "+6789",
+            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 2",
@@ -72,7 +74,8 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             firstName: "John",
             lastName: "Doe",
             email: "john.doe@logion.network",
-            phoneNumber: "+1234"
+            phoneNumber: "+1234",
+            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 3",
@@ -89,7 +92,8 @@ const testUserIdentity = userIdentities["Polkadot"].userIdentity!;
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const SEAL: Seal = {
     hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
-    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c"
+    salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c",
+    version: 0,
 }
 
 const testDataWithType = (locType: LocType) => {
@@ -1150,7 +1154,7 @@ function mockOtherDependencies(container: Container) {
 
     const sealService = new Mock<PersonalInfoSealService>();
     sealService
-        .setup(instance => instance.seal(It.IsAny<PersonalInfo>()))
+        .setup(instance => instance.seal(It.IsAny<PersonalInfo>(), LATEST_SEAL_VERSION))
         .returns(SEAL);
     container.bind(PersonalInfoSealService).toConstantValue(sealService.object());
 }
