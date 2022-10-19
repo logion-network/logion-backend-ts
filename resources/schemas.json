@@ -414,10 +414,6 @@
                     "phoneNumber": {
                         "type": "string",
                         "description": "Phone number"
-                    },
-                    "company": {
-                        "type": "boolean",
-                        "description": "True if the user is representing a company, false otherwise"
                     }
                 },
                 "title": "UserIdentityView",
@@ -477,6 +473,10 @@
                     "userPostalAddress": {
                         "description": "The postal address of the requester",
                         "$ref": "#/components/schemas/PostalAddressView"
+                    },
+                    "company": {
+                        "type": "boolean",
+                        "description": "True if the user requesting an Identity LOC is representing a company, false otherwise"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -643,6 +643,10 @@
                                 "description": "The date-time of voiding (chain time)"
                             }
                         }
+                    },
+                    "company": {
+                        "type": "boolean",
+                        "description": "True if the user requesting an Identity LOC is representing a company, false otherwise"
                     }
                 },
                 "title": "LocRequestView",

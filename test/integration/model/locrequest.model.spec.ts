@@ -73,7 +73,6 @@ describe('LocRequestRepository - read accesses', () => {
             lastName: 'Doe',
             email: 'john.doe@logion.network',
             phoneNumber: '+123456',
-            company: false,
         });
         expect(requests[0].status).toBe("REJECTED");
     })

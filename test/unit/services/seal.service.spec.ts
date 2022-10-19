@@ -12,7 +12,6 @@ describe("PersonalInfoSealService", () => {
         lastName: "Tiger",
         phoneNumber: "123",
         email: "scott.tiger@example.org",
-        company: false,
     }
 
     const userPostalAddress: PostalAddress = {
@@ -25,7 +24,8 @@ describe("PersonalInfoSealService", () => {
 
     const personalInfo: PersonalInfo = {
         userIdentity,
-        userPostalAddress
+        userPostalAddress,
+        company: false,
     }
 
     const salt = "aa456085-5344-4937-b3be-559489366be6";

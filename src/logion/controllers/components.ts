@@ -265,8 +265,6 @@ export interface components {
       lastName?: string;
       /** @description Phone number */
       phoneNumber?: string;
-      /** @description True if the user is representing a company, false otherwise */
-      company?: boolean;
     };
     /**
      * @description The request's status
@@ -303,6 +301,8 @@ export interface components {
       userIdentity?: components["schemas"]["UserIdentityView"];
       /** @description The postal address of the requester */
       userPostalAddress?: components["schemas"]["PostalAddressView"];
+      /** @description True if the user requesting an Identity LOC is representing a company, false otherwise */
+      company?: boolean;
     };
     /**
      * LocRequestView
@@ -411,6 +411,8 @@ export interface components {
          */
         voidedOn?: string;
       };
+      /** @description True if the user requesting an Identity LOC is representing a company, false otherwise */
+      company?: boolean;
     };
     /**
      * LocPublicView

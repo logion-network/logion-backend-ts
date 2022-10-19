@@ -102,7 +102,6 @@ const description: ProtectionRequestDescription = {
         firstName: "John",
         lastName: "Doe",
         phoneNumber: "+1234",
-        company: false,
     },
     userPostalAddress: {
         line1: "Place de le République Française, 10",
