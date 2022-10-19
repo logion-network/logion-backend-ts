@@ -259,7 +259,6 @@ const IDENTITY: UserIdentity = {
     firstName: "John",
     lastName: "Doe",
     phoneNumber: "+1234",
-    company: false,
 };
 
 const POSTAL_ADDRESS: PostalAddress = {

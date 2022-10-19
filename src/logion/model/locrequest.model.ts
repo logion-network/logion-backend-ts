@@ -38,6 +38,7 @@ export interface LocRequestDescription {
     readonly userPostalAddress: PostalAddress | undefined;
     readonly locType: LocType;
     readonly seal?: PublicSeal;
+    readonly company?: string;
 }
 
 export interface LocRequestDecision {
@@ -158,6 +159,7 @@ export class LocRequestAggregateRoot {
             userPostalAddress,
             locType: this.locType!,
             seal: toPublicSeal(this.seal),
+            company: this.company!,
         }
     }
 
@@ -500,9 +502,10 @@ export class LocRequestAggregateRoot {
     }
 
     updateSealedPersonalInfo(personalInfo: PersonalInfo, seal: Seal) {
-        const { userIdentity, userPostalAddress } = personalInfo;
+        const { userIdentity, userPostalAddress, company } = personalInfo;
         this.updateUserIdentity(userIdentity);
         this.updateUserPostalAddress(userPostalAddress)
+        this.company = company;
         this.seal = EmbeddableSeal.from(seal);
     }
 
@@ -551,6 +554,9 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddablePostalAddress, { prefix: "" })
     userPostalAddress?: EmbeddablePostalAddress;
+
+    @Column("varchar", { length: 255, name: "company", nullable: true })
+    company?: string | null;
 
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,
@@ -863,13 +869,15 @@ export class LocRequestFactory {
             city: "",
             country: ""
         }
+        const company = description.company;
         if (request.locType === 'Identity') {
-            const personalInfo: PersonalInfo = { userIdentity, userPostalAddress }
+            const personalInfo: PersonalInfo = { userIdentity, userPostalAddress, company }
             const seal = this.sealService.seal(personalInfo, LATEST_SEAL_VERSION);
             request.updateSealedPersonalInfo(personalInfo, seal);
         } else {
             request.updateUserIdentity(userIdentity);
             request.updateUserPostalAddress(userPostalAddress);
+            request.company = company;
         }
         request.files = [];
         request.metadata = [];

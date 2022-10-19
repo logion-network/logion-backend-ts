@@ -37,7 +37,6 @@ describe("LocRequestFactory", () => {
         lastName: "Tiger",
         email: "scott@logion.network",
         phoneNumber: "+789",
-        company: false,
     };
 
     it("creates Transaction LOC request", async () => {
@@ -210,6 +209,7 @@ describe("LocRequestFactory", () => {
             userPostalAddress,
             locType,
             seal,
+            company: undefined,
         };
     }
 });

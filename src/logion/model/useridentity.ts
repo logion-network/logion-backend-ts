@@ -5,7 +5,6 @@ export interface UserIdentity {
     lastName: string,
     email: string,
     phoneNumber: string,
-    company: boolean,
 }
 
 export class EmbeddableUserIdentity {
@@ -22,9 +21,6 @@ export class EmbeddableUserIdentity {
     @Column("varchar", { length: 255, name: "phone_number", nullable: true })
     phoneNumber?: string | null;
 
-    @Column("boolean", { default: false })
-    company?: boolean;
-
     static from(identity: UserIdentity | undefined): EmbeddableUserIdentity {
         const embeddable = new EmbeddableUserIdentity();
         if(identity) {
@@ -32,27 +28,24 @@ export class EmbeddableUserIdentity {
             embeddable.lastName = identity.lastName;
             embeddable.email = identity.email;
             embeddable.phoneNumber = identity.phoneNumber;
-            embeddable.company = identity.company;
         } else {
             embeddable.firstName = "";
             embeddable.lastName = "";
             embeddable.email = "";
             embeddable.phoneNumber = "";
-            embeddable.company = false;
         }
         return embeddable;
     }
 }
 
 export function toUserIdentity(embedded: EmbeddableUserIdentity | undefined): UserIdentity | undefined {
-    return embedded && (embedded.firstName || embedded.lastName || embedded.email || embedded.phoneNumber || embedded.company)
+    return embedded && (embedded.firstName || embedded.lastName || embedded.email || embedded.phoneNumber)
         ?
         {
             firstName: embedded.firstName || "",
             lastName: embedded.lastName || "",
             email: embedded.email || "",
             phoneNumber: embedded.phoneNumber || "",
-            company: embedded.company || false,
         }
         : undefined;
 }

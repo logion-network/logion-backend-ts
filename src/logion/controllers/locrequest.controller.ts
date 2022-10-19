@@ -134,6 +134,7 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity: locType === "Identity" ? this.fromUserIdentityView(createLocRequestView.userIdentity) : undefined,
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
+            company: createLocRequestView.company,
         }
         if (locType === "Identity") {
             if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress))) {
@@ -222,7 +223,8 @@ export class LocRequestController extends ApiController {
                 nature: link.nature,
                 addedOn: link.addedOn?.toISOString() || undefined,
             })),
-            seal: locDescription.seal?.hash
+            seal: locDescription.seal?.hash,
+            company: locDescription.company,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
@@ -243,7 +245,6 @@ export class LocRequestController extends ApiController {
             lastName: userIdentity.lastName,
             email: userIdentity.email,
             phoneNumber: userIdentity.phoneNumber,
-            company: userIdentity.company,
         }
     }
 
@@ -256,7 +257,6 @@ export class LocRequestController extends ApiController {
             lastName: userIdentityView.lastName || "",
             email: userIdentityView.email || "",
             phoneNumber: userIdentityView.phoneNumber || "",
-            company: userIdentityView.company || false,
         }
     }
 

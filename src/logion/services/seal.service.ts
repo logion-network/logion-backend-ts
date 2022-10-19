@@ -63,14 +63,17 @@ export class PersonalInfoSealService extends SealService<PersonalInfo> {
     }
 
     override values(personalInfo: PersonalInfo, version: number): string[] {
-        return this.userIdentityValues(personalInfo.userIdentity, version)
-            .concat(this.postalAddressValue(personalInfo.userPostalAddress, version));
+        let values = [];
+        values = this.userIdentityValues(personalInfo.userIdentity, version);
+        if(version === LATEST_SEAL_VERSION && personalInfo.company) {
+            values.push(personalInfo.company)
+        }
+        values = values.concat(this.postalAddressValue(personalInfo.userPostalAddress, version));
+        return values;
     }
 
     private userIdentityValues(userIdentity: UserIdentity, version: number): string[] {
-        if(version === LATEST_SEAL_VERSION) {
-            return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber, userIdentity.company.toString() ];
-        } else if(version === 0) {
+        if(version === 0 || version === LATEST_SEAL_VERSION) {
             return [ userIdentity.firstName, userIdentity.lastName, userIdentity.email, userIdentity.phoneNumber ];
         } else {
             throw new Error(`Unsupported seal version ${version}`);

@@ -41,7 +41,6 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             lastName: "the Cat",
             email: "felix@logion.network",
             phoneNumber: "+0101",
-            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 1",
@@ -58,7 +57,6 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             lastName: "Tiger",
             email: "scott.tiger@logion.network",
             phoneNumber: "+6789",
-            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 2",
@@ -75,7 +73,6 @@ const userIdentities: Record<IdentityLocation, UserPrivateData> = {
             lastName: "Doe",
             email: "john.doe@logion.network",
             phoneNumber: "+1234",
-            company: false,
         },
         userPostalAddress: {
             line1: "Rue de la Paix, 3",

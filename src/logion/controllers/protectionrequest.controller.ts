@@ -97,7 +97,6 @@ export class ProtectionRequestController extends ApiController {
                     lastName: body.userIdentity!.lastName!,
                     email: body.userIdentity!.email!,
                     phoneNumber: body.userIdentity!.phoneNumber!,
-                    company: body.userIdentity!.company!,
                 },
                 userPostalAddress: {
                     line1: body.userPostalAddress!.line1!,
@@ -157,7 +156,6 @@ export class ProtectionRequestController extends ApiController {
                 lastName: request.userIdentity?.lastName || "",
                 email: request.userIdentity?.email || "",
                 phoneNumber: request.userIdentity?.phoneNumber || "",
-                company: request.userIdentity?.company || false,
             },
             userPostalAddress: {
                 line1: request.userPostalAddress?.line1 || "",
