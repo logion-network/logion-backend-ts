@@ -38,7 +38,7 @@ export interface LocRequestDescription {
     readonly userPostalAddress: PostalAddress | undefined;
     readonly locType: LocType;
     readonly seal?: PublicSeal;
-    readonly company: boolean;
+    readonly company?: string;
 }
 
 export interface LocRequestDecision {
@@ -555,8 +555,8 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddablePostalAddress, { prefix: "" })
     userPostalAddress?: EmbeddablePostalAddress;
 
-    @Column("boolean", { default: false })
-    company?: boolean;
+    @Column("varchar", { length: 255, name: "company", nullable: true })
+    company?: string | null;
 
     @OneToMany(() => LocFile, file => file.request, {
         eager: true,

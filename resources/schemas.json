@@ -475,8 +475,8 @@
                         "$ref": "#/components/schemas/PostalAddressView"
                     },
                     "company": {
-                        "type": "boolean",
-                        "description": "True if the user requesting an Identity LOC is representing a company, false otherwise"
+                        "type": "string",
+                        "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -645,8 +645,8 @@
                         }
                     },
                     "company": {
-                        "type": "boolean",
-                        "description": "True if the user requesting an Identity LOC is representing a company, false otherwise"
+                        "type": "string",
+                        "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
                     }
                 },
                 "title": "LocRequestView",

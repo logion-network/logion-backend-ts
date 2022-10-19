@@ -301,8 +301,8 @@ export interface components {
       userIdentity?: components["schemas"]["UserIdentityView"];
       /** @description The postal address of the requester */
       userPostalAddress?: components["schemas"]["PostalAddressView"];
-      /** @description True if the user requesting an Identity LOC is representing a company, false otherwise */
-      company?: boolean;
+      /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
+      company?: string;
     };
     /**
      * LocRequestView
@@ -411,8 +411,8 @@ export interface components {
          */
         voidedOn?: string;
       };
-      /** @description True if the user requesting an Identity LOC is representing a company, false otherwise */
-      company?: boolean;
+      /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
+      company?: string;
     };
     /**
      * LocPublicView

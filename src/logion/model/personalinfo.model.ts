@@ -4,5 +4,5 @@ import { PostalAddress } from "./postaladdress";
 export interface PersonalInfo {
     userIdentity: UserIdentity;
     userPostalAddress: PostalAddress;
-    company: boolean;
+    company?: string;
 }

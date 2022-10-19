@@ -65,8 +65,8 @@ export class PersonalInfoSealService extends SealService<PersonalInfo> {
     override values(personalInfo: PersonalInfo, version: number): string[] {
         let values = [];
         values = this.userIdentityValues(personalInfo.userIdentity, version);
-        if(version === LATEST_SEAL_VERSION) {
-            values = values.concat(personalInfo.company.toString())
+        if(version === LATEST_SEAL_VERSION && personalInfo.company) {
+            values.push(personalInfo.company)
         }
         values = values.concat(this.postalAddressValue(personalInfo.userPostalAddress, version));
         return values;

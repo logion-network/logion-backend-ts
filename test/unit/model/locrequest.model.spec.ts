@@ -209,7 +209,7 @@ describe("LocRequestFactory", () => {
             userPostalAddress,
             locType,
             seal,
-            company: false,
+            company: undefined,
         };
     }
 });

@@ -25,7 +25,7 @@ describe("PersonalInfoSealService", () => {
     const personalInfo: PersonalInfo = {
         userIdentity,
         userPostalAddress,
-        company: false,
+        company: "The Company I Represent",
     }
 
     const salt = "aa456085-5344-4937-b3be-559489366be6";
@@ -34,7 +34,7 @@ describe("PersonalInfoSealService", () => {
 
     const expectedHashesPerVersion = [
         "0x90e6d447523780d1a048194b939fa95587e52c01b82bf5683b3801729e300c36",
-        "0xb71dc9082fa5008fad01eb4fdcebda271c9a5323bef8898c1d7a712e42af7367",
+        "0xa22772e11382ecc1cdcc6d776b0e6a8ed210aa0e19e6d2b83dce67c3868468e9",
     ];
 
     it("seals with salt", () => {

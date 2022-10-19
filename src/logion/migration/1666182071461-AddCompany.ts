@@ -1,10 +1,10 @@
 import { MigrationInterface, QueryRunner } from "typeorm";
 
-export class AddCompany1666083444245 implements MigrationInterface {
-    name = 'AddCompany1666083444245'
+export class AddCompany1666182071461 implements MigrationInterface {
+    name = 'AddCompany1666182071461'
 
     public async up(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "loc_request" ADD "company" boolean NOT NULL DEFAULT false`);
+        await queryRunner.query(`ALTER TABLE "loc_request" ADD "company" character varying(255)`);
         await queryRunner.query(`ALTER TABLE "loc_request" ADD "seal_version" integer NOT NULL DEFAULT '0'`);
         await queryRunner.query(`ALTER TABLE "protection_request" ALTER COLUMN "first_name" DROP NOT NULL`);
         await queryRunner.query(`ALTER TABLE "protection_request" ALTER COLUMN "last_name" DROP NOT NULL`);
