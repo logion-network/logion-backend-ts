@@ -426,7 +426,8 @@
                     "OPEN",
                     "REQUESTED",
                     "REJECTED",
-                    "CLOSED"
+                    "CLOSED",
+                    "DRAFT"
                 ]
             },
             "LocType": {
@@ -477,6 +478,10 @@
                     "company": {
                         "type": "string",
                         "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
+                    },
+                    "draft": {
+                        "type": "boolean",
+                        "description": "LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined)"
                     }
                 },
                 "title": "CreateLocRequestView",

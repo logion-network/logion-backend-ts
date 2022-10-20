@@ -119,6 +119,13 @@ function toPublicSeal(embedded: EmbeddableSeal | undefined): PublicSeal | undefi
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
+    submit(): void {
+        if (this.status != 'DRAFT') {
+            throw new Error("Cannot submit a non-draft request");
+        }
+        this.status = 'REQUESTED';
+    }
+
     reject(reason: string, rejectedOn: Moment): void {
         if (this.status != 'REQUESTED') {
             throw new Error("Cannot reject already decided request");
@@ -173,7 +180,7 @@ export class LocRequestAggregateRoot {
     }
 
     addFile(fileDescription: FileDescription) {
-        this.ensureOpen();
+        this.ensureEditable();
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
         }
@@ -192,20 +199,16 @@ export class LocRequestAggregateRoot {
         this.files!.push(file);
     }
 
+    private ensureEditable() {
+        if (!(this.status === "DRAFT" || this.status === "OPEN")) {
+            throw new Error("LOC is not editable");
+        }
+    }
+
     confirmFile(hash: string) {
         const file = this.file(hash)!;
         file.draft = false;
         file._toUpdate = true;
-    }
-
-    private ensureOpen(warnOnly: boolean = false) {
-        if (this.status !== "OPEN") {
-            if (warnOnly) {
-                logger.warn("LOC is not open")
-            } else {
-                throw new Error("LOC is not open");
-            }
-        }
     }
 
     hasFile(hash: string): boolean {
@@ -256,6 +259,16 @@ export class LocRequestAggregateRoot {
         this.status = 'CLOSED';
     }
 
+    private ensureOpen(warnOnly: boolean = false) {
+        if (this.status !== "OPEN") {
+            if (warnOnly) {
+                logger.warn("LOC is not open")
+            } else {
+                throw new Error("LOC is not open");
+            }
+        }
+    }
+
     close(timestamp: Moment) {
         if (this.closedOn) {
             logger.warn("LOC is already closed");
@@ -269,7 +282,7 @@ export class LocRequestAggregateRoot {
     }
 
     addMetadataItem(itemDescription: MetadataItemDescription) {
-        this.ensureOpen();
+        this.ensureEditable();
         if (this.hasMetadataItem(itemDescription.name)) {
             throw new Error("A metadata item with given name was already added to this LOC");
         }
@@ -317,7 +330,7 @@ export class LocRequestAggregateRoot {
     }
 
     removeMetadataItem(removerAddress: string, name: string): void {
-        this.ensureOpen();
+        this.ensureEditable();
         const removedItemIndex: number = this.metadata!.findIndex(link => link.name === name);
         if (removedItemIndex === -1) {
             throw new Error("No metadata item with given name");
@@ -327,7 +340,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Item removal not allowed");
         }
         if (!removedItem.draft) {
-            throw new Error("Only draft links can be removed");
+            throw new Error("Only draft metadata can be removed");
         }
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
     }
@@ -369,7 +382,7 @@ export class LocRequestAggregateRoot {
     }
 
     removeFile(removerAddress: string, hash: string): FileDescription {
-        this.ensureOpen();
+        this.ensureEditable();
         const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
         if (removedFileIndex === -1) {
             throw new Error("No file with given hash");
@@ -385,10 +398,8 @@ export class LocRequestAggregateRoot {
         return this.toFileDescription(removedFile);
     }
 
-    addLink(itemDescription: LinkDescription, ensureOpen: boolean = true) {
-        if (ensureOpen) {
-            this.ensureOpen();
-        }
+    addLink(itemDescription: LinkDescription) {
+        this.ensureEditable();
         if (this.hasLink(itemDescription.target)) {
             throw new Error("A link with given target was already added to this LOC");
         }
@@ -434,7 +445,7 @@ export class LocRequestAggregateRoot {
     }
 
     removeLink(removerAddress: string, target: string): void {
-        this.ensureOpen();
+        this.ensureEditable();
         const removedLinkIndex: number = this.links!.findIndex(link => link.target === target);
         if (removedLinkIndex === -1) {
             throw new Error("No link with given target");
@@ -464,7 +475,7 @@ export class LocRequestAggregateRoot {
     }
 
     preVoid(reason: string) {
-        if (this.voidInfo !== undefined && this.voidInfo.reason !== null && this.voidInfo.reason !== undefined) {
+        if (this.voidInfo !== undefined && this.voidInfo.reason !== null) {
             throw new Error("LOC is already void")
         }
         this.voidInfo = new EmbeddableVoidInfo();
@@ -807,11 +818,28 @@ export class LocRequestRepository {
         }
         return builder.getMany();
     }
+
+    async deleteDraft(request: LocRequestAggregateRoot): Promise<void> {
+        if(request.status !== "DRAFT") {
+            throw new Error("Cannot delete non-draft request");
+        }
+
+        return await appDataSource.manager.transaction(async entityManager => {
+            await entityManager.delete(LocFile, { requestId: request.id });
+            await entityManager.delete(LocMetadataItem, { requestId: request.id });
+            await entityManager.delete(LocLink, { requestId: request.id });
+            await entityManager.delete(LocRequestAggregateRoot, request.id);
+        });
+    }
 }
 
 export interface NewLocRequestParameters {
     readonly id: string;
     readonly description: LocRequestDescription;
+}
+
+export interface NewUserLocRequestParameters extends NewLocRequestParameters {
+    readonly draft: boolean;
 }
 
 export interface NewSofRequestParameters extends NewLocRequestParameters, LinkDescription {
@@ -827,24 +855,25 @@ export class LocRequestFactory {
     }
 
     async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest(params, false);
+        const request = await this.newLocRequest({ ...params, draft: false }, false);
         request.accept(moment())
         return request;
     }
 
     async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest(params);
-        request.addLink(params, false)
+        const request = await this.newLocRequest({ ...params, draft: true });
+        request.addLink(params);
+        request.submit();
         return request;
     }
 
-    async newLocRequest(params: NewLocRequestParameters, isUserRequest: boolean = true): Promise<LocRequestAggregateRoot> {
+    async newLocRequest(params: NewUserLocRequestParameters, isUserRequest: boolean = true): Promise<LocRequestAggregateRoot> {
         const { description } = params;
         this.ensureCorrectRequester(description)
         this.ensureUserIdentityPresent(description, isUserRequest)
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
-        request.status = "REQUESTED";
+        request.status = params.draft ? "DRAFT" : "REQUESTED";
         request.requesterAddress = description.requesterAddress;
         if (description.requesterIdentityLoc) {
             const identityLoc = await this.repository.findById(description.requesterIdentityLoc);

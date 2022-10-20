@@ -18,6 +18,7 @@ import {
     NewSofRequestParameters,
     FetchLocRequestsSpecification,
     IdentityLocType,
+    NewUserLocRequestParameters,
 } from "../../../src/logion/model/locrequest.model";
 import moment, { Moment } from "moment";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service";
@@ -93,11 +94,12 @@ const SEAL: Seal = {
     version: 0,
 }
 
-const testDataWithType = (locType: LocType) => {
+const testDataWithType = (locType: LocType, draft?: boolean) => {
     return {
         requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
         description: "I want to open a case",
-        locType
+        locType,
+        draft
     }
 };
 
@@ -240,6 +242,23 @@ describe('LocRequestController', () => {
 
     it('succeeds to create open Collection loc with existing existing identity LOC', async () => {
         await testOpenLocCreation("Collection")
+    });
+
+    it('succeeds in creating a draft LOC', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+        const app = setupApp(
+            LocRequestController,
+            container => mockModelForCreation(container, "Transaction", true),
+            mock,
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send(testDataWithType("Transaction", true))
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.status).toBe("DRAFT");
+            });
     });
 
     async function testOpenLocCreationWithEmbeddedUserIdentity(locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
@@ -691,6 +710,20 @@ describe('LocRequestController', () => {
             param.nature === `Original LOC - Collection Item: ${ itemId }`))
         )
     })
+
+    it('submits a draft loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForSubmit)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/submit`)
+            .expect(200);
+    })
+
+    it('cancels a draft loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForCancel)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/cancel`)
+            .expect(200);
+    })
 })
 
 function mockModelForReject(container: Container): void {
@@ -743,13 +776,22 @@ function mockModelForCreation(container: Container, locType: LocType, hasPolkado
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     const factory = new Mock<LocRequestFactory>();
-    const request = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
-    factory.setup(instance => instance.newLocRequest(It.Is<NewLocRequestParameters>(params =>
+    const requested = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
+    const draft = mockRequest("DRAFT", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
+    factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
-        params.description.description == testData.description
+        params.description.description == testData.description &&
+        params.draft
     )))
-        .returns(Promise.resolve(request.object()))
+        .returns(Promise.resolve(draft.object()))
+    factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
+        params.description.requesterAddress == testData.requesterAddress &&
+        params.description.ownerAddress == ALICE &&
+        params.description.description == testData.description &&
+        !params.draft
+    )))
+        .returns(Promise.resolve(requested.object()))
     const openLoc = mockRequest("OPEN", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType))
     factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
@@ -1183,3 +1225,47 @@ function mockOtherDependencies(container: Container) {
     container.bind(PersonalInfoSealService).toConstantValue(sealService.object());
 }
 
+function mockModelForSubmit(container: Container) {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+
+    const request = mockRequest("DRAFT", testData);
+    request.setup(instance => instance.submit())
+        .returns();
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    mockPolkadotIdentityLoc(repository, true);
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
+    
+    mockOtherDependencies(container);
+}
+
+function mockModelForCancel(container: Container) {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+
+    const request = mockRequest("DRAFT", testData);
+    const dbFile = { oid: 1 };
+    const ipfsFile = { cid: "" };
+    request.setup(instance => instance.files).returns([ dbFile, ipfsFile ])
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.deleteDraft(request.object()))
+        .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const fileStorageService = new Mock<FileStorageService>();
+    fileStorageService.setup(instance => instance.deleteFile(dbFile)).returnsAsync();
+    fileStorageService.setup(instance => instance.deleteFile(ipfsFile)).returnsAsync();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
+    mockOtherDependencies(container)
+}
