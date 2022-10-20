@@ -49,7 +49,7 @@ export class LocSynchronizer {
                 }
                 case "addFile": {
                     const locId = this.extractLocId('loc_id', extrinsic.args);
-                    const hash = extrinsic.args['file'].get('hash_').toHex();
+                    const hash = this.getFileHash(extrinsic);
                     await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                     break;
                 }
@@ -86,6 +86,15 @@ export class LocSynchronizer {
 
     private extractLocId(locIdKey: string, args: JsonArgs): string {
         return decimalToUuid(args[locIdKey].toString());
+    }
+
+    private getFileHash(extrinsic: any): string {
+        const file = extrinsic.args['file'];
+        if("hash_" in file) {
+            return file.get('hash_').toHex();
+        } else {
+            return file.get('hash').toHex();
+        }
     }
 
     private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
