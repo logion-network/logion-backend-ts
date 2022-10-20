@@ -101,7 +101,7 @@ export class BlockConsumer {
             }
         } catch(e) {
             logger.error("Extrinsics:");
-            logger.error(JSON.stringify(extrinsics, undefined, 4));
+            logger.error(JSON.stringify(extrinsics, (_, v) => typeof v === 'bigint' ? v.toString() : v, 4));
             throw e;
         }
     }
