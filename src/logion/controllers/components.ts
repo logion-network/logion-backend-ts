@@ -270,7 +270,7 @@ export interface components {
      * @description The request's status
      * @enum {string}
      */
-    LocRequestStatus: "OPEN" | "REQUESTED" | "REJECTED" | "CLOSED";
+    LocRequestStatus: "OPEN" | "REQUESTED" | "REJECTED" | "CLOSED" | "DRAFT";
     /**
      * @description The LOC's type
      * @enum {string}
@@ -303,6 +303,8 @@ export interface components {
       userPostalAddress?: components["schemas"]["PostalAddressView"];
       /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
       company?: string;
+      /** @description LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined) */
+      draft?: boolean;
     };
     /**
      * LocRequestView

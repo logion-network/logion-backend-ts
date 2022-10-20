@@ -17,6 +17,7 @@ import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress";
 import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service";
+import { UUID } from "bson";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
@@ -43,8 +44,9 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        await whenCreatingLocRequest();
+        await whenCreatingLocRequest(false);
         thenRequestCreatedWithDescription(description);
+        thenStatusIs("REQUESTED");
     });
 
     it("creates an open Transaction LOC with requester address", async () => {
@@ -85,8 +87,9 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        await whenCreatingLocRequest();
+        await whenCreatingLocRequest(false);
         thenRequestCreatedWithDescription(description);
+        thenStatusIs("REQUESTED");
     });
 
     it("creates an open Collection LOC with requester address", async () => {
@@ -142,11 +145,12 @@ describe("LocRequestFactory", () => {
         }
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress, PUBLIC_SEAL);
         givenLocDescription(description);
-        await whenCreatingLocRequest();
+        await whenCreatingLocRequest(false);
         thenRequestCreatedWithDescription(description);
         thenRequestSealIs(SEAL);
         expect(description.userIdentity).toEqual(userIdentity)
         expect(description.userPostalAddress).toEqual(userPostalAddress)
+        thenStatusIs("REQUESTED");
     });
 
     it("creates an open Identity LOC with requester address", async () => {
@@ -193,9 +197,17 @@ describe("LocRequestFactory", () => {
         const nature = "Original LOC"
         await whenCreatingSofRequest(target, nature);
         thenRequestCreatedWithDescription(description);
-        expect(createdLocRequest.links?.length).toBe(1)
-        expect(createdLocRequest.links![0].target).toEqual(target)
-        expect(createdLocRequest.links![0].nature).toEqual(nature)
+        expect(request.links?.length).toBe(1)
+        expect(request.links![0].target).toEqual(target)
+        expect(request.links![0].nature).toEqual(nature)
+    });
+
+    it("creates a draft request", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        await whenCreatingLocRequest(true);
+        thenStatusIs("DRAFT");
     });
 
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, seal?: PublicSeal): LocRequestDescription {
@@ -317,6 +329,17 @@ describe("LocRequestAggregateRoot", () => {
         const locCreatedDate = moment();
         whenSettingLocCreatedDate(locCreatedDate);
         thenStatusIs('OPEN');
+    });
+
+    it("submits if draft", () => {
+        givenRequestWithStatus('DRAFT');
+        whenSubmitting();
+        thenRequestStatusIs('REQUESTED');
+    });
+
+    it("fails submit given non-draft", () => {
+        givenRequestWithStatus('REQUESTED');
+        expect(() => whenSubmitting()).toThrowError();
     });
 });
 
@@ -689,6 +712,85 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
     })
 })
 
+describe("LocRequestAggregateRoot (processes)", () => {
+
+    it("full life-cycle", () => {
+        // User creates and submits
+        givenRequestWithStatus("DRAFT");
+
+        request.addFile({
+            hash: "hash1",
+            name: "name1",
+            contentType: "text/plain",
+            oid: 1234,
+            nature: "nature1",
+            submitter: SUBMITTER,
+        });
+        const target1 = new UUID().toString();
+        request.addLink({
+            nature: "Some link nature",
+            target: target1,
+        });
+        request.addMetadataItem({
+            name: "Some name",
+            value: "Some value",
+            submitter: SUBMITTER,
+        });
+        request.submit();
+        thenRequestStatusIs("REQUESTED");
+
+        // LLO accepts and publishes
+        request.accept(moment());
+        thenRequestStatusIs("OPEN");
+
+        request.confirmFile("hash1");
+        request.setFileAddedOn("hash1", moment()); // Sync
+
+        request.confirmLink(target1);
+        request.setLinkAddedOn(target1, moment()); // Sync
+
+        request.confirmMetadataItem("Some name");
+        request.setMetadataItemAddedOn("Some name", moment()); // Sync
+
+        // LLO adds other data
+        request.addFile({
+            hash: "hash2",
+            name: "name2",
+            contentType: "text/plain",
+            oid: 1235,
+            nature: "nature2",
+            submitter: OWNER,
+        });
+        request.confirmFile("hash2");
+        request.setFileAddedOn("hash2", moment()); // Sync
+
+        const target2 = new UUID().toString();
+        request.addLink({
+            nature: "Some other link nature",
+            target: target2,
+        });
+        request.confirmLink(target2);
+        request.setLinkAddedOn(target2, moment()); // Sync
+
+        request.addMetadataItem({
+            name: "Some other name",
+            value: "Some other value",
+            submitter: OWNER,
+        });
+        request.confirmMetadataItem("Some other name");
+        request.setMetadataItemAddedOn("Some other name", moment()); // Sync
+
+        // LLO closes
+        request.preClose();
+        thenRequestStatusIs("CLOSED");
+        request.close(moment()); // Sync
+
+        // LLO voids
+        request.preVoid("Void reason");
+        request.voidLoc(moment()); // Sync
+    })
+})
+
 const REJECT_REASON = "Illegal";
 const REJECTED_ON = moment();
 const ACCEPTED_ON = moment().add(1, "minute");
@@ -720,8 +822,8 @@ function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
 }
 
 function thenRequestSealIs(expectedSeal: Seal) {
-    expect(createdLocRequest.seal?.hash).toEqual(expectedSeal.hash);
-    expect(createdLocRequest.seal?.salt).toEqual(expectedSeal.salt);
+    expect(request.seal?.hash).toEqual(expectedSeal.hash);
+    expect(request.seal?.salt).toEqual(expectedSeal.salt);
 }
 
 function thenRequestRejectReasonIs(rejectReason: string | undefined) {
@@ -744,22 +846,23 @@ function givenLocDescription(value: LocRequestDescription) {
 
 let locDescription: LocRequestDescription;
 
-async function whenCreatingLocRequest() {
+async function whenCreatingLocRequest(draft: boolean) {
     const sealService = new Mock<PersonalInfoSealService>();
     sealService
         .setup(instance => instance.seal(It.IsAny<UserIdentity>(), LATEST_SEAL_VERSION))
         .returns(SEAL);
     const factory = new LocRequestFactory(repository.object(), sealService.object());
-    createdLocRequest = await factory.newLocRequest({
+    request = await factory.newLocRequest({
         id: requestId,
-        description: locDescription
+        description: locDescription,
+        draft,
     });
 }
 
 async function whenCreatingSofRequest(target: string, nature: string) {
     const sealService = new Mock<PersonalInfoSealService>();
     const factory = new LocRequestFactory(repository.object(), sealService.object());
-    createdLocRequest = await factory.newSofRequest({
+    request = await factory.newSofRequest({
         id: requestId,
         description: locDescription,
         target,
@@ -773,7 +876,7 @@ async function whenCreatingOpenLoc() {
         .setup(instance => instance.seal(It.IsAny(), LATEST_SEAL_VERSION))
         .returns(SEAL);
     const factory = new LocRequestFactory(repository.object(), sealService.object());
-    createdLocRequest = await factory.newOpenLoc({
+    request = await factory.newOpenLoc({
         id: requestId,
         description: locDescription
     });
@@ -781,20 +884,18 @@ async function whenCreatingOpenLoc() {
 
 const repository = new Mock<LocRequestRepository>();
 
-let createdLocRequest: LocRequestAggregateRoot;
-
 function thenRequestCreatedWithDescription(description: LocRequestDescription) {
-    expect(createdLocRequest.id).toBe(requestId);
-    expect(createdLocRequest.status).toBe('REQUESTED');
-    expect(createdLocRequest.getDescription()).toEqual(description);
-    expect(createdLocRequest.decisionOn).toBeUndefined();
+    expect(request.id).toBe(requestId);
+    expect(request.status).toBe('REQUESTED');
+    expect(request.getDescription()).toEqual(description);
+    expect(request.decisionOn).toBeUndefined();
 }
 
 function thenOpenLocCreatedWithDescription(description: LocRequestDescription) {
-    expect(createdLocRequest.id).toBe(requestId);
-    expect(createdLocRequest.status).toBe('OPEN');
-    expect(createdLocRequest.getDescription()).toEqual(description);
-    expect(createdLocRequest.decisionOn).toBeDefined();
+    expect(request.id).toBe(requestId);
+    expect(request.status).toBe('OPEN');
+    expect(request.getDescription()).toEqual(description);
+    expect(request.decisionOn).toBeDefined();
 }
 
 function whenAddingFiles(files: FileDescription[]) {
@@ -940,6 +1041,10 @@ function whenRemovingFile(remover: string, hash: string) {
 }
 
 let removedFile: FileDescription;
+
+function whenSubmitting() {
+    request.submit();
+}
 
 function thenReturnedRemovedFile(expectedFile: FileDescription) {
     expectSameFiles(removedFile, expectedFile);

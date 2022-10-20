@@ -6,7 +6,7 @@ import {
     FetchLocRequestsSpecification,
     LocFile,
     LocMetadataItem,
-    LocLink, LocType
+    LocLink, LocType, LocRequestStatus
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
@@ -130,7 +130,7 @@ describe('LocRequestRepository.save()', () => {
         for (const locType of locTypes) {
 
             const id = uuid()
-            const locRequest = givenOpenLoc(id, locType)
+            const locRequest = givenLoc(id, locType, "OPEN")
 
             await repository.save(locRequest)
 
@@ -143,7 +143,7 @@ describe('LocRequestRepository.save()', () => {
         for (const locType of locTypes) {
 
             const id = uuid()
-            const locRequest = givenOpenLoc(id, locType)
+            const locRequest = givenLoc(id, locType, "OPEN")
 
             locRequest.links![0].target = undefined;
 
@@ -156,9 +156,19 @@ describe('LocRequestRepository.save()', () => {
             await checkAggregate(id, 0)
         }
     })
+
+    it("deletes a draft LocRequest aggregate", async () => {
+        const id = uuid()
+        const locRequest = givenLoc(id, "Transaction", "DRAFT")
+
+        await repository.save(locRequest)
+        await repository.deleteDraft(locRequest)
+
+        await checkAggregate(id, 0)
+    })
 })
 
-function givenOpenLoc(id: string, locType: LocType): LocRequestAggregateRoot {
+function givenLoc(id: string, locType: LocType, status: LocRequestStatus): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
     locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
@@ -166,7 +176,7 @@ function givenOpenLoc(id: string, locType: LocType): LocRequestAggregateRoot {
     locRequest.description = "I want to open a case"
     locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()
-    locRequest.status = 'OPEN'
+    locRequest.status = status
 
     locRequest.links = []
     locRequest.addLink({

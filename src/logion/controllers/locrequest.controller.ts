@@ -155,12 +155,13 @@ export class LocRequestController extends ApiController {
         } else {
             request = await this.locRequestFactory.newLocRequest({
                 id: uuid(),
-                description
+                description,
+                draft: createLocRequestView.draft === true,
             });
         }
         await this.locRequestRepository.save(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.findUserPrivateData(request);
-        if (!authenticatedUser.isNodeOwner()) {
+        if (request.status === "REQUESTED") {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
         return this.toView(request, { userIdentity, userPostalAddress, identityLocId });
@@ -473,6 +474,48 @@ export class LocRequestController extends ApiController {
         await this.locRequestRepository.save(request)
         const { userIdentity } = await this.findUserPrivateData(request)
         this.notify("WalletUser", "loc-accepted", request.getDescription(), userIdentity, request.getDecision())
+    }
+
+    static submitLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/submit"].post!;
+        operationObject.summary = "Submits a draft LOC Request";
+        operationObject.description = "The authenticated user must be the requester of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the draft LOC request to submit" });
+    }
+
+    @HttpPost('/:requestId/submit')
+    @Async()
+    async submitLocRequest(_ignoredBody: any, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.is(request.requesterAddress));
+        request.submit();
+        await this.locRequestRepository.save(request);
+        const { userIdentity } = await this.findUserPrivateData(request)
+        this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
+    }
+
+    static cancelLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/cancel"].post!;
+        operationObject.summary = "Cancels a draft LOC Request";
+        operationObject.description = "The authenticated user must be the requester of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the draft LOC request to submit" });
+    }
+
+    @HttpPost('/:requestId/cancel')
+    @Async()
+    async cancelLocRequest(_ignoredBody: any, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.is(request.requesterAddress));
+
+        for(const file of request.files || []) {
+            this.fileStorageService.deleteFile(file);
+        }
+
+        await this.locRequestRepository.deleteDraft(request);
     }
 
     static addFile(spec: OpenAPIV3.Document) {
