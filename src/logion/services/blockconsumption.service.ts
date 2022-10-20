@@ -89,14 +89,20 @@ export class BlockConsumer {
         if (timestamp === undefined) {
             throw Error("Block has no timestamp");
         }
-        await this.transactionSynchronizer.addTransactions(extrinsics);
-        for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
-            const extrinsic = extrinsics.extrinsics[i];
-            if (extrinsic.method.pallet !== "timestamp") {
-                logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
-                await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
-                await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
+        try {
+            await this.transactionSynchronizer.addTransactions(extrinsics);
+            for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
+                const extrinsic = extrinsics.extrinsics[i];
+                if (extrinsic.method.pallet !== "timestamp") {
+                    logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
+                    await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
+                    await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
+                }
             }
+        } catch(e) {
+            logger.error("Extrinsics:");
+            logger.error(JSON.stringify(extrinsics, undefined, 4));
+            throw e;
         }
     }
 
