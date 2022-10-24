@@ -82,6 +82,7 @@ describe('LocRequestRepository - read accesses', () => {
         checkDescription([request!], "Transaction", "loc-10");
 
         const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        expect(request!.getFiles(request?.ownerAddress).length).toBe(1);
         expect(request!.hasFile(hash)).toBe(true);
         const file = request!.getFile(hash);
         expect(file.name).toBe("a file");
@@ -91,14 +92,14 @@ describe('LocRequestRepository - read accesses', () => {
         expect(file.nature).toBe("some nature")
         expect(request!.files![0].draft).toBe(true);
 
-        const metadata = request!.getMetadataItems();
+        const metadata = request!.getMetadataItems(request?.ownerAddress);
         expect(metadata.length).toBe(1);
         expect(metadata[0].name).toBe("a name");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(request!.metadata![0].draft).toBe(true);
 
-        const links = request!.getLinks();
+        const links = request!.getLinks(request?.ownerAddress);
         expect(links.length).toBe(1);
         expect(links[0].target).toBe("ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d");
         expect(links[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
