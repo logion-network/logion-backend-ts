@@ -896,9 +896,9 @@ function mockRequestWithId(
             createdOn: "2022-08-31T16:01:15.651Z",
             ownerAddress: ALICE
         });
-    request.setup(instance => instance.getFiles()).returns(files);
-    request.setup(instance => instance.getMetadataItems()).returns(metadataItems);
-    request.setup(instance => instance.getLinks()).returns(links);
+    request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
+    request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
+    request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
     return request;
 }
