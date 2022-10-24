@@ -236,8 +236,8 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    getFiles(includeDraft: boolean = true): FileDescription[] {
-        return orderAndMap(this.files?.filter(item => includeDraft || !item.draft), file => this.toFileDescription(file));
+    getFiles(viewerAddress?: string): FileDescription[] {
+        return orderAndMap(this.files?.filter(item => !item.draft || viewerAddress === this.ownerAddress || item.submitter === viewerAddress), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -311,8 +311,8 @@ export class LocRequestAggregateRoot {
         })
     }
 
-    getMetadataItems(includeDraft: boolean = true): MetadataItemDescription[] {
-        return orderAndMap(this.metadata?.filter(item => includeDraft || !item.draft), this.toMetadataItemDescription);
+    getMetadataItems(viewerAddress?: string): MetadataItemDescription[] {
+        return orderAndMap(this.metadata?.filter(item => !item.draft || viewerAddress === this.ownerAddress || item.submitter === viewerAddress), this.toMetadataItemDescription);
     }
 
     setMetadataItemAddedOn(name: string, addedOn: Moment) {
@@ -426,8 +426,8 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    getLinks(includeDraft: boolean = true): LinkDescription[] {
-        return orderAndMap(this.links?.filter(link => includeDraft || !link.draft), this.toLinkDescription);
+    getLinks(viewerAddress?: string): LinkDescription[] {
+        return orderAndMap(this.links?.filter(link => !link.draft || this.ownerAddress === viewerAddress), this.toLinkDescription);
     }
 
     setLinkAddedOn(target: string, addedOn: Moment) {

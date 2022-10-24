@@ -726,16 +726,13 @@ describe("LocRequestAggregateRoot (processes)", () => {
             nature: "nature1",
             submitter: SUBMITTER,
         });
-        const target1 = new UUID().toString();
-        request.addLink({
-            nature: "Some link nature",
-            target: target1,
-        });
+        expect(request.getFiles(SUBMITTER).length).toBe(1);
         request.addMetadataItem({
             name: "Some name",
             value: "Some value",
             submitter: SUBMITTER,
         });
+        expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
         request.submit();
         thenRequestStatusIs("REQUESTED");
 
@@ -745,9 +742,6 @@ describe("LocRequestAggregateRoot (processes)", () => {
 
         request.confirmFile("hash1");
         request.setFileAddedOn("hash1", moment()); // Sync
-
-        request.confirmLink(target1);
-        request.setLinkAddedOn(target1, moment()); // Sync
 
         request.confirmMetadataItem("Some name");
         request.setMetadataItemAddedOn("Some name", moment()); // Sync
@@ -764,13 +758,13 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.confirmFile("hash2");
         request.setFileAddedOn("hash2", moment()); // Sync
 
-        const target2 = new UUID().toString();
+        const target = new UUID().toString();
         request.addLink({
-            nature: "Some other link nature",
-            target: target2,
+            nature: "Some link nature",
+            target: target,
         });
-        request.confirmLink(target2);
-        request.setLinkAddedOn(target2, moment()); // Sync
+        request.confirmLink(target);
+        request.setLinkAddedOn(target, moment()); // Sync
 
         request.addMetadataItem({
             name: "Some other name",
