@@ -784,7 +784,10 @@ export class LocRequestRepository {
     }
 
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
-        let builder = this.repository.createQueryBuilder("request");
+        let builder = this.repository.createQueryBuilder("request")
+            .leftJoinAndSelect("request.files", "file")
+            .leftJoinAndSelect("request.metadata", "metadata_item")
+            .leftJoinAndSelect("request.links", "link");
 
         if (specification.expectedRequesterAddress) {
             builder.where("request.requester_address = :expectedRequesterAddress",

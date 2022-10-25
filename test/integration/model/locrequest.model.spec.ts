@@ -48,6 +48,11 @@ describe('LocRequestRepository - read accesses', () => {
         checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5",
             "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13", "loc-21", "loc-22", "loc-23",
             "loc-24", "loc-25", "loc-26");
+
+        const requestWithItems = requests.find(request => request.description === "loc-10");
+        expect(requestWithItems?.files?.length).toBe(1);
+        expect(requestWithItems?.metadata?.length).toBe(1);
+        expect(requestWithItems?.links?.length).toBe(1);
     })
 
     it("find LOCS with Logion requester", async () => {
