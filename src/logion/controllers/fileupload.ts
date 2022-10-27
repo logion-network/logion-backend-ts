@@ -13,5 +13,8 @@ export function getUploadedFile(request: Express.Request): UploadedFile {
     } else {
         file = uploadedFiles;
     }
+    if (file.truncated) {
+        throw badRequest("File upload failed (truncated)")
+    }
     return file;
 }
