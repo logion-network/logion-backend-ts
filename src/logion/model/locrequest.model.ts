@@ -813,12 +813,13 @@ export class LocRequestRepository {
             builder.andWhere("request.requester_address IS NULL")
         }
 
-        if (specification.expectedStatuses &&
-            (specification.expectedStatuses.includes("OPEN") || specification.expectedStatuses.includes("CLOSED"))) {
-            builder.orderBy("request.loc_created_on", "DESC")
-        } else {
-            builder.orderBy("request.created_on", "DESC")
-        }
+        builder
+            .orderBy("request.voided_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.closed_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.loc_created_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.decision_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.created_on", "DESC", "NULLS FIRST");
+
         return builder.getMany();
     }
 

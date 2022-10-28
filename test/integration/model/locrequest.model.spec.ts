@@ -174,6 +174,43 @@ describe('LocRequestRepository.save()', () => {
     })
 })
 
+describe('LocRequestRepository - LOC correctly ordered', () => {
+
+    beforeAll(async () => {
+        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
+        await executeScript("test/integration/model/loc_requests_order.sql");
+        repository = new LocRequestRepository();
+    });
+
+    let repository: LocRequestRepository;
+
+    afterAll(async () => {
+        await disconnect();
+    });
+
+    it("deletes a draft LocRequest aggregate", async () => {
+        const locs = await repository.findBy({
+            expectedLocTypes: ["Collection", "Identity", "Transaction"],
+            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            expectedStatuses: ["CLOSED", "OPEN", "REJECTED", "REQUESTED"]
+        });
+
+        const descriptions = locs.map(loc => loc.description);
+        expect(descriptions).toEqual([
+            "ordered-loc-2",
+            "ordered-loc-1",
+            "ordered-loc-10",
+            "ordered-loc-9",
+            "ordered-loc-4",
+            "ordered-loc-3",
+            "ordered-loc-6",
+            "ordered-loc-5",
+            "ordered-loc-8",
+            "ordered-loc-7",
+        ])
+    });
+});
+
 function givenLoc(id: string, locType: LocType, status: LocRequestStatus): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
