@@ -53,7 +53,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
 export function setupApp(app: Express) {
     app.use(bodyParser.json());
     app.use(fileUpload({
-        limits: { fileSize: 50 * 1024 * 1024 },
+        limits: { fileSize: 300 * 1024 * 1024 },
         useTempFiles : true,
         tempFileDir : '/tmp/',
     }));
