@@ -168,6 +168,9 @@ export class LocRequestController extends ApiController {
     }
 
     private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined): Promise<boolean> {
+        if (requesterAddress === undefined) {
+            return false;
+        }
         const identityLoc = (await this.locRequestRepository.findBy({
             expectedLocTypes: [ "Identity" ],
             expectedIdentityLocType: "Polkadot",
