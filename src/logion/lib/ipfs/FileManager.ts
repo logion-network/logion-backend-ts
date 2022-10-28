@@ -46,8 +46,10 @@ export class DefaultFileManager extends FileManager {
     }
 
     async removeFileFromIpfs(cid: string): Promise<void> {
-        const removeCommand = `${this.configuration.ipfsClusterCtl} --host ${this.configuration.ipfsClusterHost} pin rm ${cid}`;
-        await this.configuration.shell.exec(removeCommand);
+        // todo re-enable as soon as better solution is available, see https://github.com/logion-network/logion-internal/issues/645
+        // const removeCommand = `${this.configuration.ipfsClusterCtl} --host ${this.configuration.ipfsClusterHost} pin rm ${cid}`;
+        // await this.configuration.shell.exec(removeCommand);
+        return Promise.resolve();
     }
 
     async downloadFromIpfs(cid: string, file: string): Promise<void> {
