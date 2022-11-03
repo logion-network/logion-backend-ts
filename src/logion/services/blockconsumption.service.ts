@@ -12,6 +12,7 @@ import { ProtectionSynchronizer } from "./protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toStringWithoutError } from "./types/responses/Extrinsic";
 import { ProgressRateLogger } from "./progressratelogger";
+import { PrometheusService } from "./prometheus.service";
 
 const { logger } = Log;
 
@@ -28,6 +29,7 @@ export class BlockConsumer {
         private locSynchronizer: LocSynchronizer,
         private protectionSynchronizer: ProtectionSynchronizer,
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
+        private prometheusService: PrometheusService,
     ) {}
 
     async consumeNewBlocks(now: () => Moment): Promise<void> {
@@ -42,13 +44,7 @@ export class BlockConsumer {
         }
 
         if (lastSynced > head) {
-            logger.warn("Out-of-sync error: last synced block number greater than head number. Transaction cache will be erased and rebuilt from block #1");
-
-            await this.transactionSynchronizer.reset();
-
-            await this.syncPointRepository.delete(lastSyncPoint!);
-            lastSynced = 0n;
-            lastSyncPoint = null;
+            throw new Error("Out-of-sync error: last synced block number greater than head number");
         }
 
         let blocksToSync = head - lastSynced;
@@ -73,6 +69,7 @@ export class BlockConsumer {
             const blockNumber = this.blockService.getBlockNumber(blocks[blocks.length - 1].block);
             lastSyncPoint = await this.sync(lastSyncPoint, now(), blockNumber);
             lastSynced = blockNumber;
+            this.prometheusService.setLastSynchronizedBlock(lastSynced);
 
             totalProcessedBlocks += BigInt(blocks.length);
             nextStop = this.nextStopNumber(lastSynced, head);

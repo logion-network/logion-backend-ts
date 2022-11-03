@@ -5,6 +5,7 @@ import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-gene
 import { AppContainer } from './container/app.container';
 import { Scheduler } from "./scheduler/scheduler.service";
 import { setupApp, predefinedSpec } from "./app.support";
+import { PrometheusService } from "./services/prometheus.service";
 
 const { logger } = Log;
 
@@ -31,5 +32,7 @@ appDataSource.initialize()
     expressOasGenerator.handleRequests();
 
     const port = process.env.PORT || 8080;
-    app.listen(port, () => logger.info(`Server started on port ${ port }`));
+    app.listen(port, () => logger.info(`API server started on port ${ port }`));
+
+    AppContainer.get(PrometheusService).startServer();
 });
