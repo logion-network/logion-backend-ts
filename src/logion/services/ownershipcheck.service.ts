@@ -3,12 +3,14 @@ import { ItemToken } from '@logion/node-api';
 import { CollectionItem } from '@logion/node-api/dist/Types';
 
 import { Network, AlchemyService } from './alchemy.service';
+import { SingularService } from './singular.service';
 
 @injectable()
 export class OwnershipCheckService {
 
     constructor(
         private alchemyService: AlchemyService,
+        private singularService: SingularService,
     ) {}
 
     async isOwner(address: string, item: CollectionItem): Promise<boolean> {
@@ -26,6 +28,8 @@ export class OwnershipCheckService {
                     return this.isOwnerOfErc721OrErc1155(Network.ETH_GOERLI, normalizedAddress, item.token);
                 } else if(tokenType === 'owner') {
                     return normalizedAddress === item.token.id.toLowerCase();
+                } else if(tokenType === 'singular_kusama') {
+                    return this.isOwnerOfSingularKusama(address, item.token.id);
                 } else {
                     throw new Error(`Unsupported token type ${tokenType}`);
                 }
@@ -53,5 +57,10 @@ export class OwnershipCheckService {
         } else {
             return { contractHash, contractTokenId };
         }
+    }
+
+    private async isOwnerOfSingularKusama(address: string, tokenId: string): Promise<boolean> {
+        const owners = await this.singularService.getOwners(tokenId);
+        return owners.find(owner => owner === address) !== undefined;
     }
 }

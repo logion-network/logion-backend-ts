@@ -34,6 +34,7 @@ import { RestrictedDeliveryService } from '../services/restricteddelivery.servic
 import { ExifService } from '../services/exif.service';
 import { PersonalInfoSealService } from "../services/seal.service";
 import { BackendHealthService } from "../services/health.service";
+import { SingularService } from "../services/singular.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -76,6 +77,7 @@ container.bind(RestrictedDeliveryService).toSelf();
 container.bind(PersonalInfoSealService).toSelf();
 container.bind(BackendHealthService).toSelf();
 container.bind(HealthService).toService(BackendHealthService);
+container.bind(SingularService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
