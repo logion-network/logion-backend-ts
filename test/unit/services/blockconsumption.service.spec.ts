@@ -15,6 +15,7 @@ import { TransactionSynchronizer } from "../../../src/logion/services/transactio
 import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
 import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic";
+import { PrometheusService } from 'src/logion/services/prometheus.service';
 
 describe("BlockConsumer", () => {
 
@@ -26,6 +27,7 @@ describe("BlockConsumer", () => {
         locSynchronizer = new Mock<LocSynchronizer>();
         protectionSynchronizer = new Mock<ProtectionSynchronizer>();
         extrinsicDataExtractor = new Mock<ExtrinsicDataExtractor>();
+        prometheusService = new Mock<PrometheusService>();
     });
 
     let blockService: Mock<BlockExtrinsicsService>;
@@ -35,6 +37,7 @@ describe("BlockConsumer", () => {
     let locSynchronizer: Mock<LocSynchronizer>;
     let protectionSynchronizer: Mock<ProtectionSynchronizer>;
     let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
+    let prometheusService: Mock<PrometheusService>;
 
     it("does nothing given up to date", async () => {
        // Given
@@ -55,6 +58,7 @@ describe("BlockConsumer", () => {
         locSynchronizer.verify(instance => instance.updateLocRequests, Times.Never());
         transactionSynchronizer.verify(instance => instance.reset, Times.Never());
         syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
+        prometheusService.verify(instance => instance.setLastSynchronizedBlock, Times.Never());
     });
 
     function givenBlock(blockNumber: bigint): SignedBlockExtended {
@@ -85,6 +89,7 @@ describe("BlockConsumer", () => {
             locSynchronizer.object(),
             protectionSynchronizer.object(),
             extrinsicDataExtractor.object(),
+            prometheusService.object(),
         );
         await transactionSync.consumeNewBlocks(() => moment());
     }
@@ -112,6 +117,7 @@ describe("BlockConsumer", () => {
             .returns(Promise.resolve(syncPoint.object()));
         syncPointRepository.setup(instance => instance.save(syncPoint.object()))
             .returns(Promise.resolve());
+        prometheusService.setup(instance => instance.setLastSynchronizedBlock(It.IsAny())).returns(undefined);
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
@@ -130,6 +136,7 @@ describe("BlockConsumer", () => {
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(5));
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(5));
         protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(5));
+        prometheusService.verify(instance => instance.setLastSynchronizedBlock);
     });
 
     function givenNewBlocks(blocks: bigint, startBlockNumber: bigint) {
@@ -163,6 +170,7 @@ describe("BlockConsumer", () => {
             .returns(Promise.resolve(syncPoint.object()));
         syncPointRepository.setup(instance => instance.save(syncPoint.object()))
             .returns(Promise.resolve());
+        prometheusService.setup(instance => instance.setLastSynchronizedBlock(It.IsAny())).returns(undefined);
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
@@ -181,9 +189,10 @@ describe("BlockConsumer", () => {
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(1));
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(1));
         protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(1));
+        prometheusService.verify(instance => instance.setLastSynchronizedBlock, Times.Exactly(1));
     });
 
-    it("deletes all and restarts given out of sync", async () => {
+    it("fails when out of sync", async () => {
         // Given
         const head = 5n;
         givenBlock(head);
@@ -202,29 +211,8 @@ describe("BlockConsumer", () => {
         syncPoint.setup(instance => instance.latestHeadBlockNumber).returns(789789n.toString());
         syncPointRepository.setup(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME))
             .returns(Promise.resolve(syncPoint.object()));
-        syncPointRepository.setup(instance => instance.delete(syncPoint.object()))
-            .returns(Promise.resolve());
-
-        const newSyncPoint = new Mock<SyncPointAggregateRoot>();
-        syncPointFactory.setup(instance => instance.newSyncPoint(It.Is<{latestHeadBlockNumber: bigint}>(
-            value => value.latestHeadBlockNumber === head))).returns(newSyncPoint.object());
-        syncPointRepository.setup(instance => instance.save(newSyncPoint.object()))
-            .returns(Promise.resolve());
-
-        transactionSynchronizer.setup(instance => instance.reset()).returns(Promise.resolve());
-        transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
-        locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
-        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
 
         // When
-        await consumeNewBlocks();
-
-        // Then
-        syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
-        blockService.verify(instance => instance.getBlockExtrinsics(It.Is(_ => true)), Times.Exactly(5));
-        syncPointRepository.verify(instance => instance.delete(syncPoint.object()));
-        syncPointRepository.verify(instance => instance.save(newSyncPoint.object()));
-
-        transactionSynchronizer.verify(instance => instance.reset());
+        await expectAsync(consumeNewBlocks()).toBeRejectedWithError("Out-of-sync error: last synced block number greater than head number");
     });
 });
