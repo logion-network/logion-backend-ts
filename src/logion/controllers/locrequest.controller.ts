@@ -69,6 +69,9 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.deleteMetadata(spec);
     LocRequestController.confirmMetadata(spec);
     LocRequestController.createSofRequest(spec);
+    LocRequestController.submitLocRequest(spec);
+    LocRequestController.cancelLocRequest(spec);
+    LocRequestController.reworkLocRequest(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -502,7 +505,7 @@ export class LocRequestController extends ApiController {
 
     static cancelLocRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/cancel"].post!;
-        operationObject.summary = "Cancels a draft LOC Request";
+        operationObject.summary = "Cancels a draft or rejected LOC Request";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, { 'requestId': "The ID of the draft LOC request to submit" });
@@ -519,7 +522,25 @@ export class LocRequestController extends ApiController {
             this.fileStorageService.deleteFile(file);
         }
 
-        await this.locRequestRepository.deleteDraft(request);
+        await this.locRequestRepository.deleteDraftOrRejected(request);
+    }
+
+    static reworkLocRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/rework"].post!;
+        operationObject.summary = "Convert back a rejected LOC Request to draft";
+        operationObject.description = "The authenticated user must be the requester of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the reject LOC request to move back to draft" });
+    }
+
+    @HttpPost('/:requestId/rework')
+    @Async()
+    async reworkLocRequest(_ignoredBody: any, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.is(request.requesterAddress));
+        request.rework();
+        await this.locRequestRepository.save(request);
     }
 
     static addFile(spec: OpenAPIV3.Document) {
