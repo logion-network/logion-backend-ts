@@ -31,6 +31,7 @@ import { fileExists } from "../../helpers/filehelper";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { UserIdentity } from "../../../src/logion/model/useridentity";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
+import { buildExpress } from "../../../src/logion/app.support";
 
 type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
@@ -451,15 +452,34 @@ describe('LocRequestController', () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
-            .field({ nature: "some nature" })
+            .field({
+                nature: "some nature",
+                hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
+            })
             .attach('file', buffer, {
                 filename: FILE_NAME,
                 contentType: 'text/plain',
             })
-            .expect(200)
+            .expect(200);
+    })
+
+    it('fails to add file to loc with wrong hash', async () => {
+        const app = setupApp(LocRequestController, mockModelForAddFile);
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/files`)
+            .field({
+                nature: "some nature",
+                hash: "wrong-hash"
+            })
+            .attach('file', buffer, {
+                filename: FILE_NAME,
+                contentType: 'text/plain',
+            })
+            .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.hash).toBe(SOME_DATA_HASH);
+                expect(response.body.errorMessage).toBe("Received hash wrong-hash does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
             });
     })
 

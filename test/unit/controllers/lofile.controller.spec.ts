@@ -39,6 +39,7 @@ describe("LoFileController", () => {
 
         await request(app)
             .put(`/api/lo-file/${ newFile.id }`)
+            .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(204)
 
@@ -58,13 +59,29 @@ describe("LoFileController", () => {
 
         await request(app)
             .put(`/api/lo-file/${ existingFile.id }`)
+            .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
-            .expect(204)
+            .expect(204);
 
         factory.verify(instance => instance.newLoFile(It.IsAny<LoFileDescription>()), Times.Never())
         fileStorageService.verify(instance => instance.deleteFile(It.IsAny<FileId>()))
         fileStorageService.verify(instance => instance.importFileInDB(It.IsAny<string>(), existingFile.id))
         repository.verify(instance => instance.save(It.IsAny<LoFileAggregateRoot>()))
+    });
+
+    it("fails to uploads with wrong hash", async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true);
+        const app = setupApp(LoFileController, mockModel, mock);
+
+        await request(app)
+            .put(`/api/lo-file/${ existingFile.id }`)
+            .field({ "hash": "wrong-hash" })
+            .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
+            .expect(400);
+
+        fileStorageService.verify(instance => instance.deleteFile(It.IsAny<FileId>()), Times.Never())
+        fileStorageService.verify(instance => instance.importFileInDB(It.IsAny<string>(), newFile.id), Times.Never())
+        repository.verify(instance => instance.save(It.IsAny<LoFileAggregateRoot>()), Times.Never())
     });
 
     it("downloads", async () => {
@@ -86,6 +103,7 @@ describe("LoFileController", () => {
 
         await request(app)
             .put(`/api/lo-file/${ newFile.id }`)
+            .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(401)
 
@@ -100,6 +118,7 @@ describe("LoFileController", () => {
 
         await request(app)
             .put(`/api/lo-file/${ existingFile.id }`)
+            .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(401)
 

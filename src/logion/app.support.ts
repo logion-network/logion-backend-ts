@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from "openapi-types";
+import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
 import {
     fillInSpec as fillInSpecForProtectionController,
     ProtectionRequestController
@@ -50,15 +51,33 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     return spec;
 }
 
-export function setupApp(app: Express) {
+export function buildExpress(withDoc?: boolean): Express {
+    const app = express();
+
+    if(withDoc === undefined || withDoc) {
+        expressOasGenerator.handleResponses(app, {
+            predefinedSpec,
+            specOutputFileBehavior: SPEC_OUTPUT_FILE_BEHAVIOR.RECREATE,
+            swaggerDocumentOptions: {
+        
+            },
+            alwaysServeDocs: true,
+        });
+    }
+
     app.use(bodyParser.json());
+    app.use(bodyParser.urlencoded({ extended: false }));
     app.use(fileUpload({
         limits: { fileSize: 300 * 1024 * 1024 },
         useTempFiles : true,
         tempFileDir : '/tmp/',
     }));
     app.use(cors());
+    return app;
+}
 
+export function setupApp(withDoc?: boolean): Express {
+    const app = buildExpress(withDoc);
     const dino = new Dino(app, '/api');
 
     dino.useRouter(() => express.Router());
@@ -78,4 +97,9 @@ export function setupApp(app: Express) {
         });
 
     dino.bind();
+
+    if(withDoc === undefined || withDoc) {
+        expressOasGenerator.handleRequests();
+    }
+    return app;
 }

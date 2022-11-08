@@ -112,11 +112,28 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: SOME_DATA_HASH })
             .attach('file', buffer, { filename: FILE_NAME })
-            .expect(200)
+            .expect(200);
+    })
+
+    it('fails to add file to collection item if wrong hash', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: false,
+        }));
+        const buffer = Buffer.from(SOME_DATA);
+        await request(app)
+            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: "wrong-hash" })
+            .attach('file', buffer, { filename: FILE_NAME })
+            .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.hash).toBe(SOME_DATA_HASH);
+                expect(response.body.errorMessage).toBe("Received hash wrong-hash does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
             });
     })
 
@@ -131,6 +148,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: SOME_DATA_HASH })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -150,6 +168,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: SOME_DATA_HASH })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -169,6 +188,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: SOME_DATA_HASH })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -188,6 +208,7 @@ describe("CollectionController", () => {
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
             .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
+            .field({ hash: SOME_DATA_HASH })
             .attach('file', buffer, { filename: "WrongName.pdf" })
             .expect(400)
             .expect('Content-Type', /application\/json/)

@@ -2,7 +2,6 @@ import { ApiController, Controller, HttpPut, Async, HttpGet, SendsResponse } fro
 import { injectable } from "inversify";
 import {
     badRequest,
-    Log,
     setPathParameters,
     getDefaultResponsesNoContent,
     addTag,
@@ -10,16 +9,17 @@ import {
     getDefaultResponsesWithAnyBody,
     requireDefined,
     AuthenticationService,
+    getRequestBody,
 } from "@logion/rest-api-core";
-import { rm } from "fs/promises";
 import { OpenAPIV3 } from "express-oas-generator";
 
 import { LoFileRepository, LoFileFactory } from "../model/lofile.model";
 import { FileStorageService } from "../services/file.storage.service";
 import { getUploadedFile } from "./fileupload";
 import { downloadAndClean } from "../lib/http";
+import { components } from "./components";
 
-const { logger } = Log;
+type FileUploadData = components["schemas"]["FileUploadData"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'LO Files';
@@ -50,6 +50,10 @@ export class LoFileController extends ApiController {
         operationObject.summary = "Uploads a Legal Officer file";
         operationObject.description = "The authenticated user must be the node owner.";
         operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.requestBody = getRequestBody({
+            description: "File upload data",
+            view: "FileUploadData",
+        });
         setPathParameters(operationObject, {
             'id': "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
         });
@@ -58,13 +62,13 @@ export class LoFileController extends ApiController {
     @HttpPut("/:id")
     @Async()
     @SendsResponse()
-    async uploadFile(_body: any, id: string): Promise<void> {
+    async uploadFile(body: FileUploadData, id: string): Promise<void> {
 
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
 
         const existingLoFile = await this.loFileRepository.findById(id);
-        const file = getUploadedFile(this.request)
+        const file = await getUploadedFile(this.request, requireDefined(body.hash, () => badRequest("No hash found for upload file")));
         if (existingLoFile) {
             const oidToRemove = existingLoFile.oid;
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
