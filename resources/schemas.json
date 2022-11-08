@@ -843,22 +843,15 @@
             "AddFileView": {
                 "type": "object",
                 "properties": {
+                    "hash": {
+                        "type": "string",
+                        "description": "Hash of uploaded file"
+                    },
                     "nature": {
                         "type": "string",
                         "description": "The file's nature"
                     }
                 }
-            },
-            "AddFileResultView": {
-                "type": "object",
-                "properties": {
-                    "hash": {
-                        "type": "string",
-                        "description": "Hex-encoded SHA256 hash of added file"
-                    }
-                },
-                "title": "AddFileResultView",
-                "description": "The result of adding a file to a LOC"
             },
             "AddLinkView": {
                 "type": "object",
@@ -1112,6 +1105,14 @@
                 },
                 "title": "CreateSofRequestView",
                 "description": "A Statement of Facts Request to create"
+            },
+            "FileUploadData": {
+                "type": "object",
+                "properties": {
+                    "hash": {
+                        "type": "string"
+                    }
+                }
             }
         }
     }

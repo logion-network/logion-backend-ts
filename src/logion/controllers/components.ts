@@ -528,16 +528,10 @@ export interface components {
       rejectReason?: string;
     };
     AddFileView: {
+      /** @description Hash of uploaded file */
+      hash?: string;
       /** @description The file's nature */
       nature?: string;
-    };
-    /**
-     * AddFileResultView
-     * @description The result of adding a file to a LOC
-     */
-    AddFileResultView: {
-      /** @description Hex-encoded SHA256 hash of added file */
-      hash?: string;
     };
     AddLinkView: {
       /** @description The link's target */
@@ -701,6 +695,9 @@ export interface components {
        * @example 0xecdc3920d5cb4d6721f65c6c36f35996faf34eccf8f7948d69004483fddf19e6
        */
       itemId?: string;
+    };
+    FileUploadData: {
+      hash?: string;
     };
   };
 }

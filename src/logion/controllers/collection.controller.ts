@@ -20,6 +20,8 @@ import {
     getDefaultResponses,
     getDefaultResponsesWithAnyBody,
     AuthenticationService,
+    getRequestBody,
+    getDefaultResponsesNoContent,
 } from "@logion/rest-api-core";
 import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
@@ -31,9 +33,9 @@ import { downloadAndClean } from "../lib/http";
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];
-type AddFileResultView = components["schemas"]["AddFileResultView"];
 type CheckLatestDeliveryResponse = components["schemas"]["CheckLatestDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
+type FileUploadData = components["schemas"]["FileUploadData"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -137,7 +139,11 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files"].post!;
         operationObject.summary = "Adds a file to a Collection Item";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
-        operationObject.responses = getDefaultResponses("AddFileResultView");
+        operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.requestBody = getRequestBody({
+            description: "File upload data",
+            view: "FileUploadData",
+        });
         setPathParameters(operationObject, {
                 'collectionLocId': "The ID of the Collection LOC",
                 'itemId': "The ID of the Collection Item",
@@ -146,7 +152,7 @@ export class CollectionController extends ApiController {
 
     @HttpPost('/:collectionLocId/:itemId/files')
     @Async()
-    async addFile(_body: any, collectionLocId: string, itemId: string): Promise<AddFileResultView> {
+    async addFile(body: FileUploadData, collectionLocId: string, itemId: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.requesterAddress);
@@ -156,8 +162,8 @@ export class CollectionController extends ApiController {
             throw badRequest("Collection Item not found on chain")
         }
 
-        const file = getUploadedFile(this.request);
-        const hash = await sha256File(file.tempFilePath);
+        const hash = requireDefined(body.hash, () => badRequest("No hash found for upload file"));
+        const file = await getUploadedFile(this.request, hash);
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
             collectionLocId,
@@ -181,8 +187,6 @@ export class CollectionController extends ApiController {
 
         const collectionItemFile = collectionItem.addFile({ hash, cid })
         await this.collectionRepository.saveFile(collectionItemFile);
-
-        return { hash };
     }
 
     private async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<ItemFile> {

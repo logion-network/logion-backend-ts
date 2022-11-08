@@ -82,7 +82,6 @@ type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsRespo
 type RejectLocRequestView = components["schemas"]["RejectLocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
 type PostalAddressView = components["schemas"]["PostalAddressView"];
-type AddFileResultView = components["schemas"]["AddFileResultView"];
 type VoidLocView = components["schemas"]["VoidLocView"];
 type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
@@ -547,21 +546,21 @@ export class LocRequestController extends ApiController {
         const operationObject = spec.paths["/api/loc-request/{requestId}/files"].post!;
         operationObject.summary = "Adds a file to the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
-        operationObject.responses = getDefaultResponses("AddFileResultView");
+        operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
     }
 
     @HttpPost('/:requestId/files')
     @Async()
-    async addFile(addFileView: AddFileView, requestId: string): Promise<AddFileResultView> {
+    async addFile(addFileView: AddFileView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const submitter = (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner() || user.is(request.requesterAddress), "Only LOC owner or requester can submit a file")
             .address
 
-        const file = getUploadedFile(this.request);
+        const hash = requireDefined(addFileView.hash, () => badRequest("No hash found for upload file"));
+        const file = await getUploadedFile(this.request, hash);
 
-        const hash = await sha256File(file.tempFilePath);
         if(request.hasFile(hash)) {
             throw new Error("File already present");
         }
@@ -576,8 +575,6 @@ export class LocRequestController extends ApiController {
             submitter,
         });
         await this.locRequestRepository.save(request);
-
-        return { hash };
     }
 
     static downloadFile(spec: OpenAPIV3.Document) {
