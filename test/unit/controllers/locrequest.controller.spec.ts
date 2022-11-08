@@ -718,10 +718,17 @@ describe('LocRequestController', () => {
             .expect(200);
     })
 
-    it('cancels a draft loc', async () => {
+    it('cancels a draft or rejected loc', async () => {
         const app = setupApp(LocRequestController, mockModelForCancel)
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/cancel`)
+            .expect(200);
+    })
+
+    it('reworks a rejected loc', async () => {
+        const app = setupApp(LocRequestController, mockModelForRework)
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/rework`)
             .expect(200);
     })
 })
@@ -1259,7 +1266,7 @@ function mockModelForCancel(container: Container) {
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
         .returns(Promise.resolve(request.object()));
-    repository.setup(instance => instance.deleteDraft(request.object()))
+    repository.setup(instance => instance.deleteDraftOrRejected(request.object()))
         .returns(Promise.resolve());
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
@@ -1267,5 +1274,25 @@ function mockModelForCancel(container: Container) {
     fileStorageService.setup(instance => instance.deleteFile(dbFile)).returnsAsync();
     fileStorageService.setup(instance => instance.deleteFile(ipfsFile)).returnsAsync();
     container.bind(FileStorageService).toConstantValue(fileStorageService.object());
+    mockOtherDependencies(container)
+}
+
+function mockModelForRework(container: Container) {
+    const factory = new Mock<LocRequestFactory>();
+    container.bind(LocRequestFactory).toConstantValue(factory.object());
+
+    const request = mockRequest("REJECTED", testData);
+    request.setup(instance => instance.rework()).returns(undefined);
+
+    const repository = new Mock<LocRequestRepository>();
+    repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
+        .returns(Promise.resolve(request.object()));
+    repository.setup(instance => instance.save(request.object()))
+        .returns(Promise.resolve());
+    container.bind(LocRequestRepository).toConstantValue(repository.object());
+
+    const fileStorageService = new Mock<FileStorageService>();
+    container.bind(FileStorageService).toConstantValue(fileStorageService.object());
+
     mockOtherDependencies(container)
 }

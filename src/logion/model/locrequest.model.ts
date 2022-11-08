@@ -136,6 +136,13 @@ export class LocRequestAggregateRoot {
         this.decisionOn = rejectedOn.toISOString();
     }
 
+    rework(): void {
+        if (this.status != 'REJECTED') {
+            throw new Error("Cannot rework a non-rejected request");
+        }
+        this.status = 'DRAFT';
+    }
+
     accept(decisionOn: Moment): void {
         if (this.status != 'REQUESTED') {
             throw new Error("Cannot accept already decided request");
@@ -823,9 +830,9 @@ export class LocRequestRepository {
         return builder.getMany();
     }
 
-    async deleteDraft(request: LocRequestAggregateRoot): Promise<void> {
-        if(request.status !== "DRAFT") {
-            throw new Error("Cannot delete non-draft request");
+    async deleteDraftOrRejected(request: LocRequestAggregateRoot): Promise<void> {
+        if(request.status !== "DRAFT" && request.status !== "REJECTED") {
+            throw new Error("Cannot delete non-draft and non-rejected request");
         }
 
         return await appDataSource.manager.transaction(async entityManager => {

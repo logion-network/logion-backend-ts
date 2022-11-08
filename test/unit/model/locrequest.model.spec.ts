@@ -736,6 +736,15 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.submit();
         thenRequestStatusIs("REQUESTED");
 
+        // LLO rejects
+        request.reject("Because.", moment());
+        thenRequestStatusIs("REJECTED");
+
+        // User reworks and submits again
+        request.rework();
+        thenRequestStatusIs("DRAFT");
+        request.submit();
+
         // LLO accepts and publishes
         request.accept(moment());
         thenRequestStatusIs("OPEN");

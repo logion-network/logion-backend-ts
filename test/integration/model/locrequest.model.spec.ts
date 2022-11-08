@@ -168,7 +168,19 @@ describe('LocRequestRepository.save()', () => {
         const locRequest = givenLoc(id, "Transaction", "DRAFT")
 
         await repository.save(locRequest)
-        await repository.deleteDraft(locRequest)
+        await repository.deleteDraftOrRejected(locRequest)
+
+        await checkAggregate(id, 0)
+    })
+
+    it("deletes a rejected LocRequest aggregate", async () => {
+        const id = uuid()
+        const locRequest = givenLoc(id, "Transaction", "DRAFT")
+        locRequest.submit();
+        locRequest.reject("Because", moment());
+
+        await repository.save(locRequest)
+        await repository.deleteDraftOrRejected(locRequest)
 
         await checkAggregate(id, 0)
     })
@@ -211,7 +223,7 @@ describe('LocRequestRepository - LOC correctly ordered', () => {
     });
 });
 
-function givenLoc(id: string, locType: LocType, status: LocRequestStatus): LocRequestAggregateRoot {
+function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
     locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
