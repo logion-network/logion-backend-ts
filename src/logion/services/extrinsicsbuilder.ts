@@ -33,32 +33,34 @@ export class ExtrinsicsBuilder {
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
-                builders[extrinsicIndex] ||= this.createBuilder(extrinsics[extrinsicIndex]);
-                const extrinsicBuilder: ExtrinsicBuilder = builders[extrinsicIndex];
+                const extrinsicBuilder = this.createBuilder(extrinsics[extrinsicIndex]);
+                if(extrinsicBuilder) {
+                    builders[extrinsicIndex] = extrinsicBuilder;
 
-                const jsonData = event.data.toJSON() as AnyJson[];
-                for (const item of jsonData) {
-                    if (extrinsicBuilder.signer !== null && isPaysFee(item)) {
-                        extrinsicBuilder.paysFee = (item.paysFee === true || item.paysFee === 'Yes');
-                        break;
+                    const jsonData = event.data.toJSON() as AnyJson[];
+                    for (const item of jsonData) {
+                        if (extrinsicBuilder.signer !== null && isPaysFee(item)) {
+                            extrinsicBuilder.paysFee = (item.paysFee === true || item.paysFee === 'Yes');
+                            break;
+                        }
                     }
-                }
 
-                const jsonEvent: JsonEvent = {
-                    method: {
-                        pallet: event.section,
-                        method: event.method,
-                    },
-                    data: jsonData,
-                };
-                extrinsicBuilder.events.push(jsonEvent);
+                    const jsonEvent: JsonEvent = {
+                        method: {
+                            pallet: event.section,
+                            method: event.method,
+                        },
+                        data: jsonData,
+                    };
+                    extrinsicBuilder.events.push(jsonEvent);
 
-                if (!this.isGenesisBlock(this.block.block)) {
-                    if (event.method === Event.failure) {
-                        const module: Module = jsonEvent.data[0]['module'];
-                        extrinsicBuilder.error = () => this.errorService.findErrorWithApi(this.api, module);
+                    if (!this.isGenesisBlock(this.block.block)) {
+                        if (event.method === Event.failure) {
+                            const module: Module = jsonEvent.data[0]['module'];
+                            extrinsicBuilder.error = () => this.errorService.findErrorWithApi(this.api, module);
+                        }
+                        extrinsicBuilder.partialFee = () => this.calculatePartialFee(extrinsicBuilder.extrinsic);
                     }
-                    extrinsicBuilder.partialFee = () => this.calculatePartialFee(extrinsicBuilder.extrinsic);
                 }
             }
         }
@@ -67,10 +69,14 @@ export class ExtrinsicsBuilder {
             .map(builder => builder.build());
     }
 
-    private createBuilder(extrinsicWithEvent: TxWithEvent): ExtrinsicBuilder {
+    private createBuilder(extrinsicWithEvent: TxWithEvent): ExtrinsicBuilder | undefined {
         const extrinsic = extrinsicWithEvent.extrinsic;
         const call = this.registry.createType('Call', extrinsic.method);
         const jsonCall = toJsonCall(call, this.registry);
+
+        if(jsonCall.method.pallet === "sudo") {
+            return undefined;
+        }
 
         return new ExtrinsicBuilder({
             method: jsonCall.method,
