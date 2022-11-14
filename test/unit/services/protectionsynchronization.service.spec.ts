@@ -29,19 +29,15 @@ let protectionRequestRepository: Mock<ProtectionRequestRepository>;
 
 function givenCreateRecoveryExtrinsic() {
     locExtrinsic = new Mock<JsonExtrinsic>();
-    locExtrinsic.setup(instance => instance.method).returns({
-        pallet: "verifiedRecovery",
-        method: "createRecovery",
-    });
     const legalOfficers = [
-        {
-            toString: () => ALICE
-        },
-        {
-            toString: () => BOB
-        }
+        ALICE,
+        BOB,
     ];
-    locExtrinsic.setup(instance => instance.args).returns({ legal_officers: legalOfficers });
+    locExtrinsic.setup(instance => instance.call).returns({
+        section: "verifiedRecovery",
+        method: "createRecovery",
+        args: { legal_officers: legalOfficers },
+    });
     locExtrinsic.setup(instance => instance.signer).returns(SIGNER);
     locExtrinsic.setup(instance => instance.error).returns(() => null);
 }

@@ -90,7 +90,7 @@ export class BlockConsumer {
             await this.transactionSynchronizer.addTransactions(extrinsics);
             for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
                 const extrinsic = extrinsics.extrinsics[i];
-                if (extrinsic.method.pallet !== "timestamp") {
+                if (extrinsic.call.pallet !== "timestamp") {
                     logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                     await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
                     await this.protectionSynchronizer.updateProtectionRequests(extrinsic);

@@ -21,19 +21,17 @@ export class Scheduler {
 
     start() {
         logger.info("Starting scheduler...");
-        const syncTransactions = () => {
+        const syncTransactions = async () => {
             if (!this.running) {
                 this.running = true;
-                return this.blockConsumer.consumeNewBlocks(() => moment())
-                    .catch(e => {
-                        logger.error(e.message);
-                        logger.debug(e.stack);
-                    })
-                    .finally(() => {
-                        this.running = false;
-                    });
-            } else {
-                return Promise.resolve();
+                try {
+                    await this.blockConsumer.consumeNewBlocks(() => moment());
+                } catch(e: any) {
+                    logger.error(e.message);
+                    logger.error(e.stack);
+                } finally {
+                    this.running = false;
+                }
             }
         };
         const task = new AsyncTask(
@@ -42,7 +40,7 @@ export class Scheduler {
             (err: Error) => {
                 this.running = false;
                 logger.error(err.message)
-                logger.debug(err.stack);
+                logger.error(err.stack);
             }
         )
         const job = new SimpleIntervalJob({ seconds: 6 }, task);

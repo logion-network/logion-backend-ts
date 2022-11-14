@@ -1,31 +1,30 @@
-import { JsonArgs, JsonMethod } from "../../call";
+import { JsonCall } from "../../call";
 
 export interface JsonExtrinsic {
-    method: JsonMethod;
+    call: JsonCall;
     signer: string | null;
-    args: JsonArgs;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
     events: JsonEvent[];
-    paysFee: boolean;
     error: () => ExtrinsicError | null;
 }
 
 export function toString(extrinsic: JsonExtrinsic, error: ExtrinsicError | null): string {
-    return `extrinsic ${ methodToString(extrinsic.method) } ${ errorToString(error) }`
+    return `extrinsic ${ methodToString(extrinsic.call) } ${ errorToString(error) }`
 }
 
 export function toStringWithoutError(extrinsic: JsonExtrinsic): string {
-    return `extrinsic ${ methodToString(extrinsic.method) }`
+    return `extrinsic ${ methodToString(extrinsic.call) }`
 }
 
 export interface JsonEvent {
-    method: JsonMethod;
-    data: string[];
+    section: string;
+    method: string;
+    data: any[];
 }
 
-function methodToString(method: JsonMethod): string {
-    return `method [${method.pallet}.${method.method}]`
+function methodToString(call: JsonCall): string {
+    return `method [${call.section}.${call.method}]`
 }
 
 export interface ExtrinsicError {
