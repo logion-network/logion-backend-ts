@@ -38,8 +38,8 @@ export class BlockConsumer {
         const head = this.blockService.getBlockNumber(headBlock.block);
 
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
-        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
-        if (lastSynced === head.valueOf()) {
+        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : head - 1n;
+        if (lastSynced === head) {
             return;
         }
 
@@ -90,7 +90,7 @@ export class BlockConsumer {
             await this.transactionSynchronizer.addTransactions(extrinsics);
             for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
                 const extrinsic = extrinsics.extrinsics[i];
-                if (extrinsic.method.pallet !== "timestamp") {
+                if (extrinsic.call.pallet !== "timestamp") {
                     logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                     await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
                     await this.protectionSynchronizer.updateProtectionRequests(extrinsic);

@@ -1,10 +1,10 @@
+import { UUID } from "@logion/node-api";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
 import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { JsonArgs } from '../../../src/logion/services/call';
-import { decimalToUuid } from '../../../src/logion/lib/uuid';
 import {
     CollectionFactory,
     CollectionRepository,
@@ -45,12 +45,8 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addMetadata", {
             loc_id: locId,
             item: {
-                name: {
-                    toUtf8: () => METADATA_ITEM_NAME
-                },
-                value: {
-                    toUtf8: () => METADATA_ITEM_VALUE
-                },
+                name: METADATA_ITEM_NAME,
+                value: METADATA_ITEM_VALUE,
             }
         });
         givenLocRequest();
@@ -73,12 +69,8 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addLink", {
             loc_id: locId,
             link: {
-                id: {
-                    toString: () => LINK_TARGET
-                },
-                nature: {
-                    toUtf8: () => LINK_NATURE
-                },
+                id: LINK_TARGET,
+                nature: LINK_NATURE,
             }
         });
         givenLocRequest();
@@ -133,14 +125,11 @@ describe("LocSynchronizer", () => {
     });
 });
 
-const locId = {
-    toString: () => locDecimalUuid
-};
-const itemId = {
-    toHex: () => itemIdHex
-}
 const locDecimalUuid = "130084474896785895402627605545662412605";
+const locId = locDecimalUuid;
+const locIdUuid = UUID.fromDecimalStringOrThrow(locDecimalUuid).toString();
 const itemIdHex = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
+const itemId = itemIdHex;
 const blockTimestamp = moment();
 let locRequestRepository: Mock<LocRequestRepository>;
 let collectionFactory: Mock<CollectionFactory>;
@@ -148,11 +137,11 @@ let collectionRepository: Mock<CollectionRepository>;
 
 function givenLocExtrinsic(method: string, args: JsonArgs) {
     locExtrinsic = new Mock<JsonExtrinsic>();
-    locExtrinsic.setup(instance => instance.method).returns({
-        pallet: "logionLoc",
+    locExtrinsic.setup(instance => instance.call).returns({
+        section: "logionLoc",
         method,
+        args,
     });
-    locExtrinsic.setup(instance => instance.args).returns(args);
     locExtrinsic.setup(instance => instance.error).returns(() => null);
 }
 
@@ -160,19 +149,19 @@ let locExtrinsic: Mock<JsonExtrinsic>;
 
 function givenLocRequest() {
     locRequest = new Mock<LocRequestAggregateRoot>();
-    locRequestRepository.setup(instance => instance.findById(decimalToUuid(locDecimalUuid))).returns(Promise.resolve(locRequest.object()));
+    locRequestRepository.setup(instance => instance.findById(locIdUuid)).returns(Promise.resolve(locRequest.object()));
     locRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 }
 
 function givenCollectionItem() {
     collectionItem = new Mock<CollectionItemAggregateRoot>()
-    collectionRepository.setup(instance => instance.findBy(decimalToUuid(locDecimalUuid), itemIdHex)).returns(Promise.resolve(null));
+    collectionRepository.setup(instance => instance.findBy(locIdUuid, itemIdHex)).returns(Promise.resolve(null));
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
 }
 
 function givenCollectionFactory() {
     collectionFactory.setup(instance => instance.newItem(It.Is<CollectionItemDescription>(params =>
-        params.collectionLocId === decimalToUuid(locDecimalUuid) &&
+        params.collectionLocId === locIdUuid &&
         params.itemId === itemIdHex &&
         params.addedOn !== undefined
     ))).returns(collectionItem.object())
@@ -230,7 +219,7 @@ function thenLocClosed() {
 }
 
 const LINK_TARGET = "130084474896785895402627605545662412605";
-const LINK_TARGET_UUID = decimalToUuid(LINK_TARGET);
+const LINK_TARGET_UUID = UUID.fromDecimalStringOrThrow(LINK_TARGET).toString();
 const LINK_NATURE = "nature";
 const IS_EXPECTED_TARGET = It.Is<string>(target => target === LINK_TARGET_UUID)
 

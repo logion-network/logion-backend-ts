@@ -1,11 +1,11 @@
 import { injectable } from "inversify";
-import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
+import { Log, requireDefined } from "@logion/rest-api-core";
 import { getVaultAddress } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo";
 import { BlockExtrinsics } from "./types/responses/Block";
 import { JsonExtrinsic } from "./types/responses/Extrinsic";
-import { JsonMethod, JsonArgs } from "./call";
+import { JsonArgs, asArray, asString } from "./call";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 
 enum ExtrinsicType {
@@ -23,7 +23,6 @@ export class TransactionExtractor {
 
     constructor(
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
-        private polkadotService: PolkadotService,
     ) {}
 
     async extractBlockWithTransactions(block: BlockExtrinsics): Promise<BlockWithTransactions | undefined> {
@@ -58,8 +57,8 @@ export class TransactionExtractor {
         let to: string | undefined = undefined;
 
         if(type ===  ExtrinsicType.TRANSFER) {
-            transferValue = this.transferValue(extrinsic)
-            to = this.to(extrinsic)
+            transferValue = this.transferValue(extrinsic.call)
+            to = this.to(extrinsic.call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_RECOVERED) {
             const account = this.extrinsicDataExtractor.getAccount(extrinsic);
             if (account) {
@@ -70,7 +69,7 @@ export class TransactionExtractor {
             to = this.to(call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
             const signer = requireDefined(extrinsic.signer);
-            const otherSignatories = extrinsic.args['other_signatories'].map((signatory: any) => signatory.toJSON());
+            const otherSignatories = asArray(extrinsic.call.args['other_signatories']).map(signatory => asString(signatory));
             const vaultAddress = getVaultAddress(signer, otherSignatories);
 
             const call = this.extrinsicDataExtractor.getCall(extrinsic);
@@ -107,11 +106,11 @@ export class TransactionExtractor {
     }
 
     private pallet(extrinsic: JsonExtrinsic): string {
-        return extrinsic.method.pallet;
+        return extrinsic.call.section;
     }
 
     private methodName(extrinsic: JsonExtrinsic): string {
-        return extrinsic.method.method;
+        return extrinsic.call.method;
     }
 
     private tip(extrinsic: JsonExtrinsic): bigint {
@@ -127,7 +126,7 @@ export class TransactionExtractor {
         if (data === undefined || data.length <= 1) {
             return 0n;
         } else {
-            return BigInt(data[1]);
+            return BigInt(data[1].toString());
         }
     }
 
@@ -140,7 +139,7 @@ export class TransactionExtractor {
     }
 
     private transferValue(extrinsicOrCall: { args: JsonArgs }): bigint {
-        return BigInt(this.extrinsicDataExtractor.getValue(extrinsicOrCall)).valueOf();
+        return this.extrinsicDataExtractor.getValue(extrinsicOrCall);
     }
 
     private error(extrinsic: JsonExtrinsic): TransactionError | undefined {
@@ -151,11 +150,10 @@ export class TransactionExtractor {
         return undefined;
     }
 
-    private findEventData(extrinsic: JsonExtrinsic, method: JsonMethod): string[] | undefined {
+    private findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {
         const event = extrinsic.events
             .find(event => {
-                const eventMethod = event.method;
-                return eventMethod.pallet === method.pallet && eventMethod.method === method.method;
+                return event.section === method.pallet && event.method === method.method;
 
             });
         if (event === undefined) {
@@ -166,8 +164,7 @@ export class TransactionExtractor {
     }
 
     private determineType(extrinsic: JsonExtrinsic): ExtrinsicType {
-        const method = extrinsic.method;
-        switch (method.pallet) {
+        switch (extrinsic.call.section) {
             case "timestamp":
                 return ExtrinsicType.TIMESTAMP
 
@@ -175,18 +172,18 @@ export class TransactionExtractor {
                 return ExtrinsicType.TRANSFER
 
             case "recovery":
-                if (method.method === "asRecovered") {
+                if (extrinsic.call.method === "asRecovered") {
                     const call = this.extrinsicDataExtractor.getCall(extrinsic)
-                    if (call.method.pallet === "balances") {
+                    if (call.section === "balances") {
                         return ExtrinsicType.TRANSFER_FROM_RECOVERED
                     }
                 }
                 return ExtrinsicType.GENERIC_TRANSACTION
 
             case "vault":
-                if(method.method === "approveCall") {
+                if(extrinsic.call.method === "approveCall") {
                     const call = this.extrinsicDataExtractor.getCall(extrinsic);
-                    if (call.method.pallet === "balances") {
+                    if (call.section === "balances") {
                         return ExtrinsicType.TRANSFER_FROM_VAULT
                     }
                 }

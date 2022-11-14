@@ -105,7 +105,7 @@ describe("BlockConsumer", () => {
         blockService.setup(instance => instance.getBlockExtrinsics(It.IsAny()))
             .returns(Promise.resolve(block.object()));
         const extrinsic = new Mock<JsonExtrinsic>();
-        extrinsic.setup(instance => instance.method).returns({ method: "method", pallet: "pallet" })
+        extrinsic.setup(instance => instance.call).returns({ method: "method", section: "pallet", args: {} })
         block.setup(instance => instance.extrinsics).returns([ extrinsic.object() ]);
         const timestamp = moment();
         extrinsicDataExtractor.setup(instance => instance.getBlockTimestamp(block.object())).returns(timestamp)
@@ -157,7 +157,7 @@ describe("BlockConsumer", () => {
         blockService.setup(instance => instance.getBlockExtrinsics(It.IsAny()))
             .returns(Promise.resolve(block.object()));
         const extrinsic = new Mock<JsonExtrinsic>();
-        extrinsic.setup(instance => instance.method).returns({ method: "method", pallet: "pallet" })
+        extrinsic.setup(instance => instance.call).returns({ method: "method", section: "pallet", args: {} })
         extrinsic.setup(instance => instance.error).returns(() => ({ section: "errorSection", name: "error", details: "An error occurred." }))
         block.setup(instance => instance.extrinsics).returns([ extrinsic.object() ]);
         const timestamp = moment();
@@ -202,7 +202,7 @@ describe("BlockConsumer", () => {
         blockService.setup(instance => instance.getBlockExtrinsics(It.IsAny()))
             .returns(Promise.resolve(block.object()));
         const extrinsic = new Mock<JsonExtrinsic>();
-        extrinsic.setup(instance => instance.method).returns({ method: "method", pallet: "pallet" })
+        extrinsic.setup(instance => instance.call).returns({ method: "method", section: "pallet", args: {} })
         block.setup(instance => instance.extrinsics).returns([ extrinsic.object() ]);
         const timestamp = moment();
         extrinsicDataExtractor.setup(instance => instance.getBlockTimestamp(block.object())).returns(timestamp)

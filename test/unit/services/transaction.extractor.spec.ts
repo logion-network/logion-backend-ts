@@ -1,6 +1,4 @@
 import { readFileSync } from 'fs';
-import { PolkadotService } from '@logion/rest-api-core';
-import { Mock } from 'moq.ts';
 
 import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Block";
 import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor";
@@ -8,12 +6,10 @@ import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.d
 import { TransactionError } from "../../../src/logion/services/transaction.vo";
 
 let transactionExtractor: TransactionExtractor;
-let polkadotServiceMock: Mock<PolkadotService>;
 
 beforeAll(() => {
     let extrinsicDataExtractor = new ExtrinsicDataExtractor();
-    polkadotServiceMock = new Mock<PolkadotService>();
-    transactionExtractor = new TransactionExtractor(extrinsicDataExtractor, polkadotServiceMock.object());
+    transactionExtractor = new TransactionExtractor(extrinsicDataExtractor);
 })
 
 describe("TransactionExtractor", () => {
@@ -226,15 +222,27 @@ function givenBlock(fileName: string): BlockExtrinsics {
     const data = readFileSync("test/resources/" + fileName);
     const json = JSON.parse(data.toString());
     json.extrinsics.forEach((extrinsic: any) => {
+        extrinsic.call = {
+            section: extrinsic.method.pallet,
+            method: extrinsic.method.method,
+            args: extrinsic.args,
+        };
         const args = extrinsic.args;
         if("dest" in args) {
-            args.dest.toJSON = () => args.dest
+            args.dest.Id = args.dest.id
+        }
+        if("account" in args) {
+            args.account = {
+                Id: args.account
+            };
         }
         const call = extrinsic.args['call']
         if (call) {
+            call.section = call.method.pallet;
+            call.method = call.method.method;
             const callArgs = call['args']
-            if ("dest" in callArgs) {
-                callArgs.dest.toJSON = () => callArgs.dest
+            if("dest" in callArgs) {
+                callArgs.dest.Id = callArgs.dest.id
             }
         }
 
@@ -250,9 +258,11 @@ function givenBlock(fileName: string): BlockExtrinsics {
             extrinsic.error = () => null;
         }
 
-        if("other_signatories" in args) {
-            args.other_signatories = args.other_signatories.map((signatory: any) => ({toJSON: () => signatory}))
-        }
+        extrinsic.events = extrinsic.events.map((event: any) => ({
+            section: event.method.pallet,
+            method: event.method.method,
+            data: event.data,
+        }));
     });
     return json;
 }

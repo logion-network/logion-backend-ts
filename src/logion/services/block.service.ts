@@ -70,11 +70,8 @@ export class BlockExtrinsicsService {
     }
 
     async getBlockExtrinsics(block: SignedBlockExtended): Promise<BlockExtrinsics> {
-        const hash = block.block.header.hash;
         const api = await this.polkadotService.readyApi();
-        const apiAt = await api.at(hash);
-        const registry = apiAt.registry;
-        const builder = new ExtrinsicsBuilder(this.errorService, registry, api, block);
+        const builder = new ExtrinsicsBuilder(this.errorService, api, block);
         const extrinsics = await builder.build();
         return {
             number: BigInt(block.block.header.number.toString()),

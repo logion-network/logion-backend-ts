@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { BlockExtrinsics } from "./types/responses/Block";
 
 import { JsonExtrinsic } from "./types/responses/Extrinsic";
-import { JsonCall, JsonArgs } from "./call";
+import { JsonCall, JsonArgs, asBigInt, asJsonCall, asJsonObject, asString } from "./call";
 
 @injectable()
 export class ExtrinsicDataExtractor {
@@ -11,14 +11,14 @@ export class ExtrinsicDataExtractor {
     getBlockTimestamp(block: BlockExtrinsics): Moment | undefined {
         for (let index = 0; index < block.extrinsics.length; index++) {
             const extrinsic = block.extrinsics[index];
-            if (extrinsic.method.pallet === "timestamp") {
+            if (extrinsic.call.section === "timestamp") {
                 return this.getTimestamp(extrinsic);
             }
         }
     }
 
     getTimestamp(extrinsic: JsonExtrinsic): Moment {
-        const epochMilli = BigInt(extrinsic.args['now'].toString());
+        const epochMilli = asBigInt(extrinsic.call.args['now']);
         const epochSec = Number(epochMilli / 1000n);
         return moment.unix(epochSec);
     }
@@ -27,23 +27,25 @@ export class ExtrinsicDataExtractor {
         if(!('dest' in extrinsicOrCall.args)) {
             return undefined;
         } else {
-            return extrinsicOrCall.args['dest'].toJSON().id;
+            const dest = asJsonObject(extrinsicOrCall.args['dest']);
+            return asString(dest.Id);
         }
     }
 
-    getValue(extrinsicOrCall: { args: JsonArgs } ): string {
-        return extrinsicOrCall.args['value'] as string;
+    getValue(extrinsicOrCall: { args: JsonArgs } ): bigint {
+        return asBigInt(extrinsicOrCall.args['value']);
     }
 
     getCall(extrinsic: JsonExtrinsic): JsonCall {
-        return extrinsic.args['call'] as JsonCall;
+        return asJsonCall(extrinsic.call.args['call']);
     }
 
     getAccount(extrinsic: JsonExtrinsic): string | undefined {
-        if(!('account' in extrinsic.args)) {
+        if(!('account' in extrinsic.call.args)) {
             return undefined;
         } else {
-            return extrinsic.args['account'].toString()
+            const account = asJsonObject(extrinsic.call.args['account']);
+            return asString(account.Id);
         }
     }
 }
