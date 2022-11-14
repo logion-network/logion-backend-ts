@@ -1,6 +1,6 @@
 {
     "name": "logion-backend-ts",
-    "version": "0.25.0-SNAPSHOT",
+    "version": "0.26.0",
     "private": true,
     "author": {
         "name": "Logion Team",
