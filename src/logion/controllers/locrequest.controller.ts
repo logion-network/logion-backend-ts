@@ -30,7 +30,6 @@ import {
 import { UUID } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity";
-import { sha256File } from "../lib/crypto/hashing";
 import { FileStorageService } from "../services/file.storage.service";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
@@ -72,6 +71,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.submitLocRequest(spec);
     LocRequestController.cancelLocRequest(spec);
     LocRequestController.reworkLocRequest(spec);
+    LocRequestController.setVerifiedThirdParty(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -87,6 +87,8 @@ type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
+type SetVerifiedThirdPartyRequest = components["schemas"]["SetVerifiedThirdPartyRequest"];
+
 export type UserPrivateData = {
     identityLocId: string | undefined,
     userIdentity: UserIdentity | undefined,
@@ -137,6 +139,7 @@ export class LocRequestController extends ApiController {
             userIdentity: locType === "Identity" ? this.fromUserIdentityView(createLocRequestView.userIdentity) : undefined,
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
             company: createLocRequestView.company,
+            verifiedThirdParty: false,
         }
         if (locType === "Identity") {
             if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress))) {
@@ -231,6 +234,7 @@ export class LocRequestController extends ApiController {
             })),
             seal: locDescription.seal?.hash,
             company: locDescription.company,
+            verifiedThirdParty: locDescription.verifiedThirdParty,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
@@ -883,6 +887,7 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity,
             userPostalAddress,
+            verifiedThirdParty: false,
         }
         let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),
@@ -924,5 +929,22 @@ export class LocRequestController extends ApiController {
                 walletUser: userIdentity,
             }
         }
+    }
+
+    static setVerifiedThirdParty(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/verified-third-party"].put!;
+        operationObject.summary = "Sets the VTP flag of the closed Identity LOC";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+        });
+    }
+
+    @HttpPut('/:requestId/verified-third-party')
+    @Async()
+    @SendsResponse()
+    async setVerifiedThirdParty(_body: SetVerifiedThirdPartyRequest, _requestId: string) {
+        // TODO
     }
 }

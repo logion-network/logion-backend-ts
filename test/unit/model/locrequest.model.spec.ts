@@ -222,6 +222,7 @@ describe("LocRequestFactory", () => {
             locType,
             seal,
             company: undefined,
+            verifiedThirdParty: false,
         };
     }
 });

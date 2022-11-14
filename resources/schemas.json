@@ -652,6 +652,10 @@
                     "company": {
                         "type": "string",
                         "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
+                    },
+                    "verifiedThirdParty": {
+                        "type": "boolean",
+                        "description": "Tells if the user behind this closed Identity LOC is a Verified Third Party"
                     }
                 },
                 "title": "LocRequestView",
@@ -1111,6 +1115,14 @@
                 "properties": {
                     "hash": {
                         "type": "string"
+                    }
+                }
+            },
+            "SetVerifiedThirdPartyRequest": {
+                "type": "object",
+                "properties": {
+                    "isVerifiedThirdParty": {
+                        "type": "boolean"
                     }
                 }
             }
