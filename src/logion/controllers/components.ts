@@ -415,6 +415,8 @@ export interface components {
       };
       /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
       company?: string;
+      /** @description Tells if the user behind this closed Identity LOC is a Verified Third Party */
+      verifiedThirdParty?: boolean;
     };
     /**
      * LocPublicView
@@ -698,6 +700,9 @@ export interface components {
     };
     FileUploadData: {
       hash?: string;
+    };
+    SetVerifiedThirdPartyRequest: {
+      isVerifiedThirdParty?: boolean;
     };
   };
 }

@@ -67,6 +67,7 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
         },
         userIdentity: undefined,
         userPostalAddress: undefined,
+        verifiedThirdParty: false,
     }
 }
 
