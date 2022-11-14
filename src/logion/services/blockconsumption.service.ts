@@ -38,8 +38,8 @@ export class BlockConsumer {
         const head = this.blockService.getBlockNumber(headBlock.block);
 
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
-        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
-        if (lastSynced === head.valueOf()) {
+        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : head - 1n;
+        if (lastSynced === head) {
             return;
         }
 
