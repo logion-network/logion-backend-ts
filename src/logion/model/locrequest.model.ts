@@ -529,6 +529,13 @@ export class LocRequestAggregateRoot {
         this.seal = EmbeddableSeal.from(seal);
     }
 
+    setVerifiedThirdParty(verifiedThirdParty: boolean) {
+        if(this.locType !== "Identity" || this.status !== "CLOSED") {
+            throw new Error("Verified third party flag can be set only on closed Identity LOCs");
+        }
+        this.verifiedThirdParty = verifiedThirdParty;
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -604,6 +611,9 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddableSeal, { prefix: ""} )
     seal?: EmbeddableSeal;
+
+    @Column("boolean", { name: "verified_third_party", default: false })
+    verifiedThirdParty?: boolean;
 
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
