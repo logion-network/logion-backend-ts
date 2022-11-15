@@ -944,7 +944,12 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/verified-third-party')
     @Async()
     @SendsResponse()
-    async setVerifiedThirdParty(_body: SetVerifiedThirdPartyRequest, _requestId: string) {
-        // TODO
+    async setVerifiedThirdParty(body: SetVerifiedThirdPartyRequest, requestId: string) {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        const userCheck = await this.authenticationService.authenticatedUser(this.request);
+        userCheck.require(user => user.is(request.ownerAddress));
+        request.setVerifiedThirdParty(body.isVerifiedThirdParty || false);
+        await this.locRequestRepository.save(request);
+        this.response.sendStatus(204);
     }
 }
