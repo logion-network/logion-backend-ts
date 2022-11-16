@@ -936,6 +936,10 @@ export class LocRequestController extends ApiController {
         operationObject.summary = "Sets the VTP flag of the closed Identity LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.requestBody = getRequestBody({
+            description: "VTP flag",
+            view: "SetVerifiedThirdPartyRequest",
+        });
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
         });
