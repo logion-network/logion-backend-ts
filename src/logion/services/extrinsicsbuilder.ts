@@ -76,7 +76,8 @@ export class ExtrinsicsBuilder {
     }
 
     private async calculatePartialFee(extrinsic: Extrinsic): Promise<bigint> {
-        const dispatchInfo = await this.api.rpc.payment.queryInfo(extrinsic.toHex(), this.block.block.hash);
+        const apiAt = await this.api.at(this.block.block.hash);
+        const dispatchInfo = await apiAt.call.transactionPaymentApi.queryInfo(extrinsic, 0);
         const partialFee = dispatchInfo.partialFee;
         return partialFee.toBigInt();
     }
