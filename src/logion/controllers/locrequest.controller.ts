@@ -153,7 +153,7 @@ export class LocRequestController extends ApiController {
         }
         let request: LocRequestAggregateRoot;
         if (authenticatedUser.isNodeOwner()) {
-            request = await this.locRequestFactory.newOpenLoc({
+            request = await this.locRequestFactory.newLOLocRequest({
                 id: uuid(),
                 description,
             });
@@ -166,7 +166,7 @@ export class LocRequestController extends ApiController {
         }
         await this.locRequestRepository.save(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.findUserPrivateData(request);
-        if (request.status === "REQUESTED") {
+        if (request.status === "REQUESTED" && !authenticatedUser.isNodeOwner()) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
         return this.toView(request, { userIdentity, userPostalAddress, identityLocId }, authenticatedUser.address);

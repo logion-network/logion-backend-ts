@@ -32,27 +32,27 @@ describe('LocRequestController - Creation', () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(false, "Identity", 400, "Only one Polkadot Identity LOC is allowed per Legal Officer.", true)
     });
 
-    it('LLO fails to create open Transaction loc with embedded user identity', async () => {
+    it('LLO fails to create Transaction loc with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(true, "Transaction", 400, "Unable to find a valid (closed) identity LOC.")
     });
 
-    it('LLO fails to create open Collection loc with embedded user identity', async () => {
+    it('LLO fails to create Collection loc with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(true, "Collection", 400, "Unable to find a valid (closed) identity LOC.")
     });
 
-    it('LLO succeeds to create open Identity loc with embedded user identity', async () => {
+    it('LLO succeeds to create Identity loc with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(true, "Identity", 200)
     });
 
-    it('LLO fails to create twice the same open Identity loc with embedded user identity', async () => {
+    it('LLO fails to create twice the same Identity loc with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(true, "Identity", 400, "Only one Polkadot Identity LOC is allowed per Legal Officer.", true)
     });
 
-    it('LLO succeeds to create open Transaction loc with existing existing identity LOC', async () => {
+    it('LLO succeeds to create Transaction loc with existing existing identity LOC', async () => {
         await testLocRequestCreationWithIdentityLoc(true, "Transaction")
     });
 
-    it('LLO succeeds to create open Collection loc with existing existing identity LOC', async () => {
+    it('LLO succeeds to create Collection loc with existing existing identity LOC', async () => {
         await testLocRequestCreationWithIdentityLoc(true, "Collection")
     });
 
@@ -81,7 +81,7 @@ describe('LocRequestController - Creation', () => {
             });
     });
 
-    it('succeeds to create open loc with a Logion identity LOC', async () => {
+    it('succeeds to create requested loc with a Logion identity LOC', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(
             LocRequestController,
@@ -96,7 +96,7 @@ describe('LocRequestController - Creation', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe("OPEN");
+                expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe("Transaction");
                 expect(response.body.requesterAddress).toBeUndefined();
                 expect(response.body.requesterIdentityLoc).toBe(expectedUserPrivateData.identityLocId);
@@ -137,7 +137,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
         .then(response => {
             if (expectedStatus === 200) {
                 expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe(isLegalOfficer ? "OPEN" : "REQUESTED");
+                expect(response.body.status).toBe("REQUESTED");
                 expect(response.body.locType).toBe(locType);
                 checkPrivateData(response, expectedUserPrivateData);
                 expect(response.body.seal).toEqual(SEAL.hash)
@@ -163,7 +163,7 @@ async function testLocRequestCreationWithIdentityLoc(isLegalOfficer: boolean, lo
         .expect('Content-Type', /application\/json/)
         .then(response => {
             expect(response.body.id).toBeDefined();
-            expect(response.body.status).toBe(isLegalOfficer ? "OPEN" : "REQUESTED");
+            expect(response.body.status).toBe("REQUESTED");
             expect(response.body.locType).toBe(locType);
             checkPrivateData(response, expectedUserPrivateData);
         });
@@ -202,14 +202,14 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     repository.setup(instance => instance.save(requested.object()))
         .returns(Promise.resolve());
 
-    const openLoc = mockRequest("OPEN", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
-    factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
+    const requestByLO = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
+    factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterAddress == testData.requesterAddress &&
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
     )))
-        .returns(Promise.resolve(openLoc.object()));
-    repository.setup(instance => instance.save(openLoc.object()))
+        .returns(Promise.resolve(requestByLO.object()));
+    repository.setup(instance => instance.save(requestByLO.object()))
         .returns(Promise.resolve());
 
     mockPolkadotIdentityLoc(repository, hasPolkadotIdentityLoc);
@@ -221,8 +221,8 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     mockLogionIdentityLoc(repository, true);
     mockPolkadotIdentityLoc(repository, false);
 
-    const request = mockRequest("OPEN", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
-    factory.setup(instance => instance.newOpenLoc(It.Is<NewLocRequestParameters>(params =>
+    const request = mockRequest("REQUESTED", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
+    factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
         params.description.ownerAddress == ALICE
     )))

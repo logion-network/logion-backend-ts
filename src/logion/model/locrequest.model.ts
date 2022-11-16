@@ -1,15 +1,6 @@
 import { injectable } from "inversify";
 import moment, { Moment } from "moment";
-import {
-    Entity,
-    PrimaryColumn,
-    Column,
-    Repository,
-    ManyToOne,
-    JoinColumn,
-    OneToMany,
-    Unique,
-} from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { appDataSource, Log } from "@logion/rest-api-core";
@@ -877,10 +868,8 @@ export class LocRequestFactory {
     ) {
     }
 
-    async newOpenLoc(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest({ ...params, draft: false }, false);
-        request.accept(moment())
-        return request;
+    async newLOLocRequest(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
+        return await this.newLocRequest({ ...params, draft: false }, false);
     }
 
     async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
