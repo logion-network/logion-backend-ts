@@ -348,6 +348,7 @@ describe("LocRequestAggregateRoot", () => {
         request.locType = "Identity";
         request.setVerifiedThirdParty(true);
         expect(request.verifiedThirdParty).toBe(true);
+        expect(request.getDescription().verifiedThirdParty).toBe(true);
     });
 
     it("fails setting verified third party flag if non-closed", () => {

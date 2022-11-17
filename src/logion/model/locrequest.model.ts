@@ -166,7 +166,7 @@ export class LocRequestAggregateRoot {
             locType: this.locType!,
             seal: toPublicSeal(this.seal),
             company: this.company!,
-            verifiedThirdParty: false,
+            verifiedThirdParty: this.verifiedThirdParty || false,
         }
     }
 
