@@ -36,6 +36,7 @@ import { PersonalInfoSealService } from "../services/seal.service";
 import { BackendHealthService } from "../services/health.service";
 import { SingularService } from "../services/singular.service";
 import { PrometheusService } from "../services/prometheus.service";
+import { VerifiedThirdPartyController } from "../controllers/verifiedthirdparty.controller";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -87,5 +88,6 @@ container.bind(ProtectionRequestController).toSelf().inTransientScope();
 container.bind(TransactionController).toSelf().inTransientScope();
 container.bind(VaultTransferRequestController).toSelf().inTransientScope();
 container.bind(SettingController).toSelf().inTransientScope();
+container.bind(VerifiedThirdPartyController).toSelf().inTransientScope();
 
 export { container as AppContainer };

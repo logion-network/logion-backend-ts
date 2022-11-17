@@ -87,14 +87,6 @@ describe('LocRequestController - Life Cycle', () => {
             .post(`/api/loc-request/${ REQUEST_ID }/rework`)
             .expect(200);
     })
-
-    it('sets verified third party flag', async () => {
-        const app = setupApp(LocRequestController, mockModelForSetVerifiedThirdParty)
-        await request(app)
-            .put(`/api/loc-request/${ REQUEST_ID }/verified-third-party`)
-            .send({ isVerifiedThirdParty: true })
-            .expect(204);
-    })
 });
 
 function mockModelForReject(container: Container, notificationService: Mock<NotificationService>): void {
@@ -172,10 +164,4 @@ function mockModelForRework(container: Container) {
     const { request } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Identity", "REJECTED");
     request.setup(instance => instance.rework()).returns(undefined);
-}
-
-function mockModelForSetVerifiedThirdParty(container: Container) {
-    const { request } = buildMocksForUpdate(container);
-    setupRequest(request, REQUEST_ID, "Identity", "CLOSED");
-    request.setup(instance => instance.setVerifiedThirdParty(true)).returns(undefined);
 }
