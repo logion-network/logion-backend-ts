@@ -4,7 +4,7 @@ import { It, Mock } from "moq.ts";
 import request from "supertest";
 import { VerifiedThirdPartyController } from "../../../src/logion/controllers/verifiedthirdparty.controller";
 import { buildMocks, buildMocksForFetch, buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequestWithId, REQUEST_ID, setupRequest, userIdentities } from "./locrequest.controller.shared";
-import { VerifiedThirdPartyNominationAggregateRoot, VerifiedThirdPartyNominationId, VerifiedThirdPartyNominationRepository } from "../../../src/logion/model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 import { FetchLocRequestsSpecification, LocRequestAggregateRoot, LocRequestDescription } from "../../../src/logion/model/locrequest.model";
 import { ALICE } from "../../helpers/addresses";
 import { NotificationService } from "../../../src/logion/services/notification.service";
@@ -18,8 +18,8 @@ describe("VerifiedThirdPartyController", () => {
     it('dismisses party', async () => testNominateDismiss(false));
 
     it('selects VTP', async () => {
-        const repository = new Mock<VerifiedThirdPartyNominationRepository>();
-        const nomination = new Mock<VerifiedThirdPartyNominationAggregateRoot>();
+        const repository = new Mock<VerifiedThirdPartySelectionRepository>();
+        const nomination = new Mock<VerifiedThirdPartySelectionAggregateRoot>();
         nomination.setup(instance => instance.id).returns(NOMINATION_ID);
         const notificationService = new Mock<NotificationService>();
         const app = setupApp(VerifiedThirdPartyController, container => mockModelForSelect(container, repository, nomination, notificationService))
@@ -35,7 +35,7 @@ describe("VerifiedThirdPartyController", () => {
 
     it('unselects VTP', async () => {
         const notificationService = new Mock<NotificationService>();
-        const repository = new Mock<VerifiedThirdPartyNominationRepository>();
+        const repository = new Mock<VerifiedThirdPartySelectionRepository>();
         const app = setupApp(VerifiedThirdPartyController, container => mockModelForUnselect(container, repository, notificationService))
 
         await request(app)
@@ -62,7 +62,7 @@ describe("VerifiedThirdPartyController", () => {
 
 async function testNominateDismiss(nominate: boolean) {
     const notificationService = new Mock<NotificationService>();
-    const verifiedThirdPartyNominationRepository = new Mock<VerifiedThirdPartyNominationRepository>();
+    const verifiedThirdPartyNominationRepository = new Mock<VerifiedThirdPartySelectionRepository>();
     verifiedThirdPartyNominationRepository.setup(instance => instance.deleteByVerifiedThirdPartyId(REQUEST_ID)).returnsAsync();
     const app = setupApp(VerifiedThirdPartyController, container => mockModelForNominateDismiss(container, notificationService, nominate, verifiedThirdPartyNominationRepository))
     await request(app)
@@ -75,7 +75,7 @@ async function testNominateDismiss(nominate: boolean) {
     notificationService.verify(instance => instance.notify(VTP_EMAIL, nominate ? "vtp-nominated" : "vtp-dismissed", It.Is<any>(data => "legalOfficer" in data)));
 }
 
-function mockModelForNominateDismiss(container: Container, notificationService: Mock<NotificationService>, nominate: boolean, verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartyNominationRepository>) {
+function mockModelForNominateDismiss(container: Container, notificationService: Mock<NotificationService>, nominate: boolean, verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>) {
     const { request } = buildMocksForUpdate(container, { notificationService, verifiedThirdPartyNominationRepository });
     setupRequest(request, REQUEST_ID, "Identity", "CLOSED", { userIdentity: { email: VTP_EMAIL } as UserIdentity });
     request.setup(instance => instance.setVerifiedThirdParty(nominate)).returns(undefined);
@@ -83,20 +83,20 @@ function mockModelForNominateDismiss(container: Container, notificationService: 
 
 const VTP_EMAIL = userIdentities["Polkadot"].userIdentity?.email;
 
-const NOMINATION_ID: VerifiedThirdPartyNominationId = {
+const NOMINATION_ID: VerifiedThirdPartySelectionId = {
     locRequestId: REQUEST_ID,
     verifiedThirdPartyLocId: userIdentities["Polkadot"].identityLocId!
 };
 
-const NOMINATION_ID_IS = It.Is<VerifiedThirdPartyNominationId>(id =>
+const NOMINATION_ID_IS = It.Is<VerifiedThirdPartySelectionId>(id =>
     id.locRequestId === NOMINATION_ID.locRequestId
     && id.verifiedThirdPartyLocId === NOMINATION_ID.verifiedThirdPartyLocId
 );
 
 function mockModelForSelect(
     container: Container,
-    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartyNominationRepository>,
-    nomination: Mock<VerifiedThirdPartyNominationAggregateRoot>,
+    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>,
+    nomination: Mock<VerifiedThirdPartySelectionAggregateRoot>,
     notificationService: Mock<NotificationService>,
 ) {
     const { request, repository, verifiedThirdPartyNominationFactory } = buildMocksForFetch(container, { verifiedThirdPartyNominationRepository, notificationService });
@@ -119,7 +119,7 @@ function mockModelForSelect(
 
 function mockModelForUnselect(
     container: Container,
-    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartyNominationRepository>,
+    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>,
     notificationService: Mock<NotificationService>,
 ) {
     const { request, repository } = buildMocksForFetch(container, { verifiedThirdPartyNominationRepository, notificationService });

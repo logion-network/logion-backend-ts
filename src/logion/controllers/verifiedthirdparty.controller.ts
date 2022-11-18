@@ -4,7 +4,7 @@ import { OpenAPIV3 } from "express-oas-generator";
 import { addTag, AuthenticationService, badRequest, forbidden, getDefaultResponses, getDefaultResponsesNoContent, getRequestBody, Log, requireDefined, setControllerTag, setPathParameters } from "@logion/rest-api-core";
 import { components } from "./components";
 import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
-import { VerifiedThirdPartyNominationFactory, VerifiedThirdPartyNominationId, VerifiedThirdPartyNominationRepository } from "../model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
 import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter";
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
@@ -38,8 +38,8 @@ export class VerifiedThirdPartyController extends ApiController {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private authenticationService: AuthenticationService,
-        private verifiedThirdPartyNominationFactory: VerifiedThirdPartyNominationFactory,
-        private verifiedThirdPartyNominationRepository: VerifiedThirdPartyNominationRepository,
+        private verifiedThirdPartyNominationFactory: VerifiedThirdPartySelectionFactory,
+        private verifiedThirdPartyNominationRepository: VerifiedThirdPartySelectionRepository,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
@@ -195,7 +195,7 @@ export class VerifiedThirdPartyController extends ApiController {
         const userCheck = await this.authenticationService.authenticatedUser(this.request);
         userCheck.require(user => user.is(locRequest.ownerAddress));
 
-        const nominationId: VerifiedThirdPartyNominationId = {
+        const nominationId: VerifiedThirdPartySelectionId = {
             locRequestId: requestId,
             verifiedThirdPartyLocId: partyId,
         };

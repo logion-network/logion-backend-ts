@@ -24,7 +24,7 @@ import { CollectionRepository } from "../../../src/logion/model/collection.model
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
-import { VerifiedThirdPartyNominationFactory, VerifiedThirdPartyNominationRepository } from "../../../src/logion/model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
@@ -122,8 +122,8 @@ export interface Mocks {
     fileStorageService: Mock<FileStorageService>;
     notificationService: Mock<NotificationService>;
     collectionRepository: Mock<CollectionRepository>;
-    verifiedThirdPartyNominationFactory: Mock<VerifiedThirdPartyNominationFactory>;
-    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartyNominationRepository>;
+    verifiedThirdPartyNominationFactory: Mock<VerifiedThirdPartySelectionFactory>;
+    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -143,11 +143,11 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(LocRequestAdapter).toSelf();
     container.bind(VerifiedThirdPartyAdapter).toSelf();
 
-    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartyNominationFactory ? existingMocks.verifiedThirdPartyNominationFactory : new Mock<VerifiedThirdPartyNominationFactory>();
-    container.bind(VerifiedThirdPartyNominationFactory).toConstantValue(verifiedThirdPartyNominationFactory.object());
+    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartyNominationFactory ? existingMocks.verifiedThirdPartyNominationFactory : new Mock<VerifiedThirdPartySelectionFactory>();
+    container.bind(VerifiedThirdPartySelectionFactory).toConstantValue(verifiedThirdPartyNominationFactory.object());
 
-    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartyNominationRepository ? existingMocks.verifiedThirdPartyNominationRepository : new Mock<VerifiedThirdPartyNominationRepository>();
-    container.bind(VerifiedThirdPartyNominationRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
+    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartyNominationRepository ? existingMocks.verifiedThirdPartyNominationRepository : new Mock<VerifiedThirdPartySelectionRepository>();
+    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
 
     verifiedThirdPartyNominationRepository.setup(instance => instance.findByLocRequestId(It.IsAny())).returnsAsync([]);
 

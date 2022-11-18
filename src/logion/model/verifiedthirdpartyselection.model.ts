@@ -1,17 +1,17 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
-import { LocRequestAggregateRoot, LocRequestRepository } from './locrequest.model';
+import { LocRequestAggregateRoot } from './locrequest.model';
 
-export interface VerifiedThirdPartyNominationId {
+export interface VerifiedThirdPartySelectionId {
     locRequestId: string;
     verifiedThirdPartyLocId: string;
 }
 
-@Entity("vtp_nomination")
-export class VerifiedThirdPartyNominationAggregateRoot {
+@Entity("vtp_selection")
+export class VerifiedThirdPartySelectionAggregateRoot {
 
-    get id(): VerifiedThirdPartyNominationId {
+    get id(): VerifiedThirdPartySelectionId {
         return {
             locRequestId: requireDefined(this.locRequestId),
             verifiedThirdPartyLocId: requireDefined(this.verifiedThirdPartyLocId),
@@ -26,27 +26,27 @@ export class VerifiedThirdPartyNominationAggregateRoot {
 }
 
 @injectable()
-export class VerifiedThirdPartyNominationRepository {
+export class VerifiedThirdPartySelectionRepository {
 
     constructor() {
-        this.repository = appDataSource.getRepository(VerifiedThirdPartyNominationAggregateRoot);
+        this.repository = appDataSource.getRepository(VerifiedThirdPartySelectionAggregateRoot);
     }
 
-    readonly repository: Repository<VerifiedThirdPartyNominationAggregateRoot>;
+    readonly repository: Repository<VerifiedThirdPartySelectionAggregateRoot>;
 
-    async save(syncPoint: VerifiedThirdPartyNominationAggregateRoot): Promise<void> {
+    async save(syncPoint: VerifiedThirdPartySelectionAggregateRoot): Promise<void> {
         await this.repository.save(syncPoint);
     }
 
-    async findById(id: VerifiedThirdPartyNominationId): Promise<VerifiedThirdPartyNominationAggregateRoot | null> {
+    async findById(id: VerifiedThirdPartySelectionId): Promise<VerifiedThirdPartySelectionAggregateRoot | null> {
         return await this.repository.findOneBy(id);
     }
 
-    async findByLocRequestId(locRequestId: string): Promise<VerifiedThirdPartyNominationAggregateRoot[]> {
+    async findByLocRequestId(locRequestId: string): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
         return this.repository.findBy({ locRequestId });
     }
 
-    async deleteById(id: VerifiedThirdPartyNominationId): Promise<void> {
+    async deleteById(id: VerifiedThirdPartySelectionId): Promise<void> {
         await this.repository.delete(id);
     }
 
@@ -56,12 +56,12 @@ export class VerifiedThirdPartyNominationRepository {
 }
 
 @injectable()
-export class VerifiedThirdPartyNominationFactory {
+export class VerifiedThirdPartySelectionFactory {
 
     async newNomination(args: {
         locRequest: LocRequestAggregateRoot,
         verifiedThirdPartyLocRequest: LocRequestAggregateRoot,
-    }): Promise<VerifiedThirdPartyNominationAggregateRoot> {
+    }): Promise<VerifiedThirdPartySelectionAggregateRoot> {
         const {
             verifiedThirdPartyLocRequest,
             locRequest,
@@ -77,7 +77,7 @@ export class VerifiedThirdPartyNominationFactory {
             throw new Error("Party is not verified");
         }
 
-        const root = new VerifiedThirdPartyNominationAggregateRoot();
+        const root = new VerifiedThirdPartySelectionAggregateRoot();
         root.locRequestId = locRequest.id;
         root.verifiedThirdPartyLocId = verifiedThirdPartyLocRequest.id;
         return root;

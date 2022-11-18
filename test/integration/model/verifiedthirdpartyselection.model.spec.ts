@@ -1,17 +1,17 @@
 import { TestDb } from "@logion/rest-api-core";
-import { VerifiedThirdPartyNominationAggregateRoot, VerifiedThirdPartyNominationRepository } from "../../../src/logion/model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
-describe("VerifiedThirdPartyNominationRepository - read", () => {
+describe("VerifiedThirdPartySelectionRepository - read", () => {
 
     beforeAll(async () => {
-        await connect([ VerifiedThirdPartyNominationAggregateRoot ]);
-        await executeScript("test/integration/model/vtp_nomination.sql");
-        repository = new VerifiedThirdPartyNominationRepository();
+        await connect([ VerifiedThirdPartySelectionAggregateRoot ]);
+        await executeScript("test/integration/model/vtp_selection.sql");
+        repository = new VerifiedThirdPartySelectionRepository();
     });
 
-    let repository: VerifiedThirdPartyNominationRepository;
+    let repository: VerifiedThirdPartySelectionRepository;
 
     afterAll(async () => {
         await disconnect();
@@ -31,15 +31,15 @@ describe("VerifiedThirdPartyNominationRepository - read", () => {
     });
 });
 
-describe("VerifiedThirdPartyNominationRepository - write", () => {
+describe("VerifiedThirdPartySelectionRepository - write", () => {
 
     beforeEach(async () => {
-        await connect([ VerifiedThirdPartyNominationAggregateRoot ]);
-        await executeScript("test/integration/model/vtp_nomination.sql");
-        repository = new VerifiedThirdPartyNominationRepository();
+        await connect([ VerifiedThirdPartySelectionAggregateRoot ]);
+        await executeScript("test/integration/model/vtp_selection.sql");
+        repository = new VerifiedThirdPartySelectionRepository();
     });
 
-    let repository: VerifiedThirdPartyNominationRepository;
+    let repository: VerifiedThirdPartySelectionRepository;
 
     afterEach(async () => {
         await disconnect();
@@ -50,11 +50,11 @@ describe("VerifiedThirdPartyNominationRepository - write", () => {
             locRequestId: "a7b80f86-1c51-4aff-ba32-d8361bb462b1",
             verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744",
         });
-        checkNumOfRows(`SELECT * FROM vtp_nomination`, 2);
+        checkNumOfRows(`SELECT * FROM vtp_selection`, 2);
     });
 
     it("deletes by VTP LOC ID", async () => {
         await repository.deleteByVerifiedThirdPartyId("a4eb8352-a032-44a6-8087-c95a40da0744");
-        checkNumOfRows(`SELECT * FROM vtp_nomination`, 2);
+        checkNumOfRows(`SELECT * FROM vtp_selection`, 2);
     });
 });

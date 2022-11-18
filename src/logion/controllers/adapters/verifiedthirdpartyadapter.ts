@@ -3,7 +3,7 @@ import { injectable } from "inversify";
 import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model";
 import { PostalAddress } from "../../model/postaladdress";
 import { UserIdentity } from "../../model/useridentity";
-import { VerifiedThirdPartyNominationAggregateRoot, VerifiedThirdPartyNominationRepository } from "../../model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../model/verifiedthirdpartyselection.model";
 import { components } from "../components";
 
 export type UserPrivateData = {
@@ -20,7 +20,7 @@ export class VerifiedThirdPartyAdapter {
 
     constructor(
         private locRequestRepository: LocRequestRepository,
-        private verifiedThirdPartyNominationRepository: VerifiedThirdPartyNominationRepository,
+        private verifiedThirdPartyNominationRepository: VerifiedThirdPartySelectionRepository,
     ) {}
 
     async nominatedParties(locRequestId: string): Promise<VerifiedThirdPartyView[]> {
@@ -32,7 +32,7 @@ export class VerifiedThirdPartyAdapter {
         return parties;
     }
 
-    private async toVerifiedThirdPartyView(verifiedThirdPartyNomination: VerifiedThirdPartyNominationAggregateRoot): Promise<VerifiedThirdPartyView> {
+    private async toVerifiedThirdPartyView(verifiedThirdPartyNomination: VerifiedThirdPartySelectionAggregateRoot): Promise<VerifiedThirdPartyView> {
         const identityLocId = requireDefined(verifiedThirdPartyNomination.verifiedThirdPartyLocId);
         const identityLocRequest = requireDefined(await this.locRequestRepository.findById(identityLocId));
         return this.toView(identityLocRequest);
