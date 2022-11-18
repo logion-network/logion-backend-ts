@@ -1,5 +1,5 @@
 import { TestApp } from "@logion/rest-api-core";
-import { LocRequestController, UserPrivateData } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
 import { Container } from "inversify";
 import request from "supertest";
 import { ALICE } from "../../helpers/addresses";
@@ -11,6 +11,7 @@ import {
 } from "../../../src/logion/model/locrequest.model";
 import moment from "moment";
 import { buildMocksForFetch, checkPrivateData, IdentityLocation, mockLogionIdentityLoc, mockPolkadotIdentityLoc, REQUEST_ID, setupRequest, testData, testDataWithLogionIdentity, testDataWithType, testDataWithUserIdentity, testDataWithUserIdentityWithType, userIdentities } from "./locrequest.controller.shared";
+import { UserPrivateData } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 

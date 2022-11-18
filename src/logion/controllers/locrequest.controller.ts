@@ -38,6 +38,7 @@ import { CollectionRepository } from "../model/collection.model";
 import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";
 import { downloadAndClean } from "../lib/http";
+import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter";
 
 const { logger } = Log;
 
@@ -87,12 +88,6 @@ type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 
-export type UserPrivateData = {
-    identityLocId: string | undefined,
-    userIdentity: UserIdentity | undefined,
-    userPostalAddress: PostalAddress | undefined
-};
-
 @injectable()
 @Controller('/loc-request')
 export class LocRequestController extends ApiController {
@@ -104,7 +99,9 @@ export class LocRequestController extends ApiController {
         private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService) {
+        private directoryService: DirectoryService,
+        private locRequestAdapter: LocRequestAdapter,
+    ) {
         super();
     }
 
@@ -167,7 +164,7 @@ export class LocRequestController extends ApiController {
         if (request.status === "REQUESTED" && !authenticatedUser.isNodeOwner()) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
-        return this.toView(request, { userIdentity, userPostalAddress, identityLocId }, authenticatedUser.address);
+        return this.locRequestAdapter.toView(request, authenticatedUser.address, { userIdentity, userPostalAddress, identityLocId });
     }
 
     private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined): Promise<boolean> {
@@ -195,67 +192,6 @@ export class LocRequestController extends ApiController {
             !identityLoc.requesterAddress;
     }
 
-    private toView(request: LocRequestAggregateRoot, userPrivateData: UserPrivateData, viewer: string): LocRequestView {
-        const locDescription = request.getDescription();
-        const view: LocRequestView = {
-            id: request.id,
-            requesterAddress: locDescription.requesterAddress,
-            requesterIdentityLoc: locDescription.requesterIdentityLoc,
-            ownerAddress: locDescription.ownerAddress,
-            description: locDescription.description,
-            locType: locDescription.locType,
-            identityLoc: userPrivateData.identityLocId,
-            userIdentity: this.toUserIdentityView(userPrivateData.userIdentity),
-            userPostalAddress: this.toUserPostalAddressView(userPrivateData.userPostalAddress),
-            createdOn: locDescription.createdOn || undefined,
-            status: request.status,
-            rejectReason: request.rejectReason || undefined,
-            decisionOn: request.decisionOn || undefined,
-            closedOn: request.closedOn || undefined,
-            files: request.getFiles(viewer).map(file => ({
-                name: file.name,
-                hash: file.hash,
-                nature: file.nature,
-                addedOn: file.addedOn?.toISOString() || undefined,
-                submitter: file.submitter,
-            })),
-            metadata: request.getMetadataItems(viewer).map(item => ({
-                name: item.name,
-                value: item.value,
-                addedOn: item.addedOn?.toISOString() || undefined,
-                submitter: item.submitter,
-            })),
-            links: request.getLinks(viewer).map(link => ({
-                target: link.target,
-                nature: link.nature,
-                addedOn: link.addedOn?.toISOString() || undefined,
-            })),
-            seal: locDescription.seal?.hash,
-            company: locDescription.company,
-            verifiedThirdParty: locDescription.verifiedThirdParty,
-        };
-        const voidInfo = request.getVoidInfo();
-        if(voidInfo !== null) {
-            view.voidInfo = {
-                reason: voidInfo.reason,
-                voidedOn: voidInfo.voidedOn?.toISOString()
-            };
-        }
-        return view;
-    }
-
-    private toUserIdentityView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
-        if (userIdentity === undefined) {
-            return undefined;
-        }
-        return {
-            firstName: userIdentity.firstName,
-            lastName: userIdentity.lastName,
-            email: userIdentity.email,
-            phoneNumber: userIdentity.phoneNumber,
-        }
-    }
-
     private fromUserIdentityView(userIdentityView: UserIdentityView | undefined): UserIdentity | undefined {
         if (userIdentityView === undefined) {
             return undefined;
@@ -265,19 +201,6 @@ export class LocRequestController extends ApiController {
             lastName: userIdentityView.lastName || "",
             email: userIdentityView.email || "",
             phoneNumber: userIdentityView.phoneNumber || "",
-        }
-    }
-
-    private toUserPostalAddressView(userPostalAddress: PostalAddress | undefined): PostalAddressView | undefined {
-        if (userPostalAddress === undefined) {
-            return undefined;
-        }
-        return {
-            line1: userPostalAddress.line1,
-            line2: userPostalAddress.line2,
-            postalCode: userPostalAddress.postalCode,
-            city: userPostalAddress.city,
-            country: userPostalAddress.country,
         }
     }
 
@@ -319,7 +242,7 @@ export class LocRequestController extends ApiController {
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
             const userPrivateData = await this.findUserPrivateData(request);
-            return this.toView(request, userPrivateData, authenticatedUser.address);
+            return this.locRequestAdapter.toView(request, authenticatedUser.address, userPrivateData);
         }));
         return requests.then(requestViews => Promise.resolve({requests: requestViews}))
     }
@@ -376,8 +299,7 @@ export class LocRequestController extends ApiController {
             const request = requireDefined(await this.locRequestRepository.findById(requestId));
             const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
             authenticatedUser.require(authenticatedUser => authenticatedUser.isOneOf([ request.requesterAddress, request.ownerAddress ]));
-            const userIdentity = await this.findUserPrivateData(request);
-            return this.toView(request, userIdentity, authenticatedUser.address);
+            return this.locRequestAdapter.toView(request, authenticatedUser.address);
         } catch (e) {
             logger.error(e);
             throw e;
@@ -897,7 +819,7 @@ export class LocRequestController extends ApiController {
 
         this.notify("LegalOfficer", "sof-requested", request.getDescription(), userIdentity);
 
-        return this.toView(request, { userIdentity, userPostalAddress, identityLocId }, authenticatedUser.address);
+        return this.locRequestAdapter.toView(request, authenticatedUser.address, { userIdentity, userPostalAddress, identityLocId });
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, loc: LocRequestDescription, userIdentity?: UserIdentity, decision?: LocRequestDecision): void {

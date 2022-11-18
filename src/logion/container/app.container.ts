@@ -37,6 +37,9 @@ import { BackendHealthService } from "../services/health.service";
 import { SingularService } from "../services/singular.service";
 import { PrometheusService } from "../services/prometheus.service";
 import { VerifiedThirdPartyController } from "../controllers/verifiedthirdparty.controller";
+import { VerifiedThirdPartyNominationFactory, VerifiedThirdPartyNominationRepository } from "../model/verifiedthirdpartynomination.model";
+import { VerifiedThirdPartyAdapter } from "../controllers/adapters/verifiedthirdpartyadapter";
+import { LocRequestAdapter } from "../controllers/adapters/locrequestadapter";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -81,6 +84,10 @@ container.bind(BackendHealthService).toSelf();
 container.bind(HealthService).toService(BackendHealthService);
 container.bind(SingularService).toSelf();
 container.bind(PrometheusService).toSelf();
+container.bind(VerifiedThirdPartyNominationFactory).toSelf();
+container.bind(VerifiedThirdPartyNominationRepository).toSelf();
+container.bind(VerifiedThirdPartyAdapter).toSelf();
+container.bind(LocRequestAdapter).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

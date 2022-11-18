@@ -656,6 +656,12 @@
                     "verifiedThirdParty": {
                         "type": "boolean",
                         "description": "Tells if the user behind this closed Identity LOC is a Verified Third Party"
+                    },
+                    "nominatedParties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VerifiedThirdPartyView"
+                        }
                     }
                 },
                 "title": "LocRequestView",
@@ -1123,6 +1129,43 @@
                 "properties": {
                     "isVerifiedThirdParty": {
                         "type": "boolean"
+                    }
+                }
+            },
+            "SelectVerifiedThirdPartyRequest": {
+                "type": "object",
+                "properties": {
+                    "identityLocId": {
+                        "type": "string",
+                        "description": "The ID of the closed Identity LOC of a Verified Third Party"
+                    }
+                }
+            },
+            "VerifiedThirdPartyView": {
+                "type": "object",
+                "properties": {
+                    "firstName": {
+                        "type": "string",
+                        "description": "The first name of the Verified Third Party"
+                    },
+                    "lastName": {
+                        "type": "string",
+                        "description": "The last name of the Verified Third Party"
+                    },
+                    "identityLocId": {
+                        "type": "string",
+                        "description": "The ID of the closed Identity LOC of this Verified Third Party"
+                    }
+                }
+            },
+            "VerifiedThirdPartiesView": {
+                "type": "object",
+                "properties": {
+                    "verifiedThirdParties": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VerifiedThirdPartyView"
+                        }
                     }
                 }
             }

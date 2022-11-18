@@ -1,4 +1,4 @@
-import { UserPrivateData } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestAdapter, UserPrivateData } from "../../../src/logion/controllers/adapters/locrequestadapter";
 import { Container } from "inversify";
 import request from "supertest";
 import { ALICE } from "../../helpers/addresses";
@@ -23,6 +23,8 @@ import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { CollectionRepository } from "../../../src/logion/model/collection.model";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
+import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
+import { VerifiedThirdPartyNominationFactory, VerifiedThirdPartyNominationRepository } from "../../../src/logion/model/verifiedthirdpartynomination.model";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
@@ -120,6 +122,8 @@ export interface Mocks {
     fileStorageService: Mock<FileStorageService>;
     notificationService: Mock<NotificationService>;
     collectionRepository: Mock<CollectionRepository>;
+    verifiedThirdPartyNominationFactory: Mock<VerifiedThirdPartyNominationFactory>;
+    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartyNominationRepository>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -136,6 +140,17 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
 
     const { notificationService, collectionRepository } = mockOtherDependencies(container, existingMocks);
 
+    container.bind(LocRequestAdapter).toSelf();
+    container.bind(VerifiedThirdPartyAdapter).toSelf();
+
+    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartyNominationFactory ? existingMocks.verifiedThirdPartyNominationFactory : new Mock<VerifiedThirdPartyNominationFactory>();
+    container.bind(VerifiedThirdPartyNominationFactory).toConstantValue(verifiedThirdPartyNominationFactory.object());
+
+    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartyNominationRepository ? existingMocks.verifiedThirdPartyNominationRepository : new Mock<VerifiedThirdPartyNominationRepository>();
+    container.bind(VerifiedThirdPartyNominationRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
+
+    verifiedThirdPartyNominationRepository.setup(instance => instance.findByLocRequestId(It.IsAny())).returnsAsync([]);
+
     return {
         factory,
         request,
@@ -143,6 +158,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         fileStorageService,
         notificationService,
         collectionRepository,
+        verifiedThirdPartyNominationFactory,
+        verifiedThirdPartyNominationRepository,
     };
 }
 
@@ -254,9 +271,10 @@ const logionIdentityLoc: Partial<LocRequestDescription> = {
 
 export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
     const { userIdentity, userPostalAddress } = userIdentities["Polkadot"]
+    const locId = userIdentities["Polkadot"].identityLocId!;
     const identityLocs = exists ?
         [ mockRequestWithId(
-            userIdentities["Polkadot"].identityLocId!,
+            locId,
             "Identity",
             "CLOSED",
             {
@@ -272,6 +290,8 @@ export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, 
         spec.expectedLocTypes.includes("Identity") &&
         spec.expectedIdentityLocType === "Polkadot"
     ))).returns(Promise.resolve(identityLocs));
+
+    repository.setup(instance => instance.findById(locId)).returnsAsync(identityLocs[0]);
 }
 
 export const testData = testDataWithType("Transaction");

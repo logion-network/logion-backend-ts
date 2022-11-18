@@ -40,6 +40,7 @@ In the context of a protection (or recovery), all the variables defined above ma
     protection.decision.locId
 
 ### LOC
+    loc.id
     loc.requesterAddress
     loc.requesterIdentityLoc
     loc.ownerAddress

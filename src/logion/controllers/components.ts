@@ -417,6 +417,7 @@ export interface components {
       company?: string;
       /** @description Tells if the user behind this closed Identity LOC is a Verified Third Party */
       verifiedThirdParty?: boolean;
+      nominatedParties?: components["schemas"]["VerifiedThirdPartyView"][];
     };
     /**
      * LocPublicView
@@ -703,6 +704,21 @@ export interface components {
     };
     SetVerifiedThirdPartyRequest: {
       isVerifiedThirdParty?: boolean;
+    };
+    SelectVerifiedThirdPartyRequest: {
+      /** @description The ID of the closed Identity LOC of a Verified Third Party */
+      identityLocId?: string;
+    };
+    VerifiedThirdPartyView: {
+      /** @description The first name of the Verified Third Party */
+      firstName?: string;
+      /** @description The last name of the Verified Third Party */
+      lastName?: string;
+      /** @description The ID of the closed Identity LOC of this Verified Third Party */
+      identityLocId?: string;
+    };
+    VerifiedThirdPartiesView: {
+      verifiedThirdParties?: components["schemas"]["VerifiedThirdPartyView"][];
     };
   };
 }
