@@ -63,3 +63,6 @@ INSERT INTO loc_request (id, owner_address, requester_address, description, stat
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-25', 'OPEN', 'Collection');
 INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-26', 'OPEN', 'Collection');
+-- Closed Identity LOC of VTP
+INSERT INTO loc_request (id, owner_address, requester_address, description, status, loc_type, verified_third_party)
+VALUES ('15ed922d-5960-4147-a73f-97d362cb7c46', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'loc-27', 'CLOSED', 'Identity', TRUE);

@@ -55,8 +55,9 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
     };
 }
 
-export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDecision } {
+export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDecision } & { id: string } {
     return {
+        id: "15ed922d-5960-4147-a73f-97d362cb7c46",
         ownerAddress: ALICE,
         description: "Some LOC description",
         createdOn: "2021-06-10T16:25:23.668294",

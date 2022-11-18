@@ -18,6 +18,7 @@ import { fillInSpec as fillInSpecForCollection, CollectionController } from "./c
 import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller";
 import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller";
 import { SettingController } from "./controllers/setting.controller";
+import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -47,6 +48,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForCollection(spec);
     fillInSpecForLoFile(spec);
     fillInSpecForVaultTransferRequest(spec);
+    fillInSpecVerifiedThirdParty(spec);
 
     return spec;
 }
@@ -90,6 +92,7 @@ export function setupApp(withDoc?: boolean): Express {
     dino.registerController(VaultTransferRequestController);
     dino.registerController(LoFileController);
     dino.registerController(SettingController);
+    dino.registerController(VerifiedThirdPartyController);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {

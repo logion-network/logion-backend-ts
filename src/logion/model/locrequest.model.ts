@@ -725,6 +725,7 @@ export interface FetchLocRequestsSpecification {
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
     readonly expectedIdentityLocType?: IdentityLocType;
+    readonly isVerifiedThirdParty?: boolean;
 }
 
 @injectable()
@@ -821,6 +822,14 @@ export class LocRequestRepository {
             builder.andWhere("request.requester_address IS NOT NULL")
         } else if (specification.expectedIdentityLocType === "Logion") {
             builder.andWhere("request.requester_address IS NULL")
+        }
+
+        if(specification.isVerifiedThirdParty !== undefined) {
+            if(specification.isVerifiedThirdParty) {
+                builder.andWhere("request.verified_third_party IS TRUE");
+            } else {
+                builder.andWhere("request.verified_third_party IS FALSE");
+            }
         }
 
         builder

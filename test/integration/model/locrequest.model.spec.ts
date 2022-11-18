@@ -6,7 +6,7 @@ import {
     FetchLocRequestsSpecification,
     LocFile,
     LocMetadataItem,
-    LocLink, LocType, LocRequestStatus
+    LocLink, LocType,
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
@@ -47,7 +47,7 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5",
             "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13", "loc-21", "loc-22", "loc-23",
-            "loc-24", "loc-25", "loc-26");
+            "loc-24", "loc-25", "loc-26", "loc-27");
 
         const requestWithItems = requests.find(request => request.description === "loc-10");
         expect(requestWithItems?.files?.length).toBe(1);
@@ -115,6 +115,14 @@ describe('LocRequestRepository - read accesses', () => {
     it("populates requesterIdentityLoc", async () => {
         const request = await repository.findById(LOGION_TRANSACTION_LOC_ID);
         expect(request?.requesterIdentityLocId).toBeDefined();
+    })
+
+    it("finds verified third parties", async () => {
+        const requests = await repository.findBy({
+            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            isVerifiedThirdParty: true,
+        });
+        expect(requests.length).toBe(1);
     })
 })
 
