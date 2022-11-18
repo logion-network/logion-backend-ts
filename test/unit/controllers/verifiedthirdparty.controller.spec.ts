@@ -10,7 +10,7 @@ import { ALICE } from "../../helpers/addresses";
 import { NotificationService } from "../../../src/logion/services/notification.service";
 import { UserIdentity } from "src/logion/model/useridentity";
 
-const { setupApp } = TestApp;
+const { setupApp, mockAuthenticationForUserOrLegalOfficer } = TestApp;
 
 describe("VerifiedThirdPartyController", () => {
 
@@ -20,13 +20,13 @@ describe("VerifiedThirdPartyController", () => {
     it('selects VTP', async () => {
         const repository = new Mock<VerifiedThirdPartySelectionRepository>();
         const nomination = new Mock<VerifiedThirdPartySelectionAggregateRoot>();
-        nomination.setup(instance => instance.id).returns(NOMINATION_ID);
+        nomination.setup(instance => instance.id).returns(SELECTION_ID);
         const notificationService = new Mock<NotificationService>();
         const app = setupApp(VerifiedThirdPartyController, container => mockModelForSelect(container, repository, nomination, notificationService))
 
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/selected-parties`)
-            .send({ identityLocId: NOMINATION_ID.verifiedThirdPartyLocId })
+            .send({ identityLocId: SELECTION_ID.verifiedThirdPartyLocId })
             .expect(204);
 
         repository.verify(instance => instance.save(nomination.object()));
@@ -39,7 +39,7 @@ describe("VerifiedThirdPartyController", () => {
         const app = setupApp(VerifiedThirdPartyController, container => mockModelForUnselect(container, repository, notificationService))
 
         await request(app)
-            .delete(`/api/loc-request/${ REQUEST_ID }/selected-parties/${ NOMINATION_ID.verifiedThirdPartyLocId }`)
+            .delete(`/api/loc-request/${ REQUEST_ID }/selected-parties/${ SELECTION_ID.verifiedThirdPartyLocId }`)
             .expect(204);
 
         repository.verify(instance => instance.deleteById(NOMINATION_ID_IS));
@@ -56,6 +56,20 @@ describe("VerifiedThirdPartyController", () => {
             .then(response => {
                 expect(response.body.verifiedThirdParties).toBeDefined();
                 expect(response.body.verifiedThirdParties.length).toBe(2);
+            });
+    });
+
+    it("lists the LOCs a VTP has been selected for", async () => {
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const app = setupApp(VerifiedThirdPartyController, mockModelForGetVerifiedThirdPartyLocRequests, authenticatedUserMock);
+
+        await request(app)
+            .get(`/api/verified-third-party-loc-requests`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.requests).toBeDefined();
+                expect(response.body.requests.length).toBe(1);
             });
     });
 });
@@ -76,21 +90,22 @@ async function testNominateDismiss(nominate: boolean) {
 }
 
 function mockModelForNominateDismiss(container: Container, notificationService: Mock<NotificationService>, nominate: boolean, verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>) {
-    const { request } = buildMocksForUpdate(container, { notificationService, verifiedThirdPartyNominationRepository });
+    const { request } = buildMocksForUpdate(container, { notificationService, verifiedThirdPartySelectionRepository: verifiedThirdPartyNominationRepository });
     setupRequest(request, REQUEST_ID, "Identity", "CLOSED", { userIdentity: { email: VTP_EMAIL } as UserIdentity });
     request.setup(instance => instance.setVerifiedThirdParty(nominate)).returns(undefined);
 }
 
 const VTP_EMAIL = userIdentities["Polkadot"].userIdentity?.email;
+const VTP_ADDRESS = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
 
-const NOMINATION_ID: VerifiedThirdPartySelectionId = {
+const SELECTION_ID: VerifiedThirdPartySelectionId = {
     locRequestId: REQUEST_ID,
     verifiedThirdPartyLocId: userIdentities["Polkadot"].identityLocId!
 };
 
 const NOMINATION_ID_IS = It.Is<VerifiedThirdPartySelectionId>(id =>
-    id.locRequestId === NOMINATION_ID.locRequestId
-    && id.verifiedThirdPartyLocId === NOMINATION_ID.verifiedThirdPartyLocId
+    id.locRequestId === SELECTION_ID.locRequestId
+    && id.verifiedThirdPartyLocId === SELECTION_ID.verifiedThirdPartyLocId
 );
 
 function mockModelForSelect(
@@ -99,7 +114,7 @@ function mockModelForSelect(
     nomination: Mock<VerifiedThirdPartySelectionAggregateRoot>,
     notificationService: Mock<NotificationService>,
 ) {
-    const { request, repository, verifiedThirdPartyNominationFactory } = buildMocksForFetch(container, { verifiedThirdPartyNominationRepository, notificationService });
+    const { request, repository, verifiedThirdPartySelectionFactory: verifiedThirdPartyNominationFactory } = buildMocksForFetch(container, { verifiedThirdPartySelectionRepository: verifiedThirdPartyNominationRepository, notificationService });
     mockPolkadotIdentityLoc(repository, true);
 
     const description = new Mock<LocRequestDescription>();
@@ -110,7 +125,7 @@ function mockModelForSelect(
             locRequest: LocRequestAggregateRoot,
             verifiedThirdPartyLocRequest: LocRequestAggregateRoot,
         }>(id =>
-            id.verifiedThirdPartyLocRequest.id === NOMINATION_ID.verifiedThirdPartyLocId
+            id.verifiedThirdPartyLocRequest.id === SELECTION_ID.verifiedThirdPartyLocId
             && id.locRequest === request.object())))
     .returnsAsync(nomination.object());
 
@@ -122,7 +137,7 @@ function mockModelForUnselect(
     verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>,
     notificationService: Mock<NotificationService>,
 ) {
-    const { request, repository } = buildMocksForFetch(container, { verifiedThirdPartyNominationRepository, notificationService });
+    const { request, repository } = buildMocksForFetch(container, { verifiedThirdPartySelectionRepository: verifiedThirdPartyNominationRepository, notificationService });
     mockPolkadotIdentityLoc(repository, true);
 
     const description = new Mock<LocRequestDescription>();
@@ -159,4 +174,33 @@ function mockModelForGetVerifiedThirdParties(container: Container) {
         spec.expectedOwnerAddress === ALICE
         && spec.isVerifiedThirdParty === true
     ))).returnsAsync([ identityLoc1.object(), identityLoc2.object() ]);
+}
+
+function mockModelForGetVerifiedThirdPartyLocRequests(container: Container) {
+    const { repository, verifiedThirdPartySelectionRepository } = buildMocks(container);
+
+    const verifiedThirdPartyLocId = SELECTION_ID.verifiedThirdPartyLocId;
+    const vtpIdentityLocRequest = new Mock<LocRequestAggregateRoot>();
+    vtpIdentityLocRequest.setup(instance => instance.id).returns(verifiedThirdPartyLocId);
+    repository.setup(instance => instance.findBy(It.Is<FetchLocRequestsSpecification>(spec =>
+        spec.expectedRequesterAddress === VTP_ADDRESS
+        && spec.expectedLocTypes !== undefined && spec.expectedLocTypes.length === 1 && spec.expectedLocTypes[0] === "Identity"
+        && spec.expectedStatuses !== undefined && spec.expectedStatuses.length === 1 && spec.expectedStatuses[0] === "CLOSED"
+        && spec.isVerifiedThirdParty === true
+    ))).returnsAsync([ vtpIdentityLocRequest.object() ]);
+
+    const locRequestId = "1de855e6-4da8-4b18-b498-e928447da908";
+    const selection = new Mock<VerifiedThirdPartySelectionAggregateRoot>();
+    selection.setup(instance => instance.id).returns({
+        locRequestId,
+        verifiedThirdPartyLocId,
+    });
+    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.Is<Partial<VerifiedThirdPartySelectionId>>(id =>
+        id.verifiedThirdPartyLocId === SELECTION_ID.verifiedThirdPartyLocId
+        && id.locRequestId === undefined
+    ))).returnsAsync([ selection.object() ]);
+
+    const locWithSelection = new Mock<LocRequestAggregateRoot>();
+    setupRequest(locWithSelection, locRequestId, "Transaction", "OPEN");
+    repository.setup(instance => instance.findById(locRequestId)).returnsAsync(locWithSelection.object());
 }

@@ -26,8 +26,13 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
     });
 
     it("finds by LOC requets ID", async () => {
-        const nominations = await repository.findByLocRequestId("a7b80f86-1c51-4aff-ba32-d8361bb462b1");
+        const nominations = await repository.findBy({ locRequestId: "a7b80f86-1c51-4aff-ba32-d8361bb462b1" });
         expect(nominations.length).toBe(2);
+    });
+
+    it("finds by VTP LOC ID", async () => {
+        const nominations = await repository.findBy({ verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744" });
+        expect(nominations.length).toBe(1);
     });
 });
 

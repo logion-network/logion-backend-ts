@@ -42,8 +42,8 @@ export class VerifiedThirdPartySelectionRepository {
         return await this.repository.findOneBy(id);
     }
 
-    async findByLocRequestId(locRequestId: string): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
-        return this.repository.findBy({ locRequestId });
+    async findBy(partialId: Partial<VerifiedThirdPartySelectionId>): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
+        return this.repository.findBy(partialId);
     }
 
     async deleteById(id: VerifiedThirdPartySelectionId): Promise<void> {
