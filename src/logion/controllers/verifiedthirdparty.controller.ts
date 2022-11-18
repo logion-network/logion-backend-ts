@@ -249,15 +249,18 @@ export class VerifiedThirdPartyController extends ApiController {
     @Async()
     async getVerifiedThirdPartyLocRequests(): Promise<FetchLocRequestsResponseView> {
         const userCheck = await this.authenticationService.authenticatedUser(this.request);
-        const identityLocs = await this.locRequestRepository.findBy({
+        let identityLocs = await this.locRequestRepository.findBy({
             expectedRequesterAddress: userCheck.address,
             expectedLocTypes: [ "Identity" ],
             expectedStatuses: [ "CLOSED" ],
             isVerifiedThirdParty: true,
         });
+        identityLocs = identityLocs.filter(loc => loc.voidInfo === undefined);
+
         if(identityLocs.length === 0) {
             throw forbidden("Authenticated user is not a VTP");
         }
+
         const verifiedThirdPartyLocId = identityLocs[0].id!;
         const selections = await this.verifiedThirdPartySelectionRepository.findBy({ verifiedThirdPartyLocId });
         const requests = [];

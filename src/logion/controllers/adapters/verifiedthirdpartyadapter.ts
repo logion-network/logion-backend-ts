@@ -23,7 +23,7 @@ export class VerifiedThirdPartyAdapter {
         private verifiedThirdPartyNominationRepository: VerifiedThirdPartySelectionRepository,
     ) {}
 
-    async nominatedParties(locRequestId: string): Promise<VerifiedThirdPartyView[]> {
+    async selectedParties(locRequestId: string): Promise<VerifiedThirdPartyView[]> {
         const nominatedParties = await this.verifiedThirdPartyNominationRepository.findBy({ locRequestId });
         const parties = [];
         for(const nomination of nominatedParties) {
