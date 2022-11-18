@@ -122,8 +122,8 @@ export interface Mocks {
     fileStorageService: Mock<FileStorageService>;
     notificationService: Mock<NotificationService>;
     collectionRepository: Mock<CollectionRepository>;
-    verifiedThirdPartyNominationFactory: Mock<VerifiedThirdPartySelectionFactory>;
-    verifiedThirdPartyNominationRepository: Mock<VerifiedThirdPartySelectionRepository>;
+    verifiedThirdPartySelectionFactory: Mock<VerifiedThirdPartySelectionFactory>;
+    verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -143,13 +143,13 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(LocRequestAdapter).toSelf();
     container.bind(VerifiedThirdPartyAdapter).toSelf();
 
-    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartyNominationFactory ? existingMocks.verifiedThirdPartyNominationFactory : new Mock<VerifiedThirdPartySelectionFactory>();
+    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartySelectionFactory ? existingMocks.verifiedThirdPartySelectionFactory : new Mock<VerifiedThirdPartySelectionFactory>();
     container.bind(VerifiedThirdPartySelectionFactory).toConstantValue(verifiedThirdPartyNominationFactory.object());
 
-    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartyNominationRepository ? existingMocks.verifiedThirdPartyNominationRepository : new Mock<VerifiedThirdPartySelectionRepository>();
+    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
     container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
 
-    verifiedThirdPartyNominationRepository.setup(instance => instance.findByLocRequestId(It.IsAny())).returnsAsync([]);
+    verifiedThirdPartyNominationRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
 
     return {
         factory,
@@ -158,8 +158,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         fileStorageService,
         notificationService,
         collectionRepository,
-        verifiedThirdPartyNominationFactory,
-        verifiedThirdPartyNominationRepository,
+        verifiedThirdPartySelectionFactory: verifiedThirdPartyNominationFactory,
+        verifiedThirdPartySelectionRepository: verifiedThirdPartyNominationRepository,
     };
 }
 

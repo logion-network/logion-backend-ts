@@ -8,6 +8,7 @@ import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, Veri
 import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter";
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
+import { LocRequestAdapter } from "./adapters/locrequestadapter";
 
 const { logger } = Log;
 
@@ -19,17 +20,20 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     });
     setControllerTag(spec, /^\/api\/loc-request\/.*\/verified-third-party$/, tagName);
     setControllerTag(spec, /^\/api\/loc-request\/.*\/selected-parties\/.*/, tagName);
-    setControllerTag(spec, /^\/api\/verified-third-parties\/.*/, tagName);
+    setControllerTag(spec, /^\/api\/verified-third-parties.*/, tagName);
+    setControllerTag(spec, /^\/api\/verified-third-party.*/, tagName);
 
     VerifiedThirdPartyController.nominateDismissVerifiedThirdParty(spec);
     VerifiedThirdPartyController.selectVerifiedThirdParty(spec);
     VerifiedThirdPartyController.unselectVerifiedThirdParty(spec);
     VerifiedThirdPartyController.getLegalOfficerVerifiedThirdParties(spec);
+    VerifiedThirdPartyController.getVerifiedThirdPartyLocRequests(spec);
 }
 
 type SetVerifiedThirdPartyRequest = components["schemas"]["SetVerifiedThirdPartyRequest"];
 type SelectVerifiedThirdPartyRequest = components["schemas"]["SelectVerifiedThirdPartyRequest"];
 type VerifiedThirdPartiesView = components["schemas"]["VerifiedThirdPartiesView"];
+type FetchLocRequestsResponseView = components["schemas"]["FetchLocRequestsResponseView"];
 
 @injectable()
 @Controller('')
@@ -38,11 +42,12 @@ export class VerifiedThirdPartyController extends ApiController {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private authenticationService: AuthenticationService,
-        private verifiedThirdPartyNominationFactory: VerifiedThirdPartySelectionFactory,
-        private verifiedThirdPartyNominationRepository: VerifiedThirdPartySelectionRepository,
+        private verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
+        private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
+        private locRequestAdapter: LocRequestAdapter,
     ) {
         super();
     }
@@ -74,7 +79,7 @@ export class VerifiedThirdPartyController extends ApiController {
         await this.locRequestRepository.save(request);
 
         if(!nominated) {
-            await this.verifiedThirdPartyNominationRepository.deleteByVerifiedThirdPartyId(requestId);
+            await this.verifiedThirdPartySelectionRepository.deleteByVerifiedThirdPartyId(requestId);
         }
 
         this.notifyVtpNominatedDismissed({
@@ -131,11 +136,11 @@ export class VerifiedThirdPartyController extends ApiController {
         const verifiedThirdPartyLocRequestId = requireDefined(body.identityLocId);
         const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(verifiedThirdPartyLocRequestId));
         try {
-            const nomination = await this.verifiedThirdPartyNominationFactory.newNomination({
+            const nomination = await this.verifiedThirdPartySelectionFactory.newNomination({
                 verifiedThirdPartyLocRequest,
                 locRequest,
             });
-            await this.verifiedThirdPartyNominationRepository.save(nomination);
+            await this.verifiedThirdPartySelectionRepository.save(nomination);
         } catch(e) {
             throw badRequest((e as Error).message);
         }
@@ -199,7 +204,7 @@ export class VerifiedThirdPartyController extends ApiController {
             locRequestId: requestId,
             verifiedThirdPartyLocId: partyId,
         };
-        await this.verifiedThirdPartyNominationRepository.deleteById(nominationId);
+        await this.verifiedThirdPartySelectionRepository.deleteById(nominationId);
 
         const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(partyId));
         this.notifyVtpSelectedUnselected({
@@ -231,5 +236,40 @@ export class VerifiedThirdPartyController extends ApiController {
             isVerifiedThirdParty: true,
         });
         return this.verifiedThirdPartyAdapter.toViews(verifiedThirdParties);
+    }
+
+    static getVerifiedThirdPartyLocRequests(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/verified-third-party-loc-requests"].get!;
+        operationObject.summary = "Lists the LOC requests a Verified Trusted Parties has been selected for";
+        operationObject.description = "The authenticated user must be a Verified Trusted Party.";
+        operationObject.responses = getDefaultResponses("FetchLocRequestsResponseView");
+    }
+
+    @HttpGet("/verified-third-party-loc-requests")
+    @Async()
+    async getVerifiedThirdPartyLocRequests(): Promise<FetchLocRequestsResponseView> {
+        const userCheck = await this.authenticationService.authenticatedUser(this.request);
+        let identityLocs = await this.locRequestRepository.findBy({
+            expectedRequesterAddress: userCheck.address,
+            expectedLocTypes: [ "Identity" ],
+            expectedStatuses: [ "CLOSED" ],
+            isVerifiedThirdParty: true,
+        });
+        identityLocs = identityLocs.filter(loc => loc.voidInfo === undefined);
+
+        if(identityLocs.length === 0) {
+            throw forbidden("Authenticated user is not a VTP");
+        }
+
+        const verifiedThirdPartyLocId = identityLocs[0].id!;
+        const selections = await this.verifiedThirdPartySelectionRepository.findBy({ verifiedThirdPartyLocId });
+        const requests = [];
+        for(const selection of selections) {
+            const request = await this.locRequestRepository.findById(selection.id.locRequestId);
+            if(request) {
+                requests.push(await this.locRequestAdapter.toView(request, userCheck.address));
+            }
+        }
+        return { requests };
     }
 }

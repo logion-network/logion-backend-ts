@@ -417,7 +417,7 @@ export interface components {
       company?: string;
       /** @description Tells if the user behind this closed Identity LOC is a Verified Third Party */
       verifiedThirdParty?: boolean;
-      nominatedParties?: components["schemas"]["VerifiedThirdPartyView"][];
+      selectedParties?: components["schemas"]["VerifiedThirdPartyView"][];
     };
     /**
      * LocPublicView

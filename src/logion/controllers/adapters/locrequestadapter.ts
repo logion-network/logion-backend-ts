@@ -72,7 +72,7 @@ export class LocRequestAdapter {
             seal: locDescription.seal?.hash,
             company: locDescription.company,
             verifiedThirdParty: locDescription.verifiedThirdParty,
-            nominatedParties: await this.verifiedThirdPartyAdapter.nominatedParties(id),
+            selectedParties: await this.verifiedThirdPartyAdapter.selectedParties(id),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

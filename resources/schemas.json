@@ -657,7 +657,7 @@
                         "type": "boolean",
                         "description": "Tells if the user behind this closed Identity LOC is a Verified Third Party"
                     },
-                    "nominatedParties": {
+                    "selectedParties": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/VerifiedThirdPartyView"
