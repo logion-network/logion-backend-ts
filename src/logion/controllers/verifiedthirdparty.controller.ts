@@ -255,7 +255,7 @@ export class VerifiedThirdPartyController extends ApiController {
             expectedStatuses: [ "CLOSED" ],
             isVerifiedThirdParty: true,
         });
-        identityLocs = identityLocs.filter(loc => loc.voidInfo === undefined);
+        identityLocs = identityLocs.filter(loc => loc.getVoidInfo() === null);
 
         if(identityLocs.length === 0) {
             throw forbidden("Authenticated user is not a VTP");

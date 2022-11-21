@@ -182,6 +182,7 @@ function mockModelForGetVerifiedThirdPartyLocRequests(container: Container) {
     const verifiedThirdPartyLocId = SELECTION_ID.verifiedThirdPartyLocId;
     const vtpIdentityLocRequest = new Mock<LocRequestAggregateRoot>();
     vtpIdentityLocRequest.setup(instance => instance.id).returns(verifiedThirdPartyLocId);
+    vtpIdentityLocRequest.setup(instance => instance.getVoidInfo()).returns(null);
     repository.setup(instance => instance.findBy(It.Is<FetchLocRequestsSpecification>(spec =>
         spec.expectedRequesterAddress === VTP_ADDRESS
         && spec.expectedLocTypes !== undefined && spec.expectedLocTypes.length === 1 && spec.expectedLocTypes[0] === "Identity"
