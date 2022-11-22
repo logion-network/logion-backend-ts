@@ -854,6 +854,21 @@ export class LocRequestRepository {
             await entityManager.delete(LocRequestAggregateRoot, request.id);
         });
     }
+
+    async getVerifiedThirdPartyIdentityLoc(address: string): Promise<LocRequestAggregateRoot | undefined> {
+        let identityLocs = await this.findBy({
+            expectedRequesterAddress: address,
+            expectedLocTypes: [ "Identity" ],
+            expectedStatuses: [ "CLOSED" ],
+            isVerifiedThirdParty: true,
+        });
+        identityLocs = identityLocs.filter(loc => loc.getVoidInfo() === null);
+        if(identityLocs.length > 0) {
+            return identityLocs[0];
+        } else {
+            return undefined;
+        }
+    }
 }
 
 export interface NewLocRequestParameters {

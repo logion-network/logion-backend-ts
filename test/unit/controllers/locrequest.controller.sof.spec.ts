@@ -14,7 +14,7 @@ import { buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequest, REQUEST_ID, 
 
 const { setupApp } = TestApp;
 
-describe('LocRequestController - SoF', () => {
+describe('LocRequestController - SoF -', () => {
 
     it('creates a SOF request for Transaction LOC', async () => {
         const factory = new Mock<LocRequestFactory>();

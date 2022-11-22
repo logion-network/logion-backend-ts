@@ -13,7 +13,7 @@ import { buildMocksForUpdate, mockPolkadotIdentityLoc, Mocks, REQUEST_ID, setupR
 
 const { setupApp } = TestApp;
 
-describe('LocRequestController - Life Cycle', () => {
+describe('LocRequestController - Life Cycle -', () => {
 
     it('rejects a requested loc', async () => {
         const notificationService = new Mock<NotificationService>();
