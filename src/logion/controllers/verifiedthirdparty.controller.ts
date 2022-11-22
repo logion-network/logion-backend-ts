@@ -9,6 +9,7 @@ import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter"
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
+import { LocRequestService } from "../services/locrequest.service";
 
 const { logger } = Log;
 
@@ -48,6 +49,7 @@ export class VerifiedThirdPartyController extends ApiController {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private locRequestAdapter: LocRequestAdapter,
+        private locRequestService: LocRequestService,
     ) {
         super();
     }
@@ -70,13 +72,12 @@ export class VerifiedThirdPartyController extends ApiController {
     @Async()
     @SendsResponse()
     async nominateDismissVerifiedThirdParty(body: SetVerifiedThirdPartyRequest, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const userCheck = await this.authenticationService.authenticatedUser(this.request);
-        userCheck.require(user => user.is(request.ownerAddress));
-
         const nominated = body.isVerifiedThirdParty || false;
-        request.setVerifiedThirdParty(nominated);
-        await this.locRequestRepository.save(request);
+        const request = await this.locRequestService.update(requestId, async request => {
+            userCheck.require(user => user.is(request.ownerAddress));
+            request.setVerifiedThirdParty(nominated);
+        });
 
         if(!nominated) {
             await this.verifiedThirdPartySelectionRepository.deleteByVerifiedThirdPartyId(requestId);
