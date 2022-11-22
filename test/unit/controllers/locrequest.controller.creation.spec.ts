@@ -14,7 +14,7 @@ import { testDataWithType, userIdentities, testDataWithLogionIdentity, testDataW
 
 const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition, setupApp } = TestApp;
 
-describe('LocRequestController - Creation', () => {
+describe('LocRequestController - Creation -', () => {
 
     it('user fails to create a Transaction loc request with embedded user identity', async () => {
         await testLocRequestCreationWithEmbeddedUserIdentity(false, "Transaction", 400, "Unable to find a valid (closed) identity LOC.")

@@ -24,7 +24,7 @@ import { CollectionRepository } from "../../../src/logion/model/collection.model
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
-import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
@@ -321,3 +321,40 @@ export function buildMocksForUpdate(container: Container, existingMocks?: Partia
 
     return mocks;
 }
+
+export function setupSelectedVtp(
+    mocks: {
+        repository: Mock<LocRequestRepository>,
+        verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>,
+    },
+    selected: boolean,
+) {
+    const { repository, verifiedThirdPartySelectionRepository } = mocks;
+
+    if(selected) {
+        const vtpIdentityLoc = new Mock<LocRequestAggregateRoot>();
+        vtpIdentityLoc.setup(instance => instance.id).returns(VTP_LOC_ID);
+        vtpIdentityLoc.setup(instance => instance.getDescription()).returns({
+            
+        } as LocRequestDescription);
+        repository.setup(instance => instance.getVerifiedThirdPartyIdentityLoc).returns(address =>
+            address === VTP_ADDRESS && vtpIdentityLoc
+            ? Promise.resolve(vtpIdentityLoc.object())
+            : Promise.resolve(undefined));
+        repository.setup(instance => instance.findById(VTP_LOC_ID)).returnsAsync(vtpIdentityLoc.object());
+
+        const selection = new Mock<VerifiedThirdPartySelectionAggregateRoot>();
+        selection.setup(instance => instance.id).returns({
+            locRequestId: REQUEST_ID,
+            verifiedThirdPartyLocId: VTP_LOC_ID,
+        });
+        verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(
+            It.Is<Partial<VerifiedThirdPartySelectionId>>(args => args.locRequestId === REQUEST_ID)))
+        .returnsAsync([ selection.object() ]);
+    } else {
+        repository.setup(instance => instance.getVerifiedThirdPartyIdentityLoc(It.IsAny())).returnsAsync(undefined);
+    }
+}
+
+export const VTP_ADDRESS = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
+export const VTP_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";

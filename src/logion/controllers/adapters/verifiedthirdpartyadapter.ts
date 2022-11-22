@@ -32,8 +32,8 @@ export class VerifiedThirdPartyAdapter {
         return parties;
     }
 
-    private async toVerifiedThirdPartyView(verifiedThirdPartyNomination: VerifiedThirdPartySelectionAggregateRoot): Promise<VerifiedThirdPartyView> {
-        const identityLocId = requireDefined(verifiedThirdPartyNomination.verifiedThirdPartyLocId);
+    private async toVerifiedThirdPartyView(verifiedThirdPartySelection: VerifiedThirdPartySelectionAggregateRoot): Promise<VerifiedThirdPartyView> {
+        const identityLocId = requireDefined(verifiedThirdPartySelection.id.verifiedThirdPartyLocId);
         const identityLocRequest = requireDefined(await this.locRequestRepository.findById(identityLocId));
         return this.toView(identityLocRequest);
     }
@@ -42,8 +42,8 @@ export class VerifiedThirdPartyAdapter {
         const description = identityLocRequest.getDescription();
         return {
             identityLocId: identityLocRequest.id,
-            firstName: requireDefined(description.userIdentity?.firstName),
-            lastName: requireDefined(description.userIdentity?.lastName),
+            firstName: description.userIdentity?.firstName,
+            lastName: description.userIdentity?.lastName,
         };
     }
 
