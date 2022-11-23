@@ -716,6 +716,8 @@ export interface components {
       lastName?: string;
       /** @description The ID of the closed Identity LOC of this Verified Third Party */
       identityLocId?: string;
+      /** @description The SS58 address of the Verified Third Party */
+      address?: string;
     };
     VerifiedThirdPartiesView: {
       verifiedThirdParties?: components["schemas"]["VerifiedThirdPartyView"][];

@@ -1155,6 +1155,10 @@
                     "identityLocId": {
                         "type": "string",
                         "description": "The ID of the closed Identity LOC of this Verified Third Party"
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "The SS58 address of the Verified Third Party"
                     }
                 }
             },
