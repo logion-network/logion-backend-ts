@@ -1,7 +1,8 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, HttpPut, Async, HttpGet } from 'dinoloop';
-import { SettingFactory, SettingRepository } from '../model/setting.model';
+import { SettingRepository } from '../model/setting.model';
 import { AuthenticationService } from '@logion/rest-api-core';
+import { SettingService } from '../services/settings.service';
 
 @injectable()
 @Controller('/setting')
@@ -9,8 +10,8 @@ export class SettingController extends ApiController {
 
     constructor(
         private settingRepository: SettingRepository,
-        private settingFactory: SettingFactory,
         private authenticationService: AuthenticationService,
+        private settingService: SettingService,
     ) {
         super();
     }
@@ -34,13 +35,6 @@ export class SettingController extends ApiController {
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
         const value = body.value;
-        const existingSetting = await this.settingRepository.findById(id);
-        if(existingSetting) {
-            existingSetting.value = value;
-            await this.settingRepository.save(existingSetting);
-        } else {
-            const newSetting = this.settingFactory.newSetting({id, value});
-            await this.settingRepository.save(newSetting);
-        }
+        await this.settingService.createOrUpdate(id, value);
     }
 }
