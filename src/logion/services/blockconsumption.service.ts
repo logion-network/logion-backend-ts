@@ -13,6 +13,7 @@ import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
 import { toStringWithoutError } from "./types/responses/Extrinsic";
 import { ProgressRateLogger } from "./progressratelogger";
 import { PrometheusService } from "./prometheus.service";
+import { SyncPointService } from "./syncpoint.service";
 
 const { logger } = Log;
 
@@ -25,6 +26,7 @@ export class BlockConsumer {
         private blockService: BlockExtrinsicsService,
         private syncPointRepository: SyncPointRepository,
         private syncPointFactory: SyncPointFactory,
+        private syncPointService: SyncPointService,
         private transactionSynchronizer: TransactionSynchronizer,
         private locSynchronizer: LocSynchronizer,
         private protectionSynchronizer: ProtectionSynchronizer,
@@ -111,13 +113,13 @@ export class BlockConsumer {
                 latestHeadBlockNumber: head,
                 createdOn: now
             });
+            await this.syncPointService.add(current);
         } else {
-            current.update({
+            await this.syncPointService.update(TRANSACTIONS_SYNC_POINT_NAME, {
                 blockNumber: head,
                 updatedOn: now
             });
         }
-        await this.syncPointRepository.save(current);
         return current;
     }
 

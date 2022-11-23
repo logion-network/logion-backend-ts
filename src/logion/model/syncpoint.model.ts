@@ -42,10 +42,6 @@ export class SyncPointRepository {
     async findByName(name: string): Promise<SyncPointAggregateRoot | null> {
         return await this.repository.findOneBy({ name });
     }
-
-    async delete(syncPoint: SyncPointAggregateRoot): Promise<void> {
-        await this.repository.delete(syncPoint.name!);
-    }
 }
 
 @injectable()

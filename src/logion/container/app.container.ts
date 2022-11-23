@@ -41,6 +41,13 @@ import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionReposito
 import { VerifiedThirdPartyAdapter } from "../controllers/adapters/verifiedthirdpartyadapter";
 import { LocRequestAdapter } from "../controllers/adapters/locrequestadapter";
 import { LocRequestService, TransactionalLocRequestService } from "../services/locrequest.service";
+import { LoFileService, TransactionalLoFileService } from "../services/lofile.service";
+import { ProtectionRequestService, TransactionalProtectionRequestService } from "../services/protectionrequest.service";
+import { SettingService, TransactionalSettingService } from "../services/settings.service";
+import { SyncPointService, TransactionalSyncPointService } from "../services/syncpoint.service";
+import { TransactionalTransactionService, TransactionService } from "../services/transaction.service";
+import { TransactionalVaultTransferRequestService, VaultTransferRequestService } from "../services/vaulttransferrequest.service";
+import { TransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -93,6 +100,20 @@ container.bind(LocRequestService).toService(TransactionalLocRequestService);
 container.bind(TransactionalLocRequestService).toSelf();
 container.bind(CollectionService).toService(TransactionalCollectionService);
 container.bind(TransactionalCollectionService).toSelf();
+container.bind(LoFileService).toService(TransactionalLoFileService);
+container.bind(TransactionalLoFileService).toSelf();
+container.bind(ProtectionRequestService).toService(TransactionalProtectionRequestService);
+container.bind(TransactionalProtectionRequestService).toSelf();
+container.bind(SettingService).toService(TransactionalSettingService);
+container.bind(TransactionalSettingService).toSelf();
+container.bind(SyncPointService).toService(TransactionalSyncPointService);
+container.bind(TransactionalSyncPointService).toSelf();
+container.bind(TransactionService).toService(TransactionalTransactionService);
+container.bind(TransactionalTransactionService).toSelf();
+container.bind(VaultTransferRequestService).toService(TransactionalVaultTransferRequestService);
+container.bind(TransactionalVaultTransferRequestService).toSelf();
+container.bind(VerifiedThirdPartySelectionService).toService(TransactionalVerifiedThirdPartySelectionService);
+container.bind(TransactionalVerifiedThirdPartySelectionService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

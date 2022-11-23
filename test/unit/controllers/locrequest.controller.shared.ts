@@ -26,6 +26,7 @@ import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
 import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
 import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
+import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 
@@ -151,6 +152,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
 
     verifiedThirdPartyNominationRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
+
+    container.bind(VerifiedThirdPartySelectionService).toConstantValue(new NonTransactionalVerifiedThirdPartySelectionService(verifiedThirdPartyNominationRepository.object()));
 
     container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(repository.object()));
 

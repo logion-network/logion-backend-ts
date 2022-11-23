@@ -10,6 +10,7 @@ import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
 import { LocRequestService } from "../services/locrequest.service";
+import { VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
 
 const { logger } = Log;
 
@@ -45,6 +46,7 @@ export class VerifiedThirdPartyController extends ApiController {
         private authenticationService: AuthenticationService,
         private verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        private verifiedThirdPartySelectionService: VerifiedThirdPartySelectionService,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
@@ -80,7 +82,7 @@ export class VerifiedThirdPartyController extends ApiController {
         });
 
         if(!nominated) {
-            await this.verifiedThirdPartySelectionRepository.deleteByVerifiedThirdPartyId(requestId);
+            await this.verifiedThirdPartySelectionService.deleteByVerifiedThirdPartyId(requestId);
         }
 
         this.notifyVtpNominatedDismissed({
@@ -141,7 +143,7 @@ export class VerifiedThirdPartyController extends ApiController {
                 verifiedThirdPartyLocRequest,
                 locRequest,
             });
-            await this.verifiedThirdPartySelectionRepository.save(nomination);
+            await this.verifiedThirdPartySelectionService.add(nomination);
         } catch(e) {
             throw badRequest((e as Error).message);
         }
@@ -205,7 +207,7 @@ export class VerifiedThirdPartyController extends ApiController {
             locRequestId: requestId,
             verifiedThirdPartyLocId: partyId,
         };
-        await this.verifiedThirdPartySelectionRepository.deleteById(nominationId);
+        await this.verifiedThirdPartySelectionService.deleteById(nominationId);
 
         const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(partyId));
         this.notifyVtpSelectedUnselected({

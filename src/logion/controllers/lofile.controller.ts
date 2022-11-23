@@ -18,6 +18,7 @@ import { FileStorageService } from "../services/file.storage.service";
 import { getUploadedFile } from "./fileupload";
 import { downloadAndClean } from "../lib/http";
 import { components } from "./components";
+import { LoFileService } from "../services/lofile.service";
 
 type FileUploadData = components["schemas"]["FileUploadData"];
 
@@ -41,7 +42,9 @@ export class LoFileController extends ApiController {
         private fileStorageService: FileStorageService,
         private authenticationService: AuthenticationService,
         private loFileRepository: LoFileRepository,
-        private loFileFactory: LoFileFactory) {
+        private loFileFactory: LoFileFactory,
+        private loFileService: LoFileService,
+    ) {
         super();
     }
 
@@ -63,20 +66,20 @@ export class LoFileController extends ApiController {
     @Async()
     @SendsResponse()
     async uploadFile(body: FileUploadData, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        authenticatedUser.require(user => user.isNodeOwner());
 
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
-
-        const existingLoFile = await this.loFileRepository.findById(id);
         const file = await getUploadedFile(this.request, requireDefined(body.hash, () => badRequest("No hash found for upload file")));
+        const existingLoFile = await this.loFileRepository.findById(id);
         if (existingLoFile) {
             const oidToRemove = existingLoFile.oid;
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
-            existingLoFile.update({
-                contentType: file.mimetype,
-                oid
-            })
-            await this.loFileRepository.save(existingLoFile);
+            await this.loFileService.updateLoFile(id, async loFile => {
+                loFile.update({
+                    contentType: file.mimetype,
+                    oid
+                });
+            });
             await this.fileStorageService.deleteFile({ oid: oidToRemove });
         } else {
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
@@ -85,7 +88,7 @@ export class LoFileController extends ApiController {
                 contentType: file.mimetype,
                 oid,
             })
-            await this.loFileRepository.save(loFile);
+            await this.loFileService.addLoFile(loFile);
         }
         this.response.sendStatus(204);
     }

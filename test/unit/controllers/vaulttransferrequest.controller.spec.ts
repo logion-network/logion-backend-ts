@@ -24,6 +24,7 @@ import {
 } from '../../../src/logion/model/protectionrequest.model';
 import { UserIdentity } from '../../../src/logion/model/useridentity';
 import { PostalAddress } from '../../../src/logion/model/postaladdress';
+import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service';
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -201,12 +202,12 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndDirectoryService(container, repository);
 }
 
 const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE);
 
-function mockNotificationAndDirectoryService(container: Container) {
+function mockNotificationAndDirectoryService(container: Container, repository: Mock<VaultTransferRequestRepository>) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
@@ -227,6 +228,8 @@ function mockNotificationAndDirectoryService(container: Container) {
         .setup(instance => instance.findBy(It.IsAny<FetchProtectionRequestsSpecification>()))
         .returns(Promise.resolve([ protectionRequest.object() ]));
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRequestRepository.object());
+
+    container.bind(VaultTransferRequestService).toConstantValue(new NonTransactionalVaultTransferRequestService(repository.object()));
 }
 
 function mockVaultTransferRequest(): Mock<VaultTransferRequestAggregateRoot> {
@@ -297,7 +300,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndDirectoryService(container, repository);
 }
 
 function mockModelForRequest(container: Container): void {
@@ -319,7 +322,7 @@ function mockVaultTransferRequestModel(container: Container): void {
                 description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndDirectoryService(container, repository);
 }
 
 let notificationService: Mock<NotificationService>;
@@ -345,5 +348,5 @@ function mockModelForAcceptOrCancel(container: Container, verifies: boolean): vo
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndDirectoryService(container, repository);
 }

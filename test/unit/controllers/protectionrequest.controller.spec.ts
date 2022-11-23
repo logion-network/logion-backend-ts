@@ -21,6 +21,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { notifiedLegalOfficer } from "../services/notification-test-data";
 import { EmbeddableUserIdentity, UserIdentity } from '../../../src/logion/model/useridentity';
 import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/model/postaladdress';
+import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -113,7 +114,9 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
                 && params.description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndDirectoryService(container);
+
+    container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -199,6 +202,8 @@ function mockModelForFetch(container: Container): void {
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
     mockNotificationAndDirectoryService(container)
+
+    container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
 describe('acceptProtectionRequest', () => {
@@ -240,7 +245,9 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndDirectoryService(container);
+
+    container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
 const REQUEST_ID = "requestId";
@@ -391,7 +398,9 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndDirectoryService(container);
+
+    container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
 function mockNotificationAndDirectoryService(container: Container) {
@@ -458,5 +467,7 @@ function mockModelForUser(container: Container, protectionRequest: Mock<Protecti
 
     const factory = new Mock<ProtectionRequestFactory>();
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndDirectoryService(container);
+
+    container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
