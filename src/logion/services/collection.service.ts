@@ -1,8 +1,9 @@
 import { injectable } from "inversify";
-import { PolkadotService } from "@logion/rest-api-core";
+import { DefaultTransactional, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { ItemFile, CollectionItem } from "@logion/node-api/dist/Types";
 import { getCollectionItem } from "@logion/node-api/dist/LogionLoc";
 import { UUID } from "@logion/node-api/dist/UUID";
+import { CollectionItemAggregateRoot, CollectionRepository } from "../model/collection.model";
 
 export interface GetCollectionItemParams {
     collectionLocId: string,
@@ -14,12 +15,11 @@ export interface GetCollectionItemFileParams extends GetCollectionItemParams {
 }
 
 @injectable()
-export class CollectionService {
+export class LogionNodeCollectionService {
 
     constructor(
-        private polkadotService: PolkadotService
-    ) {
-    }
+        private polkadotService: PolkadotService,
+    ) {}
 
     async getCollectionItem(params: GetCollectionItemParams): Promise<CollectionItem | undefined> {
         const { collectionLocId, itemId } = params;
@@ -35,5 +35,53 @@ export class CollectionService {
         const { hash } = params;
         const collectionItem = await this.getCollectionItem(params);
         return collectionItem?.files.find(itemFile => itemFile.hash === hash);
+    }
+}
+
+export abstract class CollectionService {
+
+    constructor(
+        private collectionRepository: CollectionRepository,
+    ) {}
+
+    async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
+        return await this.collectionRepository.createIfNotExist(collectionLocId, itemId, creator);
+    }
+
+    async update(collectionLocId: string, itemId: string, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
+        const item = requireDefined(await this.collectionRepository.findBy(collectionLocId, itemId));
+        await mutator(item);
+        await this.collectionRepository.save(item);
+        return item;
+    }
+}
+
+@injectable()
+export class TransactionalCollectionService extends CollectionService {
+
+    constructor(
+        collectionRepository: CollectionRepository,
+    ) {
+        super(collectionRepository);
+    }
+
+    @DefaultTransactional()
+    async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
+        return super.createIfNotExist(collectionLocId, itemId, creator);
+    }
+
+    @DefaultTransactional()
+    async update(collectionLocId: string, itemId: string, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
+        return super.update(collectionLocId, itemId, mutator);
+    }
+}
+
+@injectable()
+export class NonTransactionalCollectionService extends CollectionService {
+
+    constructor(
+        collectionRepository: CollectionRepository,
+    ) {
+        super(collectionRepository);
     }
 }

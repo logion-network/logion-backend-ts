@@ -1,7 +1,9 @@
 import { TestApp } from "@logion/rest-api-core";
-import { CollectionController } from "../../../src/logion/controllers/collection.controller";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
+import { CollectionItem, ItemFile } from "@logion/node-api";
+import { writeFile } from "fs/promises";
+import { CollectionController } from "../../../src/logion/controllers/collection.controller";
 import {
     CollectionRepository,
     CollectionItemAggregateRoot,
@@ -16,10 +18,10 @@ import { FileStorageService } from "../../../src/logion/services/file.storage.se
 import {
     CollectionService,
     GetCollectionItemParams,
-    GetCollectionItemFileParams
+    GetCollectionItemFileParams,
+    NonTransactionalCollectionService,
+    LogionNodeCollectionService,
 } from "../../../src/logion/services/collection.service";
-import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
-import { writeFile } from "fs/promises";
 import { fileExists } from "../../helpers/filehelper";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
@@ -483,7 +485,6 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         collectionItem.files = [];
     }
     const collectionItemFile = new Mock<CollectionItemFile>()
-    const collectionItemFileDelivered = new Mock<CollectionItemFileDelivered>()
     const collectionRepository = new Mock<CollectionRepository>()
     if (collectionItemAlreadyInDB) {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
@@ -500,11 +501,8 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         It.Is<string>(param => param === collectionLocId),
         It.Is<string>(param => param === itemId),
         It.IsAny<() => CollectionItemAggregateRoot>(),
-    )).returns(Promise.resolve(collectionItem))
-    collectionRepository.setup(instance => instance.saveFile(collectionItemFile.object()))
-        .returns(Promise.resolve())
-    collectionRepository.setup(instance => instance.saveDelivered(collectionItemFileDelivered.object()))
-        .returns(Promise.resolve())
+    )).returns(Promise.resolve(collectionItem));
+    collectionRepository.setup(instance => instance.save(collectionItem)).returnsAsync();
     if(restrictedDelivery) {
         const delivered: CollectionItemFileDelivered = {
             collectionLocId,
@@ -568,16 +566,16 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         restrictedDelivery,
         termsAndConditions: [],
     }
-    const collectionService = new Mock<CollectionService>()
-    collectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
+    const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();
+    logionNodeCollectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
         param => param.collectionLocId === collectionLocId && param.itemId === itemId)
     ))
-        .returns(Promise.resolve(collectionItemPublished ? publishedCollectionItem : undefined))
-    collectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
+        .returns(Promise.resolve(collectionItemPublished ? publishedCollectionItem : undefined));
+        logionNodeCollectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
         param => param.collectionLocId === collectionLocId && param.itemId === itemId && param.hash === SOME_DATA_HASH)
     ))
-        .returns(Promise.resolve(filePublished ? publishedCollectionItemFile : undefined))
-    container.bind(CollectionService).toConstantValue(collectionService.object())
+        .returns(Promise.resolve(filePublished ? publishedCollectionItemFile : undefined));
+    container.bind(LogionNodeCollectionService).toConstantValue(logionNodeCollectionService.object());
 
     const ownershipCheckService = new Mock<OwnershipCheckService>();
     if(restrictedDelivery) {
@@ -588,6 +586,8 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     const restrictedDeliveryService = new Mock<RestrictedDeliveryService>();
     restrictedDeliveryService.setup(instance => instance.setMetadata(It.IsAny())).returnsAsync();
     container.bind(RestrictedDeliveryService).toConstantValue(restrictedDeliveryService.object());
+
+    container.bind(CollectionService).toConstantValue(new NonTransactionalCollectionService(collectionRepository.object()));
 }
 
 function expectDeliveryInfo(responseBody: any) {

@@ -12,6 +12,7 @@ import {
     CollectionItemDescription
 } from "../../../src/logion/model/collection.model";
 import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
+import { CollectionService, NonTransactionalCollectionService } from "../../../src/logion/services/collection.service";
 
 describe("LocSynchronizer", () => {
 
@@ -155,9 +156,11 @@ function givenLocRequest() {
 }
 
 function givenCollectionItem() {
-    collectionItem = new Mock<CollectionItemAggregateRoot>()
-    collectionRepository.setup(instance => instance.findBy(locIdUuid, itemIdHex)).returns(Promise.resolve(null));
+    collectionItem = new Mock<CollectionItemAggregateRoot>();
+    collectionItem.setup(instance => instance.setAddedOn(It.IsAny())).returns();
+    collectionRepository.setup(instance => instance.findBy(locIdUuid, itemIdHex)).returns(Promise.resolve(collectionItem.object()));
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
+    collectionRepository.setup(instance => instance.createIfNotExist(locIdUuid, itemIdHex, It.IsAny())).returnsAsync(collectionItem.object());
 }
 
 function givenCollectionFactory() {
@@ -186,8 +189,8 @@ function locSynchronizer(): LocSynchronizer {
     return new LocSynchronizer(
         locRequestRepository.object(),
         collectionFactory.object(),
-        collectionRepository.object(),
         new NonTransactionalLocRequestService(locRequestRepository.object()),
+        new NonTransactionalCollectionService(collectionRepository.object()),
     );
 }
 

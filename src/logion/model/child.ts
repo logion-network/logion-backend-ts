@@ -17,7 +17,7 @@ export abstract class Child {
 export type IndexedChild = Child & HasIndex;
 
 export interface Parameters<T> {
-    children: T[],
+    children: T[] | undefined,
     entityClass: EntityTarget<T>,
     entityManager: EntityManager,
     whereExpression?: <E extends WhereExpressionBuilder>(sql: E, child: T) => E,
@@ -51,26 +51,28 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
         }
     }
 
-    for (const i in children) {
-        const child = children[i];
-        if (child._toAdd) {
-            delete child._toAdd
-            logger.debug("Inserting child %s", entityClass);
-            await entityManager.createQueryBuilder()
-                .insert()
-                .into(entityClass)
-                .values(child as QueryDeepPartialEntity<T>)
-                .execute();
-        } else if (child._toUpdate) {
-            if (!whereExpression) {
-                throw new Error("Cannot update children without proper where-clause.")
+    if(children) {
+        for (const i in children) {
+            const child = children[i];
+            if (child._toAdd) {
+                delete child._toAdd
+                logger.debug("Inserting child %s", entityClass);
+                await entityManager.createQueryBuilder()
+                    .insert()
+                    .into(entityClass)
+                    .values(child as QueryDeepPartialEntity<T>)
+                    .execute();
+            } else if (child._toUpdate) {
+                if (!whereExpression) {
+                    throw new Error("Cannot update children without proper where-clause.")
+                }
+                delete child._toUpdate;
+                logger.debug("Updating child %s", entityClass);
+                const update = entityManager.createQueryBuilder(entityClass, "some-alias")
+                    .update()
+                    .set(child as QueryDeepPartialEntity<T>)
+                await whereExpression(update, child).execute();
             }
-            delete child._toUpdate;
-            logger.debug("Updating child %s", entityClass);
-            const update = entityManager.createQueryBuilder(entityClass, "some-alias")
-                .update()
-                .set(child as QueryDeepPartialEntity<T>)
-            await whereExpression(update, child).execute();
         }
     }
 }

@@ -3,9 +3,11 @@ import {
     CollectionItemAggregateRoot,
     CollectionRepository,
     CollectionItemFile,
-    CollectionItemFileDelivered
+    CollectionItemFileDelivered,
+    CollectionItemFileDescription
 } from "../../../src/logion/model/collection.model";
 import moment from "moment";
+import { CollectionService, TransactionalCollectionService } from "../../../src/logion/services/collection.service";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -15,9 +17,11 @@ describe("CollectionRepository", () => {
         await connect([CollectionItemAggregateRoot, CollectionItemFile, CollectionItemFileDelivered]);
         await executeScript("test/integration/model/collection_items.sql");
         repository = new CollectionRepository();
+        service = new TransactionalCollectionService(repository);
     });
 
     let repository: CollectionRepository;
+    let service: CollectionService;
 
     afterAll(async () => {
         await disconnect();
@@ -100,18 +104,21 @@ describe("CollectionRepository", () => {
 
     it("adds a file to an existing Collection Item", async () => {
         // Given
-        const file: CollectionItemFile = new CollectionItemFile()
-        file.collectionLocId = "c38e5ab8-785f-4e26-91bd-f9cdef82f601"
-        file.itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        file.hash = "0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83"
-        file.cid = "147852";
+        const collectionLocId = "c38e5ab8-785f-4e26-91bd-f9cdef82f601";
+        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        const file: CollectionItemFileDescription = {
+            hash: "0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83",
+            cid: "147852",
+        };
 
-        await repository.saveFile(file)
+        await service.update(collectionLocId, itemId, async item => {
+            item.addFile(file);
+        });
 
         await checkNumOfRows(`SELECT *
                               FROM collection_item_file
-                              WHERE collection_loc_id = '${ file.collectionLocId }'
-                                AND item_id = '${ file.itemId }'
+                              WHERE collection_loc_id = '${ collectionLocId }'
+                                AND item_id = '${ itemId }'
                                 AND hash = '${ file.hash }'
                                 AND cid = '${ file.cid }'`, 1)
     })
@@ -129,23 +136,32 @@ describe("CollectionRepository", () => {
     })
 
     it("Adds files to synced", async () => {
-        const collectionItemFile = new CollectionItemFile();
-        collectionItemFile.collectionLocId = 'f14c0bd4-9ed1-4c46-9b42-47c63e09223f';
-        collectionItemFile.itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        collectionItemFile.hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        collectionItemFile.cid = "78945678424";
-        await repository.saveFile(collectionItemFile)
+        const collectionLocId = 'f14c0bd4-9ed1-4c46-9b42-47c63e09223f';
+        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        const collectionItemFile: CollectionItemFileDescription = {
+            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+            cid: "78945678424",
+        };
+        await service.update(collectionLocId, itemId, async item => {
+            item.addFile(collectionItemFile);
+        });
     })
 
     it("Adds delivery to file", async () => {
-        const delivered = new CollectionItemFileDelivered();
-        delivered.collectionLocId = '52d29fe9-983f-44d2-9e23-c8cb542981a3';
-        delivered.itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        delivered.hash = "0x8bd8548beac4ce719151dc2ae893f8edc658a566e5ff654104783e14fb44012e";
-        delivered.deliveredFileHash = "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7";
-        delivered.generatedOn = new Date();
-        delivered.owner = "0x900edc98db53508e6742723988B872dd08cd09c2";
-        await repository.saveDelivered(delivered)
+        const collectionLocId = '52d29fe9-983f-44d2-9e23-c8cb542981a3';
+        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        const hash = "0x8bd8548beac4ce719151dc2ae893f8edc658a566e5ff654104783e14fb44012e";
+        const deliveredFileHash = "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7";
+        const generatedOn = moment();
+        const owner = "0x900edc98db53508e6742723988B872dd08cd09c2";
+        await service.update(collectionLocId, itemId, async item => {
+            const file = item.getFile(hash);
+            file.addDeliveredFile({
+                deliveredFileHash,
+                generatedOn,
+                owner,
+            })
+        });
     })
 
     it("finds latest delivery", async () => {
