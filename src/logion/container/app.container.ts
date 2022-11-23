@@ -41,6 +41,7 @@ import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionReposito
 import { VerifiedThirdPartyAdapter } from "../controllers/adapters/verifiedthirdpartyadapter";
 import { LocRequestAdapter } from "../controllers/adapters/locrequestadapter";
 import { LocRequestService, TransactionalLocRequestService } from "../services/locrequest.service";
+import { LoFileService, TransactionalLoFileService } from "../services/lofile.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -93,6 +94,8 @@ container.bind(LocRequestService).toService(TransactionalLocRequestService);
 container.bind(TransactionalLocRequestService).toSelf();
 container.bind(CollectionService).toService(TransactionalCollectionService);
 container.bind(TransactionalCollectionService).toSelf();
+container.bind(LoFileService).toService(TransactionalLoFileService);
+container.bind(TransactionalLoFileService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

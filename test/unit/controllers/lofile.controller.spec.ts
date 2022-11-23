@@ -11,6 +11,7 @@ import {
 } from "../../../src/logion/model/lofile.model";
 import request from "supertest";
 import { writeFile } from "fs/promises";
+import { LoFileService, NonTransactionalLoFileService } from "../../../src/logion/services/lofile.service";
 
 const existingFile: LoFileDescription = {
     id: 'file1',
@@ -170,5 +171,7 @@ function mockModel(container: Container): void {
 
     const newEntity = new Mock<LoFileAggregateRoot>()
     factory.setup(instance => instance.newLoFile(newFile))
-        .returns(newEntity.object())
+        .returns(newEntity.object());
+
+    container.bind(LoFileService).toConstantValue(new NonTransactionalLoFileService(repository.object()));
 }
