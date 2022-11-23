@@ -57,7 +57,6 @@ describe("BlockConsumer", () => {
         blockService.verify(instance => instance.getHeadBlockHash());
         transactionSynchronizer.verify(instance => instance.addTransactions, Times.Never());
         locSynchronizer.verify(instance => instance.updateLocRequests, Times.Never());
-        transactionSynchronizer.verify(instance => instance.reset, Times.Never());
         syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock, Times.Never());
     });

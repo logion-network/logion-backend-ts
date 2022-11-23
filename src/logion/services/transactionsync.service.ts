@@ -1,7 +1,8 @@
 import { injectable } from "inversify";
 import { v4 as uuid } from 'uuid';
-import { TransactionAggregateRoot, TransactionRepository, TransactionFactory, TransactionDescription } from "../model/transaction.model";
+import { TransactionAggregateRoot, TransactionFactory, TransactionDescription } from "../model/transaction.model";
 import { TransactionExtractor } from "./transaction.extractor";
+import { TransactionService } from "./transaction.service";
 import { BlockWithTransactions, Transaction } from './transaction.vo';
 import { BlockExtrinsics } from "./types/responses/Block";
 
@@ -9,9 +10,9 @@ import { BlockExtrinsics } from "./types/responses/Block";
 export class TransactionSynchronizer {
 
     constructor(
-        private transactionRepository: TransactionRepository,
         private transactionFactory: TransactionFactory,
         private transactionExtractor: TransactionExtractor,
+        private transactionService: TransactionService,
     ) {}
 
     async addTransactions(block: BlockExtrinsics): Promise<void> {
@@ -22,7 +23,7 @@ export class TransactionSynchronizer {
         for(let i = 0; i < blockWithTransactions.transactions.length; ++i) {
             const transaction = blockWithTransactions.transactions[i];
             const aggregate = this.toEntity(blockWithTransactions, transaction);
-            await this.transactionRepository.save(aggregate);
+            await this.transactionService.add(aggregate);
         }
     }
 
@@ -35,9 +36,5 @@ export class TransactionSynchronizer {
             createdOn,
         };
         return this.transactionFactory.newTransaction(description);
-    }
-
-    async reset() {
-        await this.transactionRepository.deleteAll();
     }
 }

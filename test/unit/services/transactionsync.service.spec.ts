@@ -6,6 +6,7 @@ import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Bl
 import { TransactionExtractor } from '../../../src/logion/services/transaction.extractor';
 import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service";
 import { Transaction, BlockWithTransactionsBuilder } from "../../../src/logion/services/transaction.vo";
+import { NonTransactionalTransactionService } from '../../../src/logion/services/transaction.service';
 
 describe("TransactionSync", () => {
 
@@ -21,9 +22,9 @@ describe("TransactionSync", () => {
 
     function transactionSync(): TransactionSynchronizer {
         return new TransactionSynchronizer(
-            transactionRepository.object(),
             transactionFactory.object(),
             transactionExtractor.object(),
+            new NonTransactionalTransactionService(transactionRepository.object()),
         );
     }
 
@@ -53,13 +54,5 @@ describe("TransactionSync", () => {
         transactionExtractor.verify(instance => instance.extractBlockWithTransactions(block.object()));
         transactionFactory.verify(instance => instance.newTransaction(It.IsAny()));
         transactionRepository.verify(instance => instance.save(transactionAggregate.object()));
-    });
-
-    it("deletes all transactions on reset", async () => {
-        transactionRepository.setup(instance => instance.deleteAll()).returns(Promise.resolve());
-
-        await transactionSync().reset();
-
-        transactionRepository.verify(instance => instance.deleteAll());
     });
 });
