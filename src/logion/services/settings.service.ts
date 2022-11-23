@@ -23,6 +23,13 @@ export abstract class SettingService {
 @injectable()
 export class TransactionalSettingService extends SettingService {
 
+    constructor(
+        settingRepository: SettingRepository,
+        settingFactory: SettingFactory,
+    ) {
+        super(settingRepository, settingFactory);
+    }
+
     @DefaultTransactional()
     override async createOrUpdate(id: string, value: string) {
         return super.createOrUpdate(id, value);
@@ -32,4 +39,10 @@ export class TransactionalSettingService extends SettingService {
 @injectable()
 export class NonTransactionalSettingService extends SettingService {
 
+    constructor(
+        settingRepository: SettingRepository,
+        settingFactory: SettingFactory,
+    ) {
+        super(settingRepository, settingFactory);
+    }
 }

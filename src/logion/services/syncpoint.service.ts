@@ -26,10 +26,21 @@ export abstract class SyncPointService {
 @injectable()
 export class NonTransactionnalSyncPointService extends SyncPointService {
 
+    constructor(
+        syncPointRepository: SyncPointRepository,
+    ) {
+        super(syncPointRepository);
+    }
 }
 
 @injectable()
 export class TransactionalSyncPointService extends SyncPointService {
+
+    constructor(
+        syncPointRepository: SyncPointRepository,
+    ) {
+        super(syncPointRepository);
+    }
 
     @DefaultTransactional()
     override async add(syncPoint: SyncPointAggregateRoot) {

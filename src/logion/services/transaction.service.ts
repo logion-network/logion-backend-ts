@@ -16,10 +16,21 @@ export abstract class TransactionService {
 @injectable()
 export class NonTransactionalTransactionService extends TransactionService {
 
+    constructor(
+        transactionRepository: TransactionRepository
+    ) {
+        super(transactionRepository);
+    }
 }
 
 @injectable()
 export class TransactionalTransactionService extends TransactionService {
+
+    constructor(
+        transactionRepository: TransactionRepository
+    ) {
+        super(transactionRepository);
+    }
 
     @DefaultTransactional()
     override async add(transaction: TransactionAggregateRoot) {

@@ -23,10 +23,21 @@ export abstract class VaultTransferRequestService {
 @injectable()
 export class NonTransactionalVaultTransferRequestService extends VaultTransferRequestService {
 
+    constructor(
+        vaultTransferRequestRepository: VaultTransferRequestRepository,
+    ) {
+        super(vaultTransferRequestRepository);
+    }
 }
 
 @injectable()
 export class TransactionalVaultTransferRequestService extends VaultTransferRequestService {
+
+    constructor(
+        vaultTransferRequestRepository: VaultTransferRequestRepository,
+    ) {
+        super(vaultTransferRequestRepository);
+    }
 
     @DefaultTransactional()
     override async add(vaultTransferRequest: VaultTransferRequestAggregateRoot) {

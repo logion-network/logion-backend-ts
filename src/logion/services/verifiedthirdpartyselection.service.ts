@@ -24,6 +24,12 @@ export abstract class VerifiedThirdPartySelectionService {
 @injectable()
 export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThirdPartySelectionService {
 
+    constructor(
+        verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+    ) {
+        super(verifiedThirdPartySelectionRepository);
+    }
+
     @DefaultTransactional()
     async add(selection: VerifiedThirdPartySelectionAggregateRoot) {
         return super.add(selection);
@@ -43,4 +49,9 @@ export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThi
 @injectable()
 export class NonTransactionalVerifiedThirdPartySelectionService extends VerifiedThirdPartySelectionService {
 
+    constructor(
+        verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+    ) {
+        super(verifiedThirdPartySelectionRepository);
+    }
 }
