@@ -10,6 +10,7 @@ import {
 } from "../../../src/logion/model/locrequest.model";
 import { ALICE, BOB } from "../../helpers/addresses";
 import { v4 as uuid } from "uuid";
+import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
@@ -136,9 +137,12 @@ describe('LocRequestRepository.save()', () => {
     beforeAll(async () => {
         await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
         repository = new LocRequestRepository();
+        service = new TransactionalLocRequestService(repository);
     });
 
     let repository: LocRequestRepository;
+
+    let service: LocRequestService;
 
     afterAll(async () => {
         await disconnect();
@@ -147,42 +151,35 @@ describe('LocRequestRepository.save()', () => {
     it("saves a LocRequest aggregate", async () => {
         const locTypes: LocType[] = ["Collection", "Transaction"];
         for (const locType of locTypes) {
-
-            const id = uuid()
-            const locRequest = givenLoc(id, locType, "OPEN")
-
-            await repository.save(locRequest)
-
-            await checkAggregate(id, 1)
+            const id = uuid();
+            const locRequest = givenLoc(id, locType, "OPEN");
+            await service.addNewRequest(locRequest);
+            await checkAggregate(id, 1);
         }
     })
 
     it("rollbacks when trying to add invalid link", async () => {
         const locTypes: LocType[] = ["Collection", "Transaction"];
         for (const locType of locTypes) {
-
-            const id = uuid()
-            const locRequest = givenLoc(id, locType, "OPEN")
-
-            locRequest.links![0].target = undefined;
-
-            const result: string = await repository.save(locRequest)
-                .catch((reason => {
-                    return reason.toString()
-                }))
-            expect(result).toBe("QueryFailedError: null value in column \"target\" violates not-null constraint")
-
-            await checkAggregate(id, 0)
+            const id = uuid();
+            const locRequest = givenLoc(id, locType, "OPEN");
+            await service.addNewRequest(locRequest);
+            try {
+                await service.update(id, async request => {
+                    request.links![0].target = undefined;
+                });
+            } catch(e) {
+                expect((e as any).toString()).toBe("QueryFailedError: null value in column \"target\" violates not-null constraint");
+            }
+            await checkAggregate(id, 1, 0);
         }
     })
 
     it("deletes a draft LocRequest aggregate", async () => {
         const id = uuid()
         const locRequest = givenLoc(id, "Transaction", "DRAFT")
-
-        await repository.save(locRequest)
-        await repository.deleteDraftOrRejected(locRequest)
-
+        await service.addNewRequest(locRequest);
+        await service.deleteDraftOrRejected(id, async () => {});
         await checkAggregate(id, 0)
     })
 
@@ -191,11 +188,9 @@ describe('LocRequestRepository.save()', () => {
         const locRequest = givenLoc(id, "Transaction", "DRAFT")
         locRequest.submit();
         locRequest.reject("Because", moment());
-
-        await repository.save(locRequest)
-        await repository.deleteDraftOrRejected(locRequest)
-
-        await checkAggregate(id, 0)
+        await service.addNewRequest(locRequest);
+        await service.deleteDraftOrRejected(id, async () => {});
+        await checkAggregate(id, 0);
     })
 })
 
@@ -272,19 +267,19 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     return locRequest;
 }
 
-async function checkAggregate(id: string, numOfRows: number) {
+async function checkAggregate(id: string, numOfRows: number, numOfItems?: number) {
     await checkNumOfRows(`SELECT *
                           FROM loc_request
                           WHERE id = '${ id }'`, numOfRows)
     await checkNumOfRows(`SELECT *
                           FROM loc_link
-                          WHERE request_id = '${ id }'`, numOfRows)
+                          WHERE request_id = '${ id }'`, numOfItems || numOfRows)
     await checkNumOfRows(`SELECT *
                           FROM loc_metadata_item
-                          WHERE request_id = '${ id }'`, numOfRows)
+                          WHERE request_id = '${ id }'`, numOfItems || numOfRows)
     await checkNumOfRows(`SELECT *
                           FROM loc_request_file
-                          WHERE request_id = '${ id }'`, numOfRows)
+                          WHERE request_id = '${ id }'`, numOfItems || numOfRows)
 }
 
 function checkDescription(requests: LocRequestAggregateRoot[], expectedLocType: LocType | undefined, ...descriptions: string[]) {

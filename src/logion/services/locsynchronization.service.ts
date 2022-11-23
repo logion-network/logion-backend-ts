@@ -7,6 +7,7 @@ import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locreque
 import { asBigInt, asHexString, asJsonObject, asString, isHexString, JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
 import { CollectionRepository, CollectionFactory } from "../model/collection.model";
+import { LocRequestService } from './locrequest.service';
 
 const { logger } = Log;
 
@@ -17,6 +18,7 @@ export class LocSynchronizer {
         private locRequestRepository: LocRequestRepository,
         private collectionFactory: CollectionFactory,
         private collectionRepository: CollectionRepository,
+        private locRequestService: LocRequestService,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
@@ -100,12 +102,10 @@ export class LocSynchronizer {
     }
 
     private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
-        const loc = await this.locRequestRepository.findById(locId);
-        if(loc !== null) {
-            logger.info("Mutating LOC %s : %s", locId, mutator)
+        await this.locRequestService.updateIfExists(locId, async loc => {
+            logger.info("Mutating LOC %s : %s", locId, mutator);
             mutator(loc);
-            await this.locRequestRepository.save(loc);
-        }
+        });
     }
 
     private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {

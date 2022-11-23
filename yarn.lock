@@ -1004,9 +1004,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.2.0-3":
-  version: 0.2.0-3
-  resolution: "@logion/rest-api-core@npm:0.2.0-3"
+"@logion/rest-api-core@npm:^0.2.0-4":
+  version: 0.2.0-4
+  resolution: "@logion/rest-api-core@npm:0.2.0-4"
   dependencies:
     "@logion/authenticator": ^0.3.2-1
     dinoloop: ^2.4.0
@@ -1019,7 +1019,8 @@ __metadata:
     openapi-typescript: 5.1.0
     swagger-ui-express: ^4.5.0
     typeorm: ^0.3.9
-  checksum: 5a5b6ca6472c604151c2bb902b7bf99e038d7a94819a8ca649d4ae4cdf9e37ac5bf33d46df51a1616c71c2dab20d16ed63a6ea979d7b09b280a8fdb779d4b0a3
+    typeorm-transactional: ^0.4.0
+  checksum: 41cf923ed501ed9d7bce613aa1ec26c76d86e8415a8c5e863d816a8e6f310afa0618272f717a922ca0b170ea27d07c3afa413d30c783488e6338d202852b1c55
   languageName: node
   linkType: hard
 
@@ -1670,6 +1671,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/cls-hooked@npm:^4.3.3":
+  version: 4.3.3
+  resolution: "@types/cls-hooked@npm:4.3.3"
+  dependencies:
+    "@types/node": "*"
+  checksum: 281e7ac237aa0259b73d3f0159dc981b1fa9a040d83aa4248dadeb13c74e663e01b787a6f81223a8d9c386c96d1c0bb2f1e6443cbff740e826d0ebcf6d81a7bd
+  languageName: node
+  linkType: hard
+
 "@types/connect@npm:*":
   version: 3.4.35
   resolution: "@types/connect@npm:3.4.35"
@@ -2125,6 +2135,15 @@ __metadata:
   version: 1.2.1
   resolution: "assert-never@npm:1.2.1"
   checksum: ea4f1756d90f55254c4dc7a20d6c5d5bc169160562aefe3d8756b598c10e695daf568f21b6d6b12245d7f3782d3ff83ef6a01ab75d487adfc6909470a813bf8c
+  languageName: node
+  linkType: hard
+
+"async-hook-jl@npm:^1.7.6":
+  version: 1.7.6
+  resolution: "async-hook-jl@npm:1.7.6"
+  dependencies:
+    stack-chain: ^1.3.7
+  checksum: f84421c83ad5bc4e54a3a6ad7be4fb911840a17c01e5ee3f8e4e9cd077a42c7bc206dbc6b36d52eaca5fa37f16a15f83d63135976cf3e17d5bdc2824f6002705
   languageName: node
   linkType: hard
 
@@ -2653,6 +2672,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"cls-hooked@npm:^4.2.2":
+  version: 4.2.2
+  resolution: "cls-hooked@npm:4.2.2"
+  dependencies:
+    async-hook-jl: ^1.7.6
+    emitter-listener: ^1.0.1
+    semver: ^5.4.1
+  checksum: 3a8a4e30b03a81ec275eb9c079c49d4497013e7fa36259e86c9b6aff7990e85eebbc97552ed8a035c19403f0b825000df9bada5c1c0ac7cf1b2506c3a903df60
+  languageName: node
+  linkType: hard
+
 "color-convert@npm:^1.9.0, color-convert@npm:^1.9.3":
   version: 1.9.3
   resolution: "color-convert@npm:1.9.3"
@@ -3116,6 +3146,15 @@ __metadata:
     minimalistic-assert: ^1.0.1
     minimalistic-crypto-utils: ^1.0.1
   checksum: d56d21fd04e97869f7ffcc92e18903b9f67f2d4637a23c860492fbbff5a3155fd9ca0184ce0c865dd6eb2487d234ce9551335c021c376cd2d3b7cb749c7d10f4
+  languageName: node
+  linkType: hard
+
+"emitter-listener@npm:^1.0.1":
+  version: 1.1.2
+  resolution: "emitter-listener@npm:1.1.2"
+  dependencies:
+    shimmer: ^1.2.0
+  checksum: 05166bad42a27e51a765ebac3b7d26ac111564fc2d36443cd819f95ef88ea1b9ba6f2895becbcea36f8009890a2a8cb7c36eb9e776d4978e370bd33cb0a181e8
   languageName: node
   linkType: hard
 
@@ -4693,7 +4732,7 @@ __metadata:
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.2.0-3
+    "@logion/rest-api-core": ^0.2.0-4
     "@polkadot/wasm-crypto": ^6.3.1
     "@tsconfig/node16": ^1.0.3
     "@types/cors": ^2.8.12
@@ -6418,6 +6457,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"semver@npm:^5.4.1":
+  version: 5.7.1
+  resolution: "semver@npm:5.7.1"
+  bin:
+    semver: ./bin/semver
+  checksum: 57fd0acfd0bac382ee87cd52cd0aaa5af086a7dc8d60379dfe65fea491fb2489b6016400813930ecd61fd0952dae75c115287a1b16c234b1550887117744dfaf
+  languageName: node
+  linkType: hard
+
 "semver@npm:^6.0.0, semver@npm:^6.3.0":
   version: 6.3.0
   resolution: "semver@npm:6.3.0"
@@ -6528,6 +6576,13 @@ __metadata:
   version: 3.0.0
   resolution: "shebang-regex@npm:3.0.0"
   checksum: 1a2bcae50de99034fcd92ad4212d8e01eedf52c7ec7830eedcf886622804fe36884278f2be8be0ea5fde3fd1c23911643a4e0f726c8685b61871c8908af01222
+  languageName: node
+  linkType: hard
+
+"shimmer@npm:^1.2.0":
+  version: 1.2.1
+  resolution: "shimmer@npm:1.2.1"
+  checksum: aa0d6252ad1c682a4fdfda69e541be987f7a265ac7b00b1208e5e48cc68dc55f293955346ea4c71a169b7324b82c70f8400b3d3d2d60b2a7519f0a3522423250
   languageName: node
   linkType: hard
 
@@ -6728,6 +6783,13 @@ __metadata:
   dependencies:
     minipass: ^3.1.1
   checksum: fb58f5e46b6923ae67b87ad5ef1c5ab6d427a17db0bead84570c2df3cd50b4ceb880ebdba2d60726588272890bae842a744e1ecce5bd2a2a582fccd5068309eb
+  languageName: node
+  linkType: hard
+
+"stack-chain@npm:^1.3.7":
+  version: 1.3.7
+  resolution: "stack-chain@npm:1.3.7"
+  checksum: c2428e794a60e1f8e3b66898657d10b81ea18eefd0842d65f18bad6f53fbca597075079bbda8df5b409aebb82d2055bf9c4a8d439df18c554756ead197fc2260
   languageName: node
   linkType: hard
 
@@ -7180,6 +7242,19 @@ __metadata:
   dependencies:
     is-typedarray: ^1.0.0
   checksum: 99c11aaa8f45189fcfba6b8a4825fd684a321caa9bd7a76a27cf0c7732c174d198b99f449c52c3818107430b5f41c0ccbbfb75cb2ee3ca4a9451710986d61a60
+  languageName: node
+  linkType: hard
+
+"typeorm-transactional@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "typeorm-transactional@npm:0.4.0"
+  dependencies:
+    "@types/cls-hooked": ^4.3.3
+    cls-hooked: ^4.2.2
+  peerDependencies:
+    reflect-metadata: ">= 0.1.12"
+    typeorm: ">= 0.2.8"
+  checksum: 1e46871d007c36f841b4e1f27ae07f5809a71b1f5bd05058fc909f27d099a6d4b09a9e84d7becaa09b07017e40e3b9bd218416c01a828252a63f6436569bcf0b
   languageName: node
   linkType: hard
 

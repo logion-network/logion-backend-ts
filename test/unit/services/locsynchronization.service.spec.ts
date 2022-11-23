@@ -11,6 +11,7 @@ import {
     CollectionItemAggregateRoot,
     CollectionItemDescription
 } from "../../../src/logion/model/collection.model";
+import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
 
 describe("LocSynchronizer", () => {
 
@@ -186,6 +187,7 @@ function locSynchronizer(): LocSynchronizer {
         locRequestRepository.object(),
         collectionFactory.object(),
         collectionRepository.object(),
+        new NonTransactionalLocRequestService(locRequestRepository.object()),
     );
 }
 

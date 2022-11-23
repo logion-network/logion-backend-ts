@@ -742,17 +742,10 @@ export class LocRequestRepository {
     }
 
     public async save(root: LocRequestAggregateRoot): Promise<void> {
-
-        return await appDataSource.manager.transaction(async entityManager => {
-            try {
-                await entityManager.save(root);
-                await this.saveFiles(entityManager, root)
-                await this.saveMetadata(entityManager, root)
-                await this.saveLinks(entityManager, root)
-            } catch (error) {
-                return Promise.reject(error)
-            }
-        })
+        await this.repository.manager.save(root);
+        await this.saveFiles(this.repository.manager, root)
+        await this.saveMetadata(this.repository.manager, root)
+        await this.saveLinks(this.repository.manager, root)
     }
 
     private async saveFiles(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
@@ -847,12 +840,10 @@ export class LocRequestRepository {
             throw new Error("Cannot delete non-draft and non-rejected request");
         }
 
-        return await appDataSource.manager.transaction(async entityManager => {
-            await entityManager.delete(LocFile, { requestId: request.id });
-            await entityManager.delete(LocMetadataItem, { requestId: request.id });
-            await entityManager.delete(LocLink, { requestId: request.id });
-            await entityManager.delete(LocRequestAggregateRoot, request.id);
-        });
+        await this.repository.manager.delete(LocFile, { requestId: request.id });
+        await this.repository.manager.delete(LocMetadataItem, { requestId: request.id });
+        await this.repository.manager.delete(LocLink, { requestId: request.id });
+        await this.repository.manager.delete(LocRequestAggregateRoot, request.id);
     }
 
     async getVerifiedThirdPartyIdentityLoc(address: string): Promise<LocRequestAggregateRoot | undefined> {

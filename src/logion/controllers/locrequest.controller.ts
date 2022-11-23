@@ -11,7 +11,8 @@ import {
     LocRequestDescription,
     LocRequestAggregateRoot,
     FetchLocRequestsSpecification,
-    LocRequestDecision
+    LocRequestDecision,
+    FileDescription
 } from "../model/locrequest.model";
 import {
     getRequestBody,
@@ -41,6 +42,7 @@ import { PostalAddress } from "../model/postaladdress";
 import { downloadAndClean } from "../lib/http";
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter";
 import { VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import { LocRequestService } from "../services/locrequest.service";
 
 const { logger } = Log;
 
@@ -104,6 +106,7 @@ export class LocRequestController extends ApiController {
         private directoryService: DirectoryService,
         private locRequestAdapter: LocRequestAdapter,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        private locRequestService: LocRequestService,
     ) {
         super();
     }
@@ -162,7 +165,7 @@ export class LocRequestController extends ApiController {
                 draft: createLocRequestView.draft === true,
             });
         }
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.addNewRequest(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.findUserPrivateData(request);
         if (request.status === "REQUESTED" && !authenticatedUser.isNodeOwner()) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
@@ -396,12 +399,12 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/reject')
     @Async()
     async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-        request.reject(rejectLocRequestView.rejectReason!, moment());
-        await this.locRequestRepository.save(request)
-        const { userIdentity } = await this.findUserPrivateData(request)
-        this.notify("WalletUser", "loc-rejected", request.getDescription(), userIdentity, request.getDecision())
+        const request = await this.locRequestService.update(requestId, async request => {
+            request.reject(rejectLocRequestView.rejectReason!, moment());
+        });
+        const { userIdentity } = await this.findUserPrivateData(request);
+        this.notify("WalletUser", "loc-rejected", request.getDescription(), userIdentity, request.getDecision());
     }
 
     private async authenticatedUserIsNodeOwner() {
@@ -420,12 +423,12 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/accept')
     @Async()
     async acceptLocRequest(_ignoredBody: any, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-        request.accept(moment());
-        await this.locRequestRepository.save(request)
-        const { userIdentity } = await this.findUserPrivateData(request)
-        this.notify("WalletUser", "loc-accepted", request.getDescription(), userIdentity, request.getDecision())
+        const request = await this.locRequestService.update(requestId, async request => {
+            request.accept(moment());
+        });
+        const { userIdentity } = await this.findUserPrivateData(request);
+        this.notify("WalletUser", "loc-accepted", request.getDescription(), userIdentity, request.getDecision());
     }
 
     static submitLocRequest(spec: OpenAPIV3.Document) {
@@ -439,13 +442,13 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/submit')
     @Async()
     async submitLocRequest(_ignoredBody: any, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.is(request.requesterAddress));
-        request.submit();
-        await this.locRequestRepository.save(request);
-        const { userIdentity } = await this.findUserPrivateData(request)
-        this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
+        const request = await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+            request.submit();
+        });
+        const { userIdentity } = await this.findUserPrivateData(request);
+        this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity);
     }
 
     static cancelLocRequest(spec: OpenAPIV3.Document) {
@@ -459,15 +462,13 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/cancel')
     @Async()
     async cancelLocRequest(_ignoredBody: any, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.is(request.requesterAddress));
-
+        const request = await this.locRequestService.deleteDraftOrRejected(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+        });
         for(const file of request.files || []) {
             this.fileStorageService.deleteFile(file);
         }
-
-        await this.locRequestRepository.deleteDraftOrRejected(request);
     }
 
     static reworkLocRequest(spec: OpenAPIV3.Document) {
@@ -481,11 +482,11 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/rework')
     @Async()
     async reworkLocRequest(_ignoredBody: any, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.is(request.requesterAddress));
-        request.rework();
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+            request.rework();
+        });
     }
 
     static addFile(spec: OpenAPIV3.Document) {
@@ -503,22 +504,26 @@ export class LocRequestController extends ApiController {
         const contributor = await this.ensureContributor(request);
 
         const hash = requireDefined(addFileView.hash, () => badRequest("No hash found for upload file"));
-        const file = await getUploadedFile(this.request, hash);
-
         if(request.hasFile(hash)) {
             throw new Error("File already present");
         }
-
+        const file = await getUploadedFile(this.request, hash);
         const cid = await this.fileStorageService.importFile(file.tempFilePath);
-        request.addFile({
-            name: file.name,
-            contentType: file.mimetype,
-            hash,
-            cid,
-            nature: addFileView.nature || "",
-            submitter: contributor,
-        });
-        await this.locRequestRepository.save(request);
+
+        try {
+            await this.locRequestService.update(requestId, async request => {
+                request.addFile({
+                    name: file.name,
+                    contentType: file.mimetype,
+                    hash,
+                    cid,
+                    nature: addFileView.nature || "",
+                    submitter: contributor,
+                });
+            });
+        } catch(e) {
+            await this.fileStorageService.deleteFile({ cid });
+        }
     }
 
     static downloadFile(spec: OpenAPIV3.Document) {
@@ -568,13 +573,14 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/files/:hash')
     @Async()
     async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributor(request);
-
-        const file = request.removeFile(contributor, hash);
-        await this.locRequestRepository.save(request);
-
-        await this.fileStorageService.deleteFile(file);
+        let file: FileDescription | undefined;
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.ensureContributor(request);
+            file = request.removeFile(contributor, hash);
+        });
+        if(file) {
+            await this.fileStorageService.deleteFile(file);
+        }
     }
 
     static confirmFile(spec: OpenAPIV3.Document) {
@@ -592,12 +598,10 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-
-        request.confirmFile(hash);
-        await this.locRequestRepository.save(request);
-
+        await this.locRequestService.update(requestId, async request => {
+            request.confirmFile(hash);
+        });
         this.response.sendStatus(204);
     }
 
@@ -613,12 +617,10 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async closeLoc(_body: any, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-
-        request.preClose();
-        await this.locRequestRepository.save(request);
-
+        await this.locRequestService.update(requestId, async request => {
+            request.preClose();
+        });
         this.response.sendStatus(204);
     }
 
@@ -638,12 +640,10 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async voidLoc(body: VoidLocView, requestId: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-
-        request.preVoid(body.reason!);
-        await this.locRequestRepository.save(request);
-
+        await this.locRequestService.update(requestId, async request => {
+            request.preVoid(body.reason!);
+        });
         this.response.sendStatus(204);
     }
 
@@ -659,17 +659,15 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.is(request.ownerAddress));
-
         const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
-        request.addLink({
-            target: targetRequest.id!,
-            nature: addLinkView.nature || ""
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            request.addLink({
+                target: targetRequest.id!,
+                nature: addLinkView.nature || ""
+            });
         });
-
-        await this.locRequestRepository.save(request);
         this.response.sendStatus(204);
     }
 
@@ -687,12 +685,11 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/links/:target')
     @Async()
     async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const userCheck = await this.authenticationService.authenticatedUser(this.request);
-        userCheck.require(user => user.is(request.ownerAddress));
-
-        request.removeLink(userCheck.address, target);
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.update(requestId, async request => {
+            userCheck.require(user => user.is(request.ownerAddress));
+            request.removeLink(userCheck.address, target);
+        });
     }
 
     static confirmLink(spec: OpenAPIV3.Document) {
@@ -710,12 +707,10 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmLink(_body: any, requestId: string, target: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-
-        request.confirmLink(target);
-        await this.locRequestRepository.save(request);
-
+        await this.locRequestService.update(requestId, async request => {
+            request.confirmLink(target);
+        });
         this.response.sendStatus(204);
     }
 
@@ -731,13 +726,12 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributor(request);
-
         const name = requireLength(addMetadataView, "name", 3, 255);
         const value = requireLength(addMetadataView, "value", 1, 4096);
-        request.addMetadataItem({ name, value, submitter: contributor });
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.ensureContributor(request);
+            request.addMetadataItem({ name, value, submitter: contributor });
+        });
         this.response.sendStatus(204);
     }
 
@@ -755,13 +749,11 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/metadata/:name')
     @Async()
     async deleteMetadata(_body: any, requestId: string, name: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributor(request);
-
         const decodedName = decodeURIComponent(name);
-
-        request.removeMetadataItem(contributor, decodedName);
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.ensureContributor(request);
+            request.removeMetadataItem(contributor, decodedName);
+        });
     }
 
     static confirmMetadata(spec: OpenAPIV3.Document) {
@@ -779,13 +771,11 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmMetadata(_body: any, requestId: string, name: string) {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
         await this.authenticatedUserIsNodeOwner();
-
         const decodedName = decodeURIComponent(name);
-        request.confirmMetadataItem(decodedName);
-        await this.locRequestRepository.save(request);
-
+        await this.locRequestService.update(requestId, async request => {
+            request.confirmMetadataItem(decodedName);
+        });
         this.response.sendStatus(204);
     }
 
@@ -838,7 +828,7 @@ export class LocRequestController extends ApiController {
             target: locId,
             nature: linkNature,
         });
-        await this.locRequestRepository.save(request);
+        await this.locRequestService.addNewRequest(request);
 
         this.notify("LegalOfficer", "sof-requested", request.getDescription(), userIdentity);
 
