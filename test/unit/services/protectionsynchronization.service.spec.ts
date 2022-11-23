@@ -7,6 +7,7 @@ import {
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
 import { ProtectionSynchronizer } from '../../../src/logion/services/protectionsynchronization.service';
 import { ALICE, BOB } from '../../helpers/addresses';
+import { NonTransactionalProtectionRequestService } from '../../../src/logion/services/protectionrequest.service';
 
 process.env.OWNER = ALICE;
 
@@ -46,11 +47,14 @@ let locExtrinsic: Mock<JsonExtrinsic>;
 
 function givenProtectionRequest() {
     locRequest = new Mock<ProtectionRequestAggregateRoot>();
+    const requestId = "12588da8-e1fe-4a7a-aa1d-bb170c3608df";
+    locRequest.setup(instance => instance.id).returns(requestId);
     locRequest.setup(instance => instance.setActivated()).returns(undefined);
 
     protectionRequestRepository.setup(instance => instance.findBy(It.Is<FetchProtectionRequestsSpecification>(spec =>
         spec.expectedRequesterAddress === SIGNER
     ))).returns(Promise.resolve([locRequest.object()]));
+    protectionRequestRepository.setup(instance => instance.findById(requestId)).returns(Promise.resolve(locRequest.object()));
     protectionRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 }
 
@@ -65,6 +69,7 @@ async function whenConsumingBlock() {
 function synchronizer(): ProtectionSynchronizer {
     return new ProtectionSynchronizer(
         protectionRequestRepository.object(),
+        new NonTransactionalProtectionRequestService(protectionRequestRepository.object()),
     );
 }
 

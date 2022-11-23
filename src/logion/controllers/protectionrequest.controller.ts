@@ -27,6 +27,7 @@ import {
 import { components } from './components';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
+import { ProtectionRequestService } from '../services/protectionrequest.service';
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -66,7 +67,9 @@ export class ProtectionRequestController extends ApiController {
         private protectionRequestFactory: ProtectionRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService) {
+        private directoryService: DirectoryService,
+        private protectionRequestService: ProtectionRequestService,
+    ) {
         super();
     }
 
@@ -111,7 +114,7 @@ export class ProtectionRequestController extends ApiController {
             },
         });
 
-        await this.protectionRequestRepository.save(request);
+        await this.protectionRequestService.add(request);
         const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
         this.notify("LegalOfficer", templateId, request.getDescription())
         return this.adapt(request);
@@ -193,11 +196,11 @@ export class ProtectionRequestController extends ApiController {
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
-        const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.reject(body.rejectReason!, moment());
-        await this.protectionRequestRepository.save(request);
-        const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected"
-        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision())
+        const request = await this.protectionRequestService.update(id, async request => {
+            request.reject(body.rejectReason!, moment());
+        });
+        const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected";
+        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision());
         return this.adapt(request);
     }
 
@@ -221,11 +224,11 @@ export class ProtectionRequestController extends ApiController {
         if(body.locId === undefined || body.locId === null) {
             throw badRequest("Missing LOC ID");
         }
-        const request = requireDefined(await this.protectionRequestRepository.findById(id));
-        request.accept(moment(), body.locId!);
-        await this.protectionRequestRepository.save(request);
-        const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted"
-        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision())
+        const request = await this.protectionRequestService.update(id, async request => {
+            request.accept(moment(), body.locId!);
+        });
+        const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted";
+        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision());
         return this.adapt(request);
     }
 
@@ -282,12 +285,12 @@ export class ProtectionRequestController extends ApiController {
     @HttpPost('/:id/resubmit')
     @SendsResponse()
     async resubmit(_body: any, id: string): Promise<void> {
-        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
-            () => badRequest("Protection request not found"));
-        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
-        protectionRequest.resubmit();
-        await this.protectionRequestRepository.save(protectionRequest);
-        this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-resubmitted' : 'protection-resubmitted', protectionRequest.getDescription())
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const request = await this.protectionRequestService.update(id, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+            request.resubmit();
+        });
+        this.notify("LegalOfficer", request.isRecovery ? 'recovery-resubmitted' : 'protection-resubmitted', request.getDescription());
         this.response.sendStatus(204);
     }
 
@@ -303,12 +306,12 @@ export class ProtectionRequestController extends ApiController {
     @HttpPost('/:id/cancel')
     @SendsResponse()
     async cancel(_body: any, id: string): Promise<void> {
-        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
-            () => badRequest("Protection request not found"));
-        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
-        protectionRequest.cancel();
-        await this.protectionRequestRepository.save(protectionRequest);
-        this.notify("LegalOfficer", protectionRequest.isRecovery ? 'recovery-cancelled' : 'protection-cancelled', protectionRequest.getDescription())
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const request = await this.protectionRequestService.update(id, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+            request.cancel();
+        });
+        this.notify("LegalOfficer", request.isRecovery ? 'recovery-cancelled' : 'protection-cancelled', request.getDescription());
         this.response.sendStatus(204);
     }
 
@@ -328,12 +331,12 @@ export class ProtectionRequestController extends ApiController {
     @HttpPut('/:id/update')
     @SendsResponse()
     async update(updateProtectionRequestView: UpdateProtectionRequestView, id: string): Promise<void> {
-        const protectionRequest = requireDefined(await this.protectionRequestRepository.findById(id),
-            () => badRequest("Protection request not found"));
-        await this.authenticationService.authenticatedUserIs(this.request, protectionRequest.requesterAddress);
-        protectionRequest.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
-        await this.protectionRequestRepository.save(protectionRequest);
-        this.notify("LegalOfficer", 'protection-updated', protectionRequest.getDescription())
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const request = await this.protectionRequestService.update(id, async request => {
+            authenticatedUser.require(user => user.is(request.requesterAddress));
+            request.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
+        });
+        this.notify("LegalOfficer", 'protection-updated', request.getDescription());
         this.response.sendStatus(204);
     }
 
