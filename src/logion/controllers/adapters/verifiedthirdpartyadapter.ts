@@ -42,6 +42,7 @@ export class VerifiedThirdPartyAdapter {
         const description = identityLocRequest.getDescription();
         return {
             identityLocId: identityLocRequest.id,
+            address: identityLocRequest.requesterAddress,
             firstName: description.userIdentity?.firstName,
             lastName: description.userIdentity?.lastName,
         };
