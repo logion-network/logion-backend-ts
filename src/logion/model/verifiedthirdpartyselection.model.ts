@@ -34,8 +34,8 @@ export class VerifiedThirdPartySelectionRepository {
 
     readonly repository: Repository<VerifiedThirdPartySelectionAggregateRoot>;
 
-    async save(syncPoint: VerifiedThirdPartySelectionAggregateRoot): Promise<void> {
-        await this.repository.save(syncPoint);
+    async save(selection: VerifiedThirdPartySelectionAggregateRoot): Promise<void> {
+        await this.repository.save(selection);
     }
 
     async findById(id: VerifiedThirdPartySelectionId): Promise<VerifiedThirdPartySelectionAggregateRoot | null> {

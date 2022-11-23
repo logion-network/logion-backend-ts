@@ -47,6 +47,7 @@ import { SettingService, TransactionalSettingService } from "../services/setting
 import { SyncPointService, TransactionalSyncPointService } from "../services/syncpoint.service";
 import { TransactionalTransactionService, TransactionService } from "../services/transaction.service";
 import { TransactionalVaultTransferRequestService, VaultTransferRequestService } from "../services/vaulttransferrequest.service";
+import { TransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -111,6 +112,8 @@ container.bind(TransactionService).toService(TransactionalTransactionService);
 container.bind(TransactionalTransactionService).toSelf();
 container.bind(VaultTransferRequestService).toService(TransactionalVaultTransferRequestService);
 container.bind(TransactionalVaultTransferRequestService).toSelf();
+container.bind(VerifiedThirdPartySelectionService).toService(TransactionalVerifiedThirdPartySelectionService);
+container.bind(TransactionalVerifiedThirdPartySelectionService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
