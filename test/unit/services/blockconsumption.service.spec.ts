@@ -15,7 +15,8 @@ import { TransactionSynchronizer } from "../../../src/logion/services/transactio
 import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
 import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic";
-import { PrometheusService } from 'src/logion/services/prometheus.service';
+import { PrometheusService } from '../../../src/logion/services/prometheus.service';
+import { NonTransactionnalSyncPointService } from '../../../src/logion/services/syncpoint.service';
 
 describe("BlockConsumer", () => {
 
@@ -85,6 +86,7 @@ describe("BlockConsumer", () => {
             blockService.object(),
             syncPointRepository.object(),
             syncPointFactory.object(),
+            new NonTransactionnalSyncPointService(syncPointRepository.object()),
             transactionSynchronizer.object(),
             locSynchronizer.object(),
             protectionSynchronizer.object(),
@@ -127,7 +129,7 @@ describe("BlockConsumer", () => {
         await consumeNewBlocks();
 
         // Then
-        syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
+        syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME), Times.Exactly(2));
         blockService.verify(instance => instance.getBlockExtrinsics(It.Is(_ => true)), Times.Exactly(5));
         syncPoint.verify(instance => instance.update(
             It.Is<{blockNumber: bigint}>(value => value.blockNumber === head)));
@@ -180,7 +182,7 @@ describe("BlockConsumer", () => {
         await consumeNewBlocks();
 
         // Then
-        syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME));
+        syncPointRepository.verify(instance => instance.findByName(TRANSACTIONS_SYNC_POINT_NAME), Times.Exactly(2));
         blockService.verify(instance => instance.getBlockExtrinsics(It.Is(_ => true)), Times.Exactly(1));
         syncPoint.verify(instance => instance.update(
             It.Is<{blockNumber: bigint}>(value => value.blockNumber === head)));
