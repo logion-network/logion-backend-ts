@@ -27,7 +27,7 @@ import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../
 import { LoFileFactory, LoFileRepository } from "../model/lofile.model";
 import { SettingFactory, SettingRepository } from '../model/setting.model';
 import { SettingController } from '../controllers/setting.controller';
-import { CollectionService } from "../services/collection.service";
+import { CollectionService, LogionNodeCollectionService, TransactionalCollectionService } from "../services/collection.service";
 import { OwnershipCheckService } from '../services/ownershipcheck.service';
 import { AlchemyFactory, AlchemyService } from '../services/alchemy.service';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service';
@@ -65,7 +65,7 @@ container.bind(ProtectionSynchronizer).toSelf();
 container.bind(ErrorService).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
-container.bind(CollectionService).toSelf();
+container.bind(LogionNodeCollectionService).toSelf();
 container.bind(NotificationService).toSelf()
 container.bind(MailService).toSelf()
 container.bind(DirectoryService).toSelf()
@@ -91,6 +91,8 @@ container.bind(VerifiedThirdPartyAdapter).toSelf();
 container.bind(LocRequestAdapter).toSelf();
 container.bind(LocRequestService).toService(TransactionalLocRequestService);
 container.bind(TransactionalLocRequestService).toSelf();
+container.bind(CollectionService).toService(TransactionalCollectionService);
+container.bind(TransactionalCollectionService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

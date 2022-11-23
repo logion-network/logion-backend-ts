@@ -6,8 +6,9 @@ import { Moment } from "moment";
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
 import { asBigInt, asHexString, asJsonObject, asString, isHexString, JsonArgs } from './call';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
-import { CollectionRepository, CollectionFactory } from "../model/collection.model";
+import { CollectionFactory } from "../model/collection.model";
 import { LocRequestService } from './locrequest.service';
+import { CollectionService } from './collection.service';
 
 const { logger } = Log;
 
@@ -17,8 +18,8 @@ export class LocSynchronizer {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private collectionFactory: CollectionFactory,
-        private collectionRepository: CollectionRepository,
         private locRequestService: LocRequestService,
+        private collectionService: CollectionService,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
@@ -112,17 +113,19 @@ export class LocSynchronizer {
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId);
-            let collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
-            if(!collectionItem) {
-                collectionItem = this.collectionFactory.newItem({
+            let created = false;
+            await this.collectionService.createIfNotExist(collectionLocId, itemId, () => {
+                created = true;
+                return this.collectionFactory.newItem({
                     collectionLocId,
                     itemId,
                     addedOn: timestamp
                 });
-                await this.collectionRepository.save(collectionItem);
-            } else if(!collectionItem.addedOn) {
-                collectionItem.setAddedOn(timestamp);
-                await this.collectionRepository.save(collectionItem);
+            });
+            if(!created) {
+                await this.collectionService.update(collectionLocId, itemId, async item => {
+                    item.setAddedOn(timestamp);
+                });
             }
         }
     }

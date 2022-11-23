@@ -17,13 +17,12 @@ import {
     setControllerTag,
     getPublicResponses,
     setPathParameters,
-    getDefaultResponses,
     getDefaultResponsesWithAnyBody,
     AuthenticationService,
     getRequestBody,
     getDefaultResponsesNoContent,
 } from "@logion/rest-api-core";
-import { CollectionService, GetCollectionItemFileParams } from "../services/collection.service";
+import { CollectionService, GetCollectionItemFileParams, LogionNodeCollectionService } from "../services/collection.service";
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
@@ -64,9 +63,10 @@ export class CollectionController extends ApiController {
         private authenticationService: AuthenticationService,
         private collectionFactory: CollectionFactory,
         private fileStorageService: FileStorageService,
-        private collectionService: CollectionService,
+        private logionNodeCollectionService: LogionNodeCollectionService,
         private ownershipCheckService: OwnershipCheckService,
         private restrictedDeliveryService: RestrictedDeliveryService,
+        private collectionService: CollectionService,
     ) {
         super();
     }
@@ -120,7 +120,7 @@ export class CollectionController extends ApiController {
     @Async()
     async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
         requireDefined(
-            await this.collectionService.getCollectionItem({ collectionLocId, itemId }),
+            await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId }),
             () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`));
 
         const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
@@ -157,7 +157,7 @@ export class CollectionController extends ApiController {
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.requesterAddress);
 
-        const publishedCollectionItem = await this.collectionService.getCollectionItem({ collectionLocId, itemId })
+        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId })
         if (!publishedCollectionItem) {
             throw badRequest("Collection Item not found on chain")
         }
@@ -177,7 +177,7 @@ export class CollectionController extends ApiController {
             throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ publishedCollectionItemFile.name }`);
         }
 
-        const collectionItem = await this.collectionRepository.createIfNotExist(collectionLocId, itemId, () =>
+        const collectionItem = await this.collectionService.createIfNotExist(collectionLocId, itemId, () =>
             this.collectionFactory.newItem({ collectionLocId, itemId } )
         )
         if (collectionItem.hasFile(hash)) {
@@ -185,12 +185,13 @@ export class CollectionController extends ApiController {
         }
         const cid = await this.fileStorageService.importFile(file.tempFilePath);
 
-        const collectionItemFile = collectionItem.addFile({ hash, cid })
-        await this.collectionRepository.saveFile(collectionItemFile);
+        await this.collectionService.update(collectionLocId, itemId, async item => {
+            item.addFile({ hash, cid });
+        });
     }
 
     private async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<ItemFile> {
-        const publishedCollectionItemFile = await this.collectionService.getCollectionItemFile(params);
+        const publishedCollectionItemFile = await this.logionNodeCollectionService.getCollectionItemFile(params);
         if (publishedCollectionItemFile) {
             return publishedCollectionItemFile;
         } else {
@@ -236,10 +237,12 @@ export class CollectionController extends ApiController {
                 generatedOn,
             }
         });
-
         const deliveredFileHash = await sha256File(tempFilePath);
-        const delivered = file.addDeliveredFile({ deliveredFileHash, generatedOn, owner });
-        await this.collectionRepository.saveDelivered(delivered);
+
+        await this.collectionService.update(collectionLocId, itemId, async item => {
+            const file = item.getFile(hash);
+            file.addDeliveredFile({ deliveredFileHash, generatedOn, owner });
+        });
 
         downloadAndClean({
             response: this.response,
@@ -250,7 +253,7 @@ export class CollectionController extends ApiController {
     }
 
     private async checkCanDownload(authenticated: AuthenticatedUser, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
-        const publishedCollectionItem = requireDefined(await this.collectionService.getCollectionItem({
+        const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
@@ -319,7 +322,7 @@ export class CollectionController extends ApiController {
 
     private async getDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
         const { collectionLocId, itemId, fileHash, limitPerFile } = query;
-        const item = requireDefined(await this.collectionService.getCollectionItem({
+        const item = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));

@@ -8,10 +8,12 @@ import {
     JoinColumn,
     Index
 } from "typeorm";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
 
 import { appDataSource } from "@logion/rest-api-core";
+import { Child, saveChildren } from "./child";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string
@@ -45,6 +47,7 @@ export class CollectionItemAggregateRoot {
         file.hash = hash;
         file.cid = cid;
         file.collectionItem = this;
+        file._toAdd = true;
         this.files?.push(file);
         return file
     }
@@ -86,7 +89,7 @@ export class CollectionItemAggregateRoot {
 }
 
 @Entity("collection_item_file")
-export class CollectionItemFile {
+export class CollectionItemFile extends Child {
 
     getDescription(): CollectionItemFileDescription {
         return {
@@ -130,6 +133,7 @@ export class CollectionItemFile {
         deliveredFile.owner = owner;
 
         deliveredFile.collectionItemFile = this;
+        deliveredFile._toAdd = true;
         this.delivered?.push(deliveredFile);
         return deliveredFile;
     }
@@ -144,7 +148,7 @@ export class CollectionItemFile {
 
 @Entity("collection_item_file_delivered")
 @Index([ "collectionLocId", "itemId", "hash" ])
-export class CollectionItemFileDelivered {
+export class CollectionItemFileDelivered extends Child {
 
     @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
     id?: string;
@@ -191,35 +195,42 @@ export class CollectionRepository {
 
     public async save(root: CollectionItemAggregateRoot): Promise<void> {
         await this.repository.save(root);
+        await this.saveFiles(root);
     }
 
-    public async saveFile(file: CollectionItemFile): Promise<void> {
-        await this.fileRepository.insert(file);
+    private async saveFiles(root: CollectionItemAggregateRoot): Promise<void> {
+        if(root.files) {
+            await saveChildren({
+                children: root.files,
+                entityManager: this.repository.manager,
+                entityClass: CollectionItemFile,
+            });
+            for(const file of root.files) {
+                await this.saveDelivered(file);
+            }
+        }
     }
 
-    public async saveDelivered(file: CollectionItemFileDelivered): Promise<void> {
-        await this.deliveredRepository.insert(file);
+    private async saveDelivered(root: CollectionItemFile): Promise<void> {
+        await saveChildren({
+            children: root.delivered,
+            entityManager: this.repository.manager,
+            entityClass: CollectionItemFileDelivered,
+        });
     }
 
     public async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
-
-        return await appDataSource.manager.transaction("REPEATABLE READ", async entityManager => {
-            try {
-                const existingCollectionItem = await entityManager.findOneBy(CollectionItemAggregateRoot, {
-                    collectionLocId,
-                    itemId
-                });
-                if (existingCollectionItem) {
-                    return existingCollectionItem;
-                } else {
-                    const newCollectionItem = creator();
-                    await entityManager.insert(CollectionItemAggregateRoot, newCollectionItem);
-                    return newCollectionItem;
-                }
-            } catch (error) {
-                return Promise.reject(error)
-            }
+        const existingCollectionItem = await this.repository.manager.findOneBy(CollectionItemAggregateRoot, {
+            collectionLocId,
+            itemId
         });
+        if (existingCollectionItem) {
+            return existingCollectionItem;
+        } else {
+            const newCollectionItem = creator();
+            await this.repository.manager.insert(CollectionItemAggregateRoot, newCollectionItem);
+            return newCollectionItem;
+        }
     }
 
     public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | null> {
