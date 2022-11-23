@@ -11,6 +11,7 @@ import { DirectoryService } from "../services/directory.service";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
 import { LocRequestService } from "../services/locrequest.service";
 import { VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
+import { UserIdentity } from "../model/useridentity";
 
 const { logger } = Log;
 
@@ -88,7 +89,7 @@ export class VerifiedThirdPartyController extends ApiController {
         this.notifyVtpNominatedDismissed({
             legalOfficerAddress: userCheck.address,
             nominated,
-            vtpEmail: request.getDescription().userIdentity?.email,
+            vtp: request.getDescription().userIdentity,
         });
         this.response.sendStatus(204);
     }
@@ -96,18 +97,19 @@ export class VerifiedThirdPartyController extends ApiController {
     private async notifyVtpNominatedDismissed(args: {
         legalOfficerAddress: string,
         nominated: boolean,
-        vtpEmail?: string,
+        vtp?: UserIdentity,
     }) {
-        const { legalOfficerAddress, nominated, vtpEmail } = args;
+        const { legalOfficerAddress, nominated, vtp } = args;
         try {
             const legalOfficer = await this.directoryService.get(legalOfficerAddress);
             const data = {
-                legalOfficer
+                legalOfficer,
+                walletUser: vtp,
             };
             if(nominated) {
-                await this.notificationService.notify(vtpEmail, "vtp-nominated", data);
+                await this.notificationService.notify(vtp?.email, "vtp-nominated", data);
             } else {
-                await this.notificationService.notify(vtpEmail, "vtp-dismissed", data);
+                await this.notificationService.notify(vtp?.email, "vtp-dismissed", data);
             }
         } catch(e) {
             logger.error("Failed to notify VTP: %s. Mail '%s' not sent.", e, nominated ? "vtp-nominated" : "vtp-dismissed");
@@ -152,7 +154,7 @@ export class VerifiedThirdPartyController extends ApiController {
             legalOfficerAddress: userCheck.address,
             selected: true,
             locRequest,
-            vtpEmail: verifiedThirdPartyLocRequest.getDescription().userIdentity?.email,
+            vtp: verifiedThirdPartyLocRequest.getDescription().userIdentity,
         });
 
         this.response.sendStatus(204);
@@ -162,22 +164,23 @@ export class VerifiedThirdPartyController extends ApiController {
         legalOfficerAddress: string,
         selected: boolean,
         locRequest: LocRequestAggregateRoot,
-        vtpEmail?: string,
+        vtp?: UserIdentity,
     }) {
-        const { legalOfficerAddress, selected, locRequest, vtpEmail } = args;
+        const { legalOfficerAddress, selected, locRequest, vtp } = args;
         try {
             const legalOfficer = await this.directoryService.get(legalOfficerAddress);
             const data = {
                 legalOfficer,
+                walletUser: vtp,
                 loc: {
                     ...locRequest.getDescription(),
                     id: locRequest.id,
                 }
             };
             if(selected) {
-                await this.notificationService.notify(vtpEmail, "vtp-selected", data);
+                await this.notificationService.notify(vtp?.email, "vtp-selected", data);
             } else {
-                await this.notificationService.notify(vtpEmail, "vtp-unselected", data);
+                await this.notificationService.notify(vtp?.email, "vtp-unselected", data);
             }
         } catch(e) {
             logger.error("Failed to notify VTP: %s. Mail '%s' not sent.", e, selected ? "vtp-selected" : "vtp-unselected");
@@ -214,7 +217,7 @@ export class VerifiedThirdPartyController extends ApiController {
             legalOfficerAddress: userCheck.address,
             selected: false,
             locRequest,
-            vtpEmail: verifiedThirdPartyLocRequest.getDescription().userIdentity?.email,
+            vtp: verifiedThirdPartyLocRequest.getDescription().userIdentity,
         });
 
         this.response.sendStatus(204);
