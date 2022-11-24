@@ -142,7 +142,7 @@ function mockModelForSelect(
     request.setup(instance => instance.id).returns(REQUEST_ID);
     request.setup(instance => instance.getDescription()).returns(description.object());
 
-    verifiedThirdPartyNominationFactory.setup(instance => instance.newNomination(
+    verifiedThirdPartyNominationFactory.setup(instance => instance.newSelection(
         It.Is<{
             locRequest: LocRequestAggregateRoot,
             verifiedThirdPartyLocRequest: LocRequestAggregateRoot,

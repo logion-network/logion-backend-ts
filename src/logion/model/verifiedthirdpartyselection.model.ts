@@ -61,7 +61,7 @@ export class VerifiedThirdPartySelectionRepository {
 @injectable()
 export class VerifiedThirdPartySelectionFactory {
 
-    newNomination(args: {
+    newSelection(args: {
         locRequest: LocRequestAggregateRoot,
         verifiedThirdPartyLocRequest: LocRequestAggregateRoot,
     }): VerifiedThirdPartySelectionAggregateRoot {

@@ -41,7 +41,7 @@ function buildNomination(identityLoc: Mock<LocRequestAggregateRoot>): VerifiedTh
     const locRequest = new Mock<LocRequestAggregateRoot>();
     locRequest.setup(instance => instance.id).returns(SELECTION_ID.locRequestId);
 
-    return factory.newNomination({
+    return factory.newSelection({
         verifiedThirdPartyLocRequest: identityLoc.object(),
         locRequest: locRequest.object(),
     })

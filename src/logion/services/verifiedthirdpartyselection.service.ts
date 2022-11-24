@@ -26,7 +26,7 @@ export abstract class VerifiedThirdPartySelectionService {
             selection.setSelected(select);
             await this.verifiedThirdPartySelectionRepository.save(selection);
         } else if(select) {
-            selection = this.verifiedThirdPartySelectionFactory.newNomination({
+            selection = this.verifiedThirdPartySelectionFactory.newSelection({
                 locRequest,
                 verifiedThirdPartyLocRequest
             });
