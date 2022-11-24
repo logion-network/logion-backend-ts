@@ -521,8 +521,8 @@ export class LocRequestAggregateRoot {
     }
 
     setVerifiedThirdParty(verifiedThirdParty: boolean) {
-        if(this.locType !== "Identity" || this.status !== "CLOSED") {
-            throw new Error("Verified third party flag can be set only on closed Identity LOCs");
+        if(this.locType !== "Identity" || this.status !== "CLOSED" || !this.requesterAddress) {
+            throw new Error("Verified third party flag can be set only on closed Polkadot Identity LOCs");
         }
         this.verifiedThirdParty = verifiedThirdParty;
     }
