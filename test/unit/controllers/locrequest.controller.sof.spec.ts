@@ -10,7 +10,16 @@ import {
 } from "../../../src/logion/model/locrequest.model";
 import { UUID } from "@logion/node-api/dist/UUID";
 import { CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
-import { buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequest, REQUEST_ID, setupRequest, testDataWithUserIdentityWithType } from "./locrequest.controller.shared";
+import {
+    buildMocksForUpdate,
+    mockPolkadotIdentityLoc,
+    mockRequest,
+    REQUEST_ID,
+    setupRequest,
+    testDataWithUserIdentityWithType,
+    setupSelectedVtp
+} from "./locrequest.controller.shared";
+import { ALICE } from "../../helpers/addresses";
 
 const { setupApp } = TestApp;
 
@@ -62,11 +71,12 @@ describe('LocRequestController - SoF -', () => {
 })
 
 function mockModelForCreateSofRequest(container: Container, factory: Mock<LocRequestFactory>, locType: LocType, locId: UUID, itemId?: string) {
-    const { request, repository, collectionRepository } = buildMocksForUpdate(container, { factory });
+    const { request, repository, collectionRepository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container, { factory });
 
     const targetLoc = mockRequest("CLOSED", testDataWithUserIdentityWithType(locType));
     targetLoc.setup(instance => instance.id).returns(locId.toString());
     targetLoc.setup(instance => instance.locType).returns(locType);
+    targetLoc.setup(instance => instance.ownerAddress).returns(ALICE);
     repository.setup(instance => instance.findById(locId.toString()))
         .returns(Promise.resolve(targetLoc.object()));
 
@@ -84,4 +94,7 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
         collectionRepository.setup(instance => instance.findBy(locId.toString(), itemId))
             .returns(Promise.resolve(collectionItem.object()));
     }
+
+    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, false);
+
 }
