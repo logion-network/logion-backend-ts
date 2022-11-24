@@ -449,6 +449,19 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenMetadataItemIsNotDraft(name)
         thenMetadataItemRequiresUpdate(name)
     })
+
+    it("exposes draft, owner-submitted metadata to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "target-3";
+        whenAddingMetadata([
+            {
+                name,
+                value: "value-1",
+                submitter: OWNER,
+            }
+        ])
+        thenMetadataIsVisibleToRequester(name);
+    })
 })
 
 describe("LocRequestAggregateRoot (links)", () => {
@@ -655,6 +668,22 @@ describe("LocRequestAggregateRoot (files)", () => {
         whenConfirmingFile(hash)
         thenFileIsNotDraft(hash)
         thenFileRequiresUpdate(hash)
+    })
+
+    it("exposes draft, owner-submitted file to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = "hash-3";
+        whenAddingFiles([
+            {
+                hash,
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: OWNER,
+            }
+        ]);
+        thenFileIsVisibleToRequester(hash)
     })
 })
 
@@ -1005,6 +1034,11 @@ function thenMetadataItemRequiresUpdate(name: string) {
     expect(request.metadataItem(name)?._toUpdate).toBeTrue();
 }
 
+function thenMetadataIsVisibleToRequester(name: string) {
+    expect(request.getMetadataItems(SUBMITTER).length).toEqual(1);
+    expect(request.getMetadataItems(SUBMITTER)[0].name).toEqual(name);
+}
+
 function whenSettingFileAddedOn(hash: string, addedOn:Moment) {
     request.setFileAddedOn(hash, addedOn);
 }
@@ -1019,6 +1053,11 @@ function thenFileIsNotDraft(hash: string) {
 
 function thenFileRequiresUpdate(hash: string) {
     expect(request.file(hash)?._toUpdate).toBeTrue();
+}
+
+function thenFileIsVisibleToRequester(hash: string) {
+    expect(request.getFiles(SUBMITTER).length).toEqual(1);
+    expect(request.getFiles(SUBMITTER)[0].hash).toEqual(hash);
 }
 
 function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
