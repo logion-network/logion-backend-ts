@@ -50,16 +50,8 @@ describe("VerifiedThirdPartySelectionRepository - write", () => {
         await disconnect();
     });
 
-    it("deletes by ID", async () => {
-        await repository.deleteById({
-            locRequestId: "a7b80f86-1c51-4aff-ba32-d8361bb462b1",
-            verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744",
-        });
-        checkNumOfRows(`SELECT * FROM vtp_selection`, 2);
-    });
-
     it("deletes by VTP LOC ID", async () => {
-        await repository.deleteByVerifiedThirdPartyId("a4eb8352-a032-44a6-8087-c95a40da0744");
-        checkNumOfRows(`SELECT * FROM vtp_selection`, 2);
+        await repository.unselectAll("a4eb8352-a032-44a6-8087-c95a40da0744");
+        checkNumOfRows(`SELECT * FROM vtp_selection WHERE selected IS TRUE`, 2);
     });
 });

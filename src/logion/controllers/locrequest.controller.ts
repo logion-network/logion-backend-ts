@@ -41,7 +41,7 @@ import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";
 import { downloadAndClean } from "../lib/http";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
-import { VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
 import { LocRequestService } from "../services/locrequest.service";
 
 const { logger } = Log;
@@ -290,8 +290,13 @@ export class LocRequestController extends ApiController {
             return false;
         } else {
             const participants = await this.verifiedThirdPartySelectionRepository.findBy({ locRequestId: request.id })
-            return participants.find(participant => participant.id.verifiedThirdPartyLocId === verifiedThirdPartyLoc.id) !== undefined;
+            const selectedParticipant = participants.find(participant => this.isSelectedParticipant(verifiedThirdPartyLoc.id, participant));
+            return selectedParticipant !== undefined;
         }
+    }
+
+    private isSelectedParticipant(verifiedThirdPartyLocId: string | undefined, participant: VerifiedThirdPartySelectionAggregateRoot) {
+        return participant.id.verifiedThirdPartyLocId === verifiedThirdPartyLocId && participant.selected;
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {

@@ -4,25 +4,25 @@ import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFa
 
 describe("VerifiedThirdPartySelectionFactory", () => {
 
-    it("creates new nomination for VTP", async () => {
+    it("creates new nomination for VTP", () => {
         const identityLoc = buildIdentityLoc("Identity", "CLOSED", true);
-        const nomination = await buildNomination(identityLoc);
+        const nomination = buildNomination(identityLoc);
         expect(nomination.id).toEqual(SELECTION_ID);
     });
 
-    it("fails creating nomination with non-Identity LOC", async () => {
+    it("fails creating nomination with non-Identity LOC", () => {
         const identityLoc = buildIdentityLoc("Collection", "CLOSED", false);
-        await expectAsync(buildNomination(identityLoc)).toBeRejectedWithError("VTP LOC is not an identity LOC");
+        expect(() => buildNomination(identityLoc)).toThrowError("VTP LOC is not an identity LOC");
     });
 
-    it("fails creating nomination with non-closed Identity LOC", async () => {
+    it("fails creating nomination with non-closed Identity LOC", () => {
         const identityLoc = buildIdentityLoc("Identity", "OPEN", false);
-        await expectAsync(buildNomination(identityLoc)).toBeRejectedWithError("VTP LOC is not closed");
+        expect(() => buildNomination(identityLoc)).toThrowError("VTP LOC is not closed");
     });
 
-    it("fails creating nomination with non-verified Identity LOC", async () => {
+    it("fails creating nomination with non-verified Identity LOC", () => {
         const identityLoc = buildIdentityLoc("Identity", "CLOSED", false);
-        await expectAsync(buildNomination(identityLoc)).toBeRejectedWithError("Party is not verified");
+        expect(() => buildNomination(identityLoc)).toThrowError("Party is not verified");
     });
 });
 
@@ -35,13 +35,13 @@ function buildIdentityLoc(locType: LocType, status: LocRequestStatus, verifiedTh
     return identityLoc;
 }
 
-function buildNomination(identityLoc: Mock<LocRequestAggregateRoot>): Promise<VerifiedThirdPartySelectionAggregateRoot> {
+function buildNomination(identityLoc: Mock<LocRequestAggregateRoot>): VerifiedThirdPartySelectionAggregateRoot {
     const factory = new VerifiedThirdPartySelectionFactory();
 
     const locRequest = new Mock<LocRequestAggregateRoot>();
     locRequest.setup(instance => instance.id).returns(SELECTION_ID.locRequestId);
 
-    return factory.newNomination({
+    return factory.newSelection({
         verifiedThirdPartyLocRequest: identityLoc.object(),
         locRequest: locRequest.object(),
     })
