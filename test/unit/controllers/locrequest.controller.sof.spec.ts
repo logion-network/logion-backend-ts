@@ -95,6 +95,6 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
             .returns(Promise.resolve(collectionItem.object()));
     }
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, false);
+    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, 'NOT_VTP');
 
 }

@@ -1159,6 +1159,10 @@
                     "address": {
                         "type": "string",
                         "description": "The SS58 address of the Verified Third Party"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Tells if the VTP was selected in the scope of current LOC"
                     }
                 }
             },

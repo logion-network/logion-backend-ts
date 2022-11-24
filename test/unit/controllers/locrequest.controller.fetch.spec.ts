@@ -10,7 +10,7 @@ import {
     LocType,
 } from "../../../src/logion/model/locrequest.model";
 import moment from "moment";
-import { buildMocksForFetch, checkPrivateData, IdentityLocation, mockLogionIdentityLoc, mockPolkadotIdentityLoc, REQUEST_ID, setupRequest, setupSelectedVtp, testData, testDataWithLogionIdentity, testDataWithType, testDataWithUserIdentity, testDataWithUserIdentityWithType, userIdentities, VTP_ADDRESS } from "./locrequest.controller.shared";
+import { buildMocksForFetch, checkPrivateData, IdentityLocation, mockLogionIdentityLoc, mockPolkadotIdentityLoc, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, testDataWithLogionIdentity, testDataWithType, testDataWithUserIdentity, testDataWithUserIdentityWithType, userIdentities, VTP_ADDRESS } from "./locrequest.controller.shared";
 import { UserPrivateData } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp";
 
@@ -108,11 +108,19 @@ describe('LocRequestController - Fetch -', () => {
 
     it('succeeds to get single LOC if VTP', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', true), mock);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'SELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
             .expect(200)
             .expect('Content-Type', /application\/json/);
+    });
+
+    it('fails to get single LOC if unselected VTP', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'UNSELECTED'), mock);
+        await request(app)
+            .get(`/api/loc-request/${ REQUEST_ID }`)
+            .expect(403);
     });
 });
 
@@ -126,7 +134,7 @@ function mockModelForFetch(container: Container): void {
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, false);
+    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, 'NOT_VTP');
 
     repository.setup(instance => instance.findBy)
         .returns(() => Promise.resolve([ request.object() ]));
@@ -134,7 +142,7 @@ function mockModelForFetch(container: Container): void {
 
 const REJECT_REASON = "Illegal";
 
-function mockModelForGetSingle(container: Container, locType: LocType, identityLocation: IdentityLocation, isVtp?: boolean): void {
+function mockModelForGetSingle(container: Container, locType: LocType, identityLocation: IdentityLocation, vtpMode?: SetupVtpMode): void {
     const { request, repository, verifiedThirdPartySelectionRepository } = buildMocksForFetch(container);
 
     const data =
@@ -153,7 +161,7 @@ function mockModelForGetSingle(container: Container, locType: LocType, identityL
     mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
     mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, isVtp || false);
+    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode || 'NOT_VTP');
 }
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";

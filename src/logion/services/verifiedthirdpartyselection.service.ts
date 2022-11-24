@@ -1,23 +1,48 @@
-import { DefaultTransactional } from "@logion/rest-api-core";
+import { AuthenticatedUser } from "@logion/authenticator";
+import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
 
 export abstract class VerifiedThirdPartySelectionService {
 
     constructor(
+        private verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        private locRequestRepository: LocRequestRepository,
     ) {}
 
     async add(selection: VerifiedThirdPartySelectionAggregateRoot) {
         await this.verifiedThirdPartySelectionRepository.save(selection);
     }
 
-    async deleteById(id: VerifiedThirdPartySelectionId) {
-        await this.verifiedThirdPartySelectionRepository.deleteById(id);
+    async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedThirdPartyLocRequest: LocRequestAggregateRoot, select: boolean) {
+        const id: VerifiedThirdPartySelectionId = {
+            locRequestId: requireDefined(locRequest.id),
+            verifiedThirdPartyLocId: requireDefined(verifiedThirdPartyLocRequest.id),
+        };
+        let selection = await this.verifiedThirdPartySelectionRepository.findById(id);
+        if(selection) {
+            selection.setSelected(select);
+            await this.verifiedThirdPartySelectionRepository.save(selection);
+        } else if(select) {
+            selection = this.verifiedThirdPartySelectionFactory.newNomination({
+                locRequest,
+                verifiedThirdPartyLocRequest
+            });
+            await this.verifiedThirdPartySelectionRepository.save(selection);
+        } // else (!selection && !select) -> skip
     }
 
-    async deleteByVerifiedThirdPartyId(verifiedThirdPartyLocId: string) {
-        await this.verifiedThirdPartySelectionRepository.deleteByVerifiedThirdPartyId(verifiedThirdPartyLocId);
+    async nominateDismiss(authenticatedUser: AuthenticatedUser, verifiedThirdPartyLocId: string, nominate: boolean) {
+        const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(verifiedThirdPartyLocId));
+        authenticatedUser.require(user => user.is(verifiedThirdPartyLocRequest.ownerAddress));
+        verifiedThirdPartyLocRequest.setVerifiedThirdParty(nominate);
+        await this.locRequestRepository.save(verifiedThirdPartyLocRequest);
+        if(!nominate) {
+            await this.verifiedThirdPartySelectionRepository.unselectAll(verifiedThirdPartyLocId);
+        }
+        return verifiedThirdPartyLocRequest;
     }
 }
 
@@ -25,9 +50,11 @@ export abstract class VerifiedThirdPartySelectionService {
 export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThirdPartySelectionService {
 
     constructor(
+        verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        locRequestRepository: LocRequestRepository,
     ) {
-        super(verifiedThirdPartySelectionRepository);
+        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository, locRequestRepository);
     }
 
     @DefaultTransactional()
@@ -36,13 +63,13 @@ export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThi
     }
 
     @DefaultTransactional()
-    async deleteById(id: VerifiedThirdPartySelectionId) {
-        return super.deleteById(id);
+    async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedThirdPartyLocRequest: LocRequestAggregateRoot, select: boolean) {
+        return super.selectUnselect(locRequest, verifiedThirdPartyLocRequest, select);
     }
 
     @DefaultTransactional()
-    async deleteByVerifiedThirdPartyId(verifiedThirdPartyLocId: string) {
-        return super.deleteByVerifiedThirdPartyId(verifiedThirdPartyLocId);
+    async nominateDismiss(authenticatedUser: AuthenticatedUser, verifiedThirdPartyLocId: string, nominate: boolean) {
+        return super.nominateDismiss(authenticatedUser, verifiedThirdPartyLocId, nominate);
     }
 }
 
@@ -50,8 +77,10 @@ export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThi
 export class NonTransactionalVerifiedThirdPartySelectionService extends VerifiedThirdPartySelectionService {
 
     constructor(
+        verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        locRequestRepository: LocRequestRepository,
     ) {
-        super(verifiedThirdPartySelectionRepository);
+        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository, locRequestRepository);
     }
 }

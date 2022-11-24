@@ -4,12 +4,11 @@ import { OpenAPIV3 } from "express-oas-generator";
 import { addTag, AuthenticationService, badRequest, forbidden, getDefaultResponses, getDefaultResponsesNoContent, getRequestBody, Log, requireDefined, setControllerTag, setPathParameters } from "@logion/rest-api-core";
 import { components } from "./components";
 import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
-import { VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import { VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
 import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter";
 import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
-import { LocRequestService } from "../services/locrequest.service";
 import { VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
 import { UserIdentity } from "../model/useridentity";
 
@@ -45,14 +44,12 @@ export class VerifiedThirdPartyController extends ApiController {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private authenticationService: AuthenticationService,
-        private verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
         private verifiedThirdPartySelectionService: VerifiedThirdPartySelectionService,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private locRequestAdapter: LocRequestAdapter,
-        private locRequestService: LocRequestService,
     ) {
         super();
     }
@@ -75,22 +72,16 @@ export class VerifiedThirdPartyController extends ApiController {
     @Async()
     @SendsResponse()
     async nominateDismissVerifiedThirdParty(body: SetVerifiedThirdPartyRequest, requestId: string) {
-        const userCheck = await this.authenticationService.authenticatedUser(this.request);
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const nominated = body.isVerifiedThirdParty || false;
-        const request = await this.locRequestService.update(requestId, async request => {
-            userCheck.require(user => user.is(request.ownerAddress));
-            request.setVerifiedThirdParty(nominated);
-        });
-
-        if(!nominated) {
-            await this.verifiedThirdPartySelectionService.deleteByVerifiedThirdPartyId(requestId);
-        }
+        const request = await this.verifiedThirdPartySelectionService.nominateDismiss(authenticatedUser, requestId, nominated);
 
         this.notifyVtpNominatedDismissed({
-            legalOfficerAddress: userCheck.address,
+            legalOfficerAddress: authenticatedUser.address,
             nominated,
             vtp: request.getDescription().userIdentity,
         });
+
         this.response.sendStatus(204);
     }
 
@@ -141,11 +132,7 @@ export class VerifiedThirdPartyController extends ApiController {
         const verifiedThirdPartyLocRequestId = requireDefined(body.identityLocId);
         const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(verifiedThirdPartyLocRequestId));
         try {
-            const nomination = await this.verifiedThirdPartySelectionFactory.newNomination({
-                verifiedThirdPartyLocRequest,
-                locRequest,
-            });
-            await this.verifiedThirdPartySelectionService.add(nomination);
+            await this.verifiedThirdPartySelectionService.selectUnselect(locRequest, verifiedThirdPartyLocRequest, true);
         } catch(e) {
             throw badRequest((e as Error).message);
         }
@@ -206,13 +193,13 @@ export class VerifiedThirdPartyController extends ApiController {
         const userCheck = await this.authenticationService.authenticatedUser(this.request);
         userCheck.require(user => user.is(locRequest.ownerAddress));
 
-        const nominationId: VerifiedThirdPartySelectionId = {
-            locRequestId: requestId,
-            verifiedThirdPartyLocId: partyId,
-        };
-        await this.verifiedThirdPartySelectionService.deleteById(nominationId);
-
         const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(partyId));
+        try {
+            await this.verifiedThirdPartySelectionService.selectUnselect(locRequest, verifiedThirdPartyLocRequest, false);
+        } catch(e) {
+            throw badRequest((e as Error).message);
+        }
+
         this.notifyVtpSelectedUnselected({
             legalOfficerAddress: userCheck.address,
             selected: false,

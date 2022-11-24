@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { Entity, PrimaryColumn, Repository } from "typeorm";
+import { Column, Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
 import { LocRequestAggregateRoot } from './locrequest.model';
 
@@ -18,11 +18,18 @@ export class VerifiedThirdPartySelectionAggregateRoot {
         };
     }
 
+    setSelected(value: boolean) {
+        this.selected = value;
+    }
+
     @PrimaryColumn({ type: "uuid", name: "loc_request_id" })
     locRequestId?: string;
 
     @PrimaryColumn({ type: "uuid", name: "vtp_loc_id" })
     verifiedThirdPartyLocId?: string;
+
+    @Column("boolean", { default: true })
+    selected?: boolean;
 }
 
 @injectable()
@@ -46,22 +53,18 @@ export class VerifiedThirdPartySelectionRepository {
         return this.repository.findBy(partialId);
     }
 
-    async deleteById(id: VerifiedThirdPartySelectionId): Promise<void> {
-        await this.repository.delete(id);
-    }
-
-    async deleteByVerifiedThirdPartyId(verifiedThirdPartyLocId: string): Promise<void> {
-        await this.repository.delete({ verifiedThirdPartyLocId });
+    async unselectAll(verifiedThirdPartyLocId: string) {
+        await this.repository.update({ verifiedThirdPartyLocId }, { selected: false });
     }
 }
 
 @injectable()
 export class VerifiedThirdPartySelectionFactory {
 
-    async newNomination(args: {
+    newNomination(args: {
         locRequest: LocRequestAggregateRoot,
         verifiedThirdPartyLocRequest: LocRequestAggregateRoot,
-    }): Promise<VerifiedThirdPartySelectionAggregateRoot> {
+    }): VerifiedThirdPartySelectionAggregateRoot {
         const {
             verifiedThirdPartyLocRequest,
             locRequest,
@@ -80,6 +83,7 @@ export class VerifiedThirdPartySelectionFactory {
         const root = new VerifiedThirdPartySelectionAggregateRoot();
         root.locRequestId = locRequest.id;
         root.verifiedThirdPartyLocId = verifiedThirdPartyLocRequest.id;
+        root.selected = true;
         return root;
     }
 }

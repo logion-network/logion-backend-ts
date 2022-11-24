@@ -153,7 +153,11 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
 
     verifiedThirdPartyNominationRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
 
-    container.bind(VerifiedThirdPartySelectionService).toConstantValue(new NonTransactionalVerifiedThirdPartySelectionService(verifiedThirdPartyNominationRepository.object()));
+    container.bind(VerifiedThirdPartySelectionService).toConstantValue(new NonTransactionalVerifiedThirdPartySelectionService(
+        verifiedThirdPartyNominationFactory.object(),
+        verifiedThirdPartyNominationRepository.object(),
+        repository.object()
+    ));
 
     container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(repository.object()));
 
@@ -328,16 +332,18 @@ export function buildMocksForUpdate(container: Container, existingMocks?: Partia
     return mocks;
 }
 
+export type SetupVtpMode = 'NOT_VTP' | 'SELECTED' | 'UNSELECTED';
+
 export function setupSelectedVtp(
     mocks: {
         repository: Mock<LocRequestRepository>,
         verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>,
     },
-    selected: boolean,
+    mode: SetupVtpMode,
 ) {
     const { repository, verifiedThirdPartySelectionRepository } = mocks;
 
-    if(selected) {
+    if(mode !== 'NOT_VTP') {
         const vtpIdentityLoc = new Mock<LocRequestAggregateRoot>();
         vtpIdentityLoc.setup(instance => instance.id).returns(VTP_LOC_ID);
         vtpIdentityLoc.setup(instance => instance.getDescription()).returns({
@@ -354,6 +360,7 @@ export function setupSelectedVtp(
             locRequestId: REQUEST_ID,
             verifiedThirdPartyLocId: VTP_LOC_ID,
         });
+        selection.setup(instance => instance.selected).returns(mode === 'SELECTED');
         verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(
             It.Is<Partial<VerifiedThirdPartySelectionId>>(args => args.locRequestId === REQUEST_ID)))
         .returnsAsync([ selection.object() ]);

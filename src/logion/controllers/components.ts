@@ -718,6 +718,8 @@ export interface components {
       identityLocId?: string;
       /** @description The SS58 address of the Verified Third Party */
       address?: string;
+      /** @description Tells if the VTP was selected in the scope of current LOC */
+      selected?: boolean;
     };
     VerifiedThirdPartiesView: {
       verifiedThirdParties?: components["schemas"]["VerifiedThirdPartyView"][];
