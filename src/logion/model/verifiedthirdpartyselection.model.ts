@@ -79,6 +79,9 @@ export class VerifiedThirdPartySelectionFactory {
         if(!verifiedThirdPartyLocRequest.verifiedThirdParty) {
             throw new Error("Party is not verified");
         }
+        if(locRequest.requesterAddress === verifiedThirdPartyLocRequest.requesterAddress) {
+            throw new Error("Cannot select LOC requester as VTP");
+        }
 
         const root = new VerifiedThirdPartySelectionAggregateRoot();
         root.locRequestId = locRequest.id;

@@ -58,7 +58,7 @@ export class LocSynchronizer {
                 }
                 case "addLink": {
                     const locId = this.extractLocId('loc_id', extrinsic.call.args);
-                    const target = asString(asJsonObject(extrinsic.call.args['link']).id);
+                    const target = asBigInt(asJsonObject(extrinsic.call.args['link']).id).toString();
                     await this.mutateLoc(locId, loc => loc.setLinkAddedOn(UUID.fromDecimalStringOrThrow(target).toString(), timestamp));
                     break;
                 }
