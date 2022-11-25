@@ -4,7 +4,7 @@ import { It, Mock } from "moq.ts";
 import request from "supertest";
 import { VerifiedThirdPartyController } from "../../../src/logion/controllers/verifiedthirdparty.controller";
 import { buildMocks, buildMocksForFetch, buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequestWithId, REQUEST_ID, setupRequest, userIdentities } from "./locrequest.controller.shared";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
+import { FindBySpecification, VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
 import { FetchLocRequestsSpecification, LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model";
 import { ALICE } from "../../helpers/addresses";
 import { NotificationService } from "../../../src/logion/services/notification.service";
@@ -225,9 +225,10 @@ function mockModelForGetVerifiedThirdPartyLocRequests(container: Container) {
         locRequestId,
         verifiedThirdPartyLocId,
     });
-    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.Is<Partial<VerifiedThirdPartySelectionId>>(id =>
+    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.Is<FindBySpecification>(id =>
         id.verifiedThirdPartyLocId === SELECTION_ID.verifiedThirdPartyLocId
         && id.locRequestId === undefined
+        && id.selected === true
     ))).returnsAsync([ selection.object() ]);
 
     const locWithSelection = new Mock<LocRequestAggregateRoot>();

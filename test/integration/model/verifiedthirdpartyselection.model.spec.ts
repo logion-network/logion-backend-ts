@@ -34,6 +34,14 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
         const nominations = await repository.findBy({ verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744" });
         expect(nominations.length).toBe(1);
     });
+
+    it("finds selected only", async () => {
+        const nominations = await repository.findBy({
+            verifiedThirdPartyLocId: "f2b114f4-1196-4027-9972-e6741f868f0c",
+            selected: true,
+        });
+        expect(nominations.length).toBe(1);
+    });
 });
 
 describe("VerifiedThirdPartySelectionRepository - write", () => {
@@ -50,8 +58,8 @@ describe("VerifiedThirdPartySelectionRepository - write", () => {
         await disconnect();
     });
 
-    it("deletes by VTP LOC ID", async () => {
+    it("unselects by VTP LOC ID", async () => {
         await repository.unselectAll("a4eb8352-a032-44a6-8087-c95a40da0744");
-        checkNumOfRows(`SELECT * FROM vtp_selection WHERE selected IS TRUE`, 2);
+        checkNumOfRows(`SELECT * FROM vtp_selection WHERE vtp_loc_id = 'a4eb8352-a032-44a6-8087-c95a40da0744' AND selected IS TRUE`, 0);
     });
 });
