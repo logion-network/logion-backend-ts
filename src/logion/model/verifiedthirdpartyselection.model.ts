@@ -32,6 +32,10 @@ export class VerifiedThirdPartySelectionAggregateRoot {
     selected?: boolean;
 }
 
+export interface FindBySpecification extends Partial<VerifiedThirdPartySelectionId> {
+    selected?: boolean;
+}
+
 @injectable()
 export class VerifiedThirdPartySelectionRepository {
 
@@ -49,8 +53,8 @@ export class VerifiedThirdPartySelectionRepository {
         return await this.repository.findOneBy(id);
     }
 
-    async findBy(partialId: Partial<VerifiedThirdPartySelectionId>): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
-        return this.repository.findBy(partialId);
+    async findBy(spec: FindBySpecification): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
+        return this.repository.findBy(spec);
     }
 
     async unselectAll(verifiedThirdPartyLocId: string) {

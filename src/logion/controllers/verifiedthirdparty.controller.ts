@@ -255,7 +255,10 @@ export class VerifiedThirdPartyController extends ApiController {
         }
 
         const verifiedThirdPartyLocId = identityLocs[0].id!;
-        const selections = await this.verifiedThirdPartySelectionRepository.findBy({ verifiedThirdPartyLocId });
+        const selections = await this.verifiedThirdPartySelectionRepository.findBy({
+            verifiedThirdPartyLocId,
+            selected: true,
+        });
         const requests = [];
         for(const selection of selections) {
             const request = await this.locRequestRepository.findById(selection.id.locRequestId);
