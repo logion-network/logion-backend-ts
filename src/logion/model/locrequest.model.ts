@@ -236,8 +236,15 @@ export class LocRequestAggregateRoot {
         };
     }
 
+    private itemViewable(item: { draft?: boolean, submitter?: string }, viewerAddress?: string): boolean {
+        return !item.draft ||
+            viewerAddress === this.ownerAddress ||
+            item.submitter === viewerAddress ||
+            (viewerAddress !== undefined && viewerAddress === this.requesterAddress && item.submitter === this.ownerAddress);
+    }
+
     getFiles(viewerAddress?: string): FileDescription[] {
-        return orderAndMap(this.files?.filter(item => !item.draft || viewerAddress === this.ownerAddress || item.submitter === viewerAddress), file => this.toFileDescription(file));
+        return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -312,7 +319,7 @@ export class LocRequestAggregateRoot {
     }
 
     getMetadataItems(viewerAddress?: string): MetadataItemDescription[] {
-        return orderAndMap(this.metadata?.filter(item => !item.draft || viewerAddress === this.ownerAddress || item.submitter === viewerAddress), this.toMetadataItemDescription);
+        return orderAndMap(this.metadata?.filter(item => this.itemViewable(item, viewerAddress)), this.toMetadataItemDescription);
     }
 
     setMetadataItemAddedOn(name: string, addedOn: Moment) {
