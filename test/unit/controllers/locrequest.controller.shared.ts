@@ -29,6 +29,7 @@ import { LocRequestService, NonTransactionalLocRequestService } from "../../../s
 import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
+export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
 
 export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
     "Logion": {
@@ -83,7 +84,8 @@ export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
 
 export function testDataWithType(locType: LocType, draft?: boolean): Partial<LocRequestDescription & { draft: boolean }> {
     return {
-        requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+        requesterAddress: REQUESTER_ADDRESS,
+        ownerAddress: ALICE,
         description: "I want to open a case",
         locType,
         draft,
@@ -107,12 +109,13 @@ export function testDataWithUserIdentityWithType(locType: LocType): Partial<LocR
             version: LATEST_SEAL_VERSION,
         }
     }
-};
+}
 
 export const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction");
 
 export const testDataWithLogionIdentity: Partial<LocRequestDescription> = {
     requesterIdentityLoc: userIdentities["Logion"].identityLocId,
+    ownerAddress: ALICE,
     description: "I want to open a case",
     locType: "Transaction"
 };

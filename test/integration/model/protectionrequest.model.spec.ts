@@ -8,7 +8,7 @@ import {
     ProtectionRequestKind,
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model";
-import { ALICE } from "../../helpers/addresses";
+import { ALICE, BOB } from "../../helpers/addresses";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -127,6 +127,7 @@ describe('ProtectionRequestRepositoryTest', () => {
         protectionRequest.userPostalAddress.city = 'Paris'
         protectionRequest.userPostalAddress.country = 'France'
         protectionRequest.status = 'PENDING'
+        protectionRequest.legalOfficerAddress = BOB
         protectionRequest.otherLegalOfficerAddress = ALICE
         // When
         await repository.save(protectionRequest)

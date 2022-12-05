@@ -6,6 +6,7 @@ import {
     VaultTransferRequestFactory,
     VaultTransferRequestAggregateRoot,
 } from '../../../src/logion/model/vaulttransferrequest.model';
+import { ALICE } from "../../helpers/addresses";
 
 describe('VaultTransferRequestFactory', () => {
 
@@ -101,6 +102,7 @@ describe('VaultTransferRequestAggregateRoot', () => {
 const description: VaultTransferRequestDescription = {
     id: uuid(),
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    legalOfficerAddress: ALICE,
     origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
     destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
     createdOn: moment().toISOString(),

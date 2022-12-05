@@ -26,7 +26,7 @@ import { NonTransactionalProtectionRequestService, ProtectionRequestService } fr
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
-describe('createProtectionRequest', () => {
+fdescribe('createProtectionRequest', () => {
 
     it('success with valid protection request', async () => {
         const app = setupApp(ProtectionRequestController, mockModelForRequest);
@@ -35,6 +35,7 @@ describe('createProtectionRequest', () => {
             .post('/api/protection-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                legalOfficerAddress: ALICE,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
                 isRecovery: false,
@@ -55,6 +56,7 @@ describe('createProtectionRequest', () => {
             .post('/api/protection-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                legalOfficerAddress: ALICE,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
                 isRecovery: true,
@@ -73,7 +75,7 @@ describe('createProtectionRequest', () => {
         await request(app)
             .post('/api/protection-request')
             .send({})
-            .expect(500)
+            .expect(403)
             .expect('Content-Type', /application\/json/);
     });
 });
@@ -123,7 +125,7 @@ function mockModelForRecovery(container: Container, addressToRecover: string): v
     mockProtectionRequestModel(container, true, addressToRecover);
 }
 
-describe('fetchProtectionRequests', () => {
+fdescribe('fetchProtectionRequests', () => {
 
     it('returns expected response', async () => {
         const app = setupApp(ProtectionRequestController, mockModelForFetch);
@@ -189,6 +191,7 @@ function mockModelForFetch(container: Container): void {
         decisionOn: DECISION_TIMESTAMP
     })
 
+    protectionRequest.setup(instance => instance.legalOfficerAddress).returns(ALICE);
     protectionRequest.setup(instance => instance.createdOn).returns(TIMESTAMP);
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
@@ -206,7 +209,7 @@ function mockModelForFetch(container: Container): void {
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
-describe('acceptProtectionRequest', () => {
+fdescribe('acceptProtectionRequest', () => {
 
     it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true));
@@ -252,7 +255,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
 const REQUEST_ID = "requestId";
 
-describe('rejectProtectionRequest', () => {
+fdescribe('rejectProtectionRequest', () => {
 
     it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true));
@@ -273,7 +276,7 @@ describe('rejectProtectionRequest', () => {
     });
 });
 
-describe("User", () => {
+fdescribe("User", () => {
 
     let protectionRequest: Mock<ProtectionRequestAggregateRoot>;
     let repository = new Mock<ProtectionRequestRepository>();
@@ -421,6 +424,7 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
 
     const description: ProtectionRequestDescription = {
         requesterAddress: REQUESTER_ADDRESS,
+        legalOfficerAddress: ALICE,
         isRecovery: false,
         otherLegalOfficerAddress: "",
         createdOn: now().toString(),

@@ -4,12 +4,12 @@ import { ProtectionRequestAggregateRoot, ProtectionRequestRepository } from "../
 
 export abstract class ProtectionRequestService {
 
-    constructor(
+    protected constructor(
         private protectionRequestRepository: ProtectionRequestRepository,
     ) {}
 
     async add(request: ProtectionRequestAggregateRoot) {
-        this.protectionRequestRepository.save(request);
+        await this.protectionRequestRepository.save(request);
     }
 
     async update(id: string, mutator: (request: ProtectionRequestAggregateRoot) => Promise<void>) {

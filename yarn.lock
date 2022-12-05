@@ -964,8 +964,8 @@ __metadata:
   linkType: hard
 
 "@logion/authenticator@npm:^0.3.3-1":
-  version: 0.3.3-1
-  resolution: "@logion/authenticator@npm:0.3.3-1"
+  version: 0.3.3-2
+  resolution: "@logion/authenticator@npm:0.3.3-2"
   dependencies:
     "@ethersproject/transactions": ^5.6.2
     "@logion/node-api": ^0.8.0-1
@@ -975,7 +975,7 @@ __metadata:
     luxon: ^3.0.1
     peer-id: ^0.16.0
     web3-utils: ^1.7.4
-  checksum: 3a9b927e9ba7763b523f677d11c017f496b7d6596f077a083516f1fa9680b1498eaf094b20e3997804c5fe2640b022b72bbb6cf48f9aa7b6a73ce1f253c10214
+  checksum: 146ae8160b912565ea3aa41c23c81fd315b346c667fd5d2f1e0993fdae86f8a9be93cd2a48354b413c2a23ede37e3880d703d7205fa049bbb6e8f53dc7f3ddc7
   languageName: node
   linkType: hard
 
@@ -1005,8 +1005,8 @@ __metadata:
   linkType: hard
 
 "@logion/rest-api-core@npm:^0.2.1-1":
-  version: 0.2.1-1
-  resolution: "@logion/rest-api-core@npm:0.2.1-1"
+  version: 0.2.1-2
+  resolution: "@logion/rest-api-core@npm:0.2.1-2"
   dependencies:
     "@logion/authenticator": ^0.3.3-1
     dinoloop: ^2.4.0
@@ -1020,7 +1020,7 @@ __metadata:
     swagger-ui-express: ^4.5.0
     typeorm: ^0.3.9
     typeorm-transactional: ^0.4.0
-  checksum: 82ab30688c061c4e893991a3488c431570efa01634b1f90db6c615212eaf4790e7b21cd071e5423aec155cb17489ace3fded5e3fe19302bba62f9a9ed9d1a2ba
+  checksum: 72524447c391cd84bdb124eca9aec8207004b22f287de8e29789c0049f5202a1ebebdcf38fafbd0abaafcc8342508fc3dab25462ee8f81bda66f0e697614173f
   languageName: node
   linkType: hard
 

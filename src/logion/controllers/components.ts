@@ -37,8 +37,10 @@ export interface components {
     CreateProtectionRequestView: {
       /** @description If this request is a recovery request, tells the address to recover */
       addressToRecover?: string;
-      /** @description True if the the protection request is also a recovery request */
+      /** @description True if the protection request is also a recovery request */
       isRecovery?: boolean;
+      /** @description The SS58 address of the legal officer the request was submitted to */
+      legalOfficerAddress?: string;
       /** @description The SS58 address of the other legal officer the request was submitted to */
       otherLegalOfficerAddress?: string;
       /** @description The SS58 address of the requester */
@@ -86,6 +88,8 @@ export interface components {
       kind?: "ANY" | "PROTECTION_ONLY" | "RECOVERY";
       /** @description The SS58 address of the requester in expected Protection Requests */
       requesterAddress?: string;
+      /** @description The SS58 address of the legal officer in expected Protection Requests */
+      legalOfficerAddress?: string;
     };
     /**
      * FetchTransactionsResponseView
@@ -293,6 +297,8 @@ export interface components {
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
+      /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
+      ownerAddress?: string;
       /** @description A description of the LOC */
       description?: string;
       /** @description The type of the LOC to create */
@@ -595,6 +601,8 @@ export interface components {
       origin?: string;
       /** @description The destination SS58 address of the transfer */
       destination?: string;
+      /** @description The SS58 address of the legal officer the request was submitted to */
+      legalOfficerAddress?: string;
       /** @description The amount to transfer */
       amount?: string;
       /** @description The block number at which the call was submitted */
@@ -623,13 +631,15 @@ export interface components {
       | "REJECTED_CANCELLED";
     /**
      * FetchVaultTransferRequestsSpecificationView
-     * @description The specification for fetching Protection Requests
+     * @description The specification for fetching Vault Transfer Requests
      */
     FetchVaultTransferRequestsSpecificationView: {
-      /** @description The statuses of expected Protection Requests */
+      /** @description The statuses of expected Vault Transfer Requests */
       statuses?: components["schemas"]["VaultTransferRequestStatusView"][];
-      /** @description The SS58 address of the requester in expected Protection Requests */
+      /** @description The SS58 address of the requester in expected Vault Transfer Requests */
       requesterAddress?: string;
+      /** @description The SS58 address of the legal officer in expected Vault Transfer Requests */
+      legalOfficerAddress?: string;
     };
     /**
      * VaultTransferRequestDecisionDecisionView

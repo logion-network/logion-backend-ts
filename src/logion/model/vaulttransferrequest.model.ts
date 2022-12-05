@@ -37,6 +37,7 @@ export class VaultTransferRequestAggregateRoot {
     setDescription(description: VaultTransferRequestDescription): void {
         this.id = description.id;
         this.requesterAddress = description.requesterAddress;
+        this.legalOfficerAddress = description.legalOfficerAddress;
         this.createdOn = description.createdOn;
         this.origin = description.origin;
         this.destination = description.destination;
@@ -49,6 +50,7 @@ export class VaultTransferRequestAggregateRoot {
         return {
             id: this.id!,
             requesterAddress: this.requesterAddress!,
+            legalOfficerAddress: this.legalOfficerAddress!,
             createdOn: this.createdOn!,
             origin: this.origin!,
             destination: this.destination!,
@@ -105,6 +107,9 @@ export class VaultTransferRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
+    @Column({ length: 255, name: "legal_officer_address" })
+    legalOfficerAddress?: string;
+
     @Column({ length: 255, name: "origin" })
     origin?: string;
 
@@ -131,13 +136,16 @@ export class FetchVaultTransferRequestsSpecification {
 
     constructor(builder: {
         expectedRequesterAddress?: string,
+        expectedLegalOfficerAddress?: string,
         expectedStatuses?: VaultTransferRequestStatus[],
     }) {
         this.expectedRequesterAddress = builder.expectedRequesterAddress || null;
+        this.expectedLegalOfficerAddress = builder.expectedLegalOfficerAddress || null;
         this.expectedStatuses = builder.expectedStatuses || [];
     }
 
     readonly expectedRequesterAddress: string | null;
+    readonly expectedLegalOfficerAddress: string | null;
     readonly expectedStatuses: VaultTransferRequestStatus[];
 }
 
@@ -168,9 +176,13 @@ export class VaultTransferRequestRepository {
             where = (a: any, b?: any) => builder.andWhere(a, b);
         }
 
+        if(specification.expectedLegalOfficerAddress !== null) {
+            where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            where = (a: any, b?: any) => builder.andWhere(a, b);
+        }
+
         if(specification.expectedStatuses.length > 0) {
             where("request.status IN (:...expectedStatuses)", {expectedStatuses: specification.expectedStatuses});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
         }
 
         return await builder.getMany();
@@ -185,6 +197,7 @@ export interface Timepoint {
 export interface VaultTransferRequestDescription {
     readonly id: string,
     readonly requesterAddress: string,
+    readonly legalOfficerAddress: string,
     readonly createdOn: string,
     readonly origin: string,
     readonly destination: string,

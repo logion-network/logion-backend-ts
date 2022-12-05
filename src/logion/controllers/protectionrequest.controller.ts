@@ -13,7 +13,7 @@ import {
     requireDefined,
     badRequest,
     Log,
-    AuthenticationService,
+    AuthenticationService, forbidden,
 } from '@logion/rest-api-core';
 
 import {
@@ -28,6 +28,7 @@ import { components } from './components';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { ProtectionRequestService } from '../services/protectionrequest.service';
+import { AuthenticatedUser, AuthorityService } from "@logion/authenticator";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -69,11 +70,10 @@ export class ProtectionRequestController extends ApiController {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private protectionRequestService: ProtectionRequestService,
+        private authorityService: AuthorityService,
     ) {
         super();
     }
-
-    private readonly ownerAddress: string = process.env.OWNER!
 
     static createProtectionRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/protection-request"].post!;
@@ -90,10 +90,12 @@ export class ProtectionRequestController extends ApiController {
     @HttpPost('')
     async createProtectionRequest(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
         await this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
+        const legalOfficerAddress = await this.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const request = this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
             description: {
                 requesterAddress: body.requesterAddress!,
+                legalOfficerAddress,
                 otherLegalOfficerAddress: body.otherLegalOfficerAddress!,
                 userIdentity: {
                     firstName: body.userIdentity!.firstName!,
@@ -120,6 +122,23 @@ export class ProtectionRequestController extends ApiController {
         return this.adapt(request);
     }
 
+    private async requireLegalOfficerOnNode(): Promise<AuthenticatedUser> {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        if (await this.authorityService.isLegalOfficerOnNode(authenticatedUser.address)) {
+            return authenticatedUser;
+        } else {
+            throw forbidden("Authenticated User is not Legal Officer on this node.")
+        }
+    }
+
+    private async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<string> {
+        if (address && await this.authorityService.isLegalOfficerOnNode(address)) {
+            return address;
+        } else {
+            throw forbidden("Legal Officer address is not defined or not valid on this node.")
+        }
+    }
+
     static fetchProtectionRequests(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/protection-request"].put!;
         operationObject.summary = "Lists Protection Requests based on a given specification";
@@ -135,10 +154,10 @@ export class ProtectionRequestController extends ApiController {
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.isNodeOwner() || user.is(body.requesterAddress));
-
+        authenticatedUser.require(user => user.isOneOf([ body.legalOfficerAddress, body.requesterAddress ]));
         const specification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: body.requesterAddress,
+            expectedLegalOfficerAddress: body.legalOfficerAddress,
             expectedStatuses: body.statuses,
             kind: body.kind,
         });
@@ -152,7 +171,7 @@ export class ProtectionRequestController extends ApiController {
         return {
             id: request.id!,
             requesterAddress: request.requesterAddress || "",
-            legalOfficerAddress: this.authenticationService.nodeOwner,
+            legalOfficerAddress: request.legalOfficerAddress || "",
             otherLegalOfficerAddress: request.otherLegalOfficerAddress || "",
             userIdentity: {
                 firstName: request.userIdentity?.firstName || "",
@@ -194,9 +213,9 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
+        const authenticatedUser = await this.requireLegalOfficerOnNode();
         const request = await this.protectionRequestService.update(id, async request => {
+            authenticatedUser.require(user => user.is(request.legalOfficerAddress))
             request.reject(body.rejectReason!, moment());
         });
         const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected";
@@ -219,12 +238,12 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
+        const authenticatedUser = await this.requireLegalOfficerOnNode();
         if(body.locId === undefined || body.locId === null) {
             throw badRequest("Missing LOC ID");
         }
         const request = await this.protectionRequestService.update(id, async request => {
+            authenticatedUser.require(user => user.is(request.legalOfficerAddress))
             request.accept(moment(), body.locId!);
         });
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted";
@@ -243,9 +262,10 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('/:id/recovery-info')
     async fetchRecoveryInfo(_body: any, id: string): Promise<RecoveryInfoView> {
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, this.authenticationService.nodeOwner);
+        const authenticatedUser = await this.requireLegalOfficerOnNode();
 
         const recovery = await this.protectionRequestRepository.findById(id);
+        authenticatedUser.require(user => user.is(recovery?.legalOfficerAddress));
         if(recovery === null
             || !recovery.isRecovery
             || recovery.status !== 'PENDING'
@@ -256,6 +276,7 @@ export class ProtectionRequestController extends ApiController {
         const addressToRecover = recovery.getDescription().addressToRecover!;
         const querySpecification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: addressToRecover,
+            expectedLegalOfficerAddress: authenticatedUser.address,
             expectedStatuses: [ 'ACTIVATED' ]
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(querySpecification);
@@ -355,7 +376,7 @@ export class ProtectionRequestController extends ApiController {
     private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, data: any }> {
 
-        const legalOfficer = await this.directoryService.get(this.ownerAddress)
+        const legalOfficer = await this.directoryService.get(protection.legalOfficerAddress)
         const otherLegalOfficer = await this.directoryService.get(protection.otherLegalOfficerAddress)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
@@ -368,4 +389,5 @@ export class ProtectionRequestController extends ApiController {
             }
         }
     }
+
 }
