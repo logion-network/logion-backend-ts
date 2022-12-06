@@ -49,23 +49,24 @@ export class LoFileController extends ApiController {
     }
 
     static uploadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/lo-file/{id}"].put!;
+        const operationObject = spec.paths["/api/lo-file/{legalOfficer}/{id}"].put!;
         operationObject.summary = "Uploads a Legal Officer file";
-        operationObject.description = "The authenticated user must be the node owner.";
+        operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesNoContent();
         operationObject.requestBody = getRequestBody({
             description: "File upload data",
             view: "FileUploadData",
         });
         setPathParameters(operationObject, {
-            'id': "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
+            legalOfficer: "The address of the LO",
+            id: "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
         });
     }
 
-    @HttpPut("/:id")
+    @HttpPut("/:legalOfficer/:id")
     @Async()
     @SendsResponse()
-    async uploadFile(body: FileUploadData, id: string): Promise<void> {
+    async uploadFile(body: FileUploadData, _legalOfficer: string, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         authenticatedUser.require(user => user.isNodeOwner());
 
@@ -94,19 +95,20 @@ export class LoFileController extends ApiController {
     }
 
     static downloadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/lo-file/{id}"].get!;
+        const operationObject = spec.paths["/api/lo-file/{legalOfficer}/{id}"].get!;
         operationObject.summary = "Downloads a Legal Officer file";
-        operationObject.description = "The authenticated user must be the node owner.";
+        operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
-            'id': "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
+            legalOfficer: "The address of the LO",
+            id: "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
         });
     }
 
-    @HttpGet('/:id')
+    @HttpGet('/:legalOfficer/:id')
     @Async()
     @SendsResponse()
-    async downloadFile(_body: any, id: string): Promise<void> {
+    async downloadFile(_body: any, _legalOfficer: string, id: string): Promise<void> {
         (await this.authenticationService.authenticatedUser(this.request))
             .require(user => user.isNodeOwner());
         const file = requireDefined(
