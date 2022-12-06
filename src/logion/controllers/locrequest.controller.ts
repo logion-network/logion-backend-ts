@@ -41,9 +41,11 @@ import { getUploadedFile } from "./fileupload";
 import { PostalAddress } from "../model/postaladdress";
 import { downloadAndClean } from "../lib/http";
 import { LocRequestAdapter } from "./adapters/locrequestadapter";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import {
+    VerifiedThirdPartySelectionAggregateRoot,
+    VerifiedThirdPartySelectionRepository
+} from "../model/verifiedthirdpartyselection.model";
 import { LocRequestService } from "../services/locrequest.service";
-import { AuthenticatedUser, AuthorityService } from "@logion/authenticator";
 
 const { logger } = Log;
 
@@ -108,7 +110,6 @@ export class LocRequestController extends ApiController {
         private locRequestAdapter: LocRequestAdapter,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
         private locRequestService: LocRequestService,
-        private authorityService: AuthorityService,
     ) {
         super();
     }
@@ -129,7 +130,7 @@ export class LocRequestController extends ApiController {
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         authenticatedUser.require(user => user.isOneOf([ createLocRequestView.requesterAddress, createLocRequestView.ownerAddress ]));
-        const ownerAddress = await this.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
+        const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
         const locType = requireDefined(createLocRequestView.locType);
         const description: LocRequestDescription = {
             requesterAddress: createLocRequestView.requesterAddress,
@@ -368,30 +369,13 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/reject')
     @Async()
     async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.reject(rejectLocRequestView.rejectReason!, moment());
         });
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
         this.notify("WalletUser", "loc-rejected", request.getDescription(), userIdentity, request.getDecision());
-    }
-
-    private async requireLegalOfficerOnNode(): Promise<AuthenticatedUser> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.authorityService.isLegalOfficerOnNode(authenticatedUser.address)) {
-            return authenticatedUser;
-        } else {
-            throw forbidden("Authenticated User is not Legal Officer on this node.")
-        }
-    }
-
-    private async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<string> {
-        if (address && await this.authorityService.isLegalOfficerOnNode(address)) {
-            return address;
-        } else {
-            throw forbidden("Owner address is not defined or is not a Legal Officer on this node.")
-        }
     }
 
     static acceptLocRequest(spec: OpenAPIV3.Document) {
@@ -405,7 +389,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/accept')
     @Async()
     async acceptLocRequest(_ignoredBody: any, requestId: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.accept(moment());
@@ -581,7 +565,7 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.confirmFile(hash);
@@ -601,7 +585,7 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async closeLoc(_body: any, requestId: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.preClose();
@@ -625,7 +609,7 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async voidLoc(body: VoidLocView, requestId: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.preVoid(body.reason!);
@@ -693,7 +677,7 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmLink(_body: any, requestId: string, target: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.confirmLink(target);
@@ -758,7 +742,7 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmMetadata(_body: any, requestId: string, name: string) {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const decodedName = decodeURIComponent(name);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));

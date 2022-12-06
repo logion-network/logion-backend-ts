@@ -193,6 +193,9 @@ function mockOtherDependencies(container: Container, existingMocks?: {
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+    directoryService
+        .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
+        .returns(Promise.resolve(ALICE));
     container.bind(DirectoryService).toConstantValue(directoryService.object())
 
     const collectionRepository = existingMocks?.collectionRepository ? existingMocks.collectionRepository : new Mock<CollectionRepository>();

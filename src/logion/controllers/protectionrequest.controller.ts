@@ -13,7 +13,7 @@ import {
     requireDefined,
     badRequest,
     Log,
-    AuthenticationService, forbidden,
+    AuthenticationService,
 } from '@logion/rest-api-core';
 
 import {
@@ -28,7 +28,6 @@ import { components } from './components';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { ProtectionRequestService } from '../services/protectionrequest.service';
-import { AuthenticatedUser, AuthorityService } from "@logion/authenticator";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -70,7 +69,6 @@ export class ProtectionRequestController extends ApiController {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private protectionRequestService: ProtectionRequestService,
-        private authorityService: AuthorityService,
     ) {
         super();
     }
@@ -90,7 +88,7 @@ export class ProtectionRequestController extends ApiController {
     @HttpPost('')
     async createProtectionRequest(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
         await this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
-        const legalOfficerAddress = await this.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
+        const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const request = this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
             description: {
@@ -120,23 +118,6 @@ export class ProtectionRequestController extends ApiController {
         const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
         this.notify("LegalOfficer", templateId, request.getDescription())
         return this.adapt(request);
-    }
-
-    private async requireLegalOfficerOnNode(): Promise<AuthenticatedUser> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.authorityService.isLegalOfficerOnNode(authenticatedUser.address)) {
-            return authenticatedUser;
-        } else {
-            throw forbidden("Authenticated User is not Legal Officer on this node.")
-        }
-    }
-
-    private async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<string> {
-        if (address && await this.authorityService.isLegalOfficerOnNode(address)) {
-            return address;
-        } else {
-            throw forbidden("Legal Officer address is not defined or not valid on this node.")
-        }
     }
 
     static fetchProtectionRequests(spec: OpenAPIV3.Document) {
@@ -213,7 +194,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.legalOfficerAddress))
             request.reject(body.rejectReason!, moment());
@@ -238,7 +219,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         if(body.locId === undefined || body.locId === null) {
             throw badRequest("Missing LOC ID");
         }
@@ -262,7 +243,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPut('/:id/recovery-info')
     async fetchRecoveryInfo(_body: any, id: string): Promise<RecoveryInfoView> {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
 
         const recovery = await this.protectionRequestRepository.findById(id);
         authenticatedUser.require(user => user.is(recovery?.legalOfficerAddress));

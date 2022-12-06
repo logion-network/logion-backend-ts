@@ -13,7 +13,6 @@ import {
     requireDefined,
     badRequest,
     AuthenticationService,
-    forbidden,
 } from "@logion/rest-api-core";
 import {
     VaultTransferRequestRepository,
@@ -28,7 +27,6 @@ import { NotificationService } from "../services/notification.service";
 import { DirectoryService } from "../services/directory.service";
 import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service';
-import { AuthenticatedUser, AuthorityService } from "@logion/authenticator";
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
 type VaultTransferRequestView = components["schemas"]["VaultTransferRequestView"];
@@ -64,7 +62,6 @@ export class VaultTransferRequestController extends ApiController {
         private directoryService: DirectoryService,
         private protectionRequestRepository: ProtectionRequestRepository,
         private vaultTransferRequestService: VaultTransferRequestService,
-        private authorityService: AuthorityService,
     ) {
         super();
     }
@@ -84,7 +81,7 @@ export class VaultTransferRequestController extends ApiController {
     @HttpPost('')
     async createVaultTransferRequest(body: CreateVaultTransferRequestView): Promise<VaultTransferRequestView> {
         const origin = requireDefined(body.origin, () => badRequest("Missing origin"))
-        const legalOfficerAddress = await this.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
+        const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const protectionRequestDescription = await this.userAuthorizedAndProtected(origin, legalOfficerAddress);
 
         const request = this.vaultTransferRequestFactory.newVaultTransferRequest({
@@ -108,23 +105,6 @@ export class VaultTransferRequestController extends ApiController {
             .catch(error => logger.error(error));
 
         return this.adapt(request, protectionRequestDescription);
-    }
-
-    private async requireLegalOfficerOnNode(): Promise<AuthenticatedUser> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.authorityService.isLegalOfficerOnNode(authenticatedUser.address)) {
-            return authenticatedUser;
-        } else {
-            throw forbidden("Authenticated User is not Legal Officer on this node.")
-        }
-    }
-
-    private async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<string> {
-        if (address && await this.authorityService.isLegalOfficerOnNode(address)) {
-            return address;
-        } else {
-            throw forbidden("Legal Officer address is not defined or not valid on this node.")
-        }
     }
 
     private async userAuthorizedAndProtected(origin: string, legalOfficerAddress: string): Promise<ProtectionRequestDescription> {
@@ -239,7 +219,7 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/reject')
     async rejectVaultTransferRequest(body: RejectVaultTransferRequestView, id: string): Promise<VaultTransferRequestView> {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.vaultTransferRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.legalOfficerAddress))
             request.reject(body.rejectReason!, moment());
@@ -268,7 +248,7 @@ export class VaultTransferRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/accept')
     async acceptVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
-        const authenticatedUser = await this.requireLegalOfficerOnNode();
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.vaultTransferRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.legalOfficerAddress))
             request.accept(moment());

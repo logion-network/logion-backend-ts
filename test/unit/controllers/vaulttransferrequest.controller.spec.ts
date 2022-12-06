@@ -219,6 +219,9 @@ function mockNotificationAndDirectoryService(container: Container, repository: M
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
+    directoryService
+        .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
+        .returns(Promise.resolve(ALICE));
     container.bind(DirectoryService).toConstantValue(directoryService.object());
 
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();

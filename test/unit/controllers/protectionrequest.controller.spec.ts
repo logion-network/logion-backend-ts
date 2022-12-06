@@ -26,7 +26,7 @@ import { NonTransactionalProtectionRequestService, ProtectionRequestService } fr
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
-fdescribe('createProtectionRequest', () => {
+describe('createProtectionRequest', () => {
 
     it('success with valid protection request', async () => {
         const app = setupApp(ProtectionRequestController, mockModelForRequest);
@@ -75,7 +75,7 @@ fdescribe('createProtectionRequest', () => {
         await request(app)
             .post('/api/protection-request')
             .send({})
-            .expect(403)
+            .expect(500)
             .expect('Content-Type', /application\/json/);
     });
 });
@@ -125,7 +125,7 @@ function mockModelForRecovery(container: Container, addressToRecover: string): v
     mockProtectionRequestModel(container, true, addressToRecover);
 }
 
-fdescribe('fetchProtectionRequests', () => {
+describe('fetchProtectionRequests', () => {
 
     it('returns expected response', async () => {
         const app = setupApp(ProtectionRequestController, mockModelForFetch);
@@ -209,7 +209,7 @@ function mockModelForFetch(container: Container): void {
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
-fdescribe('acceptProtectionRequest', () => {
+describe('acceptProtectionRequest', () => {
 
     it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true));
@@ -255,7 +255,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
 const REQUEST_ID = "requestId";
 
-fdescribe('rejectProtectionRequest', () => {
+describe('rejectProtectionRequest', () => {
 
     it('WithValidAuthentication', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true));
@@ -276,7 +276,7 @@ fdescribe('rejectProtectionRequest', () => {
     });
 });
 
-fdescribe("User", () => {
+describe("User", () => {
 
     let protectionRequest: Mock<ProtectionRequestAggregateRoot>;
     let repository = new Mock<ProtectionRequestRepository>();
@@ -417,6 +417,9 @@ function mockNotificationAndDirectoryService(container: Container) {
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+    directoryService
+        .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
+        .returns(Promise.resolve(ALICE));
     container.bind(DirectoryService).toConstantValue(directoryService.object())
 }
 
