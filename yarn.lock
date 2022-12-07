@@ -964,8 +964,8 @@ __metadata:
   linkType: hard
 
 "@logion/authenticator@npm:^0.3.3-1":
-  version: 0.3.3-4
-  resolution: "@logion/authenticator@npm:0.3.3-4"
+  version: 0.3.3-5
+  resolution: "@logion/authenticator@npm:0.3.3-5"
   dependencies:
     "@ethersproject/transactions": ^5.6.2
     "@logion/node-api": ^0.8.0-1
@@ -975,7 +975,7 @@ __metadata:
     luxon: ^3.0.1
     peer-id: ^0.16.0
     web3-utils: ^1.7.4
-  checksum: 1e1e8920cf357f661fa098c7d89bbd00e13a9e440b7f0921ce646d07e587f331d9c225a9d710e78a6e4f66e72a4c0a8f620147bc46bef09c71fbcdc87b28afc6
+  checksum: 9030b9ad59c65352323b06cea5173f485957a70816f8be16926d23141ad033742629a15985819d71ee93f1722d2d0ef4517d900bb20b623feee80ed1ecb66785
   languageName: node
   linkType: hard
 

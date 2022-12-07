@@ -42,8 +42,7 @@ export class SettingController extends ApiController {
     @Async()
     @HttpGet('/:legalOfficer')
     async fetchSettings(_body: never, _legalOfficer: string): Promise<{settings: Record<string, string>}> {
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
+        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const settings = await this.settingRepository.findAll();
         const responseBody: Record<string, string> = {};
         for(const setting of settings) {
@@ -66,8 +65,7 @@ export class SettingController extends ApiController {
     @Async()
     @HttpPut('/:legalOfficer/:id')
     async createOrUpdate(body: { value: string }, _legalOfficer: string, id: string): Promise<void> {
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
+        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const value = body.value;
         await this.settingService.createOrUpdate(id, value);
     }

@@ -67,8 +67,7 @@ export class LoFileController extends ApiController {
     @Async()
     @SendsResponse()
     async uploadFile(body: FileUploadData, _legalOfficer: string, id: string): Promise<void> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.isNodeOwner());
+        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
 
         const file = await getUploadedFile(this.request, requireDefined(body.hash, () => badRequest("No hash found for upload file")));
         const existingLoFile = await this.loFileRepository.findById(id);
@@ -109,8 +108,7 @@ export class LoFileController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadFile(_body: any, _legalOfficer: string, id: string): Promise<void> {
-        (await this.authenticationService.authenticatedUser(this.request))
-            .require(user => user.isNodeOwner());
+        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const file = requireDefined(
             await this.loFileRepository.findById(id),
             () => badRequest(`LO has not yet uploaded file with id ${ id }`)
