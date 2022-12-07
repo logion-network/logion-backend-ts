@@ -1,19 +1,20 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { LoFileAggregateRoot, LoFileRepository } from "../model/lofile.model";
+import { LegalOfficerSettingId } from "../model/legalofficer.model";
 
 export abstract class LoFileService {
 
-    constructor(
+    protected constructor(
         private loFileRepository: LoFileRepository,
     ) {}
 
     async addLoFile(file: LoFileAggregateRoot) {
-        this.loFileRepository.save(file);
+        await this.loFileRepository.save(file);
     }
 
-    async updateLoFile(id: string, mutator: (file: LoFileAggregateRoot) => Promise<void>) {
-        const file = requireDefined(await this.loFileRepository.findById(id));
+    async updateLoFile(params: LegalOfficerSettingId, mutator: (file: LoFileAggregateRoot) => Promise<void>) {
+        const file = requireDefined(await this.loFileRepository.findById(params));
         await mutator(file);
         await this.loFileRepository.save(file);
         return file;
@@ -41,11 +42,11 @@ export class TransactionalLoFileService extends LoFileService {
 
     @DefaultTransactional()
     override async addLoFile(file: LoFileAggregateRoot) {
-        super.addLoFile(file);
+        await super.addLoFile(file);
     }
 
     @DefaultTransactional()
-    async updateLoFile(id: string, mutator: (file: LoFileAggregateRoot) => Promise<void>) {
-        return super.updateLoFile(id, mutator);
+    async updateLoFile(params: LegalOfficerSettingId, mutator: (file: LoFileAggregateRoot) => Promise<void>) {
+        return super.updateLoFile(params, mutator);
     }
 }

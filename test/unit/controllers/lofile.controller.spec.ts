@@ -12,14 +12,19 @@ import {
 import request from "supertest";
 import { writeFile } from "fs/promises";
 import { LoFileService, NonTransactionalLoFileService } from "../../../src/logion/services/lofile.service";
+import { ALICE, BOB } from "../../helpers/addresses";
+import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model";
+import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp";
 
 const existingFile: LoFileDescription = {
     id: 'file1',
+    legalOfficerAddress: ALICE,
     contentType: 'text/plain',
     oid: 123
 }
 const newFile: LoFileDescription = {
     id: 'file2',
+    legalOfficerAddress: ALICE,
     contentType: 'text/plain',
     oid: 456
 }
@@ -39,7 +44,7 @@ describe("LoFileController", () => {
         const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
-            .put(`/api/lo-file/${ newFile.id }`)
+            .put(`/api/lo-file/${ ALICE }/${ newFile.id }`)
             .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(204)
@@ -59,7 +64,7 @@ describe("LoFileController", () => {
         const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
-            .put(`/api/lo-file/${ existingFile.id }`)
+            .put(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
             .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(204);
@@ -75,7 +80,7 @@ describe("LoFileController", () => {
         const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
-            .put(`/api/lo-file/${ existingFile.id }`)
+            .put(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
             .field({ "hash": "wrong-hash" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(400);
@@ -93,17 +98,19 @@ describe("LoFileController", () => {
         await writeFile(filePath, fileContent);
 
         await request(app)
-            .get(`/api/lo-file/${ existingFile.id }`)
+            .get(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
             .expect(200, fileContent)
             .expect('Content-Type', /text\/plain/);
     });
 
-    it("fails to upload an new file if not owner", async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+    it("fails to upload an new file if different LO", async () => {
+        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+
         const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
-            .put(`/api/lo-file/${ newFile.id }`)
+            .put(`/api/lo-file/${ ALICE }/${ newFile.id }`)
             .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(401)
@@ -113,12 +120,14 @@ describe("LoFileController", () => {
         repository.verify(instance => instance.save(It.IsAny<LoFileAggregateRoot>()), Times.Never())
     });
 
-    it("fails to upload an existing file if not owner", async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+    it("fails to upload an existing file if different LO", async () => {
+        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+
         const app = setupApp(LoFileController, mockModel, mock);
 
         await request(app)
-            .put(`/api/lo-file/${ existingFile.id }`)
+            .put(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
             .field({ "hash": "0xe0ac3601005dfa1864f5392aabaf7d898b1b5bab854f1acb4491bcd806b76b0c" })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(401)
@@ -128,11 +137,13 @@ describe("LoFileController", () => {
         repository.verify(instance => instance.save(It.IsAny<LoFileAggregateRoot>()), Times.Never())
     });
 
-    it("fails to download if not owner", async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+    it("fails to download if different LO", async () => {
+        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+
         const app = setupApp(LoFileController, mockModel, mock);
         await request(app)
-            .get(`/api/lo-file/${ existingFile.id }`)
+            .get(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
             .expect(401);
     });
 })
@@ -162,9 +173,17 @@ function mockModel(container: Container): void {
 
     repository = new Mock<LoFileRepository>();
     container.bind(LoFileRepository).toConstantValue(repository.object());
-    repository.setup(instance => instance.findById(existingFile.id))
+    repository.setup(instance => instance
+        .findById(It.Is<LegalOfficerSettingId>(param =>
+            param.id === existingFile.id &&
+            param.legalOfficerAddress === existingFile.legalOfficerAddress
+        )))
         .returns(Promise.resolve(existingEntity.object()));
-    repository.setup(instance => instance.findById(newFile.id))
+    repository.setup(instance => instance
+        .findById(It.Is<LegalOfficerSettingId>(param =>
+            param.id === newFile.id &&
+            param.legalOfficerAddress === newFile.legalOfficerAddress
+        )))
         .returns(Promise.resolve(null))
     repository.setup(instance => instance.save(It.IsAny<LoFileAggregateRoot>()))
         .returns(Promise.resolve())

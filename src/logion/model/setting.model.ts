@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
+import { LegalOfficerSettingId } from "./legalofficer.model";
 
 @Entity("setting")
 export class SettingAggregateRoot {
@@ -11,6 +12,9 @@ export class SettingAggregateRoot {
 
     @PrimaryColumn()
     id?: string;
+
+    @PrimaryColumn({ length: 255, name: "legal_officer_address" })
+    legalOfficerAddress?: string;
 
     @Column()
     value?: string;
@@ -25,29 +29,31 @@ export class SettingRepository {
 
     readonly repository: Repository<SettingAggregateRoot>;
 
-    async save(syncPoint: SettingAggregateRoot): Promise<void> {
-        await this.repository.save(syncPoint);
+    async save(setting: SettingAggregateRoot): Promise<void> {
+        await this.repository.save(setting);
     }
 
-    async findAll(): Promise<SettingAggregateRoot[]> {
-        return await this.repository.find();
+    async findByLegalOfficer(legalOfficerAddress: string): Promise<SettingAggregateRoot[]> {
+        return await this.repository.findBy({ legalOfficerAddress });
     }
 
-    async findById(id: string): Promise<SettingAggregateRoot | null> {
-        return await this.repository.findOneBy({ id });
+    async findById(params: LegalOfficerSettingId): Promise<SettingAggregateRoot | null> {
+        return await this.repository.findOneBy(params);
     }
+}
+
+export interface SettingDescription extends LegalOfficerSettingId {
+    value: string
 }
 
 @injectable()
 export class SettingFactory {
 
-    newSetting(params: {
-        id: string,
-        value: string,
-    }): SettingAggregateRoot {
-        const { id, value } = params;
+    newSetting(params: SettingDescription): SettingAggregateRoot {
+        const { id, legalOfficerAddress, value } = params;
         const root = new SettingAggregateRoot();
         root.id = id;
+        root.legalOfficerAddress = legalOfficerAddress;
         root.value = value;
         return root;
     }

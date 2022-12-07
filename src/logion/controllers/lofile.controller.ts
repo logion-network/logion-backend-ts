@@ -49,7 +49,7 @@ export class LoFileController extends ApiController {
     }
 
     static uploadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/lo-file/{legalOfficer}/{id}"].put!;
+        const operationObject = spec.paths["/api/lo-file/{legalOfficerAddress}/{id}"].put!;
         operationObject.summary = "Uploads a Legal Officer file";
         operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -58,23 +58,24 @@ export class LoFileController extends ApiController {
             view: "FileUploadData",
         });
         setPathParameters(operationObject, {
-            legalOfficer: "The address of the LO",
+            legalOfficerAddress: "The address of the LO",
             id: "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
         });
     }
 
-    @HttpPut("/:legalOfficer/:id")
+    @HttpPut("/:legalOfficerAddress/:id")
     @Async()
     @SendsResponse()
-    async uploadFile(body: FileUploadData, _legalOfficer: string, id: string): Promise<void> {
-        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+    async uploadFile(body: FileUploadData, legalOfficerAddress: string, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        authenticatedUser.require(user => user.is(legalOfficerAddress));
 
         const file = await getUploadedFile(this.request, requireDefined(body.hash, () => badRequest("No hash found for upload file")));
-        const existingLoFile = await this.loFileRepository.findById(id);
+        const existingLoFile = await this.loFileRepository.findById({ id, legalOfficerAddress } );
         if (existingLoFile) {
             const oidToRemove = existingLoFile.oid;
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
-            await this.loFileService.updateLoFile(id, async loFile => {
+            await this.loFileService.updateLoFile({ id, legalOfficerAddress }, async loFile => {
                 loFile.update({
                     contentType: file.mimetype,
                     oid
@@ -85,6 +86,7 @@ export class LoFileController extends ApiController {
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
             const loFile = this.loFileFactory.newLoFile({
                 id,
+                legalOfficerAddress,
                 contentType: file.mimetype,
                 oid,
             })
@@ -94,23 +96,24 @@ export class LoFileController extends ApiController {
     }
 
     static downloadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/lo-file/{legalOfficer}/{id}"].get!;
+        const operationObject = spec.paths["/api/lo-file/{legalOfficerAddress}/{id}"].get!;
         operationObject.summary = "Downloads a Legal Officer file";
         operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
-            legalOfficer: "The address of the LO",
+            legalOfficerAddress: "The address of the LO",
             id: "The well-known id of the file, for instance 'sof-header' or 'sof-oath'"
         });
     }
 
-    @HttpGet('/:legalOfficer/:id')
+    @HttpGet('/:legalOfficerAddress/:id')
     @Async()
     @SendsResponse()
-    async downloadFile(_body: any, _legalOfficer: string, id: string): Promise<void> {
-        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+    async downloadFile(_body: any, legalOfficerAddress: string, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        authenticatedUser.require(user => user.is(legalOfficerAddress));
         const file = requireDefined(
-            await this.loFileRepository.findById(id),
+            await this.loFileRepository.findById({ id, legalOfficerAddress }),
             () => badRequest(`LO has not yet uploaded file with id ${ id }`)
         )
         const tempFilePath = "/tmp/download-" + id;

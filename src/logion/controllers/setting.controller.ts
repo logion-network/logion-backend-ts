@@ -30,20 +30,21 @@ export class SettingController extends ApiController {
     }
 
     static fetchSettings(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/setting/{legalOfficer}"].get!;
+        const operationObject = spec.paths["/api/setting/{legalOfficerAddress}"].get!;
         operationObject.summary = "Lists all Legal Officer's settings";
         operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
-            legalOfficer: "The address of the LO"
+            legalOfficerAddress: "The address of the LO"
         });
     }
 
     @Async()
-    @HttpGet('/:legalOfficer')
-    async fetchSettings(_body: never, _legalOfficer: string): Promise<{settings: Record<string, string>}> {
-        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        const settings = await this.settingRepository.findAll();
+    @HttpGet('/:legalOfficerAddress')
+    async fetchSettings(_body: never, legalOfficerAddress: string): Promise<{settings: Record<string, string>}> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        const settings = await this.settingRepository.findByLegalOfficer(legalOfficerAddress);
         const responseBody: Record<string, string> = {};
         for(const setting of settings) {
             responseBody[setting.id!] = setting.value!;
@@ -52,21 +53,22 @@ export class SettingController extends ApiController {
     }
 
     static createOrUpdate(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/setting/{legalOfficer}/{id}"].put!;
+        const operationObject = spec.paths["/api/setting/{legalOfficerAddress}/{id}"].put!;
         operationObject.summary = "Updates a Legal Officer's setting";
         operationObject.description = "The authenticated user must be a LO attached to the node.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
-            legalOfficer: "The address of the LO",
+            legalOfficerAddress: "The address of the LO",
             id: "The key of the setting to update",
         });
     }
 
     @Async()
-    @HttpPut('/:legalOfficer/:id')
-    async createOrUpdate(body: { value: string }, _legalOfficer: string, id: string): Promise<void> {
-        await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+    @HttpPut('/:legalOfficerAddress/:id')
+    async createOrUpdate(body: { value: string }, legalOfficerAddress: string, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        authenticatedUser.require(user => user.is(legalOfficerAddress));
         const value = body.value;
-        await this.settingService.createOrUpdate(id, value);
+        await this.settingService.createOrUpdate({ id, legalOfficerAddress, value });
     }
 }

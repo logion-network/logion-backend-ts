@@ -1,9 +1,11 @@
-import { LoFileFactory, LoFileAggregateRoot } from "../../../src/logion/model/lofile.model";
+import { LoFileFactory, LoFileAggregateRoot, LoFileDescription } from "../../../src/logion/model/lofile.model";
+import { ALICE } from "../../helpers/addresses";
 
 describe("LO File model", () => {
 
-    const description = {
+    const description: LoFileDescription = {
         id: "sof-header",
+        legalOfficerAddress: ALICE,
         contentType: "image/png",
         oid: 123,
     };
