@@ -28,11 +28,15 @@ export class DirectoryService {
         if (!address) {
             throw badRequest("Missing Legal Officer address")
         }
-        const authorityService = await this.authorityService;
-        if (await authorityService.isLegalOfficerOnNode(address)) {
+        if (await this.isLegalOfficerAddressOnNode(address)) {
             return address;
         } else {
             throw badRequest(`Address ${ address } is not the one of a Legal Officer on this node.`)
         }
+    }
+
+    async isLegalOfficerAddressOnNode(address: string): Promise<boolean> {
+        const authorityService = await this.authorityService;
+        return (await authorityService.isLegalOfficerOnNode(address))
     }
 }

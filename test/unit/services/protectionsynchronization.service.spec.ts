@@ -8,8 +8,7 @@ import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extr
 import { ProtectionSynchronizer } from '../../../src/logion/services/protectionsynchronization.service';
 import { ALICE, BOB } from '../../helpers/addresses';
 import { NonTransactionalProtectionRequestService } from '../../../src/logion/services/protectionrequest.service';
-
-process.env.OWNER = ALICE;
+import { DirectoryService } from "../../../src/logion/services/directory.service";
 
 describe("ProtectionSynchronizer", () => {
 
@@ -27,6 +26,7 @@ describe("ProtectionSynchronizer", () => {
 });
 
 let protectionRequestRepository: Mock<ProtectionRequestRepository>;
+let directoryService: Mock<DirectoryService>;
 
 function givenCreateRecoveryExtrinsic() {
     locExtrinsic = new Mock<JsonExtrinsic>();
@@ -56,6 +56,10 @@ function givenProtectionRequest() {
     ))).returns(Promise.resolve([locRequest.object()]));
     protectionRequestRepository.setup(instance => instance.findById(requestId)).returns(Promise.resolve(locRequest.object()));
     protectionRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
+
+    directoryService = new Mock<DirectoryService>();
+    directoryService.setup(instance => instance.isLegalOfficerAddressOnNode)
+        .returns((address: string) => Promise.resolve(address === ALICE));
 }
 
 const SIGNER: string = "signer";
@@ -70,6 +74,7 @@ function synchronizer(): ProtectionSynchronizer {
     return new ProtectionSynchronizer(
         protectionRequestRepository.object(),
         new NonTransactionalProtectionRequestService(protectionRequestRepository.object()),
+        directoryService.object(),
     );
 }
 

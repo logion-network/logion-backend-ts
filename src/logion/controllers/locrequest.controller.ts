@@ -784,7 +784,7 @@ export class LocRequestController extends ApiController {
 
         const requestDescription: LocRequestDescription = {
             requesterAddress: contributor,
-            ownerAddress: this.authenticationService.nodeOwner,
+            ownerAddress: loc.ownerAddress!,
             description,
             locType: 'Transaction',
             createdOn: moment().toISOString(),
