@@ -21,5 +21,6 @@ export async function getUploadedFile(request: Express.Request, receivedHash: st
     if(localHash !== receivedHash) {
         throw badRequest(`Received hash ${receivedHash} does not match ${localHash}`)
     }
+    file.name = Buffer.from(file.name, 'latin1').toString();
     return file;
 }

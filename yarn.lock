@@ -1004,15 +1004,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.2.1-1":
-  version: 0.2.1-4
-  resolution: "@logion/rest-api-core@npm:0.2.1-4"
+"@logion/rest-api-core@npm:^0.2.1-5":
+  version: 0.2.1-5
+  resolution: "@logion/rest-api-core@npm:0.2.1-5"
   dependencies:
     "@logion/authenticator": ^0.3.3-1
     dinoloop: ^2.4.0
-    express: ^4.17.2
-    express-fileupload: ^1.2.1
-    express-oas-generator: ^1.0.44
+    express: ^4.18.2
+    express-fileupload: ^1.4.0
+    express-oas-generator: ^1.0.45
     inversify: ^6.0.1
     mongoose: ^6.5.0
     mongoose-to-swagger: ^1.4.0
@@ -1020,7 +1020,7 @@ __metadata:
     swagger-ui-express: ^4.5.0
     typeorm: ^0.3.9
     typeorm-transactional: ^0.4.0
-  checksum: a7a91f3e2ee551df8f9aae9bbf8e1d0b1da3e9c8b3d266d3952f4b9ac57cbedd12ed38fde01cdbae9c6dad9f4ee275667856cce82cd33a2af0ce52b79dd8d02b
+  checksum: c9c3b69cb609d56f05457357b1eb64f05f106cdbbaf7f2b778a98c7182bc3010c4554bbd0bb9fe72c1e06bcad58be3575fa1a2f35905b0ad7c7b9a60e6c31b4f
   languageName: node
   linkType: hard
 
@@ -2263,7 +2263,27 @@ __metadata:
   languageName: node
   linkType: hard
 
-"body-parser@npm:1.20.0, body-parser@npm:^1.19.1":
+"body-parser@npm:1.20.1":
+  version: 1.20.1
+  resolution: "body-parser@npm:1.20.1"
+  dependencies:
+    bytes: 3.1.2
+    content-type: ~1.0.4
+    debug: 2.6.9
+    depd: 2.0.0
+    destroy: 1.2.0
+    http-errors: 2.0.0
+    iconv-lite: 0.4.24
+    on-finished: 2.4.1
+    qs: 6.11.0
+    raw-body: 2.5.1
+    type-is: ~1.6.18
+    unpipe: 1.0.0
+  checksum: f1050dbac3bede6a78f0b87947a8d548ce43f91ccc718a50dd774f3c81f2d8b04693e52acf62659fad23101827dd318da1fb1363444ff9a8482b886a3e4a5266
+  languageName: node
+  linkType: hard
+
+"body-parser@npm:^1.19.1":
   version: 1.20.0
   resolution: "body-parser@npm:1.20.0"
   dependencies:
@@ -3426,7 +3446,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express-fileupload@npm:^1.2.1":
+"express-fileupload@npm:^1.4.0":
   version: 1.4.0
   resolution: "express-fileupload@npm:1.4.0"
   dependencies:
@@ -3442,9 +3462,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express-oas-generator@npm:^1.0.44":
-  version: 1.0.44
-  resolution: "express-oas-generator@npm:1.0.44"
+"express-oas-generator@npm:^1.0.45":
+  version: 1.0.45
+  resolution: "express-oas-generator@npm:1.0.45"
   dependencies:
     "@types/express": ^4.17.13
     express-list-endpoints: ^3.0.1
@@ -3458,19 +3478,19 @@ __metadata:
     winston: ^3.8.1
   peerDependencies:
     bson: ^4.0.4
-    mongoose: ^5.9.25
-    mongoose-to-swagger: ^1.0.3
-  checksum: b6cd5a10e1d2eb98e7d79bf47ae3ec1f48c389c6ed201eb884e33948948c3586792cbf0fd2afc9e12968046b563452a25046357e43740dc739a1efd543d21d2c
+    mongoose: ^6.4.6
+    mongoose-to-swagger: ^1.4.0
+  checksum: 2339d893d1e9ba3003df89eca91634a14062f52fc64e8c0acc91f92f3576b947f6cf518efc847adebea4619845b3d900948d0feb8c64f3c0ac45eaf5061d962d
   languageName: node
   linkType: hard
 
-"express@npm:^4.17.2":
-  version: 4.18.1
-  resolution: "express@npm:4.18.1"
+"express@npm:^4.18.2":
+  version: 4.18.2
+  resolution: "express@npm:4.18.2"
   dependencies:
     accepts: ~1.3.8
     array-flatten: 1.1.1
-    body-parser: 1.20.0
+    body-parser: 1.20.1
     content-disposition: 0.5.4
     content-type: ~1.0.4
     cookie: 0.5.0
@@ -3489,7 +3509,7 @@ __metadata:
     parseurl: ~1.3.3
     path-to-regexp: 0.1.7
     proxy-addr: ~2.0.7
-    qs: 6.10.3
+    qs: 6.11.0
     range-parser: ~1.2.1
     safe-buffer: 5.2.1
     send: 0.18.0
@@ -3499,7 +3519,7 @@ __metadata:
     type-is: ~1.6.18
     utils-merge: 1.0.1
     vary: ~1.1.2
-  checksum: c3d44c92e48226ef32ec978becfedb0ecf0ca21316bfd33674b3c5d20459840584f2325726a4f17f33d9c99f769636f728982d1c5433a5b6fe6eb95b8cf0c854
+  checksum: 3c4b9b076879442f6b968fe53d85d9f1eeacbb4f4c41e5f16cc36d77ce39a2b0d81b3f250514982110d815b2f7173f5561367f9110fcc541f9371948e8c8b037
   languageName: node
   linkType: hard
 
@@ -4732,7 +4752,7 @@ __metadata:
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.2.1-1
+    "@logion/rest-api-core": ^0.2.1-5
     "@polkadot/wasm-crypto": ^6.4.1
     "@tsconfig/node16": ^1.0.3
     "@types/cors": ^2.8.12
@@ -6168,19 +6188,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"qs@npm:6.9.3":
-  version: 6.9.3
-  resolution: "qs@npm:6.9.3"
-  checksum: 89cd1b5e521c19a7e0a7a056ddc261c5c30889664608cf9ce6085f9f25606fc48568cf6a6249e641b4b5c04dac7889e3b82133142523abf397228eb4f488fc38
-  languageName: node
-  linkType: hard
-
-"qs@npm:^6.10.3":
+"qs@npm:6.11.0, qs@npm:^6.10.3":
   version: 6.11.0
   resolution: "qs@npm:6.11.0"
   dependencies:
     side-channel: ^1.0.4
   checksum: 6e1f29dd5385f7488ec74ac7b6c92f4d09a90408882d0c208414a34dd33badc1a621019d4c799a3df15ab9b1d0292f97c1dd71dc7c045e69f81a8064e5af7297
+  languageName: node
+  linkType: hard
+
+"qs@npm:6.9.3":
+  version: 6.9.3
+  resolution: "qs@npm:6.9.3"
+  checksum: 89cd1b5e521c19a7e0a7a056ddc261c5c30889664608cf9ce6085f9f25606fc48568cf6a6249e641b4b5c04dac7889e3b82133142523abf397228eb4f488fc38
   languageName: node
   linkType: hard
 
