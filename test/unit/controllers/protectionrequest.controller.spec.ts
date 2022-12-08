@@ -35,6 +35,7 @@ describe('createProtectionRequest', () => {
             .post('/api/protection-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                legalOfficerAddress: ALICE,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
                 isRecovery: false,
@@ -55,6 +56,7 @@ describe('createProtectionRequest', () => {
             .post('/api/protection-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                legalOfficerAddress: ALICE,
                 userIdentity: IDENTITY,
                 userPostalAddress: POSTAL_ADDRESS,
                 isRecovery: true,
@@ -189,6 +191,7 @@ function mockModelForFetch(container: Container): void {
         decisionOn: DECISION_TIMESTAMP
     })
 
+    protectionRequest.setup(instance => instance.legalOfficerAddress).returns(ALICE);
     protectionRequest.setup(instance => instance.createdOn).returns(TIMESTAMP);
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
@@ -414,6 +417,9 @@ function mockNotificationAndDirectoryService(container: Container) {
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+    directoryService
+        .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
+        .returns(Promise.resolve(ALICE));
     container.bind(DirectoryService).toConstantValue(directoryService.object())
 }
 
@@ -421,6 +427,7 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
 
     const description: ProtectionRequestDescription = {
         requesterAddress: REQUESTER_ADDRESS,
+        legalOfficerAddress: ALICE,
         isRecovery: false,
         otherLegalOfficerAddress: "",
         createdOn: now().toString(),

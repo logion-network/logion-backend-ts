@@ -17,7 +17,7 @@ import { AppContainer } from "./container/app.container";
 import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
 import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller";
 import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller";
-import { SettingController } from "./controllers/setting.controller";
+import { fillInSpec as fillInSpecForSettings, SettingController } from "./controllers/setting.controller";
 import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
@@ -47,6 +47,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForLoc(spec);
     fillInSpecForCollection(spec);
     fillInSpecForLoFile(spec);
+    fillInSpecForSettings(spec);
     fillInSpecForVaultTransferRequest(spec);
     fillInSpecVerifiedThirdParty(spec);
 

@@ -2,12 +2,16 @@ import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
 
 import { appDataSource } from "@logion/rest-api-core";
+import { LegalOfficerSettingId } from "./legalofficer.model";
 
 @Entity("lo_file")
 export class LoFileAggregateRoot {
 
     @PrimaryColumn({ length: 255 })
     id?: string
+
+    @PrimaryColumn({ length: 255, name: "legal_officer_address" })
+    legalOfficerAddress?: string;
 
     @Column({ length: 255, name: "content_type" })
     contentType?: string;
@@ -21,8 +25,7 @@ export class LoFileAggregateRoot {
     }
 }
 
-export interface LoFileDescription {
-    readonly id: string,
+export interface LoFileDescription extends LegalOfficerSettingId {
     readonly contentType: string,
     readonly oid: number,
 }
@@ -36,8 +39,8 @@ export class LoFileRepository {
 
     readonly repository: Repository<LoFileAggregateRoot>;
 
-    public async findById(id: string): Promise<LoFileAggregateRoot | null> {
-        return this.repository.findOneBy({ id })
+    public async findById(params: LegalOfficerSettingId): Promise<LoFileAggregateRoot | null> {
+        return this.repository.findOneBy(params)
     }
 
     public async save(root: LoFileAggregateRoot): Promise<void> {
@@ -51,6 +54,7 @@ export class LoFileFactory {
     public newLoFile(description: LoFileDescription): LoFileAggregateRoot {
         const root = new LoFileAggregateRoot();
         root.id = description.id;
+        root.legalOfficerAddress = description.legalOfficerAddress;
         root.contentType = description.contentType;
         root.oid = description.oid;
         return root;

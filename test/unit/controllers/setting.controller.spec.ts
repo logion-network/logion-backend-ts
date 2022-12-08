@@ -3,8 +3,15 @@ import { It, Mock } from 'moq.ts';
 import request from 'supertest';
 import { TestApp } from '@logion/rest-api-core';
 import { SettingController } from '../../../src/logion/controllers/setting.controller';
-import { SettingAggregateRoot, SettingFactory, SettingRepository } from '../../../src/logion/model/setting.model';
+import {
+    SettingAggregateRoot,
+    SettingFactory,
+    SettingRepository,
+    SettingDescription
+} from '../../../src/logion/model/setting.model';
 import { NonTransactionalSettingService, SettingService } from '../../../src/logion/services/settings.service';
+import { ALICE } from "../../helpers/addresses";
+import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model";
 
 const { setupApp } = TestApp;
 
@@ -13,7 +20,7 @@ describe("SettingController", () => {
     it("lists settings", async () => {
         const app = setupApp(SettingController, container => mockForList(container));
         await request(app)
-            .get(`/api/setting`)
+            .get(`/api/setting/${ ALICE }`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .expect(response => {
@@ -25,7 +32,7 @@ describe("SettingController", () => {
     it("creates setting", async () => {
         const app = setupApp(SettingController, container => mockForCreate(container));
         await request(app)
-            .put(`/api/setting/${ settingId }`)
+            .put(`/api/setting/${ ALICE }/${ settingId }`)
             .send({ value: settingValue })
             .expect(200);
         settingRepository.verify(instance => instance.save(setting.object()));
@@ -34,7 +41,7 @@ describe("SettingController", () => {
     it("updates setting", async () => {
         const app = setupApp(SettingController, container => mockForUpdate(container));
         await request(app)
-            .put(`/api/setting/${ settingId }`)
+            .put(`/api/setting/${ ALICE }/${ settingId }`)
             .send({ value: settingValue })
             .expect(200);
         setting.verify(instance => instance.update(settingValue));
@@ -50,9 +57,10 @@ function mockForList(container: Container) {
     createAndBindMocks(container);
 
     setting.setup(instance => instance.id).returns(settingId);
+    setting.setup(instance => instance.legalOfficerAddress).returns(ALICE);
     setting.setup(instance => instance.value).returns(settingValue);
 
-    settingRepository.setup(instance => instance.findAll()).returnsAsync([ setting.object() ]);
+    settingRepository.setup(instance => instance.findByLegalOfficer(ALICE)).returnsAsync([ setting.object() ]);
 }
 
 function createAndBindMocks(container: Container) {
@@ -70,9 +78,13 @@ function createAndBindMocks(container: Container) {
 function mockForCreate(container: Container) {
     createAndBindMocks(container);
 
-    settingFactory.setup(instance => instance.newSetting(It.Is<{id: string, value: string}>(args => args.id === settingId && args.value === settingValue))).returns(setting.object());
+    settingFactory.setup(instance => instance
+        .newSetting(It.Is<SettingDescription>(args => args.id === settingId && args.legalOfficerAddress === ALICE && args.value === settingValue)))
+        .returns(setting.object());
     
-    settingRepository.setup(instance => instance.findById(settingId)).returnsAsync(null);
+    settingRepository.setup(instance => instance
+        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficerAddress === ALICE)))
+        .returnsAsync(null);
     settingRepository.setup(instance => instance.save(setting.object())).returnsAsync();    
 }
 
@@ -84,6 +96,8 @@ function mockForUpdate(container: Container) {
 
     setting.setup(instance => instance.update(settingValue)).returns();
 
-    settingRepository.setup(instance => instance.findById(settingId)).returnsAsync(setting.object());
+    settingRepository.setup(instance => instance
+        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficerAddress === ALICE)))
+        .returnsAsync(setting.object());
     settingRepository.setup(instance => instance.save(setting.object())).returnsAsync();
 }

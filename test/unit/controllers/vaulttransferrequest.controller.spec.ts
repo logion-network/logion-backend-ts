@@ -39,6 +39,7 @@ describe('VaultTransferRequestController', () => {
             .post('/api/vault-transfer-request')
             .send({
                 requesterAddress: REQUESTER_ADDRESS,
+                legalOfficerAddress: ALICE,
                 origin: REQUESTER_ADDRESS,
                 destination: DESTINATION,
                 amount: "1000",
@@ -218,6 +219,9 @@ function mockNotificationAndDirectoryService(container: Container, repository: M
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
+    directoryService
+        .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
+        .returns(Promise.resolve(ALICE));
     container.bind(DirectoryService).toConstantValue(directoryService.object());
 
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
@@ -246,6 +250,7 @@ const REQUEST_ID = "716f7a39-b570-42aa-bcf3-52679ce3cb44";
 
 const description: VaultTransferRequestDescription = {
     requesterAddress: REQUESTER_ADDRESS,
+    legalOfficerAddress: ALICE,
     id: REQUEST_ID,
     createdOn: now().toString(),
     amount: 1000n,
@@ -274,6 +279,7 @@ const POSTAL_ADDRESS: PostalAddress = {
 
 const protectionRequestDescription: ProtectionRequestDescription = {
     addressToRecover: null,
+    legalOfficerAddress: ALICE,
     createdOn: TIMESTAMP,
     isRecovery: false,
     otherLegalOfficerAddress: BOB,

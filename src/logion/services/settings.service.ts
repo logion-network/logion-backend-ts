@@ -1,20 +1,21 @@
 import { DefaultTransactional } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { SettingFactory, SettingRepository } from "../model/setting.model";
+import { SettingFactory, SettingRepository, SettingDescription } from "../model/setting.model";
 
 export abstract class SettingService {
 
-    constructor(
+    protected constructor(
         private settingRepository: SettingRepository,
         private settingFactory: SettingFactory,
     ) {}
 
-    async createOrUpdate(id: string, value: string) {
-        let setting = await this.settingRepository.findById(id);
+    async createOrUpdate(params: SettingDescription) {
+        const { id, legalOfficerAddress, value } = params;
+        let setting = await this.settingRepository.findById({ id, legalOfficerAddress });
         if(setting) {
             setting.update(value);
         } else {
-            setting = this.settingFactory.newSetting({id, value});
+            setting = this.settingFactory.newSetting(params);
         }
         await this.settingRepository.save(setting);
     }
@@ -31,8 +32,8 @@ export class TransactionalSettingService extends SettingService {
     }
 
     @DefaultTransactional()
-    override async createOrUpdate(id: string, value: string) {
-        return super.createOrUpdate(id, value);
+    override async createOrUpdate(params: SettingDescription) {
+        return super.createOrUpdate(params);
     }
 }
 

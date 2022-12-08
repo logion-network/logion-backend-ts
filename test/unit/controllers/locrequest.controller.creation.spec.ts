@@ -10,7 +10,20 @@ import {
     NewUserLocRequestParameters,
 } from "../../../src/logion/model/locrequest.model";
 import { NotificationService } from "../../../src/logion/services/notification.service";
-import { testDataWithType, userIdentities, testDataWithLogionIdentity, testDataWithUserIdentityWithType, SEAL, buildMocks, mockRequest, mockPolkadotIdentityLoc, mockLogionIdentityLoc, testData, checkPrivateData } from "./locrequest.controller.shared";
+import {
+    testDataWithType,
+    userIdentities,
+    testDataWithLogionIdentity,
+    testDataWithUserIdentityWithType,
+    SEAL,
+    buildMocks,
+    mockRequest,
+    mockPolkadotIdentityLoc,
+    mockLogionIdentityLoc,
+    testData,
+    checkPrivateData,
+    REQUESTER_ADDRESS
+} from "./locrequest.controller.shared";
 
 const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -65,7 +78,7 @@ describe('LocRequestController - Creation -', () => {
     });
 
     it('succeeds in creating a draft LOC', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, "Transaction", undefined, true),
@@ -148,7 +161,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
 }
 
 async function testLocRequestCreationWithIdentityLoc(isLegalOfficer: boolean, locType: LocType) {
-    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer);
+    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? ALICE : REQUESTER_ADDRESS);
     const notificationService = new Mock<NotificationService>();
     const app = setupApp(
         LocRequestController,

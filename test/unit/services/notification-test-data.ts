@@ -9,6 +9,7 @@ import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferr
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+    legalOfficerAddress: ALICE,
     otherLegalOfficerAddress: BOB,
     addressToRecover: "5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn",
     createdOn: "2021-06-10T16:25:23.668294",
@@ -75,6 +76,7 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
 const vaultTransfer: VaultTransferRequestDescription = {
     id: "id",
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    legalOfficerAddress: ALICE,
     origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
     destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
     createdOn: "2021-06-10T16:25:23.668294",

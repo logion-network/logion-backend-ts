@@ -123,11 +123,15 @@ export class ProtectionRequestAggregateRoot {
     @Column(() => LegalOfficerDecision, {prefix: ""})
     decision?: LegalOfficerDecision;
 
+    @Column({ length: 255, name: "legal_officer_address" })
+    legalOfficerAddress?: string;
+
     @Column({ length: 255, name: "other_legal_officer_address" })
     otherLegalOfficerAddress?: string;
 
     setDescription(description: ProtectionRequestDescription): void {
         this.requesterAddress = description.requesterAddress;
+        this.legalOfficerAddress = description.legalOfficerAddress;
         this.otherLegalOfficerAddress = description.otherLegalOfficerAddress;
 
         this.userIdentity = EmbeddableUserIdentity.from(description.userIdentity);
@@ -143,6 +147,7 @@ export class ProtectionRequestAggregateRoot {
     getDescription(): ProtectionRequestDescription {
         return {
             requesterAddress: this.requesterAddress || "",
+            legalOfficerAddress: this.legalOfficerAddress || "",
             otherLegalOfficerAddress: this.otherLegalOfficerAddress || "",
             userIdentity: toUserIdentity(this.userIdentity)!,
             userPostalAddress: toPostalAddress(this.userPostalAddress)!,
@@ -169,15 +174,18 @@ export class FetchProtectionRequestsSpecification {
 
     constructor(builder: {
         expectedRequesterAddress?: string,
+        expectedLegalOfficerAddress?: string,
         expectedStatuses?: ProtectionRequestStatus[],
         kind?: ProtectionRequestKind,
     }) {
         this.expectedRequesterAddress = builder.expectedRequesterAddress || null;
+        this.expectedLegalOfficerAddress = builder.expectedLegalOfficerAddress || null;
         this.expectedStatuses = builder.expectedStatuses || [];
         this.kind = builder.kind || 'ANY';
     }
 
     readonly expectedRequesterAddress: string | null;
+    readonly expectedLegalOfficerAddress: string | null;
     readonly kind: ProtectionRequestKind;
     readonly expectedStatuses: ProtectionRequestStatus[];
 }
@@ -209,6 +217,11 @@ export class ProtectionRequestRepository {
             where = (a: any, b?: any) => builder.andWhere(a, b);
         }
 
+        if(specification.expectedLegalOfficerAddress !== null) {
+            where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            where = (a: any, b?: any) => builder.andWhere(a, b);
+        }
+
         if(specification.kind === 'RECOVERY') {
             where("request.is_recovery IS TRUE");
             where = (a: any, b?: any) => builder.andWhere(a, b);
@@ -219,7 +232,6 @@ export class ProtectionRequestRepository {
 
         if(specification.expectedStatuses.length > 0) {
             where("request.status IN (:...expectedStatuses)", {expectedStatuses: specification.expectedStatuses});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
         }
 
         return await builder.getMany();
@@ -228,6 +240,7 @@ export class ProtectionRequestRepository {
 
 export interface ProtectionRequestDescription {
     readonly requesterAddress: string,
+    readonly legalOfficerAddress: string,
     readonly otherLegalOfficerAddress: string,
     readonly userIdentity: UserIdentity,
     readonly userPostalAddress: PostalAddress,

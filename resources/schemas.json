@@ -57,7 +57,11 @@
                     },
                     "isRecovery": {
                         "type": "boolean",
-                        "description": "True if the the protection request is also a recovery request"
+                        "description": "True if the protection request is also a recovery request"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer the request was submitted to"
                     },
                     "otherLegalOfficerAddress": {
                         "type": "string",
@@ -136,6 +140,10 @@
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the requester in expected Protection Requests"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer in expected Protection Requests"
                     }
                 },
                 "title": "FetchProtectionRequestsSpecificationView",
@@ -458,6 +466,10 @@
                         "type": "string",
                         "format": "uuid",
                         "description": "The ID of the LOC identifying the requester"
+                    },
+                    "ownerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
                     },
                     "description": {
                         "type": "string",
@@ -962,6 +974,10 @@
                         "type": "string",
                         "description": "The destination SS58 address of the transfer"
                     },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer the request was submitted to"
+                    },
                     "amount": {
                         "type": "string",
                         "description": "The amount to transfer"
@@ -1008,7 +1024,7 @@
                 "properties": {
                     "statuses": {
                         "type": "array",
-                        "description": "The statuses of expected Protection Requests",
+                        "description": "The statuses of expected Vault Transfer Requests",
                         "uniqueItems": true,
                         "items": {
                             "$ref": "#/components/schemas/VaultTransferRequestStatusView"
@@ -1016,11 +1032,15 @@
                     },
                     "requesterAddress": {
                         "type": "string",
-                        "description": "The SS58 address of the requester in expected Protection Requests"
+                        "description": "The SS58 address of the requester in expected Vault Transfer Requests"
+                    },
+                    "legalOfficerAddress": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer in expected Vault Transfer Requests"
                     }
                 },
                 "title": "FetchVaultTransferRequestsSpecificationView",
-                "description": "The specification for fetching Protection Requests"
+                "description": "The specification for fetching Vault Transfer Requests"
             },
             "VaultTransferRequestDecisionDecisionView": {
                 "type": "object",

@@ -5,6 +5,7 @@ import {
     VaultTransferRequestRepository,
     VaultTransferRequestStatus,
 } from "../../../src/logion/model/vaulttransferrequest.model";
+import { ALICE } from "../../helpers/addresses";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -74,6 +75,7 @@ describe('VaultTransferRequestRepository updates', () => {
         const request = new VaultTransferRequestAggregateRoot();
         request.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639';
         request.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
+        request.legalOfficerAddress = ALICE;
         request.origin = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
         request.destination = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
         request.amount = '10000';

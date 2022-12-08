@@ -13,3 +13,8 @@ export interface LegalOfficer {
     readonly node: string
 }
 
+export interface LegalOfficerSettingId {
+    id: string,
+    legalOfficerAddress: string,
+}
+
