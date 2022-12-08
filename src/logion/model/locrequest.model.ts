@@ -803,7 +803,9 @@ export class LocRequestRepository {
         if (specification.expectedRequesterAddress) {
             builder.where("request.requester_address = :expectedRequesterAddress",
                 { expectedRequesterAddress: specification.expectedRequesterAddress });
-        } else if (specification.expectedOwnerAddress) {
+        }
+
+        if (specification.expectedOwnerAddress) {
             builder.where("request.owner_address = :expectedOwnerAddress",
                 { expectedOwnerAddress: specification.expectedOwnerAddress });
         }
