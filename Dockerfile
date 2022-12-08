@@ -6,7 +6,7 @@ RUN yarn install --immutable
 RUN yarn build
 
 # Backend image
-FROM logionnetwork/logion-backend-base:v6
+FROM logionnetwork/logion-backend-base:v7
 
 COPY --from=build-backend /tmp/logion-backend/dist dist
 COPY --from=build-backend /tmp/logion-backend/node_modules node_modules
