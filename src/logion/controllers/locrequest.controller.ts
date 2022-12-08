@@ -145,11 +145,11 @@ export class LocRequestController extends ApiController {
             verifiedThirdParty: false,
         }
         if (locType === "Identity") {
-            if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress))) {
+            if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress))) {
                 throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
             }
         } else {
-            if (!(await this.existsValidPolkadotIdentityLoc(description.requesterAddress)) &&
+            if (!(await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress)) &&
                 !(await this.existsValidLogionIdentityLoc(description.requesterIdentityLoc))) {
                 throw badRequest("Unable to find a valid (closed) identity LOC.");
             }
@@ -175,7 +175,7 @@ export class LocRequestController extends ApiController {
         return this.locRequestAdapter.toView(request, authenticatedUser.address, { userIdentity, userPostalAddress, identityLocId });
     }
 
-    private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined): Promise<boolean> {
+    private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined, ownerAddress: string): Promise<boolean> {
         if (requesterAddress === undefined) {
             return false;
         }
@@ -183,6 +183,7 @@ export class LocRequestController extends ApiController {
             expectedLocTypes: [ "Identity" ],
             expectedIdentityLocType: "Polkadot",
             expectedRequesterAddress: requesterAddress,
+            expectedOwnerAddress: ownerAddress,
             expectedStatuses: [ "CLOSED" ]
         })).find(loc => loc.getVoidInfo() === null);
         return identityLoc !== undefined;
