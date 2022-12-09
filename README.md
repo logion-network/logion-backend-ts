@@ -124,4 +124,4 @@ When building `logionnetwork/logion-backend`, a build image is required (it is p
 `logionnetwork/logion-backend-base` can be rebuilt with `docker build docker/base/ -t logionnetwork/logion-backend-base:vX`
 where `X` is a build number.
 
-**Update your local node image on a regular time basis `docker pull node:16`**
+**Update your local node image on a regular time basis `docker pull node:18`**
