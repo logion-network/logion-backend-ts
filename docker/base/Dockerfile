@@ -1,4 +1,4 @@
-FROM node:16
+FROM node:18
 RUN apt-get update && apt-get -y --no-install-recommends install postgresql-client libimage-exiftool-perl ; rm -rf /var/lib/apt/lists/*
 WORKDIR /usr/share/logion-backend
 
