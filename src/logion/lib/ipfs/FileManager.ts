@@ -1,5 +1,5 @@
 import { rm, writeFile } from "fs/promises";
-import { Shell } from "../Shell";
+import { Shell } from "../Shell.js";
 import { create } from 'ipfs-client'
 
 export abstract class FileManager {

@@ -1,12 +1,12 @@
 import moment from 'moment';
 import { It, Mock } from 'moq.ts';
 
-import { TransactionAggregateRoot, TransactionFactory, TransactionRepository } from '../../../src/logion/model/transaction.model';
-import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block';
-import { TransactionExtractor } from '../../../src/logion/services/transaction.extractor';
-import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service";
-import { Transaction, BlockWithTransactionsBuilder } from "../../../src/logion/services/transaction.vo";
-import { NonTransactionalTransactionService } from '../../../src/logion/services/transaction.service';
+import { TransactionAggregateRoot, TransactionFactory, TransactionRepository } from '../../../src/logion/model/transaction.model.js';
+import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block.js';
+import { TransactionExtractor } from '../../../src/logion/services/transaction.extractor.js';
+import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service.js";
+import { Transaction, BlockWithTransactionsBuilder } from "../../../src/logion/services/transaction.vo.js";
+import { NonTransactionalTransactionService } from '../../../src/logion/services/transaction.service.js';
 
 describe("TransactionSync", () => {
 

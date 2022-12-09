@@ -1,7 +1,7 @@
 import { Alchemy, AlchemySettings } from "alchemy-sdk";
 import { It, Mock } from "moq.ts";
 
-import { AlchemyFactory, AlchemyService, Network } from "../../../src/logion/services/alchemy.service";
+import { AlchemyFactory, AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
 
 describe("AlchemyService", () => {
 

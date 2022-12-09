@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model.js";
 
 export abstract class LocRequestService {
 

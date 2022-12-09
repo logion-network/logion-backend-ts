@@ -4,7 +4,7 @@ import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity
 import { EntityManager } from "typeorm/entity-manager/EntityManager";
 import { Log } from "@logion/rest-api-core";
 
-import { HasIndex, order } from "../lib/db/collections";
+import { HasIndex, order } from "../lib/db/collections.js";
 
 const { logger } = Log;
 

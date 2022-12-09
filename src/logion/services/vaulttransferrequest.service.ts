@@ -1,6 +1,6 @@
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { VaultTransferRequestAggregateRoot, VaultTransferRequestRepository } from "../model/vaulttransferrequest.model";
+import { VaultTransferRequestAggregateRoot, VaultTransferRequestRepository } from "../model/vaulttransferrequest.model.js";
 
 export abstract class VaultTransferRequestService {
 

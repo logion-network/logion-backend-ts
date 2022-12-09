@@ -1,6 +1,6 @@
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { ProtectionRequestAggregateRoot, ProtectionRequestRepository } from "../model/protectionrequest.model";
+import { ProtectionRequestAggregateRoot, ProtectionRequestRepository } from "../model/protectionrequest.model.js";
 
 export abstract class ProtectionRequestService {
 

@@ -3,29 +3,29 @@ import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
 import { CollectionItem, ItemFile } from "@logion/node-api";
 import { writeFile } from "fs/promises";
-import { CollectionController } from "../../../src/logion/controllers/collection.controller";
+import { CollectionController } from "../../../src/logion/controllers/collection.controller.js";
 import {
     CollectionRepository,
     CollectionItemAggregateRoot,
     CollectionFactory,
     CollectionItemFile,
     CollectionItemFileDelivered
-} from "../../../src/logion/model/collection.model";
+} from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 import request from "supertest";
-import { LocRequestRepository, LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model";
-import { FileStorageService } from "../../../src/logion/services/file.storage.service";
+import { LocRequestRepository, LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
+import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import {
     CollectionService,
     GetCollectionItemParams,
     GetCollectionItemFileParams,
     NonTransactionalCollectionService,
     LogionNodeCollectionService,
-} from "../../../src/logion/services/collection.service";
-import { fileExists } from "../../helpers/filehelper";
-import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
-import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
-import { ALICE } from "../../helpers/addresses";
+} from "../../../src/logion/services/collection.service.js";
+import { fileExists } from "../../helpers/filehelper.js";
+import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
+import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;

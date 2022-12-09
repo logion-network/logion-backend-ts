@@ -1,6 +1,6 @@
 import moment from 'moment';
 import { Logger } from 'winston';
-import { ProgressRateLogger } from "../../../src/logion/services/progressratelogger";
+import { ProgressRateLogger } from "../../../src/logion/services/progressratelogger.js";
 
 describe("ProgressRateLogger", () => {
 

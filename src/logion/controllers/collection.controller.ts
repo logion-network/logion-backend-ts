@@ -1,14 +1,14 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
-import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model";
-import { components } from "./components";
+import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model.js";
+import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
 import moment from "moment";
-import { LocRequestRepository } from "../model/locrequest.model";
-import { getUploadedFile } from "./fileupload";
-import { sha256File } from "../lib/crypto/hashing";
-import { FileStorageService } from "../services/file.storage.service";
+import { LocRequestRepository } from "../model/locrequest.model.js";
+import { getUploadedFile } from "./fileupload.js";
+import { sha256File } from "../lib/crypto/hashing.js";
+import { FileStorageService } from "../services/file.storage.service.js";
 import {
     requireDefined,
     badRequest,
@@ -22,13 +22,13 @@ import {
     getRequestBody,
     getDefaultResponsesNoContent,
 } from "@logion/rest-api-core";
-import { CollectionService, GetCollectionItemFileParams, LogionNodeCollectionService } from "../services/collection.service";
+import { CollectionService, GetCollectionItemFileParams, LogionNodeCollectionService } from "../services/collection.service.js";
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
 import os from "os";
 import path from "path";
-import { OwnershipCheckService } from "../services/ownershipcheck.service";
-import { RestrictedDeliveryService } from "../services/restricteddelivery.service";
-import { downloadAndClean } from "../lib/http";
+import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
+import { RestrictedDeliveryService } from "../services/restricteddelivery.service.js";
+import { downloadAndClean } from "../lib/http.js";
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];

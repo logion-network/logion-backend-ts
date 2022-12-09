@@ -1,7 +1,7 @@
-import { NotificationService, templateValues } from "../../../src/logion/services/notification.service";
-import { MailService, MailMessage } from "../../../src/logion/services/mail.service";
+import { NotificationService, templateValues } from "../../../src/logion/services/notification.service.js";
+import { MailService, MailMessage } from "../../../src/logion/services/mail.service.js";
 import { Mock, It } from "moq.ts";
-import { notifiedProtection, notificationData } from "./notification-test-data";
+import { notifiedProtection, notificationData } from "./notification-test-data.js";
 import { writeFileSync, mkdtempSync } from "fs";
 import { tmpdir } from 'os';
 

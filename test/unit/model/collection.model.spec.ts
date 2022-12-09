@@ -1,4 +1,4 @@
-import { CollectionFactory, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
+import { CollectionFactory, CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";

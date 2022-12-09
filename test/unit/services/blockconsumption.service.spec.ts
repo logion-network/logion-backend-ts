@@ -6,17 +6,17 @@ import { GenericExtrinsic } from '@polkadot/types/extrinsic';
 import { Block, Hash } from '@polkadot/types/interfaces';
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 
-import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from '../../../src/logion/model/syncpoint.model';
-import { BlockExtrinsicsService } from '../../../src/logion/services/block.service';
-import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block';
-import { BlockConsumer } from "../../../src/logion/services/blockconsumption.service";
-import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
-import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service";
-import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service";
-import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
-import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic";
-import { PrometheusService } from '../../../src/logion/services/prometheus.service';
-import { NonTransactionnalSyncPointService } from '../../../src/logion/services/syncpoint.service';
+import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from '../../../src/logion/model/syncpoint.model.js';
+import { BlockExtrinsicsService } from '../../../src/logion/services/block.service.js';
+import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Block.js';
+import { BlockConsumer } from "../../../src/logion/services/blockconsumption.service.js";
+import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
+import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service.js";
+import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service.js";
+import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor.js";
+import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic.js";
+import { PrometheusService } from '../../../src/logion/services/prometheus.service.js';
+import { NonTransactionnalSyncPointService } from '../../../src/logion/services/syncpoint.service.js';
 
 describe("BlockConsumer", () => {
 

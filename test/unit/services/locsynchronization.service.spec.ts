@@ -1,18 +1,18 @@
 import { UUID } from "@logion/node-api";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
-import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service";
-import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model';
-import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic';
-import { JsonArgs } from '../../../src/logion/services/call';
+import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
+import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
+import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
+import { JsonArgs } from '../../../src/logion/services/call.js';
 import {
     CollectionFactory,
     CollectionRepository,
     CollectionItemAggregateRoot,
     CollectionItemDescription
-} from "../../../src/logion/model/collection.model";
-import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
-import { CollectionService, NonTransactionalCollectionService } from "../../../src/logion/services/collection.service";
+} from "../../../src/logion/model/collection.model.js";
+import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
+import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
 
 describe("LocSynchronizer", () => {
 

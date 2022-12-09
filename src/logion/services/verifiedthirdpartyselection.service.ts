@@ -1,8 +1,8 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model.js";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model.js";
 
 export abstract class VerifiedThirdPartySelectionService {
 

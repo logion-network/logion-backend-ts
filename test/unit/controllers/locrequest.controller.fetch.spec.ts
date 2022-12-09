@@ -1,18 +1,18 @@
 import { TestApp } from "@logion/rest-api-core";
-import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses";
+import { ALICE } from "../../helpers/addresses.js";
 import {
     FileDescription,
     LinkDescription,
     MetadataItemDescription,
     LocType,
-} from "../../../src/logion/model/locrequest.model";
+} from "../../../src/logion/model/locrequest.model.js";
 import moment from "moment";
-import { buildMocksForFetch, checkPrivateData, IdentityLocation, mockLogionIdentityLoc, mockPolkadotIdentityLoc, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, testDataWithLogionIdentity, testDataWithType, testDataWithUserIdentity, testDataWithUserIdentityWithType, userIdentities, VTP_ADDRESS } from "./locrequest.controller.shared";
-import { UserPrivateData } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
-import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp";
+import { buildMocksForFetch, checkPrivateData, IdentityLocation, mockLogionIdentityLoc, mockPolkadotIdentityLoc, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, testDataWithLogionIdentity, testDataWithType, testDataWithUserIdentity, testDataWithUserIdentityWithType, userIdentities, VTP_ADDRESS } from "./locrequest.controller.shared.js";
+import { UserPrivateData } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter.js";
+import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 

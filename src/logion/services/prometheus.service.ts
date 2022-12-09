@@ -3,7 +3,7 @@ import { injectable } from "inversify";
 import express from 'express';
 import { collectDefaultMetrics, Gauge, register } from "prom-client";
 
-import { SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
+import { SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model.js";
 
 const { logger } = Log;
 

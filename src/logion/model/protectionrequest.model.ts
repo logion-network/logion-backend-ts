@@ -3,8 +3,8 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource, Log, badRequest } from "@logion/rest-api-core";
 
-import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity";
-import { EmbeddablePostalAddress, PostalAddress, toPostalAddress } from "./postaladdress";
+import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
+import { EmbeddablePostalAddress, PostalAddress, toPostalAddress } from "./postaladdress.js";
 
 const { logger } = Log;
 

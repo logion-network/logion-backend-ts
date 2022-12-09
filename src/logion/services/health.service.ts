@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { HealthService } from "@logion/rest-api-core";
-import { SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
+import { SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model.js";
 
 @injectable()
 export class BackendHealthService extends HealthService {

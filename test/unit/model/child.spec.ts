@@ -1,4 +1,4 @@
-import { deleteIndexedChild, IndexedChild } from "../../../src/logion/model/child";
+import { deleteIndexedChild, IndexedChild } from "../../../src/logion/model/child.js";
 
 describe("child", () => {
 

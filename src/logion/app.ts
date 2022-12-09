@@ -1,13 +1,13 @@
 import { appDataSource, Log } from "@logion/rest-api-core";
 
-import { AppContainer } from './container/app.container';
-import { Scheduler } from "./scheduler/scheduler.service";
-import { setupApp } from "./app.support";
-import { PrometheusService } from "./services/prometheus.service";
+import { AppContainer } from './container/app.container.js';
+import { Scheduler } from "./scheduler/scheduler.service.js";
+import { setupApp } from "./app.support.js";
+import { PrometheusService } from "./services/prometheus.service.js";
 
 const { logger } = Log;
 
-require('source-map-support').install();
+// require('source-map-support').install();
 
 appDataSource.initialize()
 .then(() => {

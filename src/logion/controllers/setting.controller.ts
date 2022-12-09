@@ -1,9 +1,9 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, HttpPut, Async, HttpGet } from 'dinoloop';
-import { SettingRepository } from '../model/setting.model';
+import { SettingRepository } from '../model/setting.model.js';
 import { addTag, AuthenticationService, getDefaultResponsesWithAnyBody, setControllerTag, setPathParameters } from '@logion/rest-api-core';
 import { OpenAPIV3 } from "express-oas-generator";
-import { SettingService } from '../services/settings.service';
+import { SettingService } from '../services/settings.service.js';
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Settings';

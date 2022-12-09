@@ -1,9 +1,9 @@
 import { injectable } from "inversify";
 import moment, { Moment } from "moment";
-import { BlockExtrinsics } from "./types/responses/Block";
 
-import { JsonExtrinsic } from "./types/responses/Extrinsic";
-import { JsonCall, JsonArgs, asBigInt, asJsonCall, asJsonObject, asString } from "./call";
+import { BlockExtrinsics } from "./types/responses/Block.js";
+import { JsonExtrinsic } from "./types/responses/Extrinsic.js";
+import { JsonCall, JsonArgs, asBigInt, asJsonCall, asJsonObject, asString } from "./call.js";
 
 @injectable()
 export class ExtrinsicDataExtractor {

@@ -1,9 +1,9 @@
 import { injectable } from "inversify";
-import { sha256String } from "../lib/crypto/hashing";
+import { sha256String } from "../lib/crypto/hashing.js";
 import { v4 as uuid } from "uuid";
-import { UserIdentity } from "../model/useridentity";
-import { PostalAddress } from "../model/postaladdress";
-import { PersonalInfo } from "../model/personalinfo.model";
+import { UserIdentity } from "../model/useridentity.js";
+import { PostalAddress } from "../model/postaladdress.js";
+import { PersonalInfo } from "../model/personalinfo.model.js";
 
 const SEPARATOR: string = "-";
 

@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE, DEFAULT_LEGAL_OFFICER } from "../../helpers/addresses";
+import { ALICE, DEFAULT_LEGAL_OFFICER } from "../../helpers/addresses.js";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -12,11 +12,11 @@ import {
     VoidInfo,
     LocType,
     LocRequestRepository
-} from "../../../src/logion/model/locrequest.model";
-import { UserIdentity } from "../../../src/logion/model/useridentity";
+} from "../../../src/logion/model/locrequest.model.js";
+import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
-import { PostalAddress } from "../../../src/logion/model/postaladdress";
-import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service";
+import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
+import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service.js";
 import { UUID } from "bson";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";

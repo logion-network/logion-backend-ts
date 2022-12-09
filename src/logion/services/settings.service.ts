@@ -1,6 +1,6 @@
 import { DefaultTransactional } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { SettingFactory, SettingRepository, SettingDescription } from "../model/setting.model";
+import { SettingFactory, SettingRepository, SettingDescription } from "../model/setting.model.js";
 
 export abstract class SettingService {
 

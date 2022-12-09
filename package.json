@@ -9,12 +9,12 @@
     },
     "license": "Apache-2.0",
     "scripts": {
-        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json",
+        "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json && cp package.json ./dist",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
-        "test": "jasmine --config=spec/support/jasmine.json",
+        "test": "NODE_OPTIONS=--loader=ts-node/esm jasmine --config=spec/support/jasmine.json",
         "integration-test": "yarn run setup-test-db && jasmine --config=spec/support/jasmine-integration.json ; yarn run teardown-test-db",
         "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest",
         "teardown-test-db": "docker stop logion-test-db",
@@ -73,5 +73,6 @@
         "moq.ts": "9.0.2",
         "ipfs-client": "0.7.9"
     },
-    "packageManager": "yarn@3.2.2"
+    "packageManager": "yarn@3.2.2",
+    "type": "module"
 }

@@ -1,9 +1,9 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { ItemFile, CollectionItem } from "@logion/node-api/dist/Types";
-import { getCollectionItem } from "@logion/node-api/dist/LogionLoc";
-import { UUID } from "@logion/node-api/dist/UUID";
-import { CollectionItemAggregateRoot, CollectionRepository } from "../model/collection.model";
+import { getCollectionItem } from "@logion/node-api/dist/LogionLoc.js";
+import { UUID } from "@logion/node-api/dist/UUID.js";
+import { CollectionItemAggregateRoot, CollectionRepository } from "../model/collection.model.js";
 
 export interface GetCollectionItemParams {
     collectionLocId: string,

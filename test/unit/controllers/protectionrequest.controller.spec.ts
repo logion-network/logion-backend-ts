@@ -12,16 +12,16 @@ import {
     ProtectionRequestDescription,
     LegalOfficerDecision,
     LegalOfficerDecisionDescription,
-} from '../../../src/logion/model/protectionrequest.model';
-import { ALICE, CHARLY } from '../../helpers/addresses';
-import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller';
-import { NotificationService, Template } from "../../../src/logion/services/notification.service";
-import { now } from "moment";
-import { DirectoryService } from "../../../src/logion/services/directory.service";
-import { notifiedLegalOfficer } from "../services/notification-test-data";
-import { EmbeddableUserIdentity, UserIdentity } from '../../../src/logion/model/useridentity';
-import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/model/postaladdress';
-import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service';
+} from '../../../src/logion/model/protectionrequest.model.js';
+import { ALICE, CHARLY } from '../../helpers/addresses.js';
+import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller.js';
+import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
+import moment from "moment";
+import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { notifiedLegalOfficer } from "../services/notification-test-data.js";
+import { EmbeddableUserIdentity, UserIdentity } from '../../../src/logion/model/useridentity.js';
+import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/model/postaladdress.js';
+import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -430,7 +430,7 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
         legalOfficerAddress: ALICE,
         isRecovery: false,
         otherLegalOfficerAddress: "",
-        createdOn: now().toString(),
+        createdOn: moment.now().toString(),
         addressToRecover: null,
         userIdentity: IDENTITY,
         userPostalAddress: POSTAL_ADDRESS

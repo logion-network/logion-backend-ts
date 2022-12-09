@@ -1,19 +1,19 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Express } from 'express';
 import { writeFile } from 'fs/promises';
-import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses";
+import { ALICE } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
     LinkDescription,
     MetadataItemDescription,
-} from "../../../src/logion/model/locrequest.model";
-import { fileExists } from "../../helpers/filehelper";
-import { buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequest, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, VTP_ADDRESS } from "./locrequest.controller.shared";
-import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp";
+} from "../../../src/logion/model/locrequest.model.js";
+import { fileExists } from "../../helpers/filehelper.js";
+import { buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequest, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, VTP_ADDRESS } from "./locrequest.controller.shared.js";
+import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 

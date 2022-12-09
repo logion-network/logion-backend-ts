@@ -2,16 +2,16 @@ import { Container } from 'inversify';
 import { It, Mock } from 'moq.ts';
 import request from 'supertest';
 import { TestApp } from '@logion/rest-api-core';
-import { SettingController } from '../../../src/logion/controllers/setting.controller';
+import { SettingController } from '../../../src/logion/controllers/setting.controller.js';
 import {
     SettingAggregateRoot,
     SettingFactory,
     SettingRepository,
     SettingDescription
-} from '../../../src/logion/model/setting.model';
-import { NonTransactionalSettingService, SettingService } from '../../../src/logion/services/settings.service';
-import { ALICE } from "../../helpers/addresses";
-import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model";
+} from '../../../src/logion/model/setting.model.js';
+import { NonTransactionalSettingService, SettingService } from '../../../src/logion/services/settings.service.js';
+import { ALICE } from "../../helpers/addresses.js";
+import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 
 const { setupApp } = TestApp;
 

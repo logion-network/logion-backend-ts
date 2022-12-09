@@ -2,13 +2,13 @@ import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { It, Mock } from "moq.ts";
 import request from "supertest";
-import { VerifiedThirdPartyController } from "../../../src/logion/controllers/verifiedthirdparty.controller";
-import { buildMocks, buildMocksForFetch, buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequestWithId, REQUEST_ID, setupRequest, userIdentities } from "./locrequest.controller.shared";
-import { FindBySpecification, VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
-import { FetchLocRequestsSpecification, LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model";
-import { ALICE } from "../../helpers/addresses";
-import { NotificationService } from "../../../src/logion/services/notification.service";
-import { UserIdentity } from "src/logion/model/useridentity";
+import { VerifiedThirdPartyController } from "../../../src/logion/controllers/verifiedthirdparty.controller.js";
+import { buildMocks, buildMocksForFetch, buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequestWithId, REQUEST_ID, setupRequest, userIdentities } from "./locrequest.controller.shared.js";
+import { FindBySpecification, VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
+import { FetchLocRequestsSpecification, LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
+import { ALICE } from "../../helpers/addresses.js";
+import { NotificationService } from "../../../src/logion/services/notification.service.js";
+import { UserIdentity } from "src/logion/model/useridentity.js";
 
 const { setupApp, mockAuthenticationForUserOrLegalOfficer } = TestApp;
 

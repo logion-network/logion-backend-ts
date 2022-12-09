@@ -1,9 +1,9 @@
 import { CollectionItem } from "@logion/node-api/dist/Types";
 import { Mock } from "moq.ts";
 
-import { AlchemyService, Network } from "../../../src/logion/services/alchemy.service";
-import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service";
-import { SingularService } from "../../../src/logion/services/singular.service";
+import { AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
+import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
+import { SingularService } from "../../../src/logion/services/singular.service.js";
 
 describe("OwnershipCheckService", () => {
     it("detects ethereum_erc721 ownership", () => testDetectsOwnership(ethereumErc721Item, owner, Network.ETH_MAINNET));

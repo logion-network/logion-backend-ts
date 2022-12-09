@@ -1,6 +1,6 @@
 import { UploadedFile, FileArray } from "express-fileupload";
 import { badRequest } from "@logion/rest-api-core";
-import { sha256File } from "../lib/crypto/hashing";
+import { sha256File } from "../lib/crypto/hashing.js";
 
 export async function getUploadedFile(request: Express.Request, receivedHash: string): Promise<UploadedFile> {
     const files: FileArray | undefined = request.files;

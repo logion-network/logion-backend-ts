@@ -1,15 +1,15 @@
 import { TestApp } from "@logion/rest-api-core";
-import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
 import { Mock, It } from "moq.ts";
 import {
     LocType,
-} from "../../../src/logion/model/locrequest.model";
+} from "../../../src/logion/model/locrequest.model.js";
 import { Moment } from "moment";
-import { NotificationService } from "../../../src/logion/services/notification.service";
-import { UserIdentity } from "../../../src/logion/model/useridentity";
-import { buildMocksForUpdate, mockPolkadotIdentityLoc, Mocks, REQUEST_ID, setupRequest, testData, testDataWithType, userIdentities } from "./locrequest.controller.shared";
+import { NotificationService } from "../../../src/logion/services/notification.service.js";
+import { UserIdentity } from "../../../src/logion/model/useridentity.js";
+import { buildMocksForUpdate, mockPolkadotIdentityLoc, Mocks, REQUEST_ID, setupRequest, testData, testDataWithType, userIdentities } from "./locrequest.controller.shared.js";
 
 const { setupApp } = TestApp;
 

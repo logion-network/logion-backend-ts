@@ -3,7 +3,7 @@ import { readFileSync } from 'fs';
 import { injectable } from "inversify";
 import { compileTemplate, compile, Options } from "pug";
 
-import { MailService } from "./mail.service";
+import { MailService } from "./mail.service.js";
 
 const { logger } = Log;
 

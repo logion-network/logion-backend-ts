@@ -3,12 +3,12 @@ import { UUID } from "@logion/node-api";
 import { Log } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
-import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model';
-import { asBigInt, asHexString, asJsonObject, asString, isHexString, JsonArgs } from './call';
-import { JsonExtrinsic, toString } from "./types/responses/Extrinsic";
-import { CollectionFactory } from "../model/collection.model";
-import { LocRequestService } from './locrequest.service';
-import { CollectionService } from './collection.service';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
+import { asBigInt, asHexString, asJsonObject, asString, isHexString, JsonArgs } from './call.js';
+import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
+import { CollectionFactory } from "../model/collection.model.js";
+import { LocRequestService } from './locrequest.service.js';
+import { CollectionService } from './collection.service.js';
 
 const { logger } = Log;
 

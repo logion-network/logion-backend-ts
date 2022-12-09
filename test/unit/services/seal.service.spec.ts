@@ -1,7 +1,7 @@
-import { LATEST_SEAL_VERSION, PersonalInfoSealService } from "../../../src/logion/services/seal.service";
-import { UserIdentity } from "../../../src/logion/model/useridentity";
-import { PostalAddress } from "../../../src/logion/model/postaladdress";
-import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService } from "../../../src/logion/services/seal.service.js";
+import { UserIdentity } from "../../../src/logion/model/useridentity.js";
+import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
+import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
 
 describe("PersonalInfoSealService", () => {
 

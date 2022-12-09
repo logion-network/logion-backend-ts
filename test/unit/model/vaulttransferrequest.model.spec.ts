@@ -5,8 +5,8 @@ import {
     VaultTransferRequestDescription,
     VaultTransferRequestFactory,
     VaultTransferRequestAggregateRoot,
-} from '../../../src/logion/model/vaulttransferrequest.model';
-import { ALICE } from "../../helpers/addresses";
+} from '../../../src/logion/model/vaulttransferrequest.model.js';
+import { ALICE } from "../../helpers/addresses.js";
 
 describe('VaultTransferRequestFactory', () => {
 

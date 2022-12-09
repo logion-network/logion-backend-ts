@@ -1,4 +1,4 @@
-import { setupApp } from "../../src/logion/app.support";
+import { setupApp } from "../../src/logion/app.support.js";
 
 describe('app', () => {
 

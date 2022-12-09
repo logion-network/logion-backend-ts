@@ -4,8 +4,8 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import PeerId from 'peer-id';
 
-import { ExifService } from './exif.service';
-import { RestrictedDeliveryMetadataCodec, RestrictedDeliveryMetadataUpdater } from './RestrictedDeliveryMetadata';
+import { ExifService } from './exif.service.js';
+import { RestrictedDeliveryMetadataCodec, RestrictedDeliveryMetadataUpdater } from './RestrictedDeliveryMetadata.js';
 
 export interface RestrictedDeliveryMetadataWithoutSignature {
     owner: string;

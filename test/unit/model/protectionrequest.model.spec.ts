@@ -5,8 +5,8 @@ import {
     ProtectionRequestDescription,
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot, ProtectionRequestStatus,
-} from '../../../src/logion/model/protectionrequest.model';
-import { BOB, CHARLY, ALICE } from '../../helpers/addresses';
+} from '../../../src/logion/model/protectionrequest.model.js';
+import { BOB, CHARLY, ALICE } from '../../helpers/addresses.js';
 
 describe('ProtectionRequestFactoryTest', () => {
 

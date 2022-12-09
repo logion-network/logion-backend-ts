@@ -3,9 +3,9 @@ import { Block, Hash, SignedBlock } from '@polkadot/types/interfaces';
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 import { PolkadotService } from "@logion/rest-api-core";
 
-import { BlockExtrinsics } from './types/responses/Block';
-import { ErrorService } from "./error.service";
-import { ExtrinsicsBuilder } from "./extrinsicsbuilder";
+import { BlockExtrinsics } from './types/responses/Block.js';
+import { ErrorService } from "./error.service.js";
+import { ExtrinsicsBuilder } from "./extrinsicsbuilder.js";
 
 @injectable()
 export class BlockExtrinsicsService {

@@ -1,6 +1,6 @@
 import moment from "moment";
 import PeerId from "peer-id";
-import { RestrictedDeliveryMetadata, RestrictedDeliveryMetadataCodec, RestrictedDeliveryMetadataUpdater } from "../../../src/logion/services/RestrictedDeliveryMetadata";
+import { RestrictedDeliveryMetadata, RestrictedDeliveryMetadataCodec, RestrictedDeliveryMetadataUpdater } from "../../../src/logion/services/RestrictedDeliveryMetadata.js";
 
 const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
 

@@ -2,7 +2,7 @@ import { UploadedFile } from "express-fileupload";
 import { writeFile } from "fs/promises";
 import os from "os";
 import path from "path";
-import { getUploadedFile } from "../../../src/logion/controllers/fileupload";
+import { getUploadedFile } from "../../../src/logion/controllers/fileupload.js";
 
 describe("getUploadedFile", () => {
 

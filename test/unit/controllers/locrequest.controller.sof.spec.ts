@@ -1,5 +1,5 @@
 import { TestApp } from "@logion/rest-api-core";
-import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller";
+import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
 import { Mock, It } from "moq.ts";
@@ -7,9 +7,9 @@ import {
     LocRequestFactory,
     LocType,
     NewSofRequestParameters,
-} from "../../../src/logion/model/locrequest.model";
-import { UUID } from "@logion/node-api/dist/UUID";
-import { CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model";
+} from "../../../src/logion/model/locrequest.model.js";
+import { UUID } from "@logion/node-api/dist/UUID.js";
+import { CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model.js";
 import {
     buildMocksForUpdate,
     mockPolkadotIdentityLoc,
@@ -18,8 +18,8 @@ import {
     setupRequest,
     testDataWithUserIdentityWithType,
     setupSelectedVtp
-} from "./locrequest.controller.shared";
-import { ALICE } from "../../helpers/addresses";
+} from "./locrequest.controller.shared.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 const { setupApp } = TestApp;
 
