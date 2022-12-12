@@ -148,17 +148,17 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(LocRequestAdapter).toSelf();
     container.bind(VerifiedThirdPartyAdapter).toSelf();
 
-    const verifiedThirdPartyNominationFactory = existingMocks?.verifiedThirdPartySelectionFactory ? existingMocks.verifiedThirdPartySelectionFactory : new Mock<VerifiedThirdPartySelectionFactory>();
-    container.bind(VerifiedThirdPartySelectionFactory).toConstantValue(verifiedThirdPartyNominationFactory.object());
+    const verifiedThirdPartySelectionFactory = existingMocks?.verifiedThirdPartySelectionFactory ? existingMocks.verifiedThirdPartySelectionFactory : new Mock<VerifiedThirdPartySelectionFactory>();
+    container.bind(VerifiedThirdPartySelectionFactory).toConstantValue(verifiedThirdPartySelectionFactory.object());
 
-    const verifiedThirdPartyNominationRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
-    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartyNominationRepository.object());
+    const verifiedThirdPartySelectionRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
+    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartySelectionRepository.object());
 
-    verifiedThirdPartyNominationRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
+    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
 
     container.bind(VerifiedThirdPartySelectionService).toConstantValue(new NonTransactionalVerifiedThirdPartySelectionService(
-        verifiedThirdPartyNominationFactory.object(),
-        verifiedThirdPartyNominationRepository.object(),
+        verifiedThirdPartySelectionFactory.object(),
+        verifiedThirdPartySelectionRepository.object(),
         repository.object()
     ));
 
@@ -171,8 +171,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         fileStorageService,
         notificationService,
         collectionRepository,
-        verifiedThirdPartySelectionFactory: verifiedThirdPartyNominationFactory,
-        verifiedThirdPartySelectionRepository: verifiedThirdPartyNominationRepository,
+        verifiedThirdPartySelectionFactory,
+        verifiedThirdPartySelectionRepository,
     };
 }
 
@@ -248,6 +248,7 @@ export function setupRequest(
     files: FileDescription[] = [],
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
+    ownerAddress: string = ALICE,
 ) {
     if (locType) {
         request.setup(instance => instance.locType)
@@ -261,12 +262,13 @@ export function setupRequest(
         .returns({
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
-            ownerAddress: ALICE
+            ownerAddress,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
+    request.setup(instance => instance.ownerAddress).returns(ownerAddress);
 }
 
 export function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {

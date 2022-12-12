@@ -1,5 +1,5 @@
 import { Container } from 'inversify';
-import { Mock, It } from 'moq.ts';
+import { Mock, It, Times } from 'moq.ts';
 import request from 'supertest';
 import { TestApp } from '@logion/rest-api-core';
 
@@ -26,7 +26,34 @@ import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
 
-const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } = TestApp;
+const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode } = TestApp;
+
+describe('VaultTransferRequestController', () => {
+
+    function authenticatedLLONotProtectingVault() {
+        const authenticatedUser = mockLegalOfficerOnNode(BOB);
+        return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+    }
+
+    it('non-protecting LLO fails to accept', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), authenticatedLLONotProtectingVault());
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/accept")
+            .expect(401);
+        notificationService.verify(instance => instance.notify, Times.Never());
+    });
+
+    it('non-protecting LLO fails to reject', async () => {
+        const app = setupApp(VaultTransferRequestController, container => mockModelForReject(container, true), authenticatedLLONotProtectingVault());
+        await request(app)
+            .post('/api/vault-transfer-request/' + REQUEST_ID + "/reject")
+            .send({
+                rejectReason: REJECT_REASON,
+            })
+            .expect(401);
+        notificationService.verify(instance => instance.notify, Times.Never());
+    });
+})
 
 describe('VaultTransferRequestController', () => {
 
@@ -108,7 +135,7 @@ describe('VaultTransferRequestController', () => {
 
     });
 
-    it('WithValidAuthentication', async () => {
+    it('LLO accepts', async () => {
         const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true));
 
         await request(app)
@@ -120,7 +147,7 @@ describe('VaultTransferRequestController', () => {
         })))
     });
 
-    it('WithValidAuthentication', async () => {
+    it('LLO rejects', async () => {
         const app = setupApp(VaultTransferRequestController, container => mockModelForReject(container, true));
 
         await request(app)
