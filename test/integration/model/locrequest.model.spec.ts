@@ -130,6 +130,15 @@ describe('LocRequestRepository - read accesses', () => {
         const identityLoc = await repository.getVerifiedThirdPartyIdentityLoc("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         expect(identityLoc).toBeDefined();
     })
+
+    it("finds by requester and owner", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            expectedRequesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
+    })
 })
 
 describe('LocRequestRepository.save()', () => {
