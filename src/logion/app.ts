@@ -7,7 +7,7 @@ import { PrometheusService } from "./services/prometheus.service.js";
 
 const { logger } = Log;
 
-// require('source-map-support').install();
+require('source-map-support').install();
 
 appDataSource.initialize()
 .then(() => {

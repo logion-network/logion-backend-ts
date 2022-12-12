@@ -10,6 +10,7 @@
     "license": "Apache-2.0",
     "scripts": {
         "build": "rimraf dist && yarn run generate-views && tsc --project ./tsconfig.app.json && cp package.json ./dist",
+        "patch-ipfs": "sed -i 's/| ReadableStream<ImportCandidate>//g' node_modules/ipfs-core-types/src/utils.ts && sed -i 's/| ReadableStream<Uint8Array>//g' node_modules/ipfs-core-types/src/utils.ts",
         "generate-views": "npx openapi-typescript resources/schemas.json --output src/logion/controllers/components.ts",
         "start": "yarn run build && NODE_ENV=development node dist/app.js",
         "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
@@ -23,7 +24,7 @@
     },
     "dependencies": {
         "@logion/node-exiftool": "^2.3.1-2",
-        "@logion/rest-api-core": "^0.2.1-6",
+        "@logion/rest-api-core": "^0.2.1-7",
         "@polkadot/wasm-crypto": "^6.4.1",
         "alchemy-sdk": "^2.2.3",
         "ansi-regex": "^6.0.1",
@@ -67,11 +68,6 @@
     },
     "engines": {
         "node": ">=18"
-    },
-    "resolutions": {
-        "node-fetch": "2.6.7",
-        "moq.ts": "9.0.2",
-        "ipfs-client": "0.7.9"
     },
     "packageManager": "yarn@3.2.2",
     "type": "module"
