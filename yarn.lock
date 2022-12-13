@@ -1784,9 +1784,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/authenticator@npm:^0.3.3-6":
-  version: 0.3.3-6
-  resolution: "@logion/authenticator@npm:0.3.3-6"
+"@logion/authenticator@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@logion/authenticator@npm:0.4.0"
   dependencies:
     "@ethersproject/transactions": ^5.6.2
     "@logion/node-api": ^0.8.0-1
@@ -1796,7 +1796,7 @@ __metadata:
     luxon: ^3.0.1
     peer-id: ^0.16.0
     web3-utils: ^1.7.4
-  checksum: ab36984cd4cb95c3e3412c363fc9fb06b9ab82141296a5db0706647010e81af1483c06960e0059d4868909bac7eaebfe9b44c7f4b97138ce28f2e2995b8b80c2
+  checksum: b45abdba4ab30eb69972edd5eeeec26a62a4af29b3fe38e780b3102b4665cd9ca638e7e9c6a1af7c3bdda4087746774457d9c2d00002491e897d47071c536330
   languageName: node
   linkType: hard
 
@@ -1825,11 +1825,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.2.1-7":
-  version: 0.2.1-8
-  resolution: "@logion/rest-api-core@npm:0.2.1-8"
+"@logion/rest-api-core@npm:^0.3.1":
+  version: 0.3.1
+  resolution: "@logion/rest-api-core@npm:0.3.1"
   dependencies:
-    "@logion/authenticator": ^0.3.3-6
+    "@logion/authenticator": ^0.4.0
     dinoloop: ^2.4.0
     express: ^4.18.2
     express-fileupload: ^1.4.0
@@ -1841,7 +1841,7 @@ __metadata:
     swagger-ui-express: ^4.6.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: df7770b2aa79d7bbfc96076a638193afe80cc40bb16ee177c831130c9c56fa28e4d13420fbaa3c511cfdb4104faa8eb33d8c2ada6e8da32db3c786b7ebd2737a
+  checksum: 99faf1470a290dfe303ff428005039fb17d894a1840b9256aa1d9ec2cf64562ed5328bf5b01a3d02ddf96ff83e74b0845515271f28db8129b3dea6cf72de580f
   languageName: node
   linkType: hard
 
@@ -5695,7 +5695,7 @@ __metadata:
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.2.1-7
+    "@logion/rest-api-core": ^0.3.1
     "@polkadot/wasm-crypto": ^6.4.1
     "@tsconfig/node18": ^1.0.1
     "@types/cors": ^2.8.12
