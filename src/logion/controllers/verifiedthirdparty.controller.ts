@@ -2,15 +2,15 @@ import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPut, HttpPost, HttpDelete, SendsResponse } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
 import { addTag, AuthenticationService, badRequest, forbidden, getDefaultResponses, getDefaultResponsesNoContent, getRequestBody, Log, requireDefined, setControllerTag, setPathParameters } from "@logion/rest-api-core";
-import { components } from "./components";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model";
-import { VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model";
-import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter";
-import { NotificationService } from "../services/notification.service";
-import { DirectoryService } from "../services/directory.service";
-import { LocRequestAdapter } from "./adapters/locrequestadapter";
-import { VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service";
-import { UserIdentity } from "../model/useridentity";
+import { components } from "./components.js";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model.js";
+import { VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model.js";
+import { VerifiedThirdPartyAdapter } from "./adapters/verifiedthirdpartyadapter.js";
+import { NotificationService } from "../services/notification.service.js";
+import { DirectoryService } from "../services/directory.service.js";
+import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
+import { VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service.js";
+import { UserIdentity } from "../model/useridentity.js";
 
 const { logger } = Log;
 

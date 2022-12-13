@@ -1,14 +1,14 @@
 import { TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
-import { TransactionController } from '../../../src/logion/controllers/transaction.controller';
+import { TransactionController } from '../../../src/logion/controllers/transaction.controller.js';
 import { Container } from "inversify";
 import { Mock } from "moq.ts";
 import {
     TransactionRepository,
     TransactionAggregateRoot,
     TransactionDescription
-} from "../../../src/logion/model/transaction.model";
-import { ALICE } from "../../helpers/addresses";
+} from "../../../src/logion/model/transaction.model.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 describe('TransactionController', () => {
 

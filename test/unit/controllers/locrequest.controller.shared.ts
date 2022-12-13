@@ -1,7 +1,7 @@
-import { LocRequestAdapter, UserPrivateData } from "../../../src/logion/controllers/adapters/locrequestadapter";
+import { LocRequestAdapter, UserPrivateData } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses";
+import { ALICE } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -15,18 +15,18 @@ import {
     FetchLocRequestsSpecification,
     IdentityLocType,
     LocRequestDescription,
-} from "../../../src/logion/model/locrequest.model";
-import { FileStorageService } from "../../../src/logion/services/file.storage.service";
-import { NotificationService, Template } from "../../../src/logion/services/notification.service";
-import { DirectoryService } from "../../../src/logion/services/directory.service";
-import { notifiedLegalOfficer } from "../services/notification-test-data";
-import { CollectionRepository } from "../../../src/logion/model/collection.model";
-import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service";
-import { PersonalInfo } from "../../../src/logion/model/personalinfo.model";
-import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
-import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
-import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service";
+} from "../../../src/logion/model/locrequest.model.js";
+import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
+import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
+import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { notifiedLegalOfficer } from "../services/notification-test-data.js";
+import { CollectionRepository } from "../../../src/logion/model/collection.model.js";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service.js";
+import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
+import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter.js";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
+import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
+import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service.js";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";

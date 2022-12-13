@@ -3,7 +3,7 @@ import {
     TransactionAggregateRoot,
     TransactionFactory,
     TransactionDescription
-} from "../../../src/logion/model/transaction.model";
+} from "../../../src/logion/model/transaction.model.js";
 
 describe("TransactionAggregateRoot", () => {
 

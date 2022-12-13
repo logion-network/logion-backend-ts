@@ -1,8 +1,8 @@
 import { injectable } from 'inversify';
-import { exportFile, deleteFile, importFile } from '../lib/db/large_objects';
-import { FileManager, DefaultFileManager, DefaultFileManagerConfiguration } from "../lib/ipfs/FileManager";
-import { DefaultShell } from "../lib/Shell";
-import { EncryptedFileWriter, EncryptedFileReader } from "../lib/crypto/EncryptedFile";
+import { exportFile, deleteFile, importFile } from '../lib/db/large_objects.js';
+import { FileManager, DefaultFileManager, DefaultFileManagerConfiguration } from "../lib/ipfs/FileManager.js";
+import { DefaultShell } from "../lib/Shell.js";
+import { EncryptedFileWriter, EncryptedFileReader } from "../lib/crypto/EncryptedFile.js";
 
 export interface FileId {
     oid?: number

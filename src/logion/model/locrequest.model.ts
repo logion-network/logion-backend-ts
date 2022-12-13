@@ -1,17 +1,17 @@
 import { injectable } from "inversify";
 import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, } from "typeorm";
-import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
-import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
+import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
-import { components } from "../controllers/components";
-import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity";
-import { orderAndMap, HasIndex } from "../lib/db/collections";
-import { deleteIndexedChild, Child, saveIndexedChildren } from "./child";
-import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress";
-import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service";
-import { PersonalInfo } from "./personalinfo.model";
+import { components } from "../controllers/components.js";
+import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
+import { orderAndMap, HasIndex } from "../lib/db/collections.js";
+import { deleteIndexedChild, Child, saveIndexedChildren } from "./child.js";
+import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
+import { PersonalInfo } from "./personalinfo.model.js";
 
 const { logger } = Log;
 

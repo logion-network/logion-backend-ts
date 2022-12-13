@@ -2,7 +2,7 @@ import { copyFile } from 'fs/promises';
 import os from "os";
 import path from "path";
 
-import { ExifService } from "../../../src/logion/services/exif.service";
+import { ExifService } from "../../../src/logion/services/exif.service.js";
 
 describe("ExifService", () => {
 

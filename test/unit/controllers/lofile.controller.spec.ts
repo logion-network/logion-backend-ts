@@ -1,20 +1,20 @@
 import { TestApp } from "@logion/rest-api-core";
-import { LoFileController } from "../../../src/logion/controllers/lofile.controller";
+import { LoFileController } from "../../../src/logion/controllers/lofile.controller.js";
 import { Container } from "inversify";
 import { Mock, It, Times } from "moq.ts";
-import { FileStorageService, FileId } from "../../../src/logion/services/file.storage.service";
+import { FileStorageService, FileId } from "../../../src/logion/services/file.storage.service.js";
 import {
     LoFileDescription,
     LoFileFactory,
     LoFileAggregateRoot,
     LoFileRepository
-} from "../../../src/logion/model/lofile.model";
+} from "../../../src/logion/model/lofile.model.js";
 import request from "supertest";
 import { writeFile } from "fs/promises";
-import { LoFileService, NonTransactionalLoFileService } from "../../../src/logion/services/lofile.service";
-import { ALICE, BOB } from "../../helpers/addresses";
-import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model";
-import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp";
+import { LoFileService, NonTransactionalLoFileService } from "../../../src/logion/services/lofile.service.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
+import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
+import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp.js";
 
 const existingFile: LoFileDescription = {
     id: 'file1',

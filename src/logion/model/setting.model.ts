@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
-import { LegalOfficerSettingId } from "./legalofficer.model";
+import { LegalOfficerSettingId } from "./legalofficer.model.js";
 
 @Entity("setting")
 export class SettingAggregateRoot {

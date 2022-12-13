@@ -1,10 +1,10 @@
 import { injectable } from "inversify";
 import { v4 as uuid } from 'uuid';
-import { TransactionAggregateRoot, TransactionFactory, TransactionDescription } from "../model/transaction.model";
-import { TransactionExtractor } from "./transaction.extractor";
-import { TransactionService } from "./transaction.service";
-import { BlockWithTransactions, Transaction } from './transaction.vo';
-import { BlockExtrinsics } from "./types/responses/Block";
+import { TransactionAggregateRoot, TransactionFactory, TransactionDescription } from "../model/transaction.model.js";
+import { TransactionExtractor } from "./transaction.extractor.js";
+import { TransactionService } from "./transaction.service.js";
+import { BlockWithTransactions, Transaction } from './transaction.vo.js';
+import { BlockExtrinsics } from "./types/responses/Block.js";
 
 @injectable()
 export class TransactionSynchronizer {

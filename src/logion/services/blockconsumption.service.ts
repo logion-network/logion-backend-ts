@@ -4,16 +4,16 @@ import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 import { SignedBlock } from "@polkadot/types/interfaces";
 import { Log } from "@logion/rest-api-core";
 
-import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model";
-import { BlockExtrinsicsService } from "./block.service";
-import { LocSynchronizer } from "./locsynchronization.service";
-import { TransactionSynchronizer } from "./transactionsync.service";
-import { ProtectionSynchronizer } from "./protectionsynchronization.service";
-import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor";
-import { toStringWithoutError } from "./types/responses/Extrinsic";
-import { ProgressRateLogger } from "./progressratelogger";
-import { PrometheusService } from "./prometheus.service";
-import { SyncPointService } from "./syncpoint.service";
+import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACTIONS_SYNC_POINT_NAME } from "../model/syncpoint.model.js";
+import { BlockExtrinsicsService } from "./block.service.js";
+import { LocSynchronizer } from "./locsynchronization.service.js";
+import { TransactionSynchronizer } from "./transactionsync.service.js";
+import { ProtectionSynchronizer } from "./protectionsynchronization.service.js";
+import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
+import { toStringWithoutError } from "./types/responses/Extrinsic.js";
+import { ProgressRateLogger } from "./progressratelogger.js";
+import { PrometheusService } from "./prometheus.service.js";
+import { SyncPointService } from "./syncpoint.service.js";
 
 const { logger } = Log;
 

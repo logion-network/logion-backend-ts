@@ -2,8 +2,8 @@ import { injectable } from 'inversify';
 import { ItemToken } from '@logion/node-api';
 import { CollectionItem } from '@logion/node-api/dist/Types';
 
-import { Network, AlchemyService } from './alchemy.service';
-import { SingularService } from './singular.service';
+import { Network, AlchemyService } from './alchemy.service.js';
+import { SingularService } from './singular.service.js';
 
 @injectable()
 export class OwnershipCheckService {

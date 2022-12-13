@@ -1,9 +1,9 @@
 import { readFileSync } from 'fs';
 
-import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Block";
-import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor";
-import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor";
-import { TransactionError } from "../../../src/logion/services/transaction.vo";
+import { BlockExtrinsics } from "../../../src/logion/services/types/responses/Block.js";
+import { TransactionExtractor } from "../../../src/logion/services/transaction.extractor.js";
+import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor.js";
+import { TransactionError } from "../../../src/logion/services/transaction.vo.js";
 
 let transactionExtractor: TransactionExtractor;
 

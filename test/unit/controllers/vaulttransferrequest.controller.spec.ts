@@ -9,22 +9,22 @@ import {
     VaultTransferRequestAggregateRoot,
     VaultTransferRequestDescription,
     VaultTransferRequestDecision,
-} from '../../../src/logion/model/vaulttransferrequest.model';
-import { ALICE, BOB } from '../../helpers/addresses';
-import { VaultTransferRequestController } from '../../../src/logion/controllers/vaulttransferrequest.controller';
-import { NotificationService, Template } from "../../../src/logion/services/notification.service";
-import moment, { now } from "moment";
-import { DirectoryService } from "../../../src/logion/services/directory.service";
-import { notifiedLegalOfficer } from "../services/notification-test-data";
+} from '../../../src/logion/model/vaulttransferrequest.model.js';
+import { ALICE, BOB } from '../../helpers/addresses.js';
+import { VaultTransferRequestController } from '../../../src/logion/controllers/vaulttransferrequest.controller.js';
+import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
+import moment from "moment";
+import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
     ProtectionRequestDescription,
     ProtectionRequestRepository
-} from '../../../src/logion/model/protectionrequest.model';
-import { UserIdentity } from '../../../src/logion/model/useridentity';
-import { PostalAddress } from '../../../src/logion/model/postaladdress';
-import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service';
+} from '../../../src/logion/model/protectionrequest.model.js';
+import { UserIdentity } from '../../../src/logion/model/useridentity.js';
+import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
+import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -252,7 +252,7 @@ const description: VaultTransferRequestDescription = {
     requesterAddress: REQUESTER_ADDRESS,
     legalOfficerAddress: ALICE,
     id: REQUEST_ID,
-    createdOn: now().toString(),
+    createdOn: moment.now().toString(),
     amount: 1000n,
     origin: REQUESTER_ADDRESS,
     destination: DESTINATION,

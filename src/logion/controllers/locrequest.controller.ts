@@ -4,7 +4,7 @@ import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
 
-import { components } from "./components";
+import { components } from "./components.js";
 import {
     LocRequestRepository,
     LocRequestFactory,
@@ -13,7 +13,7 @@ import {
     FetchLocRequestsSpecification,
     LocRequestDecision,
     FileDescription
-} from "../model/locrequest.model";
+} from "../model/locrequest.model.js";
 import {
     getRequestBody,
     getDefaultResponses,
@@ -31,21 +31,21 @@ import {
 } from "@logion/rest-api-core";
 import { UUID } from "@logion/node-api";
 
-import { UserIdentity } from "../model/useridentity";
-import { FileStorageService } from "../services/file.storage.service";
-import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions";
-import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
-import { DirectoryService } from "../services/directory.service";
-import { CollectionRepository } from "../model/collection.model";
-import { getUploadedFile } from "./fileupload";
-import { PostalAddress } from "../model/postaladdress";
-import { downloadAndClean } from "../lib/http";
-import { LocRequestAdapter } from "./adapters/locrequestadapter";
+import { UserIdentity } from "../model/useridentity.js";
+import { FileStorageService } from "../services/file.storage.service.js";
+import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions.js";
+import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
+import { DirectoryService } from "../services/directory.service.js";
+import { CollectionRepository } from "../model/collection.model.js";
+import { getUploadedFile } from "./fileupload.js";
+import { PostalAddress } from "../model/postaladdress.js";
+import { downloadAndClean } from "../lib/http.js";
+import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import {
     VerifiedThirdPartySelectionAggregateRoot,
     VerifiedThirdPartySelectionRepository
-} from "../model/verifiedthirdpartyselection.model";
-import { LocRequestService } from "../services/locrequest.service";
+} from "../model/verifiedthirdpartyselection.model.js";
+import { LocRequestService } from "../services/locrequest.service.js";
 
 const { logger } = Log;
 

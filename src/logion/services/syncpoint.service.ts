@@ -1,7 +1,7 @@
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { Moment } from "moment";
-import { SyncPointAggregateRoot, SyncPointRepository } from "../model/syncpoint.model";
+import { SyncPointAggregateRoot, SyncPointRepository } from "../model/syncpoint.model.js";
 
 export abstract class SyncPointService {
 

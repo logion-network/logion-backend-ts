@@ -8,12 +8,11 @@ import {
     JoinColumn,
     Index
 } from "typeorm";
-import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
 
 import { appDataSource } from "@logion/rest-api-core";
-import { Child, saveChildren } from "./child";
+import { Child, saveChildren } from "./child.js";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string

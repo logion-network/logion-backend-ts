@@ -21,12 +21,12 @@ import {
     VaultTransferRequestFactory,
     VaultTransferRequestDescription,
     VaultTransferRequestDecision
-} from '../model/vaulttransferrequest.model';
-import { components } from './components';
-import { NotificationService } from "../services/notification.service";
-import { DirectoryService } from "../services/directory.service";
-import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model';
-import { VaultTransferRequestService } from '../services/vaulttransferrequest.service';
+} from '../model/vaulttransferrequest.model.js';
+import { components } from './components.js';
+import { NotificationService } from "../services/notification.service.js";
+import { DirectoryService } from "../services/directory.service.js";
+import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model.js';
+import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
 type VaultTransferRequestView = components["schemas"]["VaultTransferRequestView"];

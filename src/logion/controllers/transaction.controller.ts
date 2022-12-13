@@ -3,8 +3,8 @@ import { ApiController, Controller, HttpPut, Async } from 'dinoloop';
 import { OpenAPIV3 } from 'express-oas-generator';
 import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from '@logion/rest-api-core';
 
-import { components } from './components';
-import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model";
+import { components } from './components.js';
+import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';

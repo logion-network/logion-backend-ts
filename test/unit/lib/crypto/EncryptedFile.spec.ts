@@ -1,6 +1,6 @@
 import os from 'os';
 import path from 'path';
-import { EncryptedFileWriter, EncryptedFileReader } from "../../../../src/logion/lib/crypto/EncryptedFile";
+import { EncryptedFileWriter, EncryptedFileReader } from "../../../../src/logion/lib/crypto/EncryptedFile.js";
 import { existsSync, readFileSync } from "fs";
 import { rm } from "fs/promises";
 

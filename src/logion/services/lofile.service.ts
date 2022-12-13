@@ -1,7 +1,7 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
-import { LoFileAggregateRoot, LoFileRepository } from "../model/lofile.model";
-import { LegalOfficerSettingId } from "../model/legalofficer.model";
+import { LoFileAggregateRoot, LoFileRepository } from "../model/lofile.model.js";
+import { LegalOfficerSettingId } from "../model/legalofficer.model.js";
 
 export abstract class LoFileService {
 

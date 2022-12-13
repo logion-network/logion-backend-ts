@@ -1,4 +1,4 @@
-import { ALICE } from "../helpers/addresses";
+import { ALICE } from "../helpers/addresses.js";
 import PeerId from "peer-id";
 import { createPublicKey, KeyObject, createPrivateKey } from "crypto";
 import { base64url, SignJWT, jwtVerify, decodeJwt } from "jose";

@@ -1,10 +1,10 @@
 import { requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model";
-import { PostalAddress } from "../../model/postaladdress";
-import { UserIdentity } from "../../model/useridentity";
-import { components } from "../components";
-import { VerifiedThirdPartyAdapter } from "./verifiedthirdpartyadapter";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model.js";
+import { PostalAddress } from "../../model/postaladdress.js";
+import { UserIdentity } from "../../model/useridentity.js";
+import { components } from "../components.js";
+import { VerifiedThirdPartyAdapter } from "./verifiedthirdpartyadapter.js";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,

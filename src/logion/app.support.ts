@@ -3,22 +3,22 @@ import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-gene
 import {
     fillInSpec as fillInSpecForProtectionController,
     ProtectionRequestController
-} from "./controllers/protectionrequest.controller";
-import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller";
+} from "./controllers/protectionrequest.controller.js";
+import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller.js";
 import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec } from "@logion/rest-api-core";
-import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller";
+import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller.js";
 import express, { Express } from "express";
 import bodyParser from "body-parser";
 import fileUpload from "express-fileupload";
 import cors from "cors";
 import { Dino } from "dinoloop";
 import { Container } from "inversify";
-import { AppContainer } from "./container/app.container";
-import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller";
-import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller";
-import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller";
-import { fillInSpec as fillInSpecForSettings, SettingController } from "./controllers/setting.controller";
-import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller";
+import { AppContainer } from "./container/app.container.js";
+import { fillInSpec as fillInSpecForCollection, CollectionController } from "./controllers/collection.controller.js";
+import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller.js";
+import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller.js";
+import { fillInSpec as fillInSpecForSettings, SettingController } from "./controllers/setting.controller.js";
+import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller.js";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);

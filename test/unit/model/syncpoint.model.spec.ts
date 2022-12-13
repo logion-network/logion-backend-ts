@@ -1,5 +1,5 @@
 import moment from 'moment';
-import { SyncPointAggregateRoot, SyncPointFactory, TRANSACTIONS_SYNC_POINT_NAME } from "../../../src/logion/model/syncpoint.model";
+import { SyncPointAggregateRoot, SyncPointFactory, TRANSACTIONS_SYNC_POINT_NAME } from "../../../src/logion/model/syncpoint.model.js";
 
 describe("SyncPointAggregateRoot", () => {
 

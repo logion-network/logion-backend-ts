@@ -13,12 +13,12 @@ import {
 } from "@logion/rest-api-core";
 import { OpenAPIV3 } from "express-oas-generator";
 
-import { LoFileRepository, LoFileFactory } from "../model/lofile.model";
-import { FileStorageService } from "../services/file.storage.service";
-import { getUploadedFile } from "./fileupload";
-import { downloadAndClean } from "../lib/http";
-import { components } from "./components";
-import { LoFileService } from "../services/lofile.service";
+import { LoFileRepository, LoFileFactory } from "../model/lofile.model.js";
+import { FileStorageService } from "../services/file.storage.service.js";
+import { getUploadedFile } from "./fileupload.js";
+import { downloadAndClean } from "../lib/http.js";
+import { components } from "./components.js";
+import { LoFileService } from "../services/lofile.service.js";
 
 type FileUploadData = components["schemas"]["FileUploadData"];
 

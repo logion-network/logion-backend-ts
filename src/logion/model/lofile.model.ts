@@ -2,7 +2,7 @@ import { Entity, Column, PrimaryColumn, Repository } from "typeorm";
 import { injectable } from "inversify";
 
 import { appDataSource } from "@logion/rest-api-core";
-import { LegalOfficerSettingId } from "./legalofficer.model";
+import { LegalOfficerSettingId } from "./legalofficer.model.js";
 
 @Entity("lo_file")
 export class LoFileAggregateRoot {

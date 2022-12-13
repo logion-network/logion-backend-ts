@@ -1,6 +1,6 @@
 import { Mock } from "moq.ts";
-import { LocRequestAggregateRoot, LocRequestStatus, LocType } from "../../../src/logion/model/locrequest.model";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId } from "../../../src/logion/model/verifiedthirdpartyselection.model";
+import { LocRequestAggregateRoot, LocRequestStatus, LocType } from "../../../src/logion/model/locrequest.model.js";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 
 describe("VerifiedThirdPartySelectionFactory", () => {
 

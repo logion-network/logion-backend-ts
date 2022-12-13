@@ -1,6 +1,6 @@
 import { DefaultTransactional } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { TransactionAggregateRoot, TransactionRepository } from "../model/transaction.model";
+import { TransactionAggregateRoot, TransactionRepository } from "../model/transaction.model.js";
 
 export abstract class TransactionService {
 

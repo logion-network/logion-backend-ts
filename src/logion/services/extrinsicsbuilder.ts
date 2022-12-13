@@ -1,9 +1,9 @@
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
 import { Address, Block, Extrinsic } from '@polkadot/types/interfaces';
-import { asString, JsonCall, toJsonCall } from "./call";
+import { asString, JsonCall, toJsonCall } from "./call.js";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic';
-import { ErrorService, Module } from "./error.service";
+import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
+import { ErrorService, Module } from "./error.service.js";
 import { ApiPromise } from '@polkadot/api';
 
 export class ExtrinsicsBuilder {

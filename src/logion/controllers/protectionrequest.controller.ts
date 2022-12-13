@@ -23,11 +23,11 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestDescription,
     LegalOfficerDecisionDescription,
-} from '../model/protectionrequest.model';
-import { components } from './components';
-import { NotificationService, Template, NotificationRecipient } from "../services/notification.service";
-import { DirectoryService } from "../services/directory.service";
-import { ProtectionRequestService } from '../services/protectionrequest.service';
+} from '../model/protectionrequest.model.js';
+import { components } from './components.js';
+import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
+import { DirectoryService } from "../services/directory.service.js";
+import { ProtectionRequestService } from '../services/protectionrequest.service.js';
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];

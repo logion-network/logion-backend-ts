@@ -1,5 +1,5 @@
-import { PostalAddress } from "./postaladdress";
-import { UserIdentity } from "./useridentity";
+import { PostalAddress } from "./postaladdress.js";
+import { UserIdentity } from "./useridentity.js";
 
 interface LegalOfficerPostalAddress extends PostalAddress {
     readonly company: string

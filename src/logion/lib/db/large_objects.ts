@@ -1,6 +1,6 @@
 import { appDataSource } from "@logion/rest-api-core";
 import { ChildProcess, exec } from 'child_process';
-import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions';
+import { PostgresConnectionOptions } from 'typeorm/driver/postgres/PostgresConnectionOptions.js';
 
 export async function importFile(path: string, comment: string): Promise<number> {
     const process = await callPsql();

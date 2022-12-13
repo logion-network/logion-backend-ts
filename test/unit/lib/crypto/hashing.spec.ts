@@ -1,4 +1,4 @@
-import { sha256, sha256File } from '../../../../src/logion/lib/crypto/hashing';
+import { sha256, sha256File } from '../../../../src/logion/lib/crypto/hashing.js';
 
 describe('HashingTest', () => {
 

@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { Column, Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
-import { LocRequestAggregateRoot } from './locrequest.model';
+import { LocRequestAggregateRoot } from './locrequest.model.js';
 
 export interface VerifiedThirdPartySelectionId {
     locRequestId: string;

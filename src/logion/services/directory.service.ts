@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { LegalOfficer } from "../model/legalofficer.model";
+import { LegalOfficer } from "../model/legalofficer.model.js";
 import axios, { AxiosInstance } from "axios";
 import { badRequest, AuthenticationSystemFactory } from "@logion/rest-api-core";
 import { AuthorityService } from "@logion/authenticator";

@@ -1,5 +1,5 @@
-import { UserIdentity } from "./useridentity";
-import { PostalAddress } from "./postaladdress";
+import { UserIdentity } from "./useridentity.js";
+import { PostalAddress } from "./postaladdress.js";
 
 export interface PersonalInfo {
     userIdentity: UserIdentity;

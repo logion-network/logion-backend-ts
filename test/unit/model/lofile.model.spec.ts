@@ -1,5 +1,5 @@
-import { LoFileFactory, LoFileAggregateRoot, LoFileDescription } from "../../../src/logion/model/lofile.model";
-import { ALICE } from "../../helpers/addresses";
+import { LoFileFactory, LoFileAggregateRoot, LoFileDescription } from "../../../src/logion/model/lofile.model.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 describe("LO File model", () => {
 

@@ -1,4 +1,4 @@
-import { JsonCall } from "../../call";
+import { JsonCall } from "../../call.js";
 
 export interface JsonExtrinsic {
     call: JsonCall;

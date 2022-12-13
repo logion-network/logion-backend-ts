@@ -1,7 +1,7 @@
 import { It, Mock, Times } from "moq.ts";
 
-import { ExifService } from "../../../src/logion/services/exif.service";
-import { RestrictedDeliveryMetadataWithoutSignature, RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service";
+import { ExifService } from "../../../src/logion/services/exif.service.js";
+import { RestrictedDeliveryMetadataWithoutSignature, RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
 import moment from "moment";
 
 describe("RestrictedDeliveryService", () => {
