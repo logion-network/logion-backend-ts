@@ -2,7 +2,7 @@ import { TestApp } from "@logion/rest-api-core";
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { Mock, It } from "moq.ts";
+import { Mock, It, Times } from "moq.ts";
 import {
     LocType,
 } from "../../../src/logion/model/locrequest.model.js";
@@ -10,10 +10,66 @@ import { Moment } from "moment";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { buildMocksForUpdate, mockPolkadotIdentityLoc, Mocks, REQUEST_ID, setupRequest, testData, testDataWithType, userIdentities } from "./locrequest.controller.shared.js";
+import { BOB } from "../../helpers/addresses.js";
 
-const { setupApp } = TestApp;
+const { setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser } = TestApp;
 
-describe('LocRequestController - Life Cycle -', () => {
+describe('LocRequestController - Life Cycle - Authenticated LLO is **NOT** LOC owner', () => {
+
+    function authenticatedLLONotLocOwner() {
+        const authenticatedUser = mockLegalOfficerOnNode(BOB); // Alice is LOC owner
+        return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+    }
+
+    it('fails to reject a requested loc', async () => {
+        const notificationService = new Mock<NotificationService>();
+        const app = setupApp(LocRequestController, container => mockModelForReject(container, notificationService), authenticatedLLONotLocOwner());
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/reject`)
+            .send({
+                rejectReason: REJECT_REASON
+            })
+            .expect(401)
+        notificationService.verify(instance => instance.notify, Times.Never());
+    })
+
+    it('fails to accepts a requested loc', async () => {
+
+        const notificationService = new Mock<NotificationService>();
+        const app = setupApp(LocRequestController, container => mockModelForAccept(container, notificationService), authenticatedLLONotLocOwner());
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/accept`)
+            .expect(401)
+        notificationService.verify(instance => instance.notify, Times.Never());
+    })
+
+    it('fails to pre-close a Transaction LOC', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Transaction"), authenticatedLLONotLocOwner())
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/close`)
+            .expect(401);
+    });
+
+    it('fails to  to pre-close an Identity LOC', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForPreClose(container, "Identity", testUserIdentity), authenticatedLLONotLocOwner())
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/close`)
+            .expect(401);
+    });
+
+    it('fails to pre-void', async () => {
+        const app = setupApp(LocRequestController, mockModelForPreVoid, authenticatedLLONotLocOwner())
+        await request(app)
+            .post(`/api/loc-request/${REQUEST_ID}/void`)
+            .send({
+                reason: VOID_REASON
+            })
+            .expect(401);
+    });
+
+})
+
+describe('LocRequestController - Life Cycle - Authenticated LLO is LOC owner', () => {
 
     it('rejects a requested loc', async () => {
         const notificationService = new Mock<NotificationService>();

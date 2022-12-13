@@ -13,7 +13,7 @@ import {
     LegalOfficerDecision,
     LegalOfficerDecisionDescription,
 } from '../../../src/logion/model/protectionrequest.model.js';
-import { ALICE, CHARLY } from '../../helpers/addresses.js';
+import { ALICE, BOB, CHARLY } from '../../helpers/addresses.js';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
@@ -24,7 +24,7 @@ import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/mode
 import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
-const { mockAuthenticationWithCondition, setupApp } = TestApp;
+const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser } = TestApp;
 
 describe('createProtectionRequest', () => {
 
@@ -209,9 +209,14 @@ function mockModelForFetch(container: Container): void {
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
 }
 
+function authenticatedLLONotProtectingUser() {
+    const authenticatedUser = mockLegalOfficerOnNode(BOB);
+    return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
+}
+
 describe('acceptProtectionRequest', () => {
 
-    it('WithValidAuthentication', async () => {
+    it('protecting LLO accepts', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true));
 
         await request(app)
@@ -225,6 +230,19 @@ describe('acceptProtectionRequest', () => {
         notificationService.verify(instance => instance.notify(IDENTITY.email, "protection-accepted", It.Is<any>(data => {
             return data.protection.decision.decisionOn === DECISION_TIMESTAMP
         })))
+    });
+
+    it('non-protecting LLO fails to accept', async () => {
+        const app = setupApp(ProtectionRequestController, container => mockModelForAccept(container, true), authenticatedLLONotProtectingUser());
+
+        await request(app)
+            .post('/api/protection-request/' + REQUEST_ID + "/accept")
+            .send({
+                locId: "locId"
+            })
+            .expect(401)
+
+        notificationService.verify(instance => instance.notify, Times.Never());
     });
 });
 
@@ -257,7 +275,7 @@ const REQUEST_ID = "requestId";
 
 describe('rejectProtectionRequest', () => {
 
-    it('WithValidAuthentication', async () => {
+    it('protecting LLO rejects', async () => {
         const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true));
 
         await request(app)
@@ -273,6 +291,20 @@ describe('rejectProtectionRequest', () => {
             return data.protection.decision.rejectReason === REJECT_REASON &&
                 data.protection.decision.decisionOn === DECISION_TIMESTAMP
         })))
+    });
+
+    it('non-protecting LLO fails to reject', async () => {
+        const app = setupApp(ProtectionRequestController, container => mockModelForReject(container, true), authenticatedLLONotProtectingUser());
+
+        await request(app)
+            .post('/api/protection-request/' + REQUEST_ID + "/reject")
+            .send({
+                legalOfficerAddress: ALICE,
+                rejectReason: REJECT_REASON,
+            })
+            .expect(401);
+
+        notificationService.verify(instance => instance.notify, Times.Never());
     });
 });
 

@@ -59,7 +59,7 @@ describe('LocRequestController - Items -', () => {
 
     it('fails to add file to loc if not contributor', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        const mock = mockAuthenticationWithCondition(false);
+        const mock = mockAuthenticationWithCondition(false, "5EnMt55QhBmQiTQBLu7kNhBbYpsyZwEHzQFxf5wfaFLzpbT6");
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_VTP'), mock);
         await testAddFileForbidden(app);
     });
