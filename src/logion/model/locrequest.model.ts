@@ -1,8 +1,8 @@
 import { injectable } from "inversify";
 import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, } from "typeorm";
-import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
-import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
+import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";

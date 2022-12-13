@@ -4,10 +4,11 @@ import { AppContainer } from './container/app.container.js';
 import { Scheduler } from "./scheduler/scheduler.service.js";
 import { setupApp } from "./app.support.js";
 import { PrometheusService } from "./services/prometheus.service.js";
+import { install } from "source-map-support";
 
 const { logger } = Log;
 
-require('source-map-support').install();
+install();
 
 appDataSource.initialize()
 .then(() => {

@@ -1,7 +1,7 @@
-import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder";
-import { EntityTarget } from "typeorm/common/EntityTarget";
-import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity";
-import { EntityManager } from "typeorm/entity-manager/EntityManager";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
+import { EntityTarget } from "typeorm/common/EntityTarget.js";
+import { QueryDeepPartialEntity } from "typeorm/query-builder/QueryPartialEntity.js";
+import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { Log } from "@logion/rest-api-core";
 
 import { HasIndex, order } from "../lib/db/collections.js";

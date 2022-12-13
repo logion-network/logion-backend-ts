@@ -23,7 +23,7 @@ import {
     getDefaultResponsesNoContent,
 } from "@logion/rest-api-core";
 import { CollectionService, GetCollectionItemFileParams, LogionNodeCollectionService } from "../services/collection.service.js";
-import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types";
+import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types.js";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
