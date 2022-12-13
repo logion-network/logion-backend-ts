@@ -97,6 +97,7 @@ export class LocRequestAdapter {
                 expectedLocTypes: [ "Identity" ],
                 expectedIdentityLocType: "Polkadot",
                 expectedRequesterAddress: description.requesterAddress,
+                expectedOwnerAddress: description.ownerAddress,
                 expectedStatuses: [ "CLOSED" ]
             })).find(loc => loc.getVoidInfo() === null);
             if (identityLoc) {

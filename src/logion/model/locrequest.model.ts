@@ -801,12 +801,12 @@ export class LocRequestRepository {
             .leftJoinAndSelect("request.links", "link");
 
         if (specification.expectedRequesterAddress) {
-            builder.where("request.requester_address = :expectedRequesterAddress",
+            builder.andWhere("request.requester_address = :expectedRequesterAddress",
                 { expectedRequesterAddress: specification.expectedRequesterAddress });
         }
 
         if (specification.expectedOwnerAddress) {
-            builder.where("request.owner_address = :expectedOwnerAddress",
+            builder.andWhere("request.owner_address = :expectedOwnerAddress",
                 { expectedOwnerAddress: specification.expectedOwnerAddress });
         }
 
