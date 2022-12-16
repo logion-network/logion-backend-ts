@@ -7,10 +7,10 @@ import {
     LocFile,
     LocMetadataItem,
     LocLink, LocType,
-} from "../../../src/logion/model/locrequest.model";
-import { ALICE, BOB } from "../../helpers/addresses";
+} from "../../../src/logion/model/locrequest.model.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
-import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service";
+import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
@@ -39,6 +39,11 @@ describe('LocRequestRepository - read accesses', () => {
         checkDescription(requests, "Transaction", "loc-1", "loc-2", "loc-4", "loc-5", "loc-10", "loc-17", "loc-18");
 
         expect(requests[0].getDescription().userIdentity).toBeUndefined();
+
+        expect(requests[0].iDenfyVerification?.authToken).toBeNull();
+        expect(requests[0].iDenfyVerification?.scanRef).toBeNull();
+        expect(requests[0].iDenfyVerification?.status).toBeNull();
+        expect(requests[0].iDenfyVerification?.callbackPayload).toBeNull();
     })
 
     it("find LOCS with Polkadot requester", async () => {

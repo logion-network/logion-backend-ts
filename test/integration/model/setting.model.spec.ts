@@ -1,6 +1,6 @@
 import { TestDb } from "@logion/rest-api-core";
-import { SettingRepository, SettingAggregateRoot } from "../../../src/logion/model/setting.model";
-import { ALICE, BOB, CHARLY } from "../../helpers/addresses";
+import { SettingRepository, SettingAggregateRoot } from "../../../src/logion/model/setting.model.js";
+import { ALICE, BOB, CHARLY } from "../../helpers/addresses.js";
 
 const { connect, disconnect, executeScript } = TestDb;
 

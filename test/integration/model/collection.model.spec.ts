@@ -5,9 +5,9 @@ import {
     CollectionItemFile,
     CollectionItemFileDelivered,
     CollectionItemFileDescription
-} from "../../../src/logion/model/collection.model";
+} from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
-import { CollectionService, TransactionalCollectionService } from "../../../src/logion/services/collection.service";
+import { CollectionService, TransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 

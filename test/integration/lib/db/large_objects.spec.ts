@@ -1,4 +1,4 @@
-import { importFile, exportFile, deleteFile } from "../../../../src/logion/lib/db/large_objects";
+import { importFile, exportFile, deleteFile } from "../../../../src/logion/lib/db/large_objects.js";
 import { readFile, rm } from 'fs/promises';
 
 describe("Large Objects module", () => {

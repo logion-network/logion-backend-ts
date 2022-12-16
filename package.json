@@ -16,11 +16,11 @@
         "inspect": "yarn run build && NODE_ENV=development node --inspect dist/app.js",
         "serve": "tsc-watch --p ./tsconfig.app.json --onSuccess \"env NODE_ENV=development node ./dist/app.js\"",
         "test": "NODE_OPTIONS=--loader=ts-node/esm jasmine --config=spec/support/jasmine.json",
-        "integration-test": "yarn run setup-test-db && jasmine --config=spec/support/jasmine-integration.json ; yarn run teardown-test-db",
+        "integration-test": "yarn run setup-test-db && NODE_OPTIONS=--loader=ts-node/esm jasmine --config=spec/support/jasmine-integration.json ; yarn run teardown-test-db",
         "setup-test-db": "docker run -d --rm --name logion-test-db -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest",
         "teardown-test-db": "docker stop logion-test-db",
         "coverage": "nyc yarn run test",
-        "typeorm": "node --require ts-node/register ./node_modules/typeorm/cli.js -d ./src/logion/db-tools/ormconfig.ts"
+        "typeorm": "node ./node_modules/typeorm/cli.js -d ./dist/db-tools/ormconfig.js"
     },
     "dependencies": {
         "@logion/node-exiftool": "^2.3.1-2",

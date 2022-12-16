@@ -48,6 +48,21 @@
                     }
                 }
             },
+            "Config": {
+                "description": "Backend configuration which impacts clients",
+                "type": "object",
+                "properties": {
+                    "integrations": {
+                        "description": "Available integrations and their status (enabled/disabled)",
+                        "type": "object",
+                        "properties": {
+                            "iDenfy": {
+                                "type": "boolean"
+                            }
+                        }
+                    }
+                }
+            },
             "CreateProtectionRequestView": {
                 "type": "object",
                 "properties": {
@@ -1194,6 +1209,16 @@
                         "items": {
                             "$ref": "#/components/schemas/VerifiedThirdPartyView"
                         }
+                    }
+                }
+            },
+            "IdenfyVerificationRedirectView": {
+                "description": "Provides the URL to redirect to in order to start an identity verification process at iDenfy",
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "description": "The URL to redirect to",
+                        "type": "string"
                     }
                 }
             }

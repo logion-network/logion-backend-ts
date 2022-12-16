@@ -1,6 +1,6 @@
-import { MailService } from "../../../src/logion/services/mail.service";
+import { MailService } from "../../../src/logion/services/mail.service.js";
 import { v4 } from "uuid";
-import { configureEnvBackupRestore } from "./test-helpers/envhelper";
+import { configureEnvBackupRestore } from "./test-helpers/envhelper.js";
 
 describe("MailService", () => {
 
