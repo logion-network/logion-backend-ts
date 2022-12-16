@@ -12,6 +12,7 @@ import { deleteIndexedChild, Child, saveIndexedChildren } from "./child.js";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
 import { PersonalInfo } from "./personalinfo.model.js";
+import { IdenfyCallbackPayload, IdenfyVerificationSession, IdenfyVerificationStatus } from "../services/idenfy/idenfy.types.js";
 
 const { logger } = Log;
 
@@ -106,6 +107,23 @@ function toPublicSeal(embedded: EmbeddableSeal | undefined): PublicSeal | undefi
             version: embedded.version
         }
         : undefined;
+}
+
+type EmbeddableIdenfyVerificationStatus = 'PENDING' | IdenfyVerificationStatus;
+
+class EmbeddableIdenfyVerification {
+
+    @Column("varchar", { name: "idenfy_auth_token", length: 40, nullable: true })
+    authToken?: string | null;
+
+    @Column("varchar", { name: "idenfy_scan_ref", length: 40, nullable: true })
+    scanRef?: string | null;
+
+    @Column("varchar", { name: "idenfy_status", length: 255, nullable: true })
+    status?: EmbeddableIdenfyVerificationStatus | null;
+
+    @Column("text", { name: "idenfy_callback_payload", nullable: true })
+    callbackPayload?: string | null;
 }
 
 @Entity("loc_request")
@@ -534,6 +552,39 @@ export class LocRequestAggregateRoot {
         this.verifiedThirdParty = verifiedThirdParty;
     }
 
+    canInitIdenfyVerification(): { result: boolean, error?: string } {
+        if(this.status !== "DRAFT") {
+            return { result: false, error: "LOC must be draft" };
+        }
+        if(this.locType !== "Identity") {
+            return { result: false, error: "Not an identity LOC" };
+        }
+        if(this.iDenfyVerification?.status === "PENDING") {
+            return { result: false, error: "A verification is already in progress" };
+        }
+        if(this.iDenfyVerification?.status === "APPROVED") {
+            return { result: false, error: "A previous verification was already approved" };
+        }
+        return { result: true };
+    }
+
+    initIdenfyVerification(session: IdenfyVerificationSession) {
+        this.iDenfyVerification = new EmbeddableIdenfyVerification();
+        this.iDenfyVerification.authToken = session.authToken;
+        this.iDenfyVerification.scanRef = session.scanRef;
+        this.iDenfyVerification.status = 'PENDING';
+    }
+
+    updateIdenfyVerification(payload: IdenfyCallbackPayload, rawJson: string) {
+        if(!this.iDenfyVerification || this.iDenfyVerification.status !== 'PENDING') {
+            throw new Error("iDenfy verification was not initiated");
+        }
+        if(payload.final) {
+            this.iDenfyVerification.status = payload.status.overall;
+            this.iDenfyVerification.callbackPayload = rawJson;
+        }
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -612,6 +663,9 @@ export class LocRequestAggregateRoot {
 
     @Column("boolean", { name: "verified_third_party", default: false })
     verifiedThirdParty?: boolean;
+
+    @Column(() => EmbeddableIdenfyVerification, { prefix: ""} )
+    iDenfyVerification?: EmbeddableIdenfyVerification;
 
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];

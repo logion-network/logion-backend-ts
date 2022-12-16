@@ -1,14 +1,14 @@
 import { TestDb } from "@logion/rest-api-core";
-import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress";
-import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity";
+import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress.js";
+import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity.js";
 import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestAggregateRoot,
     ProtectionRequestRepository,
     ProtectionRequestKind,
     ProtectionRequestStatus,
-} from "../../../src/logion/model/protectionrequest.model";
-import { ALICE, BOB } from "../../helpers/addresses";
+} from "../../../src/logion/model/protectionrequest.model.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 

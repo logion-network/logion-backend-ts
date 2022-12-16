@@ -2,7 +2,7 @@ import { TestDb } from "@logion/rest-api-core";
 import {
     TransactionAggregateRoot,
     TransactionRepository,
-} from "../../../src/logion/model/transaction.model";
+} from "../../../src/logion/model/transaction.model.js";
 import moment from "moment";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;

@@ -4,8 +4,8 @@ import {
     VaultTransferRequestAggregateRoot,
     VaultTransferRequestRepository,
     VaultTransferRequestStatus,
-} from "../../../src/logion/model/vaulttransferrequest.model";
-import { ALICE } from "../../helpers/addresses";
+} from "../../../src/logion/model/vaulttransferrequest.model.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 

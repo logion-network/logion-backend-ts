@@ -1,7 +1,7 @@
-import { LoFileRepository, LoFileAggregateRoot, LoFileDescription } from "../../../src/logion/model/lofile.model";
+import { LoFileRepository, LoFileAggregateRoot, LoFileDescription } from "../../../src/logion/model/lofile.model.js";
 import { TestDb } from "@logion/rest-api-core";
-import { ALICE } from "../../helpers/addresses";
-import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model";
+import { ALICE } from "../../helpers/addresses.js";
+import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 

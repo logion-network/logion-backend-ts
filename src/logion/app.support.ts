@@ -19,6 +19,8 @@ import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestCo
 import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller.js";
 import { fillInSpec as fillInSpecForSettings, SettingController } from "./controllers/setting.controller.js";
 import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller.js";
+import { fillInSpec as fillInSpecConfig, ConfigController } from "./controllers/config.controller.js";
+import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/idenfy.controller.js";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -50,6 +52,8 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForSettings(spec);
     fillInSpecForVaultTransferRequest(spec);
     fillInSpecVerifiedThirdParty(spec);
+    fillInSpecConfig(spec);
+    fillInSpecIdenfy(spec);
 
     return spec;
 }
@@ -68,7 +72,11 @@ export function buildExpress(withDoc?: boolean): Express {
         });
     }
 
-    app.use(bodyParser.json());
+    app.use(bodyParser.json({
+        verify: (req, _res, buf) => {
+            (req as any).rawBody = buf;
+        }
+    }));
     app.use(bodyParser.urlencoded({ extended: false }));
     app.use(fileUpload({
         limits: { fileSize: 300 * 1024 * 1024 },
@@ -94,6 +102,8 @@ export function setupApp(withDoc?: boolean): Express {
     dino.registerController(LoFileController);
     dino.registerController(SettingController);
     dino.registerController(VerifiedThirdPartyController);
+    dino.registerController(ConfigController);
+    dino.registerController(IdenfyController);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {

@@ -1,5 +1,5 @@
 import { TestDb } from "@logion/rest-api-core";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 

@@ -18,6 +18,7 @@ import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service.js";
 import { UUID } from "bson";
+import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
@@ -362,7 +363,54 @@ describe("LocRequestAggregateRoot", () => {
         request.locType = "Transaction";
         expect(() => request.setVerifiedThirdParty(true)).toThrowError();
     });
+
+    it("initiates iDenfy verification", () => {
+        givenRequestWithStatus('DRAFT');
+        const session: IdenfyVerificationSession = {
+            authToken: "pgYQX0z2T8mtcpNj9I20uWVCLKNuG0vgr12f0wAC",
+            scanRef: "3af0b5c9-8ef3-4815-8796-5ab3ed942917",
+        };
+        request.initIdenfyVerification(session);
+        expect(request.iDenfyVerification?.authToken).toBe(session.authToken);
+        expect(request.iDenfyVerification?.scanRef).toBe(session.scanRef);
+        expect(request.iDenfyVerification?.callbackPayload).toBeUndefined();
+        expect(request.iDenfyVerification?.status).toBe("PENDING");
+    });
+
+    it("updates iDenfy verification result", () => {
+        givenRequestWithStatus('DRAFT');
+        const session: IdenfyVerificationSession = {
+            authToken: "pgYQX0z2T8mtcpNj9I20uWVCLKNuG0vgr12f0wAC",
+            scanRef: "3af0b5c9-8ef3-4815-8796-5ab3ed942917",
+        };
+        request.initIdenfyVerification(session);
+        const rawJson = idenfyCallbackPayload("APPROVED");
+        const payload = JSON.parse(rawJson);
+
+        request.updateIdenfyVerification(payload, rawJson);
+
+        expect(request.iDenfyVerification?.authToken).toBe(session.authToken);
+        expect(request.iDenfyVerification?.scanRef).toBe(session.scanRef);
+        expect(request.iDenfyVerification?.callbackPayload).toBe(rawJson);
+        expect(request.iDenfyVerification?.status).toBe("APPROVED");
+    });
+
+    it("fails updating iDenfy verification result if not initiated yet", () => {
+        givenRequestWithStatus('DRAFT');
+        const rawJson = idenfyCallbackPayload("APPROVED");
+        const payload = JSON.parse(rawJson);
+        expect(() => request.updateIdenfyVerification(payload, rawJson)).toThrowError("iDenfy verification was not initiated");
+    });
 });
+
+function idenfyCallbackPayload(status: IdenfyVerificationStatus) {
+    return `{
+    "final": true,
+    "status": {
+        "overall": "${ status }"
+    }
+}`;
+}
 
 describe("LocRequestAggregateRoot (metadata)", () => {
 

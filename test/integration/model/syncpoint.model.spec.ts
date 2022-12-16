@@ -4,7 +4,7 @@ import {
     SyncPointAggregateRoot,
     SyncPointRepository,
     TRANSACTIONS_SYNC_POINT_NAME,
-} from "../../../src/logion/model/syncpoint.model";
+} from "../../../src/logion/model/syncpoint.model.js";
 
 const { connect, disconnect, query, executeScript } = TestDb;
 

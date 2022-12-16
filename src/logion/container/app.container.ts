@@ -48,6 +48,9 @@ import { SyncPointService, TransactionalSyncPointService } from "../services/syn
 import { TransactionalTransactionService, TransactionService } from "../services/transaction.service.js";
 import { TransactionalVaultTransferRequestService, VaultTransferRequestService } from "../services/vaulttransferrequest.service.js";
 import { TransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../services/verifiedthirdpartyselection.service.js";
+import { DisabledIdenfyService, EnabledIdenfyService, IdenfyService } from "../services/idenfy/idenfy.service.js";
+import { ConfigController } from "../controllers/config.controller.js";
+import { IdenfyController } from "../controllers/idenfy.controller.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -114,6 +117,13 @@ container.bind(VaultTransferRequestService).toService(TransactionalVaultTransfer
 container.bind(TransactionalVaultTransferRequestService).toSelf();
 container.bind(VerifiedThirdPartySelectionService).toService(TransactionalVerifiedThirdPartySelectionService);
 container.bind(TransactionalVerifiedThirdPartySelectionService).toSelf();
+if(process.env.IDENFY_SECRET) {
+    container.bind(EnabledIdenfyService).toSelf();
+    container.bind(IdenfyService).toService(EnabledIdenfyService);
+} else {
+    container.bind(DisabledIdenfyService).toSelf();
+    container.bind(IdenfyService).toService(DisabledIdenfyService);
+}
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
@@ -122,5 +132,7 @@ container.bind(TransactionController).toSelf().inTransientScope();
 container.bind(VaultTransferRequestController).toSelf().inTransientScope();
 container.bind(SettingController).toSelf().inTransientScope();
 container.bind(VerifiedThirdPartyController).toSelf().inTransientScope();
+container.bind(ConfigController).toSelf().inTransientScope();
+container.bind(IdenfyController).toSelf().inTransientScope();
 
 export { container as AppContainer };

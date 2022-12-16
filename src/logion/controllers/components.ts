@@ -33,6 +33,13 @@ export interface components {
       owner?: string;
       belongsToCurrentOwner?: boolean;
     };
+    /** @description Backend configuration which impacts clients */
+    Config: {
+      /** @description Available integrations and their status (enabled/disabled) */
+      integrations?: {
+        iDenfy?: boolean;
+      };
+    };
     /**
      * CreateProtectionRequestView 
      * @description A Protection Request to create
@@ -716,6 +723,11 @@ export interface components {
     };
     VerifiedThirdPartiesView: {
       verifiedThirdParties?: (components["schemas"]["VerifiedThirdPartyView"])[];
+    };
+    /** @description Provides the URL to redirect to in order to start an identity verification process at iDenfy */
+    IdenfyVerificationRedirectView: {
+      /** @description The URL to redirect to */
+      url?: string;
     };
   };
   responses: never;

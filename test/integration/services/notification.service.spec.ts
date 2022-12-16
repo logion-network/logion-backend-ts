@@ -1,7 +1,7 @@
-import { MailService } from "../../../src/logion/services/mail.service";
-import { NotificationService, templateValues, Template } from "../../../src/logion/services/notification.service";
-import { configureEnvBackupRestore } from "./test-helpers/envhelper";
-import { notificationData } from "../../unit/services/notification-test-data";
+import { MailService } from "../../../src/logion/services/mail.service.js";
+import { NotificationService, templateValues, Template } from "../../../src/logion/services/notification.service.js";
+import { configureEnvBackupRestore } from "./test-helpers/envhelper.js";
+import { notificationData } from "../../unit/services/notification-test-data.js";
 
 describe("NotificationService", () => {
 
