@@ -51,6 +51,7 @@ import { TransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySele
 import { DisabledIdenfyService, EnabledIdenfyService, IdenfyService } from "../services/idenfy/idenfy.service.js";
 import { ConfigController } from "../controllers/config.controller.js";
 import { IdenfyController } from "../controllers/idenfy.controller.js";
+import { AxiosFactory } from "../services/axiosfactory.service.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -124,6 +125,7 @@ if(process.env.IDENFY_SECRET) {
     container.bind(DisabledIdenfyService).toSelf();
     container.bind(IdenfyService).toService(DisabledIdenfyService);
 }
+container.bind(AxiosFactory).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

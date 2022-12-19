@@ -1,5 +1,5 @@
-import { requireDefined } from "@logion/rest-api-core";
-import { AxiosInstance } from "axios";
+import { Log, requireDefined } from "@logion/rest-api-core";
+import { AxiosError, AxiosInstance } from "axios";
 import { injectable } from "inversify";
 import { DateTime } from "luxon";
 import { LocRequestService } from "../locrequest.service.js";
@@ -12,6 +12,8 @@ import path from "path";
 import { sha256File } from '../../lib/crypto/hashing.js';
 import { FileStorageService } from "../file.storage.service.js";
 import { AxiosFactory } from "../axiosfactory.service.js";
+
+const { logger } = Log;
 
 export interface IdenfyVerificationRedirect {
 
@@ -75,23 +77,31 @@ export class EnabledIdenfyService extends IdenfyService {
         }
 
         const requestId = requireDefined(request.id);
-        const response = await this.axios.post("/token", {
-            clientId: requestId,
-            firstName: request.getDescription().userIdentity?.firstName,
-            lastName: request.getDescription().userIdentity?.lastName,
-            successUrl: `${ this.baseUrl }/idenfy/success`,
-            errorUrl: `${ this.baseUrl }/idenfy/error`,
-            unverifiedUrl: `${ this.baseUrl }/idenfy/unverified`,
-            callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
-        });
+        try {
+            const response = await this.axios.post("/token", {
+                clientId: requestId,
+                firstName: request.getDescription().userIdentity?.firstName,
+                lastName: request.getDescription().userIdentity?.lastName,
+                successUrl: `${ this.baseUrl }/user/idenfy&result=success&locId=${ requestId }`,
+                errorUrl: `${ this.baseUrl }/user/idenfy&result=error&locId=${ requestId }`,
+                unverifiedUrl: `${ this.baseUrl }/user/idenfy&result=unverified&locId=${ requestId }`,
+                callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
+            });
 
-        const session: IdenfyVerificationSession = response.data;
-        await this.locRequestService.update(requestId, async request => {
-            request.initIdenfyVerification(session);
-        });
-        return {
-            url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`,
-        };
+            const session: IdenfyVerificationSession = response.data;
+            await this.locRequestService.update(requestId, async request => {
+                request.initIdenfyVerification(session);
+            });
+            return {
+                url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`,
+            };
+        } catch(e) {
+            const axiosError = e as AxiosError;
+            logger.error("BEGIN iDenfy error:");
+            logger.error(axiosError.response?.data);
+            logger.error("END iDenfy error:");
+            throw e;
+        }
     }
 
     override async callback(json: IdenfyCallbackPayload, raw: Buffer): Promise<void> {
