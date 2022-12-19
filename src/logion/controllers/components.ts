@@ -729,6 +729,28 @@ export interface components {
       /** @description The URL to redirect to */
       url?: string;
     };
+    /**
+     * FetchVotesResponseView 
+     * @description The fetched votes
+     */
+    FetchVotesResponseView: {
+      votes?: (components["schemas"]["VoteView"])[];
+    };
+    /** @description Provides the info about a vote */
+    VoteView: {
+      /** @description The ID of the vote */
+      voteId?: string;
+      /**
+       * Format: uuid 
+       * @description The ID of the LOC the vote is based on
+       */
+      locId?: string;
+      /**
+       * Format: date-time 
+       * @description The creation timestamp
+       */
+      createdOn?: string;
+    };
   };
   responses: never;
   parameters: never;

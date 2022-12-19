@@ -21,6 +21,7 @@ import { fillInSpec as fillInSpecForSettings, SettingController } from "./contro
 import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller.js";
 import { fillInSpec as fillInSpecConfig, ConfigController } from "./controllers/config.controller.js";
 import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/idenfy.controller.js";
+import { fillInSpec as fillInSpecVote, VoteController } from "./controllers/vote.controller.js";
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -54,6 +55,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecVerifiedThirdParty(spec);
     fillInSpecConfig(spec);
     fillInSpecIdenfy(spec);
+    fillInSpecVote(spec);
 
     return spec;
 }
@@ -104,6 +106,7 @@ export function setupApp(withDoc?: boolean): Express {
     dino.registerController(VerifiedThirdPartyController);
     dino.registerController(ConfigController);
     dino.registerController(IdenfyController);
+    dino.registerController(VoteController);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {
