@@ -1221,6 +1221,39 @@
                         "type": "string"
                     }
                 }
+            },
+            "FetchVotesResponseView": {
+                "type": "object",
+                "properties": {
+                    "votes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VoteView"
+                        }
+                    }
+                },
+                "title": "FetchVotesResponseView",
+                "description": "The fetched votes"
+            },
+            "VoteView": {
+                "description": "Provides the info about a vote",
+                "type": "object",
+                "properties": {
+                    "voteId": {
+                        "type": "string",
+                        "description": "The ID of the vote"
+                    },
+                    "locId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC the vote is based on"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    }
+                }
             }
         }
     }
