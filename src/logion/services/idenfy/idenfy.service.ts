@@ -97,9 +97,9 @@ export class EnabledIdenfyService extends IdenfyService {
             };
         } catch(e) {
             const axiosError = e as AxiosError;
-            logger.error("BEGIN iDenfy error:");
+            logger.error("BEGIN iDenfy create session error:");
             logger.error(axiosError.response?.data);
-            logger.error("END iDenfy error:");
+            logger.error("END iDenfy create session error");
             throw e;
         }
     }
@@ -108,6 +108,9 @@ export class EnabledIdenfyService extends IdenfyService {
         if(!json.final) {
             return;
         }
+
+        logger.info("BEGIN iDenfy callback");
+        logger.info(json);
 
         let files: FileDescription[];
         if(json.status.overall === "APPROVED" || json.status.overall === "SUSPECTED") {
@@ -122,6 +125,8 @@ export class EnabledIdenfyService extends IdenfyService {
                 request.addFile(file);
             }   
         });
+
+        logger.info("END iDenfy callback");
     }
 
     private async downloadFiles(json: IdenfyCallbackPayload, raw: Buffer): Promise<FileDescription[]> {
