@@ -25,6 +25,8 @@ export abstract class IdenfyService {
     abstract createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect>;
 
     abstract callback(json: IdenfyCallbackPayload, raw: Buffer): Promise<void>;
+
+    abstract redirectUrl(authToken: string): string;
 }
 
 @injectable()
@@ -35,6 +37,10 @@ export class DisabledIdenfyService extends IdenfyService {
     }
 
     override async callback(): Promise<void> {
+        throw new Error("iDenfy integration is disabled");
+    }
+
+    override redirectUrl(): string {
         throw new Error("iDenfy integration is disabled");
     }
 }
@@ -71,43 +77,41 @@ export class EnabledIdenfyService extends IdenfyService {
     private readonly axios: AxiosInstance;
 
     override async createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect> {
-        if(request.isIdenfySessionInProgress()) {
-            return {
-                url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ request.iDenfyVerification?.authToken }`,
-            };
-        } else {
-            const canVerify = request.canInitIdenfyVerification();
-            if(!canVerify.result) {
-                throw new Error(canVerify.error);
-            }
-
-            const requestId = requireDefined(request.id);
-            try {
-                const response = await this.axios.post("/token", {
-                    clientId: requestId,
-                    firstName: request.getDescription().userIdentity?.firstName,
-                    lastName: request.getDescription().userIdentity?.lastName,
-                    successUrl: `${ this.baseUrl }/user/idenfy?result=success&locId=${ requestId }`,
-                    errorUrl: `${ this.baseUrl }/user/idenfy?result=error&locId=${ requestId }`,
-                    unverifiedUrl: `${ this.baseUrl }/user/idenfy?result=unverified&locId=${ requestId }`,
-                    callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
-                });
-
-                const session: IdenfyVerificationSession = response.data;
-                await this.locRequestService.update(requestId, async request => {
-                    request.initIdenfyVerification(session);
-                });
-                return {
-                    url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`,
-                };
-            } catch(e) {
-                const axiosError = e as AxiosError;
-                logger.error("BEGIN iDenfy create session error:");
-                logger.error(axiosError.response?.data);
-                logger.error("END iDenfy create session error");
-                throw e;
-            }
+        const canVerify = request.canInitIdenfyVerification();
+        if(!canVerify.result) {
+            throw new Error(canVerify.error);
         }
+
+        const requestId = requireDefined(request.id);
+        try {
+            const response = await this.axios.post("/token", {
+                clientId: requestId,
+                firstName: request.getDescription().userIdentity?.firstName,
+                lastName: request.getDescription().userIdentity?.lastName,
+                successUrl: `${ this.baseUrl }/user/idenfy?result=success&locId=${ requestId }`,
+                errorUrl: `${ this.baseUrl }/user/idenfy?result=error&locId=${ requestId }`,
+                unverifiedUrl: `${ this.baseUrl }/user/idenfy?result=unverified&locId=${ requestId }`,
+                callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
+            });
+
+            const session: IdenfyVerificationSession = response.data;
+            await this.locRequestService.update(requestId, async request => {
+                request.initIdenfyVerification(session);
+            });
+            return {
+                url: this.redirectUrl(session.authToken),
+            };
+        } catch(e) {
+            const axiosError = e as AxiosError;
+            logger.error("BEGIN iDenfy create session error:");
+            logger.error(axiosError.response?.data);
+            logger.error("END iDenfy create session error");
+            throw e;
+        }
+    }
+
+    override redirectUrl(authToken: string): string {
+        return `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ authToken }`;
     }
 
     override async callback(json: IdenfyCallbackPayload, raw: Buffer): Promise<void> {

@@ -27,6 +27,7 @@ import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapt
 import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service.js";
+import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
@@ -163,6 +164,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     ));
 
     container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(repository.object()));
+
+    container.bind(IdenfyService).toConstantValue(new DisabledIdenfyService());
 
     return {
         factory,

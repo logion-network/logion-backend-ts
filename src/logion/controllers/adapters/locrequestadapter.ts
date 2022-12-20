@@ -1,5 +1,6 @@
 import { requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
+import { IdenfyService } from "../../services/idenfy/idenfy.service.js";
 import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model.js";
 import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
@@ -22,6 +23,7 @@ export class LocRequestAdapter {
     constructor(
         private locRequestRepository: LocRequestRepository,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
+        private idenfyService: IdenfyService,
     ) {
 
     }
@@ -36,6 +38,15 @@ export class LocRequestAdapter {
 
         const id = requireDefined(request.id);
         const locDescription = request.getDescription();
+        let iDenfy = undefined;
+        if(request.iDenfyVerification
+            && request.iDenfyVerification.status
+            && request.iDenfyVerification.authToken) {
+            iDenfy = {
+                status: request.iDenfyVerification.status,
+                redirectUrl: request.iDenfyVerification.status === "PENDING" ? this.idenfyService.redirectUrl(request.iDenfyVerification.authToken) : undefined,
+            };
+        }
         const view: LocRequestView = {
             id,
             requesterAddress: locDescription.requesterAddress,
@@ -73,6 +84,7 @@ export class LocRequestAdapter {
             company: locDescription.company,
             verifiedThirdParty: locDescription.verifiedThirdParty,
             selectedParties: await this.verifiedThirdPartyAdapter.selectedParties(id),
+            iDenfy,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

@@ -689,6 +689,25 @@
                         "items": {
                             "$ref": "#/components/schemas/VerifiedThirdPartyView"
                         }
+                    },
+                    "iDenfy": {
+                        "type": "object",
+                        "properties": {
+                            "status": {
+                                "enum": [
+                                    "APPROVED",
+                                    "DENIED",
+                                    "SUSPECTED",
+                                    "EXPIRED",
+                                    "PENDING"
+                                ],
+                                "description": "The status of current iDenfy verification session"
+                            },
+                            "redirectUrl": {
+                                "type": "string",
+                                "description": "The iDenfy redirect when status is PENDING"
+                            }
+                        }
                     }
                 },
                 "title": "LocRequestView",
