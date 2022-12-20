@@ -87,9 +87,9 @@ export class EnabledIdenfyService extends IdenfyService {
                     clientId: requestId,
                     firstName: request.getDescription().userIdentity?.firstName,
                     lastName: request.getDescription().userIdentity?.lastName,
-                    successUrl: `${ this.baseUrl }/user/idenfy&result=success&locId=${ requestId }`,
-                    errorUrl: `${ this.baseUrl }/user/idenfy&result=error&locId=${ requestId }`,
-                    unverifiedUrl: `${ this.baseUrl }/user/idenfy&result=unverified&locId=${ requestId }`,
+                    successUrl: `${ this.baseUrl }/user/idenfy?result=success&locId=${ requestId }`,
+                    errorUrl: `${ this.baseUrl }/user/idenfy?result=error&locId=${ requestId }`,
+                    unverifiedUrl: `${ this.baseUrl }/user/idenfy?result=unverified&locId=${ requestId }`,
                     callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
                 });
 
