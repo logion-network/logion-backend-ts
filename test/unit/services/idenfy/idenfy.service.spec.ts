@@ -39,9 +39,9 @@ describe("EnabledIdenfyService", () => {
             data => data.clientId === REQUEST_ID
             && data.firstName === "John"
             && data.lastName === "Doe"
-            && data.successUrl === `${ BASE_URL }/idenfy/success`
-            && data.errorUrl === `${ BASE_URL }/idenfy/error`
-            && data.unverifiedUrl === `${ BASE_URL }/idenfy/unverified`
+            && data.successUrl === `${ BASE_URL }/user/idenfy&result=success&locId=${ REQUEST_ID }`
+            && data.errorUrl === `${ BASE_URL }/user/idenfy&result=error&locId=${ REQUEST_ID }`
+            && data.unverifiedUrl === `${ BASE_URL }/user/idenfy&result=unverified&locId=${ REQUEST_ID }`
             && data.callbackUrl === `${ BASE_URL }/api/idenfy/callback/${ IDENFY_SECRET }`
         ))).returnsAsync({
             data: session,
