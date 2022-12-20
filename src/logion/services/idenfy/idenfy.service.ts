@@ -71,36 +71,42 @@ export class EnabledIdenfyService extends IdenfyService {
     private readonly axios: AxiosInstance;
 
     override async createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect> {
-        const canVerify = request.canInitIdenfyVerification();
-        if(!canVerify.result) {
-            throw new Error(canVerify.error);
-        }
-
-        const requestId = requireDefined(request.id);
-        try {
-            const response = await this.axios.post("/token", {
-                clientId: requestId,
-                firstName: request.getDescription().userIdentity?.firstName,
-                lastName: request.getDescription().userIdentity?.lastName,
-                successUrl: `${ this.baseUrl }/user/idenfy&result=success&locId=${ requestId }`,
-                errorUrl: `${ this.baseUrl }/user/idenfy&result=error&locId=${ requestId }`,
-                unverifiedUrl: `${ this.baseUrl }/user/idenfy&result=unverified&locId=${ requestId }`,
-                callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
-            });
-
-            const session: IdenfyVerificationSession = response.data;
-            await this.locRequestService.update(requestId, async request => {
-                request.initIdenfyVerification(session);
-            });
+        if(request.isIdenfySessionInProgress()) {
             return {
-                url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`,
+                url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ request.iDenfyVerification?.authToken }`,
             };
-        } catch(e) {
-            const axiosError = e as AxiosError;
-            logger.error("BEGIN iDenfy create session error:");
-            logger.error(axiosError.response?.data);
-            logger.error("END iDenfy create session error");
-            throw e;
+        } else {
+            const canVerify = request.canInitIdenfyVerification();
+            if(!canVerify.result) {
+                throw new Error(canVerify.error);
+            }
+
+            const requestId = requireDefined(request.id);
+            try {
+                const response = await this.axios.post("/token", {
+                    clientId: requestId,
+                    firstName: request.getDescription().userIdentity?.firstName,
+                    lastName: request.getDescription().userIdentity?.lastName,
+                    successUrl: `${ this.baseUrl }/user/idenfy&result=success&locId=${ requestId }`,
+                    errorUrl: `${ this.baseUrl }/user/idenfy&result=error&locId=${ requestId }`,
+                    unverifiedUrl: `${ this.baseUrl }/user/idenfy&result=unverified&locId=${ requestId }`,
+                    callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
+                });
+
+                const session: IdenfyVerificationSession = response.data;
+                await this.locRequestService.update(requestId, async request => {
+                    request.initIdenfyVerification(session);
+                });
+                return {
+                    url: `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`,
+                };
+            } catch(e) {
+                const axiosError = e as AxiosError;
+                logger.error("BEGIN iDenfy create session error:");
+                logger.error(axiosError.response?.data);
+                logger.error("END iDenfy create session error");
+                throw e;
+            }
         }
     }
 
@@ -120,7 +126,7 @@ export class EnabledIdenfyService extends IdenfyService {
         }
 
         await this.locRequestService.update(json.clientId, async request => {
-            request.updateIdenfyVerification(json, raw.toString('utf16le'));
+            request.updateIdenfyVerification(json, raw.toString());
             for(const file of files) {
                 request.addFile(file);
             }   

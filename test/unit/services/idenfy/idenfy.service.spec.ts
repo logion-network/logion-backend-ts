@@ -1,5 +1,4 @@
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosResponseHeaders, CreateAxiosDefaults } from "axios";
-import { transcode } from "buffer";
 import { It, Mock, PlayTimes } from "moq.ts";
 import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository, FileDescription } from "src/logion/model/locrequest.model.js";
 import { AxiosFactory } from "src/logion/services/axiosfactory.service.js";
@@ -58,7 +57,7 @@ describe("EnabledIdenfyService", () => {
         const { locRequest, idenfyService, locRequestRepository } = mockEnabledIdenfyService();
 
         const json = JSON.parse(RAW_IDENFY_PAYLOAD);
-        await idenfyService.callback(json, transcode(Buffer.from(RAW_IDENFY_PAYLOAD), "utf8", "utf16le"));
+        await idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD));
 
         locRequest.verify(instance => instance.updateIdenfyVerification(json, RAW_IDENFY_PAYLOAD));
         for(const fileType of Object.keys(EXPECTED_FILES)) {
@@ -113,6 +112,7 @@ function mockEnabledIdenfyService(): {
         phoneNumber: "+1234",
     });
     locRequest.setup(instance => instance.getDescription()).returns(description.object());
+    locRequest.setup(instance => instance.isIdenfySessionInProgress()).returns(false);
     locRequest.setup(instance => instance.canInitIdenfyVerification()).returns({ result: true });
     locRequest.setup(instance => instance.initIdenfyVerification(It.IsAny())).returns();
     locRequest.setup(instance => instance.updateIdenfyVerification(It.IsAny(), It.IsAny())).returns();

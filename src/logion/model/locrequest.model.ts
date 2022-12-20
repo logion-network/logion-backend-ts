@@ -552,6 +552,10 @@ export class LocRequestAggregateRoot {
         this.verifiedThirdParty = verifiedThirdParty;
     }
 
+    isIdenfySessionInProgress(): boolean {
+        return this.iDenfyVerification !== undefined && this.iDenfyVerification.status === "PENDING";
+    }
+
     canInitIdenfyVerification(): { result: boolean, error?: string } {
         if(this.status !== "DRAFT") {
             return { result: false, error: "LOC must be draft" };
