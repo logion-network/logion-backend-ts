@@ -419,6 +419,15 @@ export interface components {
       /** @description Tells if the user behind this closed Identity LOC is a Verified Third Party */
       verifiedThirdParty?: boolean;
       selectedParties?: (components["schemas"]["VerifiedThirdPartyView"])[];
+      iDenfy?: {
+        /**
+         * @description The status of current iDenfy verification session 
+         * @enum {unknown}
+         */
+        status?: "APPROVED" | "DENIED" | "SUSPECTED" | "EXPIRED" | "PENDING";
+        /** @description The iDenfy redirect when status is PENDING */
+        redirectUrl?: string;
+      };
     };
     /**
      * LocPublicView 

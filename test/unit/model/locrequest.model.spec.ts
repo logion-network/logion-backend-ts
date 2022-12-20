@@ -344,6 +344,14 @@ describe("LocRequestAggregateRoot", () => {
         expect(() => whenSubmitting()).toThrowError();
     });
 
+    it("fails submit given ongoing iDenfy verification session", () => {
+        givenRequestWithStatus('DRAFT');
+        request.iDenfyVerification = {
+            status: "PENDING",
+        };
+        expect(() => whenSubmitting()).toThrowError();
+    });
+
     it("sets verified third party flag if closed Identity LOC", () => {
         givenRequestWithStatus('CLOSED');
         request.locType = "Identity";

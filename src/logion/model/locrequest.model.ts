@@ -133,6 +133,9 @@ export class LocRequestAggregateRoot {
         if (this.status != 'DRAFT') {
             throw new Error("Cannot submit a non-draft request");
         }
+        if(this.iDenfyVerification && this.iDenfyVerification.status === "PENDING") {
+            throw new Error("Cannot submit with ongoing iDenfy verification session");
+        }
         this.status = 'REQUESTED';
     }
 
