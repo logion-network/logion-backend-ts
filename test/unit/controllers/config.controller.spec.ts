@@ -17,7 +17,7 @@ describe("ConfigController", () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.integrations.iDenfy).toBeFalse();
+                expect(response.body.features.iDenfy).toBeFalse();
             });
     });
 
@@ -32,7 +32,32 @@ describe("ConfigController", () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.integrations.iDenfy).toBeTrue();
+                expect(response.body.features.iDenfy).toBeTrue();
+            });
+    });
+    it("provides config without vote feature", async () => {
+        const app = setupApp(ConfigController, () => {});
+        delete process.env.FEATURE_VOTE;
+
+        await request(app)
+            .get(`/api/config`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.features.vote).toBeFalse();
+            });
+    });
+
+    it("provides config with vote feature", async () => {
+        const app = setupApp(ConfigController, () => {});
+        process.env.FEATURE_VOTE = "true";
+
+        await request(app)
+            .get(`/api/config`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.features.vote).toBeTrue();
             });
     });
 });

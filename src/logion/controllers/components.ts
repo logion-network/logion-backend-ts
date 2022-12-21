@@ -35,9 +35,10 @@ export interface components {
     };
     /** @description Backend configuration which impacts clients */
     Config: {
-      /** @description Available integrations and their status (enabled/disabled) */
-      integrations?: {
+      /** @description Available features and their status (enabled/disabled) */
+      features?: {
         iDenfy?: boolean;
+        vote?: boolean;
       };
     };
     /**

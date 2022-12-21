@@ -52,11 +52,14 @@
                 "description": "Backend configuration which impacts clients",
                 "type": "object",
                 "properties": {
-                    "integrations": {
-                        "description": "Available integrations and their status (enabled/disabled)",
+                    "features": {
+                        "description": "Available features and their status (enabled/disabled)",
                         "type": "object",
                         "properties": {
                             "iDenfy": {
+                                "type": "boolean"
+                            },
+                            "vote": {
                                 "type": "boolean"
                             }
                         }
