@@ -28,6 +28,7 @@ import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFa
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service.js";
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
+import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
@@ -130,6 +131,7 @@ export interface Mocks {
     collectionRepository: Mock<CollectionRepository>;
     verifiedThirdPartySelectionFactory: Mock<VerifiedThirdPartySelectionFactory>;
     verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
+    voteRepository: Mock<VoteRepository>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -167,6 +169,9 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
 
     container.bind(IdenfyService).toConstantValue(new DisabledIdenfyService());
 
+    const voteRepository = existingMocks?.voteRepository ? existingMocks.voteRepository : new Mock<VoteRepository>();
+    container.bind(VoteRepository).toConstantValue(voteRepository.object());
+
     return {
         factory,
         request,
@@ -176,6 +181,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         collectionRepository,
         verifiedThirdPartySelectionFactory,
         verifiedThirdPartySelectionRepository,
+        voteRepository,
     };
 }
 
@@ -382,3 +388,16 @@ export function setupSelectedVtp(
 
 export const VTP_ADDRESS = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
 export const VTP_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";
+
+export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean) {
+    if (exists) {
+        const vote = new Mock<VoteAggregateRoot>();
+        vote.setup(instance => instance.voteId).returns(VOTE_ID);
+        voteRepository.setup(instance => instance.findByLocId(REQUEST_ID)).returns(Promise.resolve(vote.object()));
+    } else {
+        voteRepository.setup(instance => instance.findByLocId(REQUEST_ID)).returns(Promise.resolve(null));
+    }
+
+}
+
+export const VOTE_ID = "123";
