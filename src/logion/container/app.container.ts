@@ -52,6 +52,8 @@ import { DisabledIdenfyService, EnabledIdenfyService, IdenfyService } from "../s
 import { ConfigController } from "../controllers/config.controller.js";
 import { IdenfyController } from "../controllers/idenfy.controller.js";
 import { AxiosFactory } from "../services/axiosfactory.service.js";
+import { VoteController } from "../controllers/vote.controller.js";
+import { VoteRepository, VoteFactory } from "../model/vote.model.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -126,6 +128,8 @@ if(process.env.IDENFY_SECRET) {
     container.bind(IdenfyService).toService(DisabledIdenfyService);
 }
 container.bind(AxiosFactory).toSelf();
+container.bind(VoteFactory).toSelf();
+container.bind(VoteRepository).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
@@ -136,5 +140,6 @@ container.bind(SettingController).toSelf().inTransientScope();
 container.bind(VerifiedThirdPartyController).toSelf().inTransientScope();
 container.bind(ConfigController).toSelf().inTransientScope();
 container.bind(IdenfyController).toSelf().inTransientScope();
+container.bind(VoteController).toSelf().inTransientScope();
 
 export { container as AppContainer };
