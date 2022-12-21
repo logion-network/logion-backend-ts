@@ -8,6 +8,7 @@ import {
     AuthenticationService,
     getDefaultResponses,
 } from "@logion/rest-api-core";
+import * as process from "process";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Config';
@@ -44,8 +45,9 @@ export class ConfigController extends ApiController {
     async getConfig(): Promise<Config> {
         await this.authenticationService.authenticatedUser(this.request);
         return {
-            integrations: {
+            features: {
                 iDenfy: process.env.IDENFY_SECRET !== undefined,
+                vote: process.env.FEATURE_VOTE === "true",
             }
         }
     }
