@@ -71,5 +71,8 @@
         "node": ">=18"
     },
     "packageManager": "yarn@3.2.2",
-    "type": "module"
+    "type": "module",
+    "resolutions": {
+        "@logion/node-api": "^0.9.0-3"
+    }
 }

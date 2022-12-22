@@ -4,7 +4,7 @@ import { Log } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
-import { asBigInt, asHexString, asJsonObject, asString, isHexString, JsonArgs } from './call.js';
+import { asBigInt, asHexString, asJsonObject, asString, isHexString, extractLocId } from './call.js';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
 import { CollectionFactory } from "../model/collection.model.js";
 import { LocRequestService } from './locrequest.service.js';
@@ -40,43 +40,43 @@ export class LocSynchronizer {
                 case "createPolkadotIdentityLoc":
                 case "createPolkadotTransactionLoc":
                 case "createCollectionLoc": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
                     break;
                 }
                 case "addMetadata": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     const name = asString(asJsonObject(extrinsic.call.args['item']).name);
                     await this.mutateLoc(locId, loc => loc.setMetadataItemAddedOn(name, timestamp));
                     break;
                 }
                 case "addFile": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     const hash = this.getFileHash(extrinsic);
                     await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
                     break;
                 }
                 case "addLink": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     const target = asBigInt(asJsonObject(extrinsic.call.args['link']).id).toString();
                     await this.mutateLoc(locId, loc => loc.setLinkAddedOn(UUID.fromDecimalStringOrThrow(target).toString(), timestamp));
                     break;
                 }
                 case "close":
                 case "closeAndSeal": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     await this.mutateLoc(locId, loc => loc.close(timestamp));
                     break;
                 }
                 case "makeVoid":
                 case "makeVoidAndReplace": {
-                    const locId = this.extractLocId('loc_id', extrinsic.call.args);
+                    const locId = extractLocId('loc_id', extrinsic.call.args);
                     await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
                     break;
                 }
                 case "addCollectionItem":
                 case "addCollectionItemWithTermsAndConditions": {
-                    const locId = this.extractLocId('collection_loc_id', extrinsic.call.args);
+                    const locId = extractLocId('collection_loc_id', extrinsic.call.args);
                     const itemId = asHexString(extrinsic.call.args['item_id']);
                     await this.addCollectionItem(locId, itemId, timestamp)
                     break;
@@ -85,10 +85,6 @@ export class LocSynchronizer {
                     throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.call.method}`)
             }
         }
-    }
-
-    private extractLocId(locIdKey: string, args: JsonArgs): string {
-        return UUID.fromDecimalStringOrThrow(asBigInt(args[locIdKey]).toString()).toString();
     }
 
     private getFileHash(extrinsic: JsonExtrinsic): string {

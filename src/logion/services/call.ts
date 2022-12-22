@@ -1,5 +1,7 @@
 import { CallBase, AnyTuple, AnyJson } from '@polkadot/types/types';
 import { FunctionMetadataLatest } from "@polkadot/types/interfaces";
+import { UUID } from "@logion/node-api";
+import { JsonExtrinsic } from "./types/responses/Extrinsic";
 
 export interface JsonCall {
     [key: string]: AnyJson;
@@ -102,3 +104,21 @@ export function asJsonCall(anyJson: AnyJson): JsonCall {
         throw new Error("Not a JsonCall");
     }
 }
+
+export function extractLocId(locIdKey: string, args: JsonArgs): string {
+    return UUID.fromDecimalStringOrThrow(asBigInt(args[locIdKey]).toString()).toString();
+}
+
+export function findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {
+    const event = extrinsic.events
+        .find(event => {
+            return event.section === method.pallet && event.method === method.method;
+
+        });
+    if (event === undefined) {
+        return undefined;
+    } else {
+        return event.data;
+    }
+}
+

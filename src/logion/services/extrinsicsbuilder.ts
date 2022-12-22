@@ -23,13 +23,21 @@ export class ExtrinsicsBuilder {
     async build(): Promise<JsonExtrinsic[]> {
         const extrinsics = this.block.extrinsics;
         const builders: ExtrinsicBuilder[] = new Array(extrinsics.length);
+
+        for (let i = 0; i < extrinsics.length; i++) {
+            const extrinsicBuilder = this.createBuilder(extrinsics[i]);
+            if (extrinsicBuilder) {
+                builders[i] = extrinsicBuilder;
+            }
+        }
+
         for (const record of this.block.events) {
             const { event, phase } = record;
 
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
-                const extrinsicBuilder = this.createBuilder(extrinsics[extrinsicIndex]);
+                const extrinsicBuilder = builders[extrinsicIndex];
                 if(extrinsicBuilder) {
                     builders[extrinsicIndex] = extrinsicBuilder;
 
@@ -93,7 +101,7 @@ export class ExtrinsicBuilder {
         this.call = params.call;
         this.extrinsic = params.extrinsic;
         this.signer = params.extrinsic.isSigned ? params.extrinsic.signer : null;
-        this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null,
+        this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null;
         this.partialFee = () => Promise.resolve(0n);
         this.events = [];
         this.error = () => null;
