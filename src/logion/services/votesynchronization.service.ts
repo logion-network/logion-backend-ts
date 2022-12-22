@@ -1,10 +1,9 @@
 import { Moment } from "moment/moment";
 import { Log } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { extractLocId, findEventData } from "./call.js";
 import { VoteFactory } from "../model/vote.model.js";
 import { VoteService } from "./vote.service.js";
-import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, toString, extractLocId, findEventData } from "./types/responses/Extrinsic.js";
 
 const { logger } = Log;
 

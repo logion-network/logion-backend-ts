@@ -1,11 +1,10 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { getVaultAddress } from "@logion/node-api";
+import { getVaultAddress, asArray, asString, JsonObject } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
-import { JsonExtrinsic } from "./types/responses/Extrinsic.js";
-import { JsonArgs, asArray, asString, findEventData } from "./call.js";
+import { JsonExtrinsic, findEventData } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
 
 enum ExtrinsicType {
@@ -134,11 +133,11 @@ export class TransactionExtractor {
         return extrinsic.signer || "";
     }
 
-    private to(extrinsicOrCall: { args: JsonArgs }): string | undefined {
+    private to(extrinsicOrCall: { args: JsonObject }): string | undefined {
         return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsicOrCall: { args: JsonArgs }): bigint {
+    private transferValue(extrinsicOrCall: { args: JsonObject }): bigint {
         return this.extrinsicDataExtractor.getValue(extrinsicOrCall);
     }
 

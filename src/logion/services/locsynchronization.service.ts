@@ -1,11 +1,10 @@
 import { injectable } from 'inversify';
-import { UUID } from "@logion/node-api";
+import { UUID, asBigInt, asHexString, asJsonObject, asString, isHexString } from "@logion/node-api";
 import { Log } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
 import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
-import { asBigInt, asHexString, asJsonObject, asString, isHexString, extractLocId } from './call.js';
-import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, toString, extractLocId } from "./types/responses/Extrinsic.js";
 import { CollectionFactory } from "../model/collection.model.js";
 import { LocRequestService } from './locrequest.service.js';
 import { CollectionService } from './collection.service.js';

@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { JsonExtrinsic } from "./types/responses/Extrinsic.js";
-import { JsonCall, JsonArgs, asBigInt, asJsonCall, asJsonObject, asString } from "./call.js";
+import { JsonCall, JsonObject, asBigInt, asJsonCall, asJsonObject, asString } from "@logion/node-api";
 
 @injectable()
 export class ExtrinsicDataExtractor {
@@ -23,7 +23,7 @@ export class ExtrinsicDataExtractor {
         return moment.unix(epochSec);
     }
 
-    getDest(extrinsicOrCall: { args: JsonArgs } ): string | undefined {
+    getDest(extrinsicOrCall: { args: JsonObject } ): string | undefined {
         if(!('dest' in extrinsicOrCall.args)) {
             return undefined;
         } else {
@@ -32,7 +32,7 @@ export class ExtrinsicDataExtractor {
         }
     }
 
-    getValue(extrinsicOrCall: { args: JsonArgs } ): bigint {
+    getValue(extrinsicOrCall: { args: JsonObject } ): bigint {
         return asBigInt(extrinsicOrCall.args['value']);
     }
 

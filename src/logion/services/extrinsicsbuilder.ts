@@ -1,6 +1,6 @@
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
 import { Address, Block, Extrinsic } from '@polkadot/types/interfaces';
-import { asString, JsonCall, toJsonCall } from "./call.js";
+import { asString, JsonCall, toJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
 import { ErrorService, Module } from "./error.service.js";
@@ -23,21 +23,16 @@ export class ExtrinsicsBuilder {
     async build(): Promise<JsonExtrinsic[]> {
         const extrinsics = this.block.extrinsics;
         const builders: ExtrinsicBuilder[] = new Array(extrinsics.length);
-
-        for (let i = 0; i < extrinsics.length; i++) {
-            const extrinsicBuilder = this.createBuilder(extrinsics[i]);
-            if (extrinsicBuilder) {
-                builders[i] = extrinsicBuilder;
-            }
-        }
-
         for (const record of this.block.events) {
             const { event, phase } = record;
 
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
-                const extrinsicBuilder = builders[extrinsicIndex];
+                const extrinsicBuilder = builders[extrinsicIndex] ?
+                    builders[extrinsicIndex] :
+                    this.createBuilder(extrinsics[extrinsicIndex]);
+
                 if(extrinsicBuilder) {
                     builders[extrinsicIndex] = extrinsicBuilder;
 
