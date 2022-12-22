@@ -429,6 +429,8 @@ export interface components {
         /** @description The iDenfy redirect when status is PENDING */
         redirectUrl?: string;
       };
+      /** @description The ID of the vote linked to the present LOC, if applicable */
+      voteId?: string;
     };
     /**
      * LocPublicView 

@@ -6,6 +6,7 @@ import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VerifiedThirdPartyAdapter } from "./verifiedthirdpartyadapter.js";
+import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -24,6 +25,7 @@ export class LocRequestAdapter {
         private locRequestRepository: LocRequestRepository,
         private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private idenfyService: IdenfyService,
+        private voteRepository: VoteRepository,
     ) {
 
     }
@@ -46,6 +48,10 @@ export class LocRequestAdapter {
                 status: request.iDenfyVerification.status,
                 redirectUrl: request.iDenfyVerification.status === "PENDING" ? this.idenfyService.redirectUrl(request.iDenfyVerification.authToken) : undefined,
             };
+        }
+        let vote: VoteAggregateRoot | null = null;
+        if (request.status === 'CLOSED') {
+            vote = await this.voteRepository.findByLocId(request.id!);
         }
         const view: LocRequestView = {
             id,
@@ -85,6 +91,7 @@ export class LocRequestAdapter {
             verifiedThirdParty: locDescription.verifiedThirdParty,
             selectedParties: await this.verifiedThirdPartyAdapter.selectedParties(id),
             iDenfy,
+            voteId: vote?.voteId,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

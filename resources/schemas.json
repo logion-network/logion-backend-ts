@@ -711,6 +711,10 @@
                                 "description": "The iDenfy redirect when status is PENDING"
                             }
                         }
+                    },
+                    "voteId": {
+                        "type": "string",
+                        "description": "The ID of the vote linked to the present LOC, if applicable"
                     }
                 },
                 "title": "LocRequestView",

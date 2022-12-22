@@ -6,9 +6,12 @@ import {
     setPathParameters,
     addTag,
     setControllerTag,
-    getDefaultResponses
+    getDefaultResponses,
+    AuthenticationService
 } from "@logion/rest-api-core";
+import { VoteRepository, VoteAggregateRoot } from "../model/vote.model.js";
 
+type VoteView = components["schemas"]["VoteView"];
 type FetchVotesResponseView = components["schemas"]["FetchVotesResponseView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -26,6 +29,13 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 @Controller('/vote')
 export class VoteController extends ApiController {
 
+    constructor(
+        private voteRepository: VoteRepository,
+        private authenticationService: AuthenticationService,
+    ) {
+        super();
+    }
+
     static fetchVotes(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/vote/{legalOfficerAddress}"].get!;
         operationObject.summary = "Lists all Legal Officer's votes";
@@ -38,9 +48,20 @@ export class VoteController extends ApiController {
 
     @Async()
     @HttpGet('/:legalOfficerAddress')
-    async fetchVotes(_body: never, _legalOfficerAddress: string): Promise<FetchVotesResponseView> {
+    async fetchVotes(_body: never, legalOfficerAddress: string): Promise<FetchVotesResponseView> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        const votes = await this.voteRepository.findAll();
         return {
-            votes: []
+            votes: votes.map(this.toView)
+        }
+    }
+
+    toView(vote: VoteAggregateRoot): VoteView {
+        return {
+            voteId: vote.voteId?.toString(),
+            locId: vote.locId,
+            createdOn: vote.createdOn?.toISOString()
         }
     }
 }
