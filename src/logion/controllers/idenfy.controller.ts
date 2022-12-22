@@ -79,6 +79,6 @@ export class IdenfyController extends ApiController {
         if(secret !== process.env.IDENFY_SECRET) {
             throw forbidden("Bad secret");
         }
-        await this.idenfyService.callback(body as IdenfyCallbackPayload, this.request.rawBody);
+        await this.idenfyService.callback(body as IdenfyCallbackPayload, this.request.rawBody, this.request.headers["idenfy-signature"]);
     }
 }

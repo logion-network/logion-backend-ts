@@ -57,7 +57,7 @@ describe("EnabledIdenfyService", () => {
         const { locRequest, idenfyService, locRequestRepository } = mockEnabledIdenfyService();
 
         const json = JSON.parse(RAW_IDENFY_PAYLOAD);
-        await idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD));
+        await idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD), "4618ecdd1a1c99b3bb11dd6d5ecf088db010e8b8f606991e915dc54751f68b66");
 
         locRequest.verify(instance => instance.updateIdenfyVerification(json, RAW_IDENFY_PAYLOAD));
         for(const fileType of Object.keys(EXPECTED_FILES)) {
