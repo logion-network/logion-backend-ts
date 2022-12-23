@@ -9,6 +9,7 @@ import { createWriteStream } from "fs";
 import { writeFile } from "fs/promises";
 import os from "os";
 import path from "path";
+import crypto from "crypto";
 import { sha256File } from '../../lib/crypto/hashing.js';
 import { FileStorageService } from "../file.storage.service.js";
 import { AxiosFactory } from "../axiosfactory.service.js";
@@ -24,7 +25,7 @@ export abstract class IdenfyService {
 
     abstract createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect>;
 
-    abstract callback(json: IdenfyCallbackPayload, raw: Buffer): Promise<void>;
+    abstract callback(json: IdenfyCallbackPayload, raw: Buffer, idenfySignature: string): Promise<void>;
 
     abstract redirectUrl(authToken: string): string;
 }
@@ -60,12 +61,14 @@ export class EnabledIdenfyService extends IdenfyService {
 
         this.secret = requireDefined(process.env.IDENFY_SECRET);
         this.baseUrl = requireDefined(process.env.BASE_URL, () => new Error("Missing BASE_URL"));
+        this.apiSecret = requireDefined(process.env.IDENFY_API_SECRET, () => new Error("Missing IDENFY_API_SECRET"));
+        this.signingKey = requireDefined(process.env.IDENFY_SIGNING_KEY, () => new Error("Missing IDENFY_SIGNING_KEY"));
 
         this.axios = this.axiosFactory.create({
             baseURL: EnabledIdenfyService.IDENFY_BASE_URL,
             auth: {
                 username: requireDefined(process.env.IDENFY_API_KEY, () => new Error("Missing IDENFY_API_KEY")),
-                password: requireDefined(process.env.IDENFY_API_SECRET, () => new Error("Missing IDENFY_API_SECRET")),
+                password: this.apiSecret,
             }
         });
     }
@@ -73,6 +76,10 @@ export class EnabledIdenfyService extends IdenfyService {
     private readonly secret: string;
 
     private readonly baseUrl: string;
+
+    private readonly apiSecret: string;
+
+    private readonly signingKey: string;
 
     private readonly axios: AxiosInstance;
 
@@ -114,13 +121,19 @@ export class EnabledIdenfyService extends IdenfyService {
         return `${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ authToken }`;
     }
 
-    override async callback(json: IdenfyCallbackPayload, raw: Buffer): Promise<void> {
+    override async callback(json: IdenfyCallbackPayload, raw: Buffer, idenfySignature: string): Promise<void> {
         if(!json.final) {
             return;
         }
 
-        logger.info("BEGIN iDenfy callback");
-        logger.info(json);
+        const hmac = crypto.createHmac('sha256', this.signingKey);
+        const hexDigest = hmac.update(raw).digest('hex');
+        const digest = Buffer.from(hexDigest);
+        const checksum = Buffer.from(idenfySignature);
+
+        if (!crypto.timingSafeEqual(checksum, digest)) {
+            throw new Error(`Request body digest (${digest}) did not match Idenfy-Signature (${checksum}).`)
+        }
 
         let files: FileDescription[];
         if(json.status.overall === "APPROVED" || json.status.overall === "SUSPECTED") {
@@ -135,8 +148,6 @@ export class EnabledIdenfyService extends IdenfyService {
                 request.addFile(file);
             }   
         });
-
-        logger.info("END iDenfy callback");
     }
 
     private async downloadFiles(json: IdenfyCallbackPayload, raw: Buffer): Promise<FileDescription[]> {

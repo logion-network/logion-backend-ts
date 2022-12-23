@@ -57,7 +57,7 @@ describe("EnabledIdenfyService", () => {
         const { locRequest, idenfyService, locRequestRepository } = mockEnabledIdenfyService();
 
         const json = JSON.parse(RAW_IDENFY_PAYLOAD);
-        await idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD));
+        await idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD), "da38fe34d767fde8d78693628054dc9623fa455d76683fc60aa3c7fee5f8b3b0");
 
         locRequest.verify(instance => instance.updateIdenfyVerification(json, RAW_IDENFY_PAYLOAD));
         for(const fileType of Object.keys(EXPECTED_FILES)) {
@@ -77,6 +77,7 @@ function setupProcessEnv() {
     process.env.IDENFY_SECRET = IDENFY_SECRET;
     process.env.IDENFY_API_KEY = IDENFY_API_KEY;
     process.env.IDENFY_API_SECRET = IDENFY_API_SECRET;
+    process.env.IDENFY_SIGNING_KEY = IDENFY_SIGNING_KEY;
     process.env.BASE_URL = BASE_URL;
 }
 
@@ -89,6 +90,7 @@ const BASE_URL = "https://node.logion.network";
 const IDENFY_SECRET = "some-secret";
 const IDENFY_API_KEY = "api-key";
 const IDENFY_API_SECRET = "api-secret";
+const IDENFY_SIGNING_KEY = "signing-key";
 const IDENFY_SCAN_REF = "3af0b5c9-8ef3-4815-8796-5ab3ed942917";
 const LOC_OWNER = ALICE;
 

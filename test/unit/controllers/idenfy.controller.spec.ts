@@ -38,7 +38,7 @@ describe("IdenfyController", () => {
             .post(`/api/idenfy/callback/${ SHARED_SECRET }`)
             .expect(200);
 
-        service.verify(service => service.callback(It.IsAny(), It.IsAny()));
+        service.verify(service => service.callback(It.IsAny(), It.IsAny(), It.IsAny()));
     });
 
     it("detects bad secret on callback", async () => {
@@ -48,7 +48,7 @@ describe("IdenfyController", () => {
             .post(`/api/idenfy/callback/another-secret`)
             .expect(403);
 
-        service.verify(service => service.callback(It.IsAny(), It.IsAny()), Times.Never());
+        service.verify(service => service.callback(It.IsAny(), It.IsAny(), It.IsAny()), Times.Never());
     });
 });
 
@@ -76,7 +76,7 @@ function mockCallback(container: Container) {
     container.bind(LocRequestRepository).toConstantValue(repository.object());
 
     service = new Mock<IdenfyService>();
-    service.setup(instance => instance.callback(It.IsAny(), It.IsAny())).returnsAsync();
+    service.setup(instance => instance.callback(It.IsAny(), It.IsAny(), It.IsAny())).returnsAsync();
     container.bind(IdenfyService).toConstantValue(service.object());
 }
 
