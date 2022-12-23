@@ -46,6 +46,8 @@ import {
     VerifiedThirdPartySelectionRepository
 } from "../model/verifiedthirdpartyselection.model.js";
 import { LocRequestService } from "../services/locrequest.service.js";
+import { VoteRepository } from "../model/vote.model.js";
+import { AuthenticatedUser } from "@logion/authenticator";
 
 const { logger } = Log;
 
@@ -110,6 +112,7 @@ export class LocRequestController extends ApiController {
         private locRequestAdapter: LocRequestAdapter,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
         private locRequestService: LocRequestService,
+        private voteRepository: VoteRepository,
     ) {
         super();
     }
@@ -269,7 +272,7 @@ export class LocRequestController extends ApiController {
     async getLocRequest(_body: any, requestId: string): Promise<LocRequestView> {
         try {
             const request = requireDefined(await this.locRequestRepository.findById(requestId));
-            const contributor = await this.ensureContributor(request);
+            const { contributor } = await this.ensureContributorOrVoter(request);
             return this.locRequestAdapter.toView(request, contributor);
         } catch (e) {
             logger.error(e);
@@ -277,14 +280,46 @@ export class LocRequestController extends ApiController {
         }
     }
 
+    private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: string, voter: boolean} > {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        if (await this.isContributor(request, authenticatedUser)) {
+            return {
+                contributor: authenticatedUser.address,
+                voter: false
+            }
+        } else if (await this.isVoterOnLoc(request, authenticatedUser)) {
+            return {
+                contributor: authenticatedUser.address,
+                voter: true
+            }
+        } else {
+            throw forbidden("Authenticated user is not allowed to view the content of this LOC");
+        }
+    }
+
     private async ensureContributor(request: LocRequestAggregateRoot): Promise<string> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const contributor = authenticatedUser.address;
-        if(request.ownerAddress !== contributor && request.requesterAddress !== contributor && ! await this.isSelectedThirdParty(request, contributor)) {
-            throw forbidden("Authenticated user is not allowed to contribute to this LOC");
+        if (await this.isContributor(request, authenticatedUser)) {
+            return authenticatedUser.address;
         } else {
-            return contributor;
+            throw forbidden("Authenticated user is not allowed to contribute to this LOC");
         }
+    }
+
+    private async isContributor(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
+        const contributor = authenticatedUser.address;
+        return (
+            request.ownerAddress === contributor ||
+            request.requesterAddress === contributor ||
+            await this.isSelectedThirdParty(request, contributor)
+        );
+    }
+
+    private async isVoterOnLoc(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
+        return (
+            await authenticatedUser.isLegalOfficer() &&
+            await this.voteRepository.findByLocId(request.id!) !== null
+        );
     }
 
     private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: string): Promise<boolean> {
@@ -510,10 +545,10 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributor(request);
+        const { contributor, voter } = await this.ensureContributorOrVoter(request);
 
         const file = request.getFile(hash);
-        if(contributor !== request.ownerAddress && contributor !== request.requesterAddress && file.submitter !== contributor) {
+        if(contributor !== request.ownerAddress && contributor !== request.requesterAddress && file.submitter !== contributor && !voter) {
             throw forbidden("Authenticated user is not allowed to download this file");
         }
 
