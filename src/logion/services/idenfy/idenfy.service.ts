@@ -62,6 +62,7 @@ export class EnabledIdenfyService extends IdenfyService {
         this.secret = requireDefined(process.env.IDENFY_SECRET);
         this.baseUrl = requireDefined(process.env.BASE_URL, () => new Error("Missing BASE_URL"));
         this.apiSecret = requireDefined(process.env.IDENFY_API_SECRET, () => new Error("Missing IDENFY_API_SECRET"));
+        this.signingKey = requireDefined(process.env.IDENFY_SIGNING_KEY, () => new Error("Missing IDENFY_SIGNING_KEY"));
 
         this.axios = this.axiosFactory.create({
             baseURL: EnabledIdenfyService.IDENFY_BASE_URL,
@@ -77,6 +78,8 @@ export class EnabledIdenfyService extends IdenfyService {
     private readonly baseUrl: string;
 
     private readonly apiSecret: string;
+
+    private readonly signingKey: string;
 
     private readonly axios: AxiosInstance;
 
@@ -123,7 +126,7 @@ export class EnabledIdenfyService extends IdenfyService {
             return;
         }
 
-        const hmac = crypto.createHmac('sha256', this.apiSecret);
+        const hmac = crypto.createHmac('sha256', this.signingKey);
         const hexDigest = hmac.update(raw).digest('hex');
         const digest = Buffer.from(hexDigest);
         const checksum = Buffer.from(idenfySignature);
