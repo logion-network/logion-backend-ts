@@ -1,11 +1,10 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { getVaultAddress } from "@logion/node-api";
+import { getVaultAddress, asArray, asString, JsonObject } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
-import { JsonExtrinsic } from "./types/responses/Extrinsic.js";
-import { JsonArgs, asArray, asString } from "./call.js";
+import { JsonExtrinsic, findEventData } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
 
 enum ExtrinsicType {
@@ -122,7 +121,7 @@ export class TransactionExtractor {
     }
 
     private reserved(extrinsic: JsonExtrinsic): bigint {
-        const data = this.findEventData(extrinsic, { pallet: "balances", method: "Reserved" });
+        const data = findEventData(extrinsic, { pallet: "balances", method: "Reserved" });
         if (data === undefined || data.length <= 1) {
             return 0n;
         } else {
@@ -134,11 +133,11 @@ export class TransactionExtractor {
         return extrinsic.signer || "";
     }
 
-    private to(extrinsicOrCall: { args: JsonArgs }): string | undefined {
+    private to(extrinsicOrCall: { args: JsonObject }): string | undefined {
         return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsicOrCall: { args: JsonArgs }): bigint {
+    private transferValue(extrinsicOrCall: { args: JsonObject }): bigint {
         return this.extrinsicDataExtractor.getValue(extrinsicOrCall);
     }
 
@@ -148,19 +147,6 @@ export class TransactionExtractor {
             return { ...error }
         }
         return undefined;
-    }
-
-    private findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {
-        const event = extrinsic.events
-            .find(event => {
-                return event.section === method.pallet && event.method === method.method;
-
-            });
-        if (event === undefined) {
-            return undefined;
-        } else {
-            return event.data;
-        }
     }
 
     private determineType(extrinsic: JsonExtrinsic): ExtrinsicType {

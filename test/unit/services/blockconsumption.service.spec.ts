@@ -17,6 +17,7 @@ import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.d
 import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic.js";
 import { PrometheusService } from '../../../src/logion/services/prometheus.service.js';
 import { NonTransactionnalSyncPointService } from '../../../src/logion/services/syncpoint.service.js';
+import { VoteSynchronizer } from "../../../src/logion/services/votesynchronization.service.js";
 
 describe("BlockConsumer", () => {
 
@@ -29,6 +30,7 @@ describe("BlockConsumer", () => {
         protectionSynchronizer = new Mock<ProtectionSynchronizer>();
         extrinsicDataExtractor = new Mock<ExtrinsicDataExtractor>();
         prometheusService = new Mock<PrometheusService>();
+        voteSynchronizer = new Mock<VoteSynchronizer>();
     });
 
     let blockService: Mock<BlockExtrinsicsService>;
@@ -39,6 +41,7 @@ describe("BlockConsumer", () => {
     let protectionSynchronizer: Mock<ProtectionSynchronizer>;
     let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
     let prometheusService: Mock<PrometheusService>;
+    let voteSynchronizer: Mock<VoteSynchronizer>;
 
     it("does nothing given up to date", async () => {
        // Given
@@ -91,6 +94,7 @@ describe("BlockConsumer", () => {
             protectionSynchronizer.object(),
             extrinsicDataExtractor.object(),
             prometheusService.object(),
+            voteSynchronizer.object(),
         );
         await transactionSync.consumeNewBlocks(() => moment());
     }
@@ -123,6 +127,7 @@ describe("BlockConsumer", () => {
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
         protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
+        voteSynchronizer.setup(instance => instance.updateVotes(extrinsic.object(), timestamp)).returns(Promise.resolve());
 
         // When
         await consumeNewBlocks();
@@ -138,6 +143,7 @@ describe("BlockConsumer", () => {
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(5));
         protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(5));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock);
+        voteSynchronizer.verify(instance => instance.updateVotes(extrinsic.object(), timestamp), Times.Exactly(5));
     });
 
     function givenNewBlocks(blocks: bigint, startBlockNumber: bigint) {
@@ -176,6 +182,7 @@ describe("BlockConsumer", () => {
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
         protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
+        voteSynchronizer.setup(instance => instance.updateVotes(extrinsic.object(), timestamp)).returns(Promise.resolve());
 
         // When
         await consumeNewBlocks();
@@ -191,6 +198,7 @@ describe("BlockConsumer", () => {
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(1));
         protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(1));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock, Times.Exactly(1));
+        voteSynchronizer.verify(instance => instance.updateVotes(extrinsic.object(), timestamp), Times.Exactly(1));
     });
 
     it("fails when out of sync", async () => {

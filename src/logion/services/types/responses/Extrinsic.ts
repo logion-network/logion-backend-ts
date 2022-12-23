@@ -1,4 +1,4 @@
-import { JsonCall } from "../../call.js";
+import { JsonCall, JsonObject, UUID, asBigInt } from "@logion/node-api";
 
 export interface JsonExtrinsic {
     call: JsonCall;
@@ -40,3 +40,21 @@ function errorToString(error: ExtrinsicError | null): string {
         return "";
     }
 }
+
+export function extractLocId(locIdKey: string, args: JsonObject): string {
+    return UUID.fromDecimalStringOrThrow(asBigInt(args[locIdKey]).toString()).toString();
+}
+
+export function findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {
+    const event = extrinsic.events
+        .find(event => {
+            return event.section === method.pallet && event.method === method.method;
+
+        });
+    if (event === undefined) {
+        return undefined;
+    } else {
+        return event.data;
+    }
+}
+

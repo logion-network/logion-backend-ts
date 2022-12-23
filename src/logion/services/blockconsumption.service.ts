@@ -14,6 +14,7 @@ import { toStringWithoutError } from "./types/responses/Extrinsic.js";
 import { ProgressRateLogger } from "./progressratelogger.js";
 import { PrometheusService } from "./prometheus.service.js";
 import { SyncPointService } from "./syncpoint.service.js";
+import { VoteSynchronizer } from "./votesynchronization.service.js";
 
 const { logger } = Log;
 
@@ -32,6 +33,7 @@ export class BlockConsumer {
         private protectionSynchronizer: ProtectionSynchronizer,
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
         private prometheusService: PrometheusService,
+        private voteSynchronizer: VoteSynchronizer,
     ) {}
 
     async consumeNewBlocks(now: () => Moment): Promise<void> {
@@ -96,6 +98,7 @@ export class BlockConsumer {
                     logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                     await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
                     await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
+                    await this.voteSynchronizer.updateVotes(extrinsic, timestamp);
                 }
             }
         } catch(e) {

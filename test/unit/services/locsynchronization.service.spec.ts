@@ -1,10 +1,9 @@
-import { UUID } from "@logion/node-api";
+import { UUID, JsonObject } from "@logion/node-api";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
 import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
-import { JsonArgs } from '../../../src/logion/services/call.js';
 import {
     CollectionFactory,
     CollectionRepository,
@@ -137,7 +136,7 @@ let locRequestRepository: Mock<LocRequestRepository>;
 let collectionFactory: Mock<CollectionFactory>;
 let collectionRepository: Mock<CollectionRepository>;
 
-function givenLocExtrinsic(method: string, args: JsonArgs) {
+function givenLocExtrinsic(method: string, args: JsonObject) {
     locExtrinsic = new Mock<JsonExtrinsic>();
     locExtrinsic.setup(instance => instance.call).returns({
         section: "logionLoc",

@@ -1,6 +1,6 @@
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
 import { Address, Block, Extrinsic } from '@polkadot/types/interfaces';
-import { asString, JsonCall, toJsonCall } from "./call.js";
+import { asString, JsonCall, toJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
 import { ErrorService, Module } from "./error.service.js";
@@ -29,7 +29,10 @@ export class ExtrinsicsBuilder {
             if (phase.isApplyExtrinsic) {
                 const extrinsicIndex = phase.asApplyExtrinsic.toNumber();
 
-                const extrinsicBuilder = this.createBuilder(extrinsics[extrinsicIndex]);
+                const extrinsicBuilder = builders[extrinsicIndex] ?
+                    builders[extrinsicIndex] :
+                    this.createBuilder(extrinsics[extrinsicIndex]);
+
                 if(extrinsicBuilder) {
                     builders[extrinsicIndex] = extrinsicBuilder;
 
@@ -93,7 +96,7 @@ export class ExtrinsicBuilder {
         this.call = params.call;
         this.extrinsic = params.extrinsic;
         this.signer = params.extrinsic.isSigned ? params.extrinsic.signer : null;
-        this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null,
+        this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null;
         this.partialFee = () => Promise.resolve(0n);
         this.events = [];
         this.error = () => null;

@@ -2,7 +2,7 @@ import { injectable } from 'inversify';
 import { Log } from "@logion/rest-api-core";
 
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model.js';
-import { asArray, asString } from './call.js';
+import { asArray, asString } from '@logion/node-api';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
 import { ProtectionRequestService } from './protectionrequest.service.js';
 import { DirectoryService } from "./directory.service.js";

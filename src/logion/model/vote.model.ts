@@ -40,6 +40,10 @@ export class VoteRepository {
     async findByLocId(locId: string): Promise<VoteAggregateRoot | null> {
         return this.repository.findOneBy({ locId })
     }
+
+    async save(root: VoteAggregateRoot) {
+        await this.repository.save(root);
+    }
 }
 
 export interface VoteDescription {
