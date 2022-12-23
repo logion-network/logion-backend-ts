@@ -23,8 +23,9 @@
         "typeorm": "node ./node_modules/typeorm/cli.js -d ./dist/db-tools/ormconfig.js"
     },
     "dependencies": {
+        "@logion/node-api": "^0.9.0-3",
         "@logion/node-exiftool": "^2.3.1-2",
-        "@logion/rest-api-core": "^0.3.1",
+        "@logion/rest-api-core": "^0.3.2-1",
         "@polkadot/wasm-crypto": "^6.4.1",
         "alchemy-sdk": "^2.2.3",
         "ansi-regex": "^6.0.1",
@@ -71,8 +72,5 @@
         "node": ">=18"
     },
     "packageManager": "yarn@3.2.2",
-    "type": "module",
-    "resolutions": {
-        "@logion/node-api": "^0.9.0-3"
-    }
+    "type": "module"
 }
