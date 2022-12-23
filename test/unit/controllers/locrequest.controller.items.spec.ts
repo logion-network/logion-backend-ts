@@ -4,7 +4,7 @@ import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
@@ -12,7 +12,18 @@ import {
     MetadataItemDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import { fileExists } from "../../helpers/filehelper.js";
-import { buildMocksForUpdate, mockPolkadotIdentityLoc, mockRequest, REQUEST_ID, setupRequest, setupSelectedVtp, SetupVtpMode, testData, VTP_ADDRESS } from "./locrequest.controller.shared.js";
+import {
+    buildMocksForUpdate,
+    mockPolkadotIdentityLoc,
+    mockRequest,
+    REQUEST_ID,
+    setupRequest,
+    setupSelectedVtp,
+    SetupVtpMode,
+    testData,
+    VTP_ADDRESS,
+    setUpVote
+} from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -80,6 +91,18 @@ describe('LocRequestController - Items -', () => {
         const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
         const app = setupApp(LocRequestController, container => mockModelForDownloadFile(container, 'SELECTED'), authenticatedUserMock);
         await testDownloadSuccess(app);
+    });
+
+    it('downloads existing file given its hash when LLO with Vote', async () => {
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const app = setupApp(LocRequestController, container => mockModelForDownloadFile(container, 'NOT_VTP', true), authenticatedUserMock);
+        await testDownloadSuccess(app);
+    });
+
+    it('fails to download existing file given its hash when LLO without Vote', async () => {
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const app = setupApp(LocRequestController, container => mockModelForDownloadFile(container, 'NOT_VTP', false), authenticatedUserMock);
+        await testDownloadForbidden(app);
     });
 
     it('fails to download existing file given its hash if not contributor', async () => {
@@ -243,8 +266,8 @@ async function testAddFileForbidden(app: Express) {
         .expect(403);
 }
 
-function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode): void {
-    const { request, fileStorageService, repository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container);
+function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode, voteExists = false): void {
+    const { request, fileStorageService, repository, verifiedThirdPartySelectionRepository, voteRepository } = buildMocksForUpdate(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.ownerAddress).returns(ALICE);
@@ -261,6 +284,7 @@ function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode): 
         .returns(Promise.resolve());
 
     setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setUpVote(voteRepository, voteExists);
 }
 
 const SOME_OID = 123456;

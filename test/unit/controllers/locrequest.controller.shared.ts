@@ -397,7 +397,6 @@ export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean)
     } else {
         voteRepository.setup(instance => instance.findByLocId(REQUEST_ID)).returns(Promise.resolve(null));
     }
-
 }
 
 export const VOTE_ID = "123";

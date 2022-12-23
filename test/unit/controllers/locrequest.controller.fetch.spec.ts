@@ -2,7 +2,7 @@ import { TestApp } from "@logion/rest-api-core";
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
 import {
     FileDescription,
     LinkDescription,
@@ -133,9 +133,26 @@ describe('LocRequestController - Fetch -', () => {
             .expect('Content-Type', /application\/json/);
     });
 
+    it('succeeds to get single LOC when LLO with Vote', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_VTP', true), mock);
+        await request(app)
+            .get(`/api/loc-request/${ REQUEST_ID }`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/);
+    });
+
     it('fails to get single LOC if unselected VTP', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'UNSELECTED'), mock);
+        await request(app)
+            .get(`/api/loc-request/${ REQUEST_ID }`)
+            .expect(403);
+    });
+
+    it('fails to get single LOC when LLO without Vote', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_VTP', false), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
             .expect(403);
@@ -159,7 +176,12 @@ function mockModelForFetch(container: Container): void {
 
 const REJECT_REASON = "Illegal";
 
-function mockModelForGetSingle(container: Container, locType: LocType, identityLocation: IdentityLocation, vtpMode?: SetupVtpMode): void {
+function mockModelForGetSingle(
+    container: Container,
+    locType: LocType,
+    identityLocation: IdentityLocation,
+    vtpMode: SetupVtpMode = 'NOT_VTP',
+    voteExists = true): void {
     const { request, repository, verifiedThirdPartySelectionRepository, voteRepository } = buildMocksForFetch(container);
 
     const data =
@@ -178,8 +200,8 @@ function mockModelForGetSingle(container: Container, locType: LocType, identityL
     mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
     mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode || 'NOT_VTP');
-    setUpVote(voteRepository, true);
+    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setUpVote(voteRepository, voteExists);
 }
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
