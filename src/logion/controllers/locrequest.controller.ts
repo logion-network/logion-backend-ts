@@ -272,7 +272,7 @@ export class LocRequestController extends ApiController {
     async getLocRequest(_body: any, requestId: string): Promise<LocRequestView> {
         try {
             const request = requireDefined(await this.locRequestRepository.findById(requestId));
-            const contributor = await this.ensureContributorOrVoter(request);
+            const { contributor } = await this.ensureContributorOrVoter(request);
             return this.locRequestAdapter.toView(request, contributor);
         } catch (e) {
             logger.error(e);
@@ -280,10 +280,18 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<string> {
+    private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: string, voter: boolean} > {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.isContributor(request, authenticatedUser) || await this.isVoterOnLoc(request, authenticatedUser)) {
-            return authenticatedUser.address;
+        if (await this.isContributor(request, authenticatedUser)) {
+            return {
+                contributor: authenticatedUser.address,
+                voter: false
+            }
+        } else if (await this.isVoterOnLoc(request, authenticatedUser)) {
+            return {
+                contributor: authenticatedUser.address,
+                voter: true
+            }
         } else {
             throw forbidden("Authenticated user is not allowed to view the content of this LOC");
         }
@@ -537,10 +545,10 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributorOrVoter(request);
+        const { contributor, voter } = await this.ensureContributorOrVoter(request);
 
         const file = request.getFile(hash);
-        if(contributor !== request.ownerAddress && contributor !== request.requesterAddress && file.submitter !== contributor) {
+        if(contributor !== request.ownerAddress && contributor !== request.requesterAddress && file.submitter !== contributor && !voter) {
             throw forbidden("Authenticated user is not allowed to download this file");
         }
 
