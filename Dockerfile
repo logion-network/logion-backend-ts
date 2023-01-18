@@ -29,6 +29,7 @@ ENV TYPEORM_SYNCHRONIZE=false
 ENV TYPEORM_ENTITIES=dist/model/*.model.js
 ENV TYPEORM_MIGRATIONS=dist/migration/*.js
 ENV PROMETHEUS_PORT=8081
+ENV UPLOAD_LIMIT=300
 
 COPY ./docker/backend/. /usr/docker/.
 RUN chmod +x /usr/docker/*

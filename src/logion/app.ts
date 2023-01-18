@@ -12,7 +12,7 @@ install();
 
 appDataSource.initialize()
 .then(() => {
-    const app = setupApp();
+    const app = setupApp({ uploadLimitMb: Number(process.env.UPLOAD_LIMIT || 300) });
     AppContainer.get(Scheduler).start();
     const port = process.env.PORT || 8080;
     app.listen(port, () => logger.info(`API server started on port ${ port }`));

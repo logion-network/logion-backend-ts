@@ -5,7 +5,7 @@ import {
     ProtectionRequestController
 } from "./controllers/protectionrequest.controller.js";
 import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller.js";
-import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec } from "@logion/rest-api-core";
+import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec, Log } from "@logion/rest-api-core";
 import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller.js";
 import express, { Express } from "express";
 import bodyParser from "body-parser";
@@ -22,6 +22,8 @@ import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyControlle
 import { fillInSpec as fillInSpecConfig, ConfigController } from "./controllers/config.controller.js";
 import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/idenfy.controller.js";
 import { fillInSpec as fillInSpecVote, VoteController } from "./controllers/vote.controller.js";
+
+const { logger } = Log;
 
 export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     setOpenApi3(spec);
@@ -60,7 +62,14 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     return spec;
 }
 
-export function buildExpress(withDoc?: boolean): Express {
+export interface ExpressConfig {
+    withDoc?: boolean;
+    uploadLimitMb?: number;
+}
+
+export function buildExpress(expressConfig?: ExpressConfig): Express {
+    const { withDoc, uploadLimitMb } = expressConfig || {};
+
     const app = express();
 
     if(withDoc === undefined || withDoc) {
@@ -80,8 +89,10 @@ export function buildExpress(withDoc?: boolean): Express {
         }
     }));
     app.use(bodyParser.urlencoded({ extended: false }));
+    const actualUploadLimitMb = uploadLimitMb || 300;
+    logger.info(`Upload limit set to ${ actualUploadLimitMb }M`);
     app.use(fileUpload({
-        limits: { fileSize: 300 * 1024 * 1024 },
+        limits: { fileSize: actualUploadLimitMb * 1024 * 1024 },
         useTempFiles : true,
         tempFileDir : '/tmp/',
     }));
@@ -89,8 +100,8 @@ export function buildExpress(withDoc?: boolean): Express {
     return app;
 }
 
-export function setupApp(withDoc?: boolean): Express {
-    const app = buildExpress(withDoc);
+export function setupApp(expressConfig?: ExpressConfig): Express {
+    const app = buildExpress(expressConfig);
     const dino = new Dino(app, '/api');
 
     dino.useRouter(() => express.Router());
@@ -115,7 +126,7 @@ export function setupApp(withDoc?: boolean): Express {
 
     dino.bind();
 
-    if(withDoc === undefined || withDoc) {
+    if(expressConfig?.withDoc === undefined || expressConfig.withDoc) {
         expressOasGenerator.handleRequests();
     }
     return app;
