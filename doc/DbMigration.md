@@ -9,7 +9,7 @@ Pre-requisite:
 This is the step-by-step sequence to upgrade the database schema:
 
 * Adapt the model with the proper annotations.
-* Build the project.
+* **Build the project.**
 * Choose a name for the migration, for instance `MyMigration`.
 * Run `yarn typeorm migration:generate ./src/logion/migration/MyMigration` - this will generate a new migration `TIMESTAMP-MyMigration.ts` under [migration](/src/logion/migration).
 * (Optional) Modify the generated file.

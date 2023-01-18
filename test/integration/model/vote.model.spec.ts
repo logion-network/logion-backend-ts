@@ -1,5 +1,6 @@
 import { TestDb } from "@logion/rest-api-core";
-import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
+import { ALICE, BOB } from "@logion/rest-api-core/dist/TestApp.js";
+import { VoteRepository, VoteAggregateRoot, Ballot } from "../../../src/logion/model/vote.model.js";
 
 const { connect, disconnect, executeScript } = TestDb;
 
@@ -8,7 +9,7 @@ describe("VoteRepository", () => {
     let repository:VoteRepository;
 
     beforeAll(async () => {
-        await connect([ VoteAggregateRoot ]);
+        await connect([ VoteAggregateRoot, Ballot ]);
         await executeScript("test/integration/model/votes.sql");
         repository = new VoteRepository();
     });
@@ -28,6 +29,9 @@ describe("VoteRepository", () => {
         expect(vote?.voteId).toEqual('1');
         expect(vote?.locId).toEqual(locId);
         expect(vote?.createdOn?.toISOString()).toEqual("2022-09-30T22:00:00.000Z")
-
+        expect(vote?.status).toEqual("REJECTED");
+        expect(vote?.ballots?.length).toEqual(2);
+        expect(vote?.ballots?.find(ballot => ballot.voterAddress === ALICE && ballot.result === "Yes")).toBeDefined();
+        expect(vote?.ballots?.find(ballot => ballot.voterAddress === BOB && ballot.result === "No")).toBeDefined();
     });
 })

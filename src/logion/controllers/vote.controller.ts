@@ -9,10 +9,11 @@ import {
     getDefaultResponses,
     AuthenticationService
 } from "@logion/rest-api-core";
-import { VoteRepository, VoteAggregateRoot } from "../model/vote.model.js";
+import { VoteRepository, VoteAggregateRoot, Ballot, VoteResult } from "../model/vote.model.js";
 
 type VoteView = components["schemas"]["VoteView"];
 type FetchVotesResponseView = components["schemas"]["FetchVotesResponseView"];
+type BallotsMap = { [key: string]: ("Yes" | "No") | undefined };
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Votes';
@@ -53,7 +54,7 @@ export class VoteController extends ApiController {
         authenticatedUser.require(user => user.is(legalOfficerAddress));
         const votes = await this.voteRepository.findAll();
         return {
-            votes: votes.map(this.toView)
+            votes: votes.map(vote => this.toView(vote))
         }
     }
 
@@ -61,7 +62,17 @@ export class VoteController extends ApiController {
         return {
             voteId: vote.voteId?.toString(),
             locId: vote.locId,
-            createdOn: vote.createdOn?.toISOString()
+            createdOn: vote.createdOn?.toISOString(),
+            status: vote.typeSafeStatus,
+            ballots: this.mapBallots(vote.ballots || []),
         }
+    }
+
+    private mapBallots(ballots: Ballot[]): BallotsMap {
+        const ballotsMap: BallotsMap = {};
+        for(const ballot of ballots) {
+            ballotsMap[ballot.voterAddress || "?"] = ballot.result as VoteResult;
+        }
+        return ballotsMap;
     }
 }

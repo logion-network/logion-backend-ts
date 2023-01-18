@@ -1,7 +1,10 @@
-import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { injectable } from "inversify";
 import { appDataSource } from "@logion/rest-api-core";
 import moment, { Moment } from "moment";
+import { Child, saveChildren } from "./child.js";
+
+export type VoteStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 @Entity("vote")
 export class VoteAggregateRoot {
@@ -15,6 +18,16 @@ export class VoteAggregateRoot {
     @Column("timestamp without time zone", { name: "created_on" })
     createdOn?: Date;
 
+    @Column({ default: "PENDING" })
+    status?: string;
+
+    @OneToMany(() => Ballot, ballot => ballot.vote, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    ballots?: Ballot[];
+
     getDescription(): VoteDescription {
         return {
             voteId: this.voteId!,
@@ -22,6 +35,49 @@ export class VoteAggregateRoot {
             createdOn: moment(this.createdOn),
         }
     }
+
+    addBallot(voterAddress: string, result: VoteResult) {
+        const ballot = new Ballot();
+        ballot.voteId = this.voteId;
+        ballot.voterAddress = voterAddress;
+        ballot.result = result;
+        ballot.vote = this;
+        this.ballots!.push(ballot);
+    }
+
+    close(approved: boolean) {
+        if(this.status !== "PENDING") {
+            throw new Error("Vote is already closed");
+        }
+        this.status = approved ? "APPROVED" : "REJECTED";
+    }
+
+    get typeSafeStatus(): VoteStatus {
+        if(this.status === "PENDING" || this.status === "APPROVED" || this.status === "REJECTED") {
+            return this.status;
+        } else {
+            throw new Error(`Unexpected status ${this.status}`);
+        }
+    }
+}
+
+export type VoteResult = "Yes" | "No";
+
+@Entity("ballot")
+export class Ballot extends Child {
+
+    @PrimaryColumn({ name: "vote_id", type: "bigint" })
+    voteId?: string;
+
+    @PrimaryColumn("varchar", { name: "voter" })
+    voterAddress?: string;
+
+    @Column("varchar", { length: 10 })
+    result?: string;
+
+    @ManyToOne(() => VoteAggregateRoot, request => request.ballots)
+    @JoinColumn({ name: "vote_id" })
+    vote?: VoteAggregateRoot;
 }
 
 @injectable()
@@ -43,6 +99,11 @@ export class VoteRepository {
 
     async save(root: VoteAggregateRoot) {
         await this.repository.save(root);
+        await saveChildren({
+            children: root.ballots!,
+            entityManager: this.repository.manager,
+            entityClass: Ballot,
+        });
     }
 }
 
@@ -61,6 +122,8 @@ export class VoteFactory {
         root.voteId = voteId;
         root.locId = locId;
         root.createdOn = createdOn.toDate();
+        root.status = "PENDING";
+        root.ballots = [];
         return root;
     }
 }
