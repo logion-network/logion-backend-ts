@@ -63,7 +63,7 @@ export class VoteController extends ApiController {
             voteId: vote.voteId?.toString(),
             locId: vote.locId,
             createdOn: vote.createdOn?.toISOString(),
-            closed: vote.closed,
+            status: vote.typeSafeStatus,
             ballots: this.mapBallots(vote.ballots || []),
         }
     }

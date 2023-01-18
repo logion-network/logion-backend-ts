@@ -26,7 +26,7 @@ describe("VoteController", () => {
                 expect(response.body.votes[0].locId).toEqual(LOC_ID);
                 expect(response.body.votes[0].createdOn).toEqual(CREATED_ON);
                 expect(response.body.votes[0].ballots[ALICE]).toEqual("Yes");
-                expect(response.body.votes[0].closed).toEqual(true);
+                expect(response.body.votes[0].status).toEqual("APPROVED");
             })
     })
 })
@@ -36,7 +36,7 @@ function mockForFetch(container: Container) {
     vote.setup(instance => instance.voteId).returns(VOTE_ID);
     vote.setup(instance => instance.locId).returns(LOC_ID);
     vote.setup(instance => instance.createdOn).returns(new Date(CREATED_ON));
-    vote.setup(instance => instance.closed).returns(true);
+    vote.setup(instance => instance.typeSafeStatus).returns("APPROVED");
     const ballots: Ballot[] = [];
     const ballot = new Ballot();
     ballot.vote = vote.object();

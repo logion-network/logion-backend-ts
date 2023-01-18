@@ -4,6 +4,8 @@ import { appDataSource } from "@logion/rest-api-core";
 import moment, { Moment } from "moment";
 import { Child, saveChildren } from "./child.js";
 
+export type VoteStatus = "PENDING" | "APPROVED" | "REJECTED";
+
 @Entity("vote")
 export class VoteAggregateRoot {
 
@@ -16,8 +18,8 @@ export class VoteAggregateRoot {
     @Column("timestamp without time zone", { name: "created_on" })
     createdOn?: Date;
 
-    @Column({ default: false })
-    closed?: boolean;
+    @Column({ default: "PENDING" })
+    status?: string;
 
     @OneToMany(() => Ballot, ballot => ballot.vote, {
         eager: true,
@@ -43,11 +45,19 @@ export class VoteAggregateRoot {
         this.ballots!.push(ballot);
     }
 
-    close() {
-        if(this.closed) {
+    close(approved: boolean) {
+        if(this.status !== "PENDING") {
             throw new Error("Vote is already closed");
         }
-        this.closed = true;
+        this.status = approved ? "APPROVED" : "REJECTED";
+    }
+
+    get typeSafeStatus(): VoteStatus {
+        if(this.status === "PENDING" || this.status === "APPROVED" || this.status === "REJECTED") {
+            return this.status;
+        } else {
+            throw new Error(`Unexpected status ${this.status}`);
+        }
     }
 }
 
@@ -112,7 +122,7 @@ export class VoteFactory {
         root.voteId = voteId;
         root.locId = locId;
         root.createdOn = createdOn.toDate();
-        root.closed = false;
+        root.status = "PENDING";
         root.ballots = [];
         return root;
     }

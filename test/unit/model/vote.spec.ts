@@ -7,7 +7,7 @@ describe("VoteFactory", () => {
     it("creates pending vote", () => {
         const vote = buildPendingVote();
         expect(vote.ballots?.length).toBe(0);
-        expect(vote.closed).toBe(false);
+        expect(vote.typeSafeStatus).toBe("PENDING");
     });
 });
 
@@ -39,15 +39,21 @@ describe("VoteAggregateRoot", () => {
         expect(vote.ballots![1].result).toBe("No");
     });
 
-    it("can be closed", () => {
+    it("can be approved", () => {
         const vote = buildPendingVote();
-        vote.close();
-        expect(vote.closed).toBe(true);
+        vote.close(true);
+        expect(vote.typeSafeStatus).toBe("APPROVED");
+    });
+
+    it("can be rejected", () => {
+        const vote = buildPendingVote();
+        vote.close(false);
+        expect(vote.typeSafeStatus).toBe("REJECTED");
     });
 
     it("cannot be closed more than once", () => {
         const vote = buildPendingVote();
-        vote.close();
-        expect(() => vote.close()).toThrowError("Vote is already closed");
+        vote.close(true);
+        expect(() => vote.close(true)).toThrowError("Vote is already closed");
     });
 });

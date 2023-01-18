@@ -71,11 +71,11 @@ curl -v http://localhost:8090/api/$PATH -H "Authorization: Bearer $TOKEN" ...
 ## Quick start
 
 ### DB
-First, run a PostgreSQL 12 server:
+First, run a PostgreSQL server:
 
-`docker run --name logion-postgres -e POSTGRES_PASSWORD=secret -p 5432:5432 logionnetwork/logion-postgres:latest`
+`docker run --name logion-postgres -e POSTGRES_PASSWORD=secret -p 5432:5432 -d logionnetwork/logion-postgres:latest`
 
-(or `docker start -a logion-postgres` if you already executed the above command).
+(or `docker start logion-postgres` if you already executed the above command).
 
 Then copy the file [`ormconfig.json.sample`](ormconfig.json.sample) to `ormconfig.json`, and adapt to your database setup if needed.
 

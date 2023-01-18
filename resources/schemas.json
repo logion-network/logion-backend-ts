@@ -1279,9 +1279,14 @@
                         "format": "date-time",
                         "description": "The creation timestamp"
                     },
-                    "closed": {
-                        "type": "boolean",
-                        "description": "Tells if the vote was closed."
+                    "status": {
+                        "type": "string",
+                        "description": "Tells if the vote was closed.",
+                        "enum": [
+                            "PENDING",
+                            "APPROVED",
+                            "REJECTED"
+                        ]
                     },
                     "ballots": {
                         "type": "object",

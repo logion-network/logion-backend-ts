@@ -1,5 +1,5 @@
-INSERT INTO vote(vote_id, loc_id, created_on, closed)
-VALUES (1, 'c744db7c-181d-42d7-adc3-781e9fc4210f', '2022-10-01', true);
+INSERT INTO vote(vote_id, loc_id, created_on, status)
+VALUES (1, 'c744db7c-181d-42d7-adc3-781e9fc4210f', '2022-10-01', 'REJECTED');
 
 INSERT INTO ballot(vote_id, voter, result)
 VALUES (1, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', 'Yes');

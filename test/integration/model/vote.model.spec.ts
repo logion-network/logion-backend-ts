@@ -29,7 +29,7 @@ describe("VoteRepository", () => {
         expect(vote?.voteId).toEqual('1');
         expect(vote?.locId).toEqual(locId);
         expect(vote?.createdOn?.toISOString()).toEqual("2022-09-30T22:00:00.000Z")
-        expect(vote?.closed).toEqual(true);
+        expect(vote?.status).toEqual("REJECTED");
         expect(vote?.ballots?.length).toEqual(2);
         expect(vote?.ballots?.find(ballot => ballot.voterAddress === ALICE && ballot.result === "Yes")).toBeDefined();
         expect(vote?.ballots?.find(ballot => ballot.voterAddress === BOB && ballot.result === "No")).toBeDefined();
