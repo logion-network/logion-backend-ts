@@ -762,6 +762,12 @@ export interface components {
        * @description The creation timestamp
        */
       createdOn?: string;
+      /** @description Tells if the vote was closed. */
+      closed?: boolean;
+      /** @description Each represents the vote of a voter, additional ballots are expected as long as the vote is not closed. */
+      ballots?: {
+        [key: string]: ("Yes" | "No") | undefined;
+      };
     };
   };
   responses: never;

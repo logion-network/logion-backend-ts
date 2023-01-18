@@ -1,7 +1,8 @@
-import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, OneToMany, ManyToOne, JoinColumn } from "typeorm";
 import { injectable } from "inversify";
 import { appDataSource } from "@logion/rest-api-core";
 import moment, { Moment } from "moment";
+import { Child, saveChildren } from "./child.js";
 
 @Entity("vote")
 export class VoteAggregateRoot {
@@ -15,6 +16,16 @@ export class VoteAggregateRoot {
     @Column("timestamp without time zone", { name: "created_on" })
     createdOn?: Date;
 
+    @Column({ default: false })
+    closed?: boolean;
+
+    @OneToMany(() => Ballot, ballot => ballot.vote, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    ballots?: Ballot[];
+
     getDescription(): VoteDescription {
         return {
             voteId: this.voteId!,
@@ -22,6 +33,41 @@ export class VoteAggregateRoot {
             createdOn: moment(this.createdOn),
         }
     }
+
+    addBallot(voterAddress: string, result: VoteResult) {
+        const ballot = new Ballot();
+        ballot.voteId = this.voteId;
+        ballot.voterAddress = voterAddress;
+        ballot.result = result;
+        ballot.vote = this;
+        this.ballots!.push(ballot);
+    }
+
+    close() {
+        if(this.closed) {
+            throw new Error("Vote is already closed");
+        }
+        this.closed = true;
+    }
+}
+
+export type VoteResult = "Yes" | "No";
+
+@Entity("ballot")
+export class Ballot extends Child {
+
+    @PrimaryColumn({ name: "vote_id", type: "bigint" })
+    voteId?: string;
+
+    @PrimaryColumn("varchar", { name: "voter" })
+    voterAddress?: string;
+
+    @Column("varchar", { length: 10 })
+    result?: string;
+
+    @ManyToOne(() => VoteAggregateRoot, request => request.ballots)
+    @JoinColumn({ name: "vote_id" })
+    vote?: VoteAggregateRoot;
 }
 
 @injectable()
@@ -43,6 +89,11 @@ export class VoteRepository {
 
     async save(root: VoteAggregateRoot) {
         await this.repository.save(root);
+        await saveChildren({
+            children: root.ballots!,
+            entityManager: this.repository.manager,
+            entityClass: Ballot,
+        });
     }
 }
 
@@ -61,6 +112,8 @@ export class VoteFactory {
         root.voteId = voteId;
         root.locId = locId;
         root.createdOn = createdOn.toDate();
+        root.closed = false;
+        root.ballots = [];
         return root;
     }
 }

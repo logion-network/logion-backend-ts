@@ -1278,6 +1278,22 @@
                         "type": "string",
                         "format": "date-time",
                         "description": "The creation timestamp"
+                    },
+                    "closed": {
+                        "type": "boolean",
+                        "description": "Tells if the vote was closed."
+                    },
+                    "ballots": {
+                        "type": "object",
+                        "description": "Each represents the vote of a voter, additional ballots are expected as long as the vote is not closed.",
+                        "additionalProperties": {
+                            "type": "string",
+                            "description": "The vote result of a given voter.",
+                            "enum": [
+                                "Yes",
+                                "No"
+                            ]
+                        }
                     }
                 }
             }

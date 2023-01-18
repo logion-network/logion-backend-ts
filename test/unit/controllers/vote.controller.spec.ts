@@ -3,7 +3,7 @@ import { Container } from "inversify";
 import { Mock } from "moq.ts";
 import request from "supertest";
 import { VoteController } from "../../../src/logion/controllers/vote.controller.js";
-import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
+import { VoteRepository, VoteAggregateRoot, Ballot } from "../../../src/logion/model/vote.model.js";
 import { ALICE } from "../../helpers/addresses.js";
 
 const { setupApp } = TestApp;
@@ -25,6 +25,8 @@ describe("VoteController", () => {
                 expect(response.body.votes[0].voteId).toEqual(VOTE_ID);
                 expect(response.body.votes[0].locId).toEqual(LOC_ID);
                 expect(response.body.votes[0].createdOn).toEqual(CREATED_ON);
+                expect(response.body.votes[0].ballots[ALICE]).toEqual("Yes");
+                expect(response.body.votes[0].closed).toEqual(true);
             })
     })
 })
@@ -34,6 +36,15 @@ function mockForFetch(container: Container) {
     vote.setup(instance => instance.voteId).returns(VOTE_ID);
     vote.setup(instance => instance.locId).returns(LOC_ID);
     vote.setup(instance => instance.createdOn).returns(new Date(CREATED_ON));
+    vote.setup(instance => instance.closed).returns(true);
+    const ballots: Ballot[] = [];
+    const ballot = new Ballot();
+    ballot.vote = vote.object();
+    ballot.voteId = VOTE_ID;
+    ballot.voterAddress = ALICE;
+    ballot.result = "Yes";
+    ballots.push(ballot);
+    vote.setup(instance => instance.ballots).returns(ballots);
 
     const voteRepository = new Mock<VoteRepository>();
     voteRepository.setup(instance => instance.findAll()).returns(Promise.resolve([ vote.object() ]));
