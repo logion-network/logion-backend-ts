@@ -5,6 +5,7 @@ const ALGORITHM = 'aes-256-cbc';
 const SALT_LENGTH = 16;
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
+const WRITE_BUFFER_SIZE = 4096;
 
 interface EncryptDecryptProps {
     clearFile?: string
@@ -57,7 +58,7 @@ export class EncryptedFileWriter {
     }
 
     async writeFromFile(clearFile: string) {
-        const bufferSize = 10;
+        const bufferSize = WRITE_BUFFER_SIZE;
         const buffer = new Uint8Array(bufferSize)
         const fd = await open(clearFile, 'r')
         let bytesRead = 0;
