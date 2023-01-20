@@ -5,7 +5,8 @@ const ALGORITHM = 'aes-256-cbc';
 const SALT_LENGTH = 16;
 const KEY_LENGTH = 32;
 const IV_LENGTH = 16;
-const WRITE_BUFFER_SIZE = 4096;
+const WRITE_BUFFER_SIZE = 8192;
+const READ_BUFFER_SIZE = 8192;
 
 interface EncryptDecryptProps {
     clearFile?: string
@@ -93,9 +94,9 @@ export class EncryptedFileWriter {
 
 export class EncryptedFileReader {
 
-    constructor(password: string, bufferSize: number = 1024) {
+    constructor(password: string) {
         this.password = password;
-        this.buffer = new Uint8Array(bufferSize);
+        this.buffer = new Uint8Array(READ_BUFFER_SIZE);
     }
 
     private readonly password: string;
