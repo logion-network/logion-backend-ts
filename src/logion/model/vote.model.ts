@@ -42,6 +42,7 @@ export class VoteAggregateRoot {
         ballot.voterAddress = voterAddress;
         ballot.result = result;
         ballot.vote = this;
+        ballot._toAdd = true;
         this.ballots!.push(ballot);
     }
 
@@ -94,7 +95,11 @@ export class VoteRepository {
     }
 
     async findByLocId(locId: string): Promise<VoteAggregateRoot | null> {
-        return this.repository.findOneBy({ locId })
+        return this.repository.findOneBy({ locId });
+    }
+
+    async findByVoteId(voteId: string): Promise<VoteAggregateRoot | null> {
+        return this.repository.findOneBy({ voteId });
     }
 
     async save(root: VoteAggregateRoot) {
