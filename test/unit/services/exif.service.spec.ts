@@ -12,41 +12,24 @@ describe("ExifService", () => {
 
     const gifFile = "./test/resources/exif.gif";
 
-    it("reads all JPEG metadata", async () => {
-        await testReadAll(jpegFile);
-    });
+    const mp4File = "./test/resources/exif.mp4";
 
-    it("reads JPEG image description", async () => {
-        await testReadDescription(jpegFile);
-    });
+    it("reads all JPEG metadata", () => testReadAll(jpegFile));
+    it("reads JPEG image description", () => testReadDescription(jpegFile));
+    it("writes JPEG image description", () => testWriteDescription(jpegFile));
+    it("detects JPEG file format is supported", () => testFileSupported(jpegFile, true));
 
-    it("writes JPEG image description", async () => {
-        await testWriteDescription(jpegFile);
-    });
+    it("detects JSON file format is not supported", () => testFileSupported(jsonFile, false));
 
-    it("detects JPEG file format is supported", async () => {
-        await testFileSupported(jpegFile, true);
-    });
+    it("reads all GIF metadata", () => testReadAll(gifFile));
+    it("reads GIF image description", () => testReadDescription(gifFile));
+    it("writes GIF image description", () => testWriteDescription(gifFile));
+    it("detects GIF file format is supported", () => testFileSupported(gifFile, true));
 
-    it("detects JSON file format is not supported", async () => {
-        await testFileSupported(jsonFile, false);
-    });
-
-    it("reads all GIF metadata", async () => {
-        await testReadAll(gifFile);
-    });
-
-    it("reads GIF image description", async () => {
-        await testReadDescription(gifFile);
-    });
-
-    it("writes GIF image description", async () => {
-        await testWriteDescription(gifFile);
-    });
-
-    it("detects GIF file format is supported", async () => {
-        await testFileSupported(gifFile, true);
-    });
+    it("reads all MP4 metadata", () => testReadAll(mp4File));
+    it("reads MP4 image description", () => testReadDescription(mp4File));
+    it("writes MP4 image description", () => testWriteDescription(mp4File));
+    it("detects MP4 file format is supported", () => testFileSupported(mp4File, true));
 });
 
 async function testReadAll(path: string) {
