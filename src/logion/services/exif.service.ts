@@ -1,6 +1,12 @@
 import { injectable } from 'inversify';
 import { ExifData, ExiftoolProcess, ReadWriteResult } from "@logion/node-exiftool";
 
+const SUPPORTED_TYPES = new Set([
+    "image/jpeg",
+    "image/gif",
+    "video/mp4",
+]);
+
 @injectable()
 export class ExifService {
 
@@ -39,8 +45,9 @@ export class ExifService {
     }
 
     private async descriptionField(file: string) {
+        // Supported tag names per type: https://exiftool.org/TagNames/
         const mimeType = await this._readMimeType(file);
-        if(mimeType === "image/jpeg") {
+        if(mimeType === "image/jpeg" || mimeType === "video/mp4") {
             return "Description";
         } else if(mimeType === "image/gif") {
             return "Comment";
@@ -64,7 +71,7 @@ export class ExifService {
 
     async isExifSupported(file: string): Promise<boolean> {
         const mimeType = await this._readMimeType(file);
-        return mimeType === "image/jpeg" || mimeType === "image/gif";
+        return SUPPORTED_TYPES.has(mimeType);
     }
 
     private async _readMimeType(file: string): Promise<string> {
