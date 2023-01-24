@@ -623,6 +623,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-1234",
                 nature: "nature1",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             },
             {
                 hash: "hash2",
@@ -631,6 +632,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-4567",
                 nature: "nature2",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ];
         whenAddingFiles(files);
@@ -651,6 +653,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 oid: 1234,
                 nature: "nature1",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             },
             {
                 hash: "hash1",
@@ -659,6 +662,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 oid: 4567,
                 nature: "nature2",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ];
         expect(() => whenAddingFiles(files)).toThrowError();
@@ -676,6 +680,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-1234",
                 nature: "nature1",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             },
             {
                 hash: "hash2",
@@ -684,6 +689,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-4567",
                 nature: "nature2",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ];
         whenAddingFiles(files);
@@ -698,6 +704,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-4567",
                 nature: "nature2",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ];
         thenExposesFiles(newFiles);
@@ -719,6 +726,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-1234",
                 nature: "nature1",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ]);
         whenConfirmingFile(hash)
@@ -737,6 +745,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 cid: "cid-1234",
                 nature: "nature1",
                 submitter: OWNER,
+                restrictedDelivery: false,
             }
         ]);
         thenFileIsVisibleToRequester(hash)
@@ -791,6 +800,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 cid: "cid-1234",
                 nature: "nature1",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             },
             {
                 hash: "hash2",
@@ -799,6 +809,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 cid: "cid-4567",
                 nature: "nature2",
                 submitter: SUBMITTER,
+                restrictedDelivery: false,
             }
         ];
         whenAddingFiles(files);
@@ -813,7 +824,8 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             cid: "cid-1234",
             nature: "nature1",
             submitter: SUBMITTER,
-            addedOn: addedOn
+            addedOn: addedOn,
+            restrictedDelivery: false,
         })
     })
 })
@@ -831,6 +843,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             oid: 1234,
             nature: "nature1",
             submitter: SUBMITTER,
+            restrictedDelivery: false,
         });
         expect(request.getFiles(SUBMITTER).length).toBe(1);
         request.addMetadataItem({
@@ -869,6 +882,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             oid: 1235,
             nature: "nature2",
             submitter: OWNER,
+            restrictedDelivery: false,
         });
         request.confirmFile("hash2");
         request.setFileAddedOn("hash2", moment()); // Sync

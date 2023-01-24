@@ -213,7 +213,8 @@ const testFile: FileDescription = {
     hash: "0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9",
     oid: 123,
     submitter: SUBMITTER,
-    addedOn: moment("2022-08-31T15:53:12.741Z")
+    addedOn: moment("2022-08-31T15:53:12.741Z"),
+    restrictedDelivery: false,
 }
 
 const testLink: LinkDescription = {

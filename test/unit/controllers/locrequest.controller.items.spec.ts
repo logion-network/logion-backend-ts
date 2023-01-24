@@ -294,7 +294,8 @@ const SOME_FILE = {
     hash: SOME_DATA_HASH,
     oid: SOME_OID,
     nature: "file-nature",
-    submitter: REQUESTER
+    submitter: REQUESTER,
+    restrictedDelivery: false,
 };
 
 async function testDownloadSuccess(app: Express) {

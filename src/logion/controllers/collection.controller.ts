@@ -1,11 +1,17 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
-import { CollectionRepository, CollectionFactory, CollectionItemDescription, CollectionItemAggregateRoot, CollectionItemFileDelivered } from "../model/collection.model.js";
+import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, HttpPut } from "dinoloop";
+import {
+    CollectionRepository,
+    CollectionFactory,
+    CollectionItemDescription,
+    CollectionItemAggregateRoot,
+    CollectionItemFileDelivered
+} from "../model/collection.model.js";
 import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
 import moment from "moment";
-import { LocRequestRepository } from "../model/locrequest.model.js";
+import { LocRequestRepository, FileDescription } from "../model/locrequest.model.js";
 import { getUploadedFile } from "./fileupload.js";
 import { sha256File } from "../lib/crypto/hashing.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -21,20 +27,27 @@ import {
     AuthenticationService,
     getRequestBody,
     getDefaultResponsesNoContent,
+    getDefaultResponses,
 } from "@logion/rest-api-core";
-import { CollectionService, GetCollectionItemFileParams, LogionNodeCollectionService } from "../services/collection.service.js";
+import {
+    CollectionService,
+    GetCollectionItemFileParams,
+    LogionNodeCollectionService
+} from "../services/collection.service.js";
 import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types.js";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service.js";
 import { downloadAndClean } from "../lib/http.js";
+import { LocRequestService } from "../services/locrequest.service.js";
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];
 type CheckLatestDeliveryResponse = components["schemas"]["CheckLatestDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
 type FileUploadData = components["schemas"]["FileUploadData"];
+type UpdateCollectionFile = components["schemas"]["UpdateCollectionFile"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -47,8 +60,11 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.getCollectionItems(spec)
     CollectionController.getCollectionItem(spec)
     CollectionController.addFile(spec)
-    CollectionController.downloadFile(spec)
-    CollectionController.canDownloadFile(spec)
+    CollectionController.downloadItemFile(spec)
+    CollectionController.downloadCollectionFile(spec)
+    CollectionController.canDownloadItemFile(spec)
+    CollectionController.canDownloadCollectionFile(spec)
+    CollectionController.updateCollectionFile(spec)
     CollectionController.getLatestDeliveries(spec)
     CollectionController.getAllDeliveries(spec)
 }
@@ -67,6 +83,7 @@ export class CollectionController extends ApiController {
         private ownershipCheckService: OwnershipCheckService,
         private restrictedDeliveryService: RestrictedDeliveryService,
         private collectionService: CollectionService,
+        private locRequestService: LocRequestService,
     ) {
         super();
     }
@@ -199,7 +216,7 @@ export class CollectionController extends ApiController {
         }
     }
 
-    static downloadFile(spec: OpenAPIV3.Document) {
+    static downloadItemFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}"].get!;
         operationObject.summary = "Downloads a file of the Collection Item";
         operationObject.description = "The authenticated user must be the owner or the requester of the LOC";
@@ -214,9 +231,9 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemId/files/:hash')
     @Async()
     @SendsResponse()
-    async downloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+    async downloadItemFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        const collectionItem = await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
+        const collectionItem = await this.checkCanDownloadItemFile(authenticated, collectionLocId, itemId, hash);
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
             collectionLocId,
@@ -252,7 +269,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownload(authenticated: AuthenticatedUser, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
+    private async checkCanDownloadItemFile(authenticated: AuthenticatedUser, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
         const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
@@ -279,12 +296,58 @@ export class CollectionController extends ApiController {
         return collectionItem;
     }
 
+    static downloadCollectionFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}"].get!;
+        operationObject.summary = "Downloads a file of the Collection LOC";
+        operationObject.description = "The authenticated user must be owner of the collection item";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'hash': "The hash of the file to download",
+            'itemId': "The ID of the collection item, used to validate that user is entitled to download file",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/files/:hash/:itemId')
+    @Async()
+    @SendsResponse()
+    async downloadCollectionFile(_body: any, collectionLocId: string, hash: string, itemId: string): Promise<void> {
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
+        const file = requireDefined(collection.getFile(hash));
+        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, file, itemId);
+
+        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
+        await this.fileStorageService.exportFile(file, tempFilePath);
+
+        downloadAndClean({
+            response: this.response,
+            path: tempFilePath,
+            name: file.name,
+            contentType: file.contentType,
+        });
+    }
+
+    private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, file: FileDescription, itemId: string): Promise<void> {
+        const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
+            collectionLocId,
+            itemId
+        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        if(!file.restrictedDelivery) {
+            throw forbidden("No delivery allowed for this collection file");
+        } else if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+            throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
+        } else {
+            return;
+        }
+    }
+
     static tempFilePath(params: { collectionLocId: string, itemId: string, hash: string } ) {
         const { collectionLocId, itemId, hash } = params
         return path.join(os.tmpdir(), `download-${ collectionLocId }-${ itemId }-${ hash }`)
     }
 
-    static canDownloadFile(spec: OpenAPIV3.Document) {
+    static canDownloadItemFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}/check"].get!;
         operationObject.summary = "Tells if a file of the Collection Item can be downloaded by authenticated user";
         operationObject.description = "The authenticated user must be the owner of the underlying token";
@@ -298,9 +361,53 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/:itemId/files/:hash/check')
     @Async()
-    async canDownloadFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+    async canDownloadItemFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        await this.checkCanDownload(authenticated, collectionLocId, itemId, hash);
+        await this.checkCanDownloadItemFile(authenticated, collectionLocId, itemId, hash);
+    }
+
+    static canDownloadCollectionFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}/check"].get!;
+        operationObject.summary = "Tells if a file of the Collection Item can be downloaded by authenticated user";
+        operationObject.description = "The authenticated user must be the owner of the underlying token";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'hash': "The hash of the file",
+            'itemId': "The ID of the collection item, used to validate that user is entitled to download file",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/files/:hash/:itemId/check')
+    @Async()
+    async canDownloadCollectionFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
+        const file = requireDefined(collection.getFile(hash));
+        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, file, hash);
+    }
+
+    static updateCollectionFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}"].get!;
+        operationObject.summary = "Enable/disable restricted delivery on a file of the Collection LOC";
+        operationObject.description = "The authenticated user must be owner of the LOC";
+        operationObject.responses = getDefaultResponses("UpdateCollectionFile");
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'hash': "The hash of the file to download",
+        });
+    }
+
+    @HttpPut('/:collectionLocId/files/:hash')
+    @Async()
+    @SendsResponse()
+    async updateCollectionFile(body: UpdateCollectionFile, collectionLocId: string, hash: string): Promise<void> {
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        await this.locRequestService.update(collectionLocId, async collection => {
+            authenticated.require(user => user.is(collection.ownerAddress));
+            const file = requireDefined(collection.file(hash));
+            file.update(body.restrictedDelivery || false);
+        });
     }
 
     static getLatestDeliveries(spec: OpenAPIV3.Document) {

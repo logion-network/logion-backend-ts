@@ -376,6 +376,8 @@ export interface components {
           addedOn?: string;
           /** @description The SS58 address of the file submitter */
           submitter?: string;
+          /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
+          restrictedDelivery?: boolean;
         })[];
       /** @description The links attached to this request's LOC */
       links?: ({
@@ -548,6 +550,8 @@ export interface components {
       hash?: string;
       /** @description The file's nature */
       nature?: string;
+      /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
+      restrictedDelivery?: boolean;
     };
     AddLinkView: {
       /** @description The link's target */
@@ -771,6 +775,10 @@ export interface components {
       ballots?: {
         [key: string]: ("Yes" | "No") | undefined;
       };
+    };
+    UpdateCollectionFile: {
+      /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
+      restrictedDelivery?: boolean;
     };
   };
   responses: never;

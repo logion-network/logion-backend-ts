@@ -74,6 +74,7 @@ export class LocRequestAdapter {
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
                 submitter: file.submitter,
+                restrictedDelivery: file.restrictedDelivery,
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,
