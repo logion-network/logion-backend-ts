@@ -26,6 +26,7 @@ import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
 import { ALICE } from "../../helpers/addresses.js";
+import { LocRequestService } from "../../../src/logion/services/locrequest.service.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
@@ -588,6 +589,9 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     container.bind(RestrictedDeliveryService).toConstantValue(restrictedDeliveryService.object());
 
     container.bind(CollectionService).toConstantValue(new NonTransactionalCollectionService(collectionRepository.object()));
+
+    const locRequestService = new Mock<LocRequestService>();
+    container.bind(LocRequestService).toConstantValue(locRequestService.object());
 }
 
 function expectDeliveryInfo(responseBody: any) {

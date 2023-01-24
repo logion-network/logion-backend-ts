@@ -270,6 +270,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         contentType: "content/type",
         nature: "nature1",
         submitter: SUBMITTER,
+        restrictedDelivery: false,
     })
     locRequest.metadata = []
     locRequest.addMetadataItem({

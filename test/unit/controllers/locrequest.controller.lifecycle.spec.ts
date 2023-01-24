@@ -4,7 +4,7 @@ import { Container } from "inversify";
 import request from "supertest";
 import { Mock, It, Times } from "moq.ts";
 import {
-    LocType,
+    LocType, LocFile,
 } from "../../../src/logion/model/locrequest.model.js";
 import { Moment } from "moment";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
@@ -205,8 +205,8 @@ function mockModelForCancel(container: Container) {
     const { request, repository, fileStorageService } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Identity", "DRAFT", testData);
 
-    const dbFile = { oid: 1 };
-    const ipfsFile = { cid: "" };
+    const dbFile: LocFile = { update(): void {}, oid: 1 };
+    const ipfsFile = { update(): void {}, cid: "" };
     request.setup(instance => instance.files).returns([ dbFile, ipfsFile ])
 
     repository.setup(instance => instance.deleteDraftOrRejected(request.object()))

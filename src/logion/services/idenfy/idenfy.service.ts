@@ -166,6 +166,7 @@ export class EnabledIdenfyService extends IdenfyService {
             submitter,
             hash,
             cid,
+            restrictedDelivery: false,
         });
 
         for(const fileType of IdenfyCallbackPayloadFileTypes) {
@@ -179,6 +180,7 @@ export class EnabledIdenfyService extends IdenfyService {
                     contentType,
                     hash,
                     cid,
+                    restrictedDelivery: false,
                 });
             }
         }

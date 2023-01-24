@@ -522,6 +522,7 @@ export class LocRequestController extends ApiController {
                     cid,
                     nature: addFileView.nature || "",
                     submitter: contributor,
+                    restrictedDelivery: addFileView.restrictedDelivery || false,
                 });
             });
         } catch(e) {
@@ -532,7 +533,7 @@ export class LocRequestController extends ApiController {
     static downloadFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}"].get!;
         operationObject.summary = "Downloads a file of the LOC";
-        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.description = "The authenticated user must be contributor or voter of the LOC.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",

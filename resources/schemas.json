@@ -608,6 +608,10 @@
                                 "submitter": {
                                     "type": "string",
                                     "description": "The SS58 address of the file submitter"
+                                },
+                                "restrictedDelivery": {
+                                    "type": "boolean",
+                                    "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
                                 }
                             }
                         }
@@ -913,6 +917,10 @@
                     "nature": {
                         "type": "string",
                         "description": "The file's nature"
+                    },
+                    "restrictedDelivery": {
+                        "type": "boolean",
+                        "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
                     }
                 }
             },
@@ -1299,6 +1307,15 @@
                                 "No"
                             ]
                         }
+                    }
+                }
+            },
+            "UpdateCollectionFile": {
+                "type": "object",
+                "properties": {
+                    "restrictedDelivery": {
+                        "type": "boolean",
+                        "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
                     }
                 }
             }

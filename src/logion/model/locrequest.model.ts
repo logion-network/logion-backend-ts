@@ -48,6 +48,7 @@ export interface FileDescription {
     readonly nature: string;
     readonly addedOn?: Moment;
     readonly submitter: string;
+    readonly restrictedDelivery: boolean;
 }
 
 export interface MetadataItemDescription {
@@ -254,6 +255,7 @@ export class LocRequestAggregateRoot {
             nature: file!.nature!,
             submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
+            restrictedDelivery: file!.restrictedDelivery || false,
         };
     }
 
@@ -720,6 +722,15 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
     request?: LocRequestAggregateRoot;
 
+    @Column("boolean", { name: "restricted_delivery", default: false })
+    restrictedDelivery?: boolean;
+
+    update(restrictedDelivery: boolean) {
+        if (this.request?.locType !== 'Collection') {
+            throw Error("Can change restricted delivery of file only on Collection LOC.")
+        }
+        this.restrictedDelivery = restrictedDelivery;
+    }
 }
 
 @Entity("loc_metadata_item")
