@@ -1,6 +1,8 @@
-import { rm, writeFile } from "fs/promises";
+import { rm, open } from "fs/promises";
 import { Shell } from "../Shell.js";
 import { create } from 'ipfs-client'
+
+const MAX_DOWNLOAD_BUFFER_SIZE = 4096 * 1024; // bytes
 
 export abstract class FileManager {
 
@@ -51,7 +53,19 @@ export class DefaultFileManager extends FileManager {
     }
 
     async downloadFromIpfs(cid: string, file: string): Promise<void> {
-        const buffer: AsyncIterable<Uint8Array> = this.ipfs.cat(cid)
-        return writeFile(file, buffer)
+        const fd = await open(file, 'w');
+        let offset = 0;
+        let endOfFile = false;
+        while(!endOfFile) {
+            const buffer: AsyncIterable<Uint8Array> = this.ipfs.cat(cid, { offset, length: MAX_DOWNLOAD_BUFFER_SIZE });
+            let bufferLength = 0;
+            for await (const chunk of buffer) {
+                bufferLength += chunk.length;
+                await fd.write(chunk);
+            }
+            offset += MAX_DOWNLOAD_BUFFER_SIZE;
+            endOfFile = (bufferLength < MAX_DOWNLOAD_BUFFER_SIZE);
+        }
+        await fd.close();
     }
 }
