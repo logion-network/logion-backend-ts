@@ -4,7 +4,7 @@ import { Container } from "inversify";
 import request from "supertest";
 import { Mock, It, Times } from "moq.ts";
 import {
-    LocType, LocFile,
+    LocType, LocFile, LocFileDelivered,
 } from "../../../src/logion/model/locrequest.model.js";
 import { Moment } from "moment";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
@@ -205,15 +205,17 @@ function mockModelForCancel(container: Container) {
     const { request, repository, fileStorageService } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Identity", "DRAFT", testData);
 
-    const dbFile: LocFile = { update(): void {}, oid: 1 };
-    const ipfsFile = { update(): void {}, cid: "" };
-    request.setup(instance => instance.files).returns([ dbFile, ipfsFile ])
+    const dbFile = new Mock<LocFile>();
+    dbFile.setup(instance => instance.oid).returns(1);
+    const ipfsFile = new Mock<LocFile>();
+    ipfsFile.setup(instance => instance.cid).returns("");
+    request.setup(instance => instance.files).returns([ dbFile.object(), ipfsFile.object() ])
 
     repository.setup(instance => instance.deleteDraftOrRejected(request.object()))
         .returns(Promise.resolve());
 
-    fileStorageService.setup(instance => instance.deleteFile(dbFile)).returnsAsync();
-    fileStorageService.setup(instance => instance.deleteFile(ipfsFile)).returnsAsync();
+    fileStorageService.setup(instance => instance.deleteFile(dbFile.object())).returnsAsync();
+    fileStorageService.setup(instance => instance.deleteFile(ipfsFile.object())).returnsAsync();
 }
 
 function mockModelForRework(container: Container) {
