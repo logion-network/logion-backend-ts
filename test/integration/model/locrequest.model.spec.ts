@@ -1,12 +1,12 @@
 import moment from "moment";
-import { TestDb } from "@logion/rest-api-core";
+import { requireDefined, TestDb } from "@logion/rest-api-core";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
     FetchLocRequestsSpecification,
     LocFile,
     LocMetadataItem,
-    LocLink, LocType,
+    LocLink, LocType, LocFileDelivered,
 } from "../../../src/logion/model/locrequest.model.js";
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
@@ -14,11 +14,12 @@ import { LocRequestService, TransactionalLocRequestService } from "../../../src/
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
+const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
 
 describe('LocRequestRepository - read accesses', () => {
 
     beforeAll(async () => {
-        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
+        await connect(ENTITIES);
         await executeScript("test/integration/model/loc_requests.sql");
         repository = new LocRequestRepository();
     });
@@ -144,12 +145,30 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
     })
+
+    it("finds one LOC with restricted deliveries", async () => {
+        const request = requireDefined(await repository.findById("15ed922d-5960-4147-a73f-97d362cb7c46"));
+        expect(request.files?.length).toBe(1);
+        const file = request.files![0];
+        expect(file.delivered?.length).toBe(1);
+    });
+
+    it("finds LOC with restricted deliveries based on criteria", async () => {
+        const requests = await repository.findBy({
+            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            isVerifiedThirdParty: true,
+        });
+        const request = requests[0];
+        expect(request.files?.length).toBe(1);
+        const file = request.files![0];
+        expect(file.delivered?.length).toBe(1);
+    });
 })
 
 describe('LocRequestRepository.save()', () => {
 
     beforeAll(async () => {
-        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
+        await connect(ENTITIES);
         repository = new LocRequestRepository();
         service = new TransactionalLocRequestService(repository);
     });
@@ -211,7 +230,7 @@ describe('LocRequestRepository.save()', () => {
 describe('LocRequestRepository - LOC correctly ordered', () => {
 
     beforeAll(async () => {
-        await connect([ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink ]);
+        await connect(ENTITIES);
         await executeScript("test/integration/model/loc_requests_order.sql");
         repository = new LocRequestRepository();
     });

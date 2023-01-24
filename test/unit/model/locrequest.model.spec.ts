@@ -750,7 +750,108 @@ describe("LocRequestAggregateRoot (files)", () => {
         ]);
         thenFileIsVisibleToRequester(hash)
     })
+
+    it("accepts delivered files with restricted delivery", () => {
+        const hash = "hash-1";
+        givenClosedCollectionLocWithFile(hash);
+
+        const deliveredFileHash = "hash-2";
+        request.addDeliveredFile({
+            hash,
+            deliveredFileHash,
+            generatedOn: moment(),
+            owner: OWNER,
+        });
+
+        const file = request.files?.find(file => file.hash === hash);
+        expect(file?.delivered?.length).toBe(1);
+        expect(file?.delivered![0].hash).toBe(hash);
+        expect(file?.delivered![0].requestId).toBe(request.id);
+        expect(file?.delivered![0].file).toBe(file);
+
+        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash);
+        expect(file?.delivered![0].owner).toBe(OWNER);
+        expect(file?.delivered![0].generatedOn).toBeDefined();
+
+        expect(file?.delivered![0]._toAdd).toBe(true);
+    })
+
+    it("accepts delivered files with restricted delivery", () => {
+        const hash = "hash-1";
+        givenClosedCollectionLocWithFile(hash);
+
+        const deliveredFileHash = "hash-2";
+        request.addDeliveredFile({
+            hash,
+            deliveredFileHash,
+            generatedOn: moment(),
+            owner: OWNER,
+        });
+
+        const file = request.files?.find(file => file.hash === hash);
+        expect(file?.delivered?.length).toBe(1);
+        expect(file?.delivered![0].hash).toBe(hash);
+        expect(file?.delivered![0].requestId).toBe(request.id);
+        expect(file?.delivered![0].file).toBe(file);
+
+        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash);
+        expect(file?.delivered![0].owner).toBe(OWNER);
+        expect(file?.delivered![0].generatedOn).toBeDefined();
+
+        expect(file?.delivered![0]._toAdd).toBe(true);
+    })
+
+    it("cannot add delivered file if not collection", () => {
+        givenRequestWithStatus('CLOSED');
+        request.locType = "Transaction";
+
+        expect(() => request.addDeliveredFile({
+            hash: "hash-1",
+            deliveredFileHash: "hash-2",
+            generatedOn: moment(),
+            owner: OWNER,
+        })).toThrowError("Restricted delivery is only available with Collection LOCs");
+    })
+
+    it("cannot add delivered file if not closed", () => {
+        givenRequestWithStatus('OPEN');
+        request.locType = "Collection";
+
+        expect(() => request.addDeliveredFile({
+            hash: "hash-1",
+            deliveredFileHash: "hash-2",
+            generatedOn: moment(),
+            owner: OWNER,
+        })).toThrowError("Restricted delivery is only possible with closed Collection LOCs");
+    })
+
+    it("cannot add delivered file if file not found", () => {
+        givenRequestWithStatus('CLOSED');
+        request.locType = "Collection";
+
+        expect(() => request.addDeliveredFile({
+            hash: "hash-1",
+            deliveredFileHash: "hash-2",
+            generatedOn: moment(),
+            owner: OWNER,
+        })).toThrowError("No file with hash hash-1");
+    })
 })
+
+function givenClosedCollectionLocWithFile(hash: string) {
+    givenRequestWithStatus('OPEN');
+    request.locType = "Collection";
+    request.addFile({
+        hash,
+        name: "name1",
+        contentType: "text/plain",
+        cid: "cid-1234",
+        nature: "nature1",
+        submitter: OWNER,
+        restrictedDelivery: true,
+    });
+    request.close(moment());
+}
 
 describe("LocRequestAggregateRoot (synchronization)", () => {
 

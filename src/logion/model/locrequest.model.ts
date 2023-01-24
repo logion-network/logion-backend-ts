@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import moment, { Moment } from "moment";
-import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { appDataSource, Log } from "@logion/rest-api-core";
@@ -8,7 +8,7 @@ import { appDataSource, Log } from "@logion/rest-api-core";
 import { components } from "../controllers/components.js";
 import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
 import { orderAndMap, HasIndex } from "../lib/db/collections.js";
-import { deleteIndexedChild, Child, saveIndexedChildren } from "./child.js";
+import { deleteIndexedChild, Child, saveIndexedChildren, saveChildren } from "./child.js";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
 import { PersonalInfo } from "./personalinfo.model.js";
@@ -217,6 +217,7 @@ export class LocRequestAggregateRoot {
         file.draft = true;
         file.nature = fileDescription.nature;
         file.submitter = fileDescription.submitter
+        file.delivered = [];
         file._toAdd = true;
         this.files!.push(file);
     }
@@ -594,6 +595,30 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    addDeliveredFile(params: {
+        hash: string,
+        deliveredFileHash: string,
+        generatedOn: Moment,
+        owner: string,
+    }): void {
+        if(this.locType !== "Collection") {
+            throw new Error("Restricted delivery is only available with Collection LOCs");
+        }
+        if(this.status !== "CLOSED") {
+            throw new Error("Restricted delivery is only possible with closed Collection LOCs");
+        }
+        const { hash, deliveredFileHash, generatedOn, owner } = params;
+        const file = this.files?.find(file => file.hash === hash);
+        if(!file) {
+            throw new Error(`No file with hash ${hash}`);
+        }
+        file.addDeliveredFile({
+            deliveredFileHash,
+            generatedOn,
+            owner,
+        });
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -725,12 +750,70 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column("boolean", { name: "restricted_delivery", default: false })
     restrictedDelivery?: boolean;
 
+    @OneToMany(() => LocFileDelivered, deliveredFile => deliveredFile.file, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    delivered?: LocFileDelivered[];
+
     update(restrictedDelivery: boolean) {
         if (this.request?.locType !== 'Collection') {
             throw Error("Can change restricted delivery of file only on Collection LOC.")
         }
         this.restrictedDelivery = restrictedDelivery;
     }
+
+    addDeliveredFile(params: {
+        deliveredFileHash: string,
+        generatedOn: Moment,
+        owner: string,
+    }): LocFileDelivered {
+        const { deliveredFileHash, generatedOn, owner } = params;
+        const deliveredFile = new LocFileDelivered();
+
+        deliveredFile.requestId = this.requestId;
+        deliveredFile.hash = this.hash;
+
+        deliveredFile.deliveredFileHash = deliveredFileHash;
+        deliveredFile.generatedOn = generatedOn.toDate();
+        deliveredFile.owner = owner;
+
+        deliveredFile.file = this;
+        deliveredFile._toAdd = true;
+        this.delivered?.push(deliveredFile);
+        return deliveredFile;
+    }
+}
+
+@Entity("loc_request_file_delivered")
+@Index([ "requestId", "hash" ])
+export class LocFileDelivered extends Child {
+
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    id?: string;
+
+    @Column({ type: "uuid", name: "request_id" })
+    requestId?: string;
+
+    @Column({ name: "hash" })
+    hash?: string;
+
+    @Column({ name: "delivered_file_hash", length: 255 })
+    deliveredFileHash?: string;
+
+    @Column("timestamp without time zone", { name: "generated_on", nullable: true })
+    generatedOn?: Date;
+
+    @Column({ length: 255 })
+    owner?: string;
+
+    @ManyToOne(() => LocFile, file => file.delivered)
+    @JoinColumn([
+        { name: "request_id", referencedColumnName: "requestId" },
+        { name: "hash", referencedColumnName: "hash" },
+    ])
+    file?: LocFile;
 }
 
 @Entity("loc_metadata_item")
@@ -837,7 +920,20 @@ export class LocRequestRepository {
             entityClass: LocFile,
             whereExpression,
             childrenToDelete: root._filesToDelete
-        })
+        });
+        if(root.files) {
+            for(const file of root.files) {
+                await this.saveDelivered(file);
+            }
+        }
+    }
+
+    private async saveDelivered(root: LocFile): Promise<void> {
+        await saveChildren({
+            children: root.delivered,
+            entityManager: this.repository.manager,
+            entityClass: LocFileDelivered,
+        });
     }
 
     private async saveMetadata(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
@@ -869,6 +965,7 @@ export class LocRequestRepository {
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
         let builder = this.repository.createQueryBuilder("request")
             .leftJoinAndSelect("request.files", "file")
+            .leftJoinAndSelect("file.delivered", "delivered")
             .leftJoinAndSelect("request.metadata", "metadata_item")
             .leftJoinAndSelect("request.links", "link");
 
