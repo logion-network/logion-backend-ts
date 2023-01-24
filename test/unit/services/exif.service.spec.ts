@@ -14,6 +14,8 @@ describe("ExifService", () => {
 
     const mp4File = "./test/resources/exif.mp4";
 
+    const pdfFile = "./test/resources/exif.pdf";
+
     it("reads all JPEG metadata", () => testReadAll(jpegFile));
     it("reads JPEG image description", () => testReadDescription(jpegFile));
     it("writes JPEG image description", () => testWriteDescription(jpegFile));
@@ -30,6 +32,11 @@ describe("ExifService", () => {
     it("reads MP4 image description", () => testReadDescription(mp4File));
     it("writes MP4 image description", () => testWriteDescription(mp4File));
     it("detects MP4 file format is supported", () => testFileSupported(mp4File, true));
+
+    it("reads all PDF metadata", () => testReadAll(pdfFile));
+    it("reads PDF image description", () => testReadDescription(pdfFile));
+    it("writes PDF image description", () => testWriteDescription(pdfFile));
+    it("detects PDF file format is supported", () => testFileSupported(pdfFile, true));
 });
 
 async function testReadAll(path: string) {
