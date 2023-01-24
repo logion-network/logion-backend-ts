@@ -5,6 +5,7 @@ const SUPPORTED_TYPES = new Set([
     "image/jpeg",
     "image/gif",
     "video/mp4",
+    "application/pdf",
 ]);
 
 @injectable()
@@ -47,7 +48,7 @@ export class ExifService {
     private async descriptionField(file: string) {
         // Supported tag names per type: https://exiftool.org/TagNames/
         const mimeType = await this._readMimeType(file);
-        if(mimeType === "image/jpeg" || mimeType === "video/mp4") {
+        if(mimeType === "image/jpeg" || mimeType === "video/mp4" || mimeType === "application/pdf") {
             return "Description";
         } else if(mimeType === "image/gif") {
             return "Comment";
