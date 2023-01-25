@@ -1154,9 +1154,9 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription) {
 }
 
 function whenUpdatingFile(hash: string, restrictedDelivery: boolean) {
-    const file = request.files?.find(file => file.hash === hash);
-    file!.update(restrictedDelivery);
+    request.updateFile({ hash, restrictedDelivery });
 }
+
 function whenAddingFiles(files: FileDescription[]) {
     files.forEach(file => request.addFile(file));
 }
@@ -1262,11 +1262,11 @@ function whenConfirmingFile(hash: string) {
 }
 
 function thenFileIsNotDraft(hash: string) {
-    expect(request.file(hash)?.draft).toBeFalse();
+    expect(request.files?.find(file => file.hash === hash)?.draft).toBeFalse();
 }
 
 function thenFileRequiresUpdate(hash: string) {
-    expect(request.file(hash)?._toUpdate).toBeTrue();
+    expect(request.files?.find(file => file.hash === hash)?._toUpdate).toBeTrue();
 }
 
 function thenFileIsVisibleToRequester(hash: string) {
