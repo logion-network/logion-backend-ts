@@ -229,21 +229,29 @@ export class LocRequestAggregateRoot {
     }
 
     confirmFile(hash: string) {
-        const file = this.file(hash)!;
+        const file = this.getFileOrThrow(hash);
         file.draft = false;
         file._toUpdate = true;
+    }
+
+    private getFileOrThrow(hash: string) {
+        const file = this.file(hash);
+        if(!file) {
+            throw new Error(`No file with hash ${hash}`);
+        }
+        return file;
+    }
+
+    private file(hash: string): LocFile | undefined {
+        return this.files?.find(file => file.hash === hash);
     }
 
     hasFile(hash: string): boolean {
         return this.file(hash) !== undefined;
     }
 
-    file(hash: string): LocFile | undefined {
-        return this.files!.find(file => file.hash === hash)
-    }
-
     getFile(hash: string): FileDescription {
-        return this.toFileDescription(this.file(hash)!);
+        return this.toFileDescription(this.getFileOrThrow(hash));
     }
 
     private toFileDescription(file: LocFile): FileDescription {
@@ -608,15 +616,24 @@ export class LocRequestAggregateRoot {
             throw new Error("Restricted delivery is only possible with closed Collection LOCs");
         }
         const { hash, deliveredFileHash, generatedOn, owner } = params;
-        const file = this.files?.find(file => file.hash === hash);
-        if(!file) {
-            throw new Error(`No file with hash ${hash}`);
-        }
+        const file = this.getFileOrThrow(hash);
         file.addDeliveredFile({
             deliveredFileHash,
             generatedOn,
             owner,
         });
+    }
+
+    updateFile(params: {
+        hash: string,
+        restrictedDelivery: boolean,
+    }): void {
+        if(this.locType !== 'Collection') {
+            throw Error("Can change restricted delivery of file only on Collection LOC.");
+        }
+        const { hash, restrictedDelivery } = params;
+        const file = this.getFileOrThrow(hash);
+        file.update(restrictedDelivery);
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -745,7 +762,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
-    request?: LocRequestAggregateRoot;
+    request?: LocRequestAggregateRoot; // WARNING: TypeORM does not set this field!
 
     @Column("boolean", { name: "restricted_delivery", default: false })
     restrictedDelivery?: boolean;
@@ -758,9 +775,6 @@ export class LocFile extends Child implements HasIndex, Submitted {
     delivered?: LocFileDelivered[];
 
     update(restrictedDelivery: boolean) {
-        if (this.request?.locType !== 'Collection') {
-            throw Error("Can change restricted delivery of file only on Collection LOC.")
-        }
         this.restrictedDelivery = restrictedDelivery;
         this._toUpdate = true;
     }
