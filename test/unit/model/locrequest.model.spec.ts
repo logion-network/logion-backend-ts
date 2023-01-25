@@ -836,6 +836,44 @@ describe("LocRequestAggregateRoot (files)", () => {
             owner: OWNER,
         })).toThrowError("No file with hash hash-1");
     })
+
+    it("updates file", () => {
+        givenRequestWithStatus('OPEN');
+        request.locType = "Collection";
+        const file: FileDescription = {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: SUBMITTER,
+                restrictedDelivery: false,
+            };
+        whenAddingFiles([ file ]);
+        whenUpdatingFile("hash1", false);
+        thenExposesFileByHash("hash1", { ...file, restrictedDelivery: false });
+        whenUpdatingFile("hash1", true);
+        thenExposesFileByHash("hash1", { ...file, restrictedDelivery: true });
+    });
+
+    it("fails to update file for Identity LOC", () => {
+        givenRequestWithStatus('OPEN');
+        request.locType = "Identity";
+        const file: FileDescription = {
+                hash: "hash1",
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: SUBMITTER,
+                restrictedDelivery: false,
+            };
+        whenAddingFiles([ file ]);
+        expect(() => {
+            whenUpdatingFile("hash1", true);
+        }).toThrowError("Can change restricted delivery of file only on Collection LOC.");
+    });
+
 })
 
 function givenClosedCollectionLocWithFile(hash: string) {
@@ -1115,6 +1153,10 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription) {
     expect(request.decisionOn).toBeUndefined();
 }
 
+function whenUpdatingFile(hash: string, restrictedDelivery: boolean) {
+    const file = request.files?.find(file => file.hash === hash);
+    file!.update(restrictedDelivery);
+}
 function whenAddingFiles(files: FileDescription[]) {
     files.forEach(file => request.addFile(file));
 }
@@ -1132,6 +1174,7 @@ function expectSameFiles(f1: FileDescription, f2: FileDescription) {
     expect(f1.contentType).toEqual(f2.contentType);
     expect(f1.nature).toEqual(f2.nature);
     expect(f1.submitter).toEqual(f2.submitter);
+    expect(f1.restrictedDelivery).toEqual(f2.restrictedDelivery);
     if(f1.addedOn === undefined) {
         expect(f2.addedOn).not.toBeDefined();
     } else {

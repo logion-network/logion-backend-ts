@@ -313,9 +313,7 @@ export class CollectionController extends ApiController {
     @SendsResponse()
     async downloadCollectionFile(_body: any, collectionLocId: string, hash: string, itemId: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
-        const file = requireDefined(collection.getFile(hash));
-        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, file, itemId);
+        const file = await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
 
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         await this.fileStorageService.exportFile(file, tempFilePath);
@@ -328,17 +326,22 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, file: FileDescription, itemId: string): Promise<void> {
+    private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, hash: string, itemId: string): Promise<FileDescription> {
+        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
+        if (!collection.hasFile(hash)) {
+            throw badRequest("Trying to download a file that is not uploaded yet.")
+        }
+        const file = collection.getFile(hash);
         const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
         if(!file.restrictedDelivery) {
-            throw forbidden("No delivery allowed for this collection file");
+            throw forbidden("No delivery allowed for this collection's files");
         } else if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
-            return;
+            return file;
         }
     }
 
@@ -382,9 +385,7 @@ export class CollectionController extends ApiController {
     @Async()
     async canDownloadCollectionFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
-        const file = requireDefined(collection.getFile(hash));
-        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, file, hash);
+        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
     }
 
     static updateCollectionFile(spec: OpenAPIV3.Document) {
@@ -400,7 +401,6 @@ export class CollectionController extends ApiController {
 
     @HttpPut('/:collectionLocId/files/:hash')
     @Async()
-    @SendsResponse()
     async updateCollectionFile(body: UpdateCollectionFile, collectionLocId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(collectionLocId, async collection => {

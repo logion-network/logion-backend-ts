@@ -762,6 +762,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
             throw Error("Can change restricted delivery of file only on Collection LOC.")
         }
         this.restrictedDelivery = restrictedDelivery;
+        this._toUpdate = true;
     }
 
     addDeliveredFile(params: {
