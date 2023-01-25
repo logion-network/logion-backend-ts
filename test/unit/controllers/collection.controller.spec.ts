@@ -13,7 +13,7 @@ import {
 } from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 import request from "supertest";
-import { LocRequestRepository, LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
+import { LocRequestRepository, LocRequestAggregateRoot, LocFile } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import {
     CollectionService,
@@ -26,7 +26,10 @@ import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
 import { ALICE } from "../../helpers/addresses.js";
-import { LocRequestService } from "../../../src/logion/services/locrequest.service.js";
+import {
+    LocRequestService,
+    NonTransactionalLocRequestService
+} from "../../../src/logion/services/locrequest.service.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
@@ -38,6 +41,7 @@ const SOME_DATA = 'some data';
 const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
 const FILE_NAME = "'a-file.pdf'";
 const CID = "cid-784512";
+const CONTENT_TYPE = "text/plain";
 
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
 const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
@@ -111,6 +115,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -127,6 +132,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -147,6 +153,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -167,6 +174,7 @@ describe("CollectionController", () => {
             collectionItemPublished: false,
             filePublished: false,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -187,6 +195,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: false,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -207,6 +216,7 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -219,6 +229,21 @@ describe("CollectionController", () => {
                 expect(response.body.errorMessage).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
             });
     })
+})
+
+type FileType = "Item" | "Collection";
+
+function testDownloadFiles(fileType: FileType) {
+
+    const url =
+        fileType === "Item" ?
+            `/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }` :
+            `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }/${ itemId }`;
+
+    const checkUrl =
+        fileType === "Item" ?
+            `/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check` :
+            `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }/${ itemId }/check`;
 
     it('fails to download existing file given its hash if no restricted delivery', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
@@ -227,15 +252,16 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .get(url)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("No delivery allowed for this item's files");
+                expect(response.body.errorMessage).toBe(`No delivery allowed for this ${ fileType.toLowerCase() }'s files`);
             });
     })
 
@@ -246,13 +272,14 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: false,
+            fileType,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check`)
+            .get(checkUrl)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("No delivery allowed for this item's files");
+                expect(response.body.errorMessage).toBe(`No delivery allowed for this ${ fileType.toLowerCase() }'s files`);
             });
     })
 
@@ -263,11 +290,12 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: true,
+            fileType,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .get(url)
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -282,9 +310,10 @@ describe("CollectionController", () => {
             collectionItemPublished: true,
             filePublished: true,
             restrictedDelivery: true,
+            fileType,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check`)
+            .get(checkUrl)
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -292,39 +321,49 @@ describe("CollectionController", () => {
             });
     })
 
-    it('fails to download from a non-existing collection item file', async () => {
+    it('fails to download from a non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
             filePublished: false,
             restrictedDelivery: false,
+            fileType,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .get(url)
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
+                if (fileType === "Item") {
+                    expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
+                } else {
+                    expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
+                }
             });
     })
 
-    it('check fails when trying to download from a non-existing collection item file', async () => {
+    it('check fails when trying to download from a non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
             collectionItemPublished: false,
             filePublished: false,
             restrictedDelivery: false,
+            fileType,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check`)
+            .get(checkUrl)
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
+                if (fileType === "Item") {
+                    expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
+                } else {
+                    expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
+                }
             });
     })
 
@@ -336,11 +375,12 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
+            fileType,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .get(url)
             .expect(200, SOME_DATA)
             .expect('Content-Type', /text\/plain/);
         let fileReallyExists = true;
@@ -361,9 +401,10 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
+            fileType,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check`)
+            .get(checkUrl)
             .expect(200);
     })
 
@@ -375,11 +416,12 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: false,
+            fileType,
         }));
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }`)
+            .get(url)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -395,15 +437,21 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: false,
+            fileType,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check`)
+            .get(checkUrl)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");
             });
     })
+}
+
+describe("CollectionController - item files - ", () => {
+
+    testDownloadFiles("Item");
 
     it('retrieves latest deliveries info', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
@@ -413,6 +461,7 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
+            fileType: "Item",
         }));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/latest-deliveries`)
@@ -429,6 +478,7 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
+            fileType: "Item",
         }));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/${ itemId }/all-deliveries`)
@@ -446,6 +496,7 @@ describe("CollectionController", () => {
             filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
+            fileType: "Item",
         }), mock);
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
@@ -464,25 +515,75 @@ describe("CollectionController", () => {
     })
 })
 
+describe("CollectionController - collection files - ", () => {
+
+    testDownloadFiles("Collection");
+
+    it('updates restricted delivery flag', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: true,
+            fileType: "Collection",
+        }));
+        await request(app)
+            .put(`/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }`)
+            .send({ restrictedDelivery: true })
+            .expect(200)
+    })
+
+})
+
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
-    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true, restrictedDelivery: false})
+    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true, restrictedDelivery: false, fileType: "Item"})
 }
 
-function mockModel(container: Container, params: { collectionItemAlreadyInDB: boolean, fileAlreadyInDB: boolean, collectionItemPublished: boolean, filePublished: boolean, restrictedDelivery: boolean, isOwner?: boolean }): void {
-    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished, restrictedDelivery, isOwner } = params;
+function mockModel(
+    container: Container,
+    params: {
+        collectionItemAlreadyInDB: boolean,
+        fileAlreadyInDB: boolean,
+        collectionItemPublished: boolean,
+        filePublished: boolean,
+        restrictedDelivery: boolean,
+        isOwner?: boolean,
+        fileType: FileType,
+    }): void {
+    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished, restrictedDelivery, isOwner, fileType } = params;
     const collectionItem = new CollectionItemAggregateRoot()
+    const collectionLoc = new LocRequestAggregateRoot();
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
     collectionItem.addedOn = timestamp.toDate();
-    if (fileAlreadyInDB) {
+    if (fileAlreadyInDB && fileType === "Item") {
         const collectionItemFile = new CollectionItemFile()
         collectionItemFile.collectionLocId = collectionLocId;
         collectionItemFile.itemId = itemId;
         collectionItemFile.hash = SOME_DATA_HASH;
         collectionItemFile.cid = CID;
         collectionItemFile.collectionItem = collectionItem;
-        collectionItem.files = [ collectionItemFile ]
+        collectionItem.files = [ collectionItemFile ];
+
+        collectionLoc.files = [];
+    } else if (fileAlreadyInDB && fileType === "Collection") {
+        const collectionFile = new LocFile();
+        collectionFile.hash = SOME_DATA_HASH;
+        collectionFile.cid = CID;
+        collectionFile.request = collectionLoc;
+        collectionFile.requestId = collectionLocId;
+        collectionFile.submitter = collectionRequester;
+        collectionFile.index = 0;
+        collectionFile.name = FILE_NAME;
+        collectionFile.contentType = CONTENT_TYPE;
+        collectionFile.restrictedDelivery = restrictedDelivery;
+        collectionLoc.files = [ collectionFile ];
+
+        collectionItem.files = [];
     } else {
+        collectionLoc.files = [];
         collectionItem.files = [];
     }
     const collectionItemFile = new Mock<CollectionItemFile>()
@@ -534,12 +635,14 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
-    const collectionLoc = new LocRequestAggregateRoot();
     collectionLoc.ownerAddress = collectionLocOwner;
     collectionLoc.requesterAddress = collectionRequester;
+    collectionLoc.locType = "Collection";
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(collectionLocId))
         .returns(Promise.resolve(collectionLoc))
+    locRequestRepository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))
+        .returns(Promise.resolve())
     container.bind(LocRequestRepository).toConstantValue(locRequestRepository.object())
 
     const collectionFactory = new Mock<CollectionFactory>()
@@ -556,7 +659,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
     const publishedCollectionItemFile: ItemFile = {
         hash: SOME_DATA_HASH,
         name: FILE_NAME,
-        contentType: "text/plain",
+        contentType: CONTENT_TYPE,
         size: BigInt(SOME_DATA.length)
     }
 
@@ -572,7 +675,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
         param => param.collectionLocId === collectionLocId && param.itemId === itemId)
     ))
         .returns(Promise.resolve(collectionItemPublished ? publishedCollectionItem : undefined));
-        logionNodeCollectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
+    logionNodeCollectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
         param => param.collectionLocId === collectionLocId && param.itemId === itemId && param.hash === SOME_DATA_HASH)
     ))
         .returns(Promise.resolve(filePublished ? publishedCollectionItemFile : undefined));
@@ -590,8 +693,7 @@ function mockModel(container: Container, params: { collectionItemAlreadyInDB: bo
 
     container.bind(CollectionService).toConstantValue(new NonTransactionalCollectionService(collectionRepository.object()));
 
-    const locRequestService = new Mock<LocRequestService>();
-    container.bind(LocRequestService).toConstantValue(locRequestService.object());
+    container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(locRequestRepository.object()));
 }
 
 function expectDeliveryInfo(responseBody: any) {
