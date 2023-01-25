@@ -225,6 +225,20 @@ describe('LocRequestRepository.save()', () => {
         await service.deleteDraftOrRejected(id, async () => {});
         await checkAggregate(id, 0);
     })
+
+    it("updates file", async () => {
+        const id = uuid();
+        const locRequest = givenLoc(id, "Collection", "OPEN");
+        await service.addNewRequest(locRequest);
+        await service.update(id, async request => {
+            request.updateFile({
+                hash: "hash",
+                restrictedDelivery: true,
+            });
+        });
+        const updatedRequest = await repository.findById(id);
+        expect(updatedRequest?.files![0].restrictedDelivery).toBe(true);
+    })
 })
 
 describe('LocRequestRepository - LOC correctly ordered', () => {

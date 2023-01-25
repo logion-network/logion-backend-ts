@@ -770,7 +770,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @OneToMany(() => LocFileDelivered, deliveredFile => deliveredFile.file, {
         eager: true,
         cascade: false,
-        persistence: false
+        persistence: false,
     })
     delivered?: LocFileDelivered[];
 
@@ -928,24 +928,30 @@ export class LocRequestRepository {
     private async saveFiles(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
         const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: LocFile) => E = (sql, file) => sql
             .where("request_id = :id", { id: root.id })
-            .andWhere("hash = :hash", { hash: file.hash })
+            .andWhere("hash = :hash", { hash: file.hash });
+        const allDelivered = root.files?.map(file => file.delivered);
         await saveIndexedChildren({
             children: root.files!,
             entityManager,
             entityClass: LocFile,
             whereExpression,
-            childrenToDelete: root._filesToDelete
+            childrenToDelete: root._filesToDelete,
+            updateValuesExtractor: file => {
+                const values = { ...file };
+                delete values.delivered;
+                return values;
+            }
         });
-        if(root.files) {
-            for(const file of root.files) {
-                await this.saveDelivered(file);
+        if(allDelivered) {
+            for(const delivered of allDelivered) {
+                await this.saveDelivered(delivered);
             }
         }
     }
 
-    private async saveDelivered(root: LocFile): Promise<void> {
+    private async saveDelivered(delivered?: LocFileDelivered[]): Promise<void> {
         await saveChildren({
-            children: root.delivered,
+            children: delivered,
             entityManager: this.repository.manager,
             entityClass: LocFileDelivered,
         });

@@ -22,6 +22,7 @@ export interface Parameters<T> {
     entityManager: EntityManager,
     whereExpression?: <E extends WhereExpressionBuilder>(sql: E, child: T) => E,
     childrenToDelete?: T[]
+    updateValuesExtractor?: (entity: T) => QueryDeepPartialEntity<T>,
 }
 
 export async function saveIndexedChildren<T extends IndexedChild>(parameters: Parameters<T>) {
@@ -33,7 +34,7 @@ export async function saveIndexedChildren<T extends IndexedChild>(parameters: Pa
 
 export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
 
-    const { children, entityClass, entityManager, whereExpression, childrenToDelete } = parameters;
+    const { children, entityClass, entityManager, whereExpression, childrenToDelete, updateValuesExtractor } = parameters;
 
     if (childrenToDelete) {
 
@@ -68,10 +69,15 @@ export async function saveChildren<T extends Child>(parameters: Parameters<T>) {
                 }
                 delete child._toUpdate;
                 logger.debug("Updating child %s", entityClass);
-                const update = entityManager.createQueryBuilder(entityClass, "some-alias")
+                let extractor = updateValuesExtractor;
+                if(!extractor) {
+                    extractor = () => child as QueryDeepPartialEntity<T>;
+                }
+                let update = entityManager.createQueryBuilder(entityClass, "some-alias")
                     .update()
-                    .set(child as QueryDeepPartialEntity<T>)
-                await whereExpression(update, child).execute();
+                    .set(extractor(child));
+                update = whereExpression(update, child);
+                await update.execute();
             }
         }
     }
