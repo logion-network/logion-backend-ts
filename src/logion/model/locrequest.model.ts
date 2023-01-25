@@ -805,7 +805,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
 @Index([ "requestId", "hash" ])
 export class LocFileDelivered extends Child {
 
-    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()", generated: "uuid" })
     id?: string;
 
     @Column({ type: "uuid", name: "request_id" })
