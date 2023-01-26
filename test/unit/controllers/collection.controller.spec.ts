@@ -13,7 +13,12 @@ import {
 } from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 import request from "supertest";
-import { LocRequestRepository, LocRequestAggregateRoot, LocFile } from "../../../src/logion/model/locrequest.model.js";
+import {
+    LocRequestRepository,
+    LocRequestAggregateRoot,
+    LocFile,
+    LocFileDelivered
+} from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import {
     CollectionService,
@@ -535,6 +540,27 @@ describe("CollectionController - collection files - ", () => {
             .expect(200)
     })
 
+    it('retrieves deliveries info', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: true,
+            fileType: "Collection",
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/file-deliveries/${ SOME_DATA_HASH }`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                const delivery = response.body.deliveries[0];
+                expect(delivery.copyHash).toBe(DELIVERY_HASH);
+                expect(delivery.generatedOn).toBeDefined();
+                expect(delivery.owner).toBe(ITEM_TOKEN_OWNER);
+            });
+    })
 })
 
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
@@ -555,6 +581,7 @@ function mockModel(
     const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished, restrictedDelivery, isOwner, fileType } = params;
     const collectionItem = new CollectionItemAggregateRoot()
     const collectionLoc = new LocRequestAggregateRoot();
+    collectionLoc.id = collectionLocId;
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
     collectionItem.addedOn = timestamp.toDate();
@@ -588,6 +615,7 @@ function mockModel(
     }
     const collectionItemFile = new Mock<CollectionItemFile>()
     const collectionRepository = new Mock<CollectionRepository>()
+    const locRequestRepository = new Mock<LocRequestRepository>();
     if (collectionItemAlreadyInDB) {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
             .returns(Promise.resolve(collectionItem))
@@ -605,7 +633,7 @@ function mockModel(
         It.IsAny<() => CollectionItemAggregateRoot>(),
     )).returns(Promise.resolve(collectionItem));
     collectionRepository.setup(instance => instance.save(collectionItem)).returnsAsync();
-    if(restrictedDelivery) {
+    if(restrictedDelivery && fileType === "Item") {
         const delivered: CollectionItemFileDelivered = {
             collectionLocId,
             itemId,
@@ -632,6 +660,19 @@ function mockModel(
         ).returnsAsync({
             [ SOME_DATA_HASH ]: [ delivered ]
         });
+    } else if (restrictedDelivery && fileType === "Collection") {
+        const delivered: LocFileDelivered[] = [ {
+            requestId: collectionLocId,
+            hash: SOME_DATA_HASH,
+            deliveredFileHash: DELIVERY_HASH,
+            generatedOn: new Date(),
+            owner: ITEM_TOKEN_OWNER,
+        } ]
+        locRequestRepository.setup(instance => instance.findAllDeliveries(
+            It.Is<{ collectionLocId: string, hash: string }>(query =>
+                query.collectionLocId === collectionLocId &&
+                query.hash === SOME_DATA_HASH ))
+        ).returnsAsync(delivered);
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
@@ -639,7 +680,6 @@ function mockModel(
     collectionLoc.requesterAddress = collectionRequester;
     collectionLoc.locType = "Collection";
     collectionLoc.status = "CLOSED";
-    const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(collectionLocId))
         .returns(Promise.resolve(collectionLoc))
     locRequestRepository.setup(instance => instance.save(It.IsAny<LocRequestAggregateRoot>()))

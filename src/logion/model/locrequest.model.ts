@@ -12,7 +12,11 @@ import { deleteIndexedChild, Child, saveIndexedChildren, saveChildren } from "./
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
 import { PersonalInfo } from "./personalinfo.model.js";
-import { IdenfyCallbackPayload, IdenfyVerificationSession, IdenfyVerificationStatus } from "../services/idenfy/idenfy.types.js";
+import {
+    IdenfyCallbackPayload,
+    IdenfyVerificationSession,
+    IdenfyVerificationStatus
+} from "../services/idenfy/idenfy.types.js";
 
 const { logger } = Log;
 
@@ -910,9 +914,11 @@ export class LocRequestRepository {
 
     constructor() {
         this.repository = appDataSource.getRepository(LocRequestAggregateRoot);
+        this.deliveredRepository = appDataSource.getRepository(LocFileDelivered);
     }
 
     readonly repository: Repository<LocRequestAggregateRoot>;
+    readonly deliveredRepository: Repository<LocFileDelivered>;
 
     public findById(id: string): Promise<LocRequestAggregateRoot | null> {
         return this.repository.findOneBy({ id });
@@ -1058,6 +1064,16 @@ export class LocRequestRepository {
         } else {
             return undefined;
         }
+    }
+
+    public async findAllDeliveries(query: { collectionLocId: string, hash: string }): Promise<LocFileDelivered[]> {
+        const { collectionLocId, hash } = query;
+        let builder = this.deliveredRepository.createQueryBuilder("delivery");
+        builder
+            .where("delivery.request_id = :collectionLocId", { collectionLocId })
+            .andWhere("delivery.hash = :hash", { hash })
+            .orderBy("delivery.generated_on", "DESC");
+        return builder.getMany();
     }
 }
 

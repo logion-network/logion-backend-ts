@@ -150,7 +150,7 @@ describe('LocRequestRepository - read accesses', () => {
         const request = requireDefined(await repository.findById("15ed922d-5960-4147-a73f-97d362cb7c46"));
         expect(request.files?.length).toBe(1);
         const file = request.files![0];
-        expect(file.delivered?.length).toBe(1);
+        expect(file.delivered?.length).toBe(3);
     });
 
     it("finds LOC with restricted deliveries based on criteria", async () => {
@@ -161,8 +161,22 @@ describe('LocRequestRepository - read accesses', () => {
         const request = requests[0];
         expect(request.files?.length).toBe(1);
         const file = request.files![0];
-        expect(file.delivered?.length).toBe(1);
+        expect(file.delivered?.length).toBe(3);
     });
+
+    it("finds deliveries", async () => {
+        const delivered = await repository.findAllDeliveries({
+            collectionLocId: "15ed922d-5960-4147-a73f-97d362cb7c46",
+            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
+        })
+        expect(delivered.length).toEqual(3);
+        expect(delivered[0].owner).toEqual("5Eewz58eEPS81847EezkiFENE3kG8fxrx1BdRWyFJAudPC6m");
+        expect(delivered[0].deliveredFileHash).toEqual("0xc14d46b478dcb21833b90dc9880aa3a7507b01aa5d033c64051df999f3c3bba0");
+        expect(delivered[1].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+        expect(delivered[1].deliveredFileHash).toEqual("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
+        expect(delivered[2].owner).toEqual("5H9ZP7zyJtmay2Vcstf7SzK8LD1PGe5PJ8q7xakqp4zXFEwz");
+        expect(delivered[2].deliveredFileHash).toEqual("0x38df2378ed26e20124d8c38a945af1b4a058656aab3b3b1f71a9d8a629cc0d81");
+    })
 })
 
 describe('LocRequestRepository.save()', () => {
