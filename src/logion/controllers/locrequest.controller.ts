@@ -368,6 +368,7 @@ export class LocRequestController extends ApiController {
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
                 submitter: file.submitter,
+                restrictedDelivery: file.restrictedDelivery,
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
