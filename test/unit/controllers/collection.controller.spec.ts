@@ -638,6 +638,7 @@ function mockModel(
     collectionLoc.ownerAddress = collectionLocOwner;
     collectionLoc.requesterAddress = collectionRequester;
     collectionLoc.locType = "Collection";
+    collectionLoc.status = "CLOSED";
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(collectionLocId))
         .returns(Promise.resolve(collectionLoc))

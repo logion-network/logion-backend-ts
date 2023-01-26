@@ -314,9 +314,23 @@ export class CollectionController extends ApiController {
     async downloadCollectionFile(_body: any, collectionLocId: string, hash: string, itemId: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const file = await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
-
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
         await this.fileStorageService.exportFile(file, tempFilePath);
+
+        const generatedOn = moment();
+        const owner = authenticated.address;
+        await this.restrictedDeliveryService.setMetadata({
+            file: tempFilePath,
+            metadata: {
+                owner,
+                generatedOn,
+            }
+        });
+        const deliveredFileHash = await sha256File(tempFilePath);
+
+        await this.locRequestService.update(collectionLocId, async collection => {
+            collection.addDeliveredFile({ hash, deliveredFileHash, generatedOn, owner });
+        });
 
         downloadAndClean({
             response: this.response,
