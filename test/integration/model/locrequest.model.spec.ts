@@ -6,7 +6,9 @@ import {
     FetchLocRequestsSpecification,
     LocFile,
     LocMetadataItem,
-    LocLink, LocType, LocFileDelivered,
+    LocLink,
+    LocType,
+    LocFileDelivered,
 } from "../../../src/logion/model/locrequest.model.js";
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
@@ -318,6 +320,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         nature: "nature1",
         submitter: SUBMITTER,
         restrictedDelivery: false,
+        size: 789,
     })
     locRequest.metadata = []
     locRequest.addMetadataItem({

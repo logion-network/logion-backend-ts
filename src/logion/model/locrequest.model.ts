@@ -53,6 +53,7 @@ export interface FileDescription {
     readonly addedOn?: Moment;
     readonly submitter: string;
     readonly restrictedDelivery: boolean;
+    readonly size: number;
 }
 
 export interface MetadataItemDescription {
@@ -220,7 +221,8 @@ export class LocRequestAggregateRoot {
         file.contentType = fileDescription.contentType;
         file.draft = true;
         file.nature = fileDescription.nature;
-        file.submitter = fileDescription.submitter
+        file.submitter = fileDescription.submitter;
+        file.size = fileDescription.size.toString();
         file.delivered = [];
         file._toAdd = true;
         this.files!.push(file);
@@ -269,6 +271,7 @@ export class LocRequestAggregateRoot {
             submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
+            size: parseInt(file.size!)
         };
     }
 
@@ -770,6 +773,9 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @Column("boolean", { name: "restricted_delivery", default: false })
     restrictedDelivery?: boolean;
+
+    @Column("bigint", { nullable: false })
+    size?: string;
 
     @OneToMany(() => LocFileDelivered, deliveredFile => deliveredFile.file, {
         eager: true,

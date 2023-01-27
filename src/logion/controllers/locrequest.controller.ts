@@ -525,6 +525,7 @@ export class LocRequestController extends ApiController {
                     nature: addFileView.nature || "",
                     submitter: contributor,
                     restrictedDelivery: addFileView.restrictedDelivery || false,
+                    size: file.size,
                 });
             });
         } catch(e) {

@@ -624,6 +624,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature1",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             },
             {
                 hash: "hash2",
@@ -633,6 +634,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature2",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ];
         whenAddingFiles(files);
@@ -654,6 +656,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature1",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             },
             {
                 hash: "hash1",
@@ -663,6 +666,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature2",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ];
         expect(() => whenAddingFiles(files)).toThrowError();
@@ -681,6 +685,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature1",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             },
             {
                 hash: "hash2",
@@ -690,6 +695,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature2",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ];
         whenAddingFiles(files);
@@ -705,6 +711,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature2",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ];
         thenExposesFiles(newFiles);
@@ -727,6 +734,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature1",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ]);
         whenConfirmingFile(hash)
@@ -746,6 +754,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 nature: "nature1",
                 submitter: OWNER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ]);
         thenFileIsVisibleToRequester(hash)
@@ -841,14 +850,15 @@ describe("LocRequestAggregateRoot (files)", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Collection";
         const file: FileDescription = {
-                hash: "hash1",
-                name: "name1",
-                contentType: "text/plain",
-                cid: "cid-1234",
-                nature: "nature1",
-                submitter: SUBMITTER,
-                restrictedDelivery: false,
-            };
+            hash: "hash1",
+            name: "name1",
+            contentType: "text/plain",
+            cid: "cid-1234",
+            nature: "nature1",
+            submitter: SUBMITTER,
+            restrictedDelivery: false,
+            size: 123,
+        };
         whenAddingFiles([ file ]);
         whenUpdatingFile("hash1", false);
         thenExposesFileByHash("hash1", { ...file, restrictedDelivery: false });
@@ -860,14 +870,15 @@ describe("LocRequestAggregateRoot (files)", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Identity";
         const file: FileDescription = {
-                hash: "hash1",
-                name: "name1",
-                contentType: "text/plain",
-                cid: "cid-1234",
-                nature: "nature1",
-                submitter: SUBMITTER,
-                restrictedDelivery: false,
-            };
+            hash: "hash1",
+            name: "name1",
+            contentType: "text/plain",
+            cid: "cid-1234",
+            nature: "nature1",
+            submitter: SUBMITTER,
+            restrictedDelivery: false,
+            size: 123,
+        };
         whenAddingFiles([ file ]);
         expect(() => {
             whenUpdatingFile("hash1", true);
@@ -887,6 +898,7 @@ function givenClosedCollectionLocWithFile(hash: string) {
         nature: "nature1",
         submitter: OWNER,
         restrictedDelivery: true,
+        size: 123,
     });
     request.close(moment());
 }
@@ -940,6 +952,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 nature: "nature1",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             },
             {
                 hash: "hash2",
@@ -949,6 +962,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 nature: "nature2",
                 submitter: SUBMITTER,
                 restrictedDelivery: false,
+                size: 123,
             }
         ];
         whenAddingFiles(files);
@@ -965,6 +979,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             submitter: SUBMITTER,
             addedOn: addedOn,
             restrictedDelivery: false,
+            size: 123,
         })
     })
 })
@@ -983,6 +998,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             nature: "nature1",
             submitter: SUBMITTER,
             restrictedDelivery: false,
+            size: 123,
         });
         expect(request.getFiles(SUBMITTER).length).toBe(1);
         request.addMetadataItem({
@@ -1022,6 +1038,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             nature: "nature2",
             submitter: OWNER,
             restrictedDelivery: false,
+            size: 123,
         });
         request.confirmFile("hash2");
         request.setFileAddedOn("hash2", moment()); // Sync
