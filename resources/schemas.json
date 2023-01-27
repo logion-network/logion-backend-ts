@@ -777,6 +777,10 @@
                                 "submitter": {
                                     "type": "string",
                                     "description": "The SS58 address of the file submitter"
+                                },
+                                "contentType": {
+                                    "type": "string",
+                                    "description": "The file's content type (MIME)"
                                 }
                             }
                         }
