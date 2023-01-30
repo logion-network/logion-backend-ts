@@ -11,7 +11,12 @@ import {
 import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
 import moment from "moment";
-import { LocRequestRepository, FileDescription, LocRequestAggregateRoot } from "../model/locrequest.model.js";
+import {
+    LocRequestRepository,
+    FileDescription,
+    LocRequestAggregateRoot,
+    LocFileDelivered
+} from "../model/locrequest.model.js";
 import { getUploadedFile } from "./fileupload.js";
 import { sha256File } from "../lib/crypto/hashing.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -47,6 +52,7 @@ type CollectionItemsView = components["schemas"]["CollectionItemsView"];
 type CheckLatestItemDeliveryResponse = components["schemas"]["CheckLatestItemDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
 type CheckLatestCollectionDeliveryResponse = components["schemas"]["CheckLatestCollectionDeliveryResponse"];
+type CollectionFileDeliveriesResponse = components["schemas"]["CollectionFileDeliveriesResponse"];
 type CollectionDeliveriesResponse = components["schemas"]["CollectionDeliveriesResponse"];
 type FileUploadData = components["schemas"]["FileUploadData"];
 type UpdateCollectionFile = components["schemas"]["UpdateCollectionFile"];
@@ -69,6 +75,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.updateCollectionFile(spec)
     CollectionController.getLatestItemDeliveries(spec)
     CollectionController.getAllItemDeliveries(spec)
+    CollectionController.getAllCollectionFileDeliveries(spec)
     CollectionController.getAllCollectionDeliveries(spec)
 }
 
@@ -126,7 +133,7 @@ export class CollectionController extends ApiController {
     }
 
     static getCollectionItem(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}"].get!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/items/{itemId}"].get!;
         operationObject.summary = "Gets the info of a published Collection Item";
         operationObject.description = "No authentication required.";
         operationObject.responses = getPublicResponses("CollectionItemView");
@@ -136,7 +143,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    @HttpGet('/:collectionLocId/:itemId')
+    @HttpGet('/:collectionLocId/items/:itemId')
     @Async()
     async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
         requireDefined(
@@ -511,7 +518,7 @@ export class CollectionController extends ApiController {
         return this.getItemDeliveries({ collectionLocId, itemId });
     }
 
-    static getAllCollectionDeliveries(spec: OpenAPIV3.Document) {
+    static getAllCollectionFileDeliveries(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries/{hash}"].get!;
         operationObject.summary = "Provides information about all copies delivered to the item's token owners";
         operationObject.description = "Only item's collection LOC owner is authorized";
@@ -524,16 +531,16 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/file-deliveries/:hash')
     @Async()
-    async getAllCollectionDeliveries(_body: any, collectionLocId: string, hash: string): Promise<CollectionDeliveriesResponse> {
+    async getAllCollectionFileDeliveries(_body: any, collectionLocId: string, hash: string): Promise<CollectionFileDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
 
-        const deliveries = await this.getCollectionDeliveries({ collectionLoc, hash });
+        const deliveries = await this._getAllCollectionFileDeliveries({ collectionLoc, hash });
         return { deliveries };
     }
 
-    private async getCollectionDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: string }): Promise<CheckLatestCollectionDeliveryResponse[]> {
+    private async _getAllCollectionFileDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: string }): Promise<CheckLatestCollectionDeliveryResponse[]> {
         const { collectionLoc, hash } = query;
         if (!collectionLoc.hasFile(hash)) {
             throw badRequest("File not found")
@@ -542,11 +549,45 @@ export class CollectionController extends ApiController {
             collectionLocId: collectionLoc.id!,
             hash
         });
-        return delivered.map(deliveredCopy => ({
+        return delivered[hash].map(this.mapToResponse);
+    }
+
+    private mapToResponse(deliveredCopy: LocFileDelivered): CheckLatestCollectionDeliveryResponse {
+        return {
             copyHash: deliveredCopy.deliveredFileHash,
             owner: deliveredCopy.owner,
             generatedOn: moment(deliveredCopy.generatedOn).toISOString(),
-        }));
+        }
+    }
+
+    static getAllCollectionDeliveries(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries"].get!;
+        operationObject.summary = "Provides information about all delivered copies";
+        operationObject.description = "Only item's collection LOC owner is authorized";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC"
+        });
+    }
+
+    @HttpGet('/:collectionLocId/file-deliveries')
+    @Async()
+    async getAllCollectionDeliveries(_body: any, collectionLocId: string): Promise<CollectionDeliveriesResponse> {
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`Collection ${ collectionLocId } not found`));
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
+
+        return await this._getAllCollectionDeliveries({ collectionLoc });
+    }
+
+    private async _getAllCollectionDeliveries(query: { collectionLoc: LocRequestAggregateRoot }): Promise<CollectionDeliveriesResponse> {
+        const { collectionLoc } = query;
+        const delivered = await this.locRequestRepository.findAllDeliveries({ collectionLocId: collectionLoc.id! });
+        const view: CollectionDeliveriesResponse = {};
+        for(const fileHash of Object.keys(delivered)) {
+            view[fileHash] = delivered[fileHash].map(this.mapToResponse)
+        }
+        return view;
     }
 
     @HttpGet('/:collectionLocId/:itemId/files/:hash/source')

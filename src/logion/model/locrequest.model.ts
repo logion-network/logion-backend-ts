@@ -1072,14 +1072,23 @@ export class LocRequestRepository {
         }
     }
 
-    public async findAllDeliveries(query: { collectionLocId: string, hash: string }): Promise<LocFileDelivered[]> {
+    public async findAllDeliveries(query: { collectionLocId: string, hash?: string }): Promise<Record<string, LocFileDelivered[]>> {
         const { collectionLocId, hash } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");
-        builder
-            .where("delivery.request_id = :collectionLocId", { collectionLocId })
-            .andWhere("delivery.hash = :hash", { hash })
-            .orderBy("delivery.generated_on", "DESC");
-        return builder.getMany();
+        builder.where("delivery.request_id = :collectionLocId", { collectionLocId });
+        if (hash) {
+            builder.andWhere("delivery.hash = :hash", { hash });
+        }
+        builder.orderBy("delivery.generated_on", "DESC");
+        const deliveriesList = await builder.getMany();
+        const deliveries: Record<string, LocFileDelivered[]> = {};
+        for(const delivery of deliveriesList) {
+            const hash = delivery.hash!;
+            deliveries[hash] ||= [];
+            const fileDeliveries = deliveries[hash];
+            fileDeliveries.push(delivery);
+        }
+        return deliveries;
     }
 }
 

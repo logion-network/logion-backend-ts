@@ -29,6 +29,15 @@
             },
             "CollectionDeliveriesResponse": {
                 "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/CheckLatestCollectionDeliveryResponse"
+                    }
+                }
+            },
+            "CollectionFileDeliveriesResponse": {
+                "type": "object",
                 "properties": {
                     "deliveries": {
                         "type": "array",

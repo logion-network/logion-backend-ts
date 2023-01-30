@@ -74,3 +74,9 @@ INSERT INTO loc_request_file_delivered (id, request_id, hash, delivered_file_has
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '15ed922d-5960-4147-a73f-97d362cb7c46', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', '0x38df2378ed26e20124d8c38a945af1b4a058656aab3b3b1f71a9d8a629cc0d81', '2021-10-05T12:16:00.000', '5H9ZP7zyJtmay2Vcstf7SzK8LD1PGe5PJ8q7xakqp4zXFEwz');
 INSERT INTO loc_request_file_delivered (id, request_id, hash, delivered_file_hash, generated_on, owner)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '15ed922d-5960-4147-a73f-97d362cb7c46', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', '0xc14d46b478dcb21833b90dc9880aa3a7507b01aa5d033c64051df999f3c3bba0', '2021-10-07T12:16:00.000', '5Eewz58eEPS81847EezkiFENE3kG8fxrx1BdRWyFJAudPC6m');
+
+INSERT INTO loc_request_file (request_id, hash, name, oid, content_type, added_on, "index", draft, nature, submitter, restricted_delivery, size)
+VALUES ('15ed922d-5960-4147-a73f-97d362cb7c46', '0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e', 'another file', 123456, 'text/plain', '2021-10-06T11:16:00.000', 1, TRUE, 'some other nature', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw', TRUE, 789);
+INSERT INTO loc_request_file_delivered (id, request_id, hash, delivered_file_hash, generated_on, owner)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '15ed922d-5960-4147-a73f-97d362cb7c46', '0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e', '0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a', '2021-10-06T12:16:00.000', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw');
+

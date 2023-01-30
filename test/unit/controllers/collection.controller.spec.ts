@@ -73,7 +73,7 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, container => mockModelForGet(container, true));
 
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId }`)
             .send()
             .expect(200)
             .then(response => {
@@ -89,7 +89,7 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, container => mockModelForGet(container, false));
 
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId }`)
             .send()
             .expect(200)
             .then(response => {
@@ -105,7 +105,7 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, container => mockModelForGet(container, false));
 
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/0x12345`)
+            .get(`/api/collection/${ collectionLocId }/items/0x12345`)
             .send()
             .expect(400)
             .then(response => {
@@ -556,11 +556,35 @@ describe("CollectionController - collection files - ", () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 const delivery = response.body.deliveries[0];
-                expect(delivery.copyHash).toBe(DELIVERY_HASH);
-                expect(delivery.generatedOn).toBeDefined();
-                expect(delivery.owner).toBe(ITEM_TOKEN_OWNER);
+                checkDelivery(delivery);
             });
     })
+
+    it('retrieves all deliveries info', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            collectionItemAlreadyInDB: true,
+            fileAlreadyInDB: true,
+            collectionItemPublished: true,
+            filePublished: true,
+            restrictedDelivery: true,
+            isOwner: true,
+            fileType: "Collection",
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/file-deliveries`)
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                const delivery = response.body[SOME_DATA_HASH][0];
+                checkDelivery(delivery);
+            });
+    })
+
+    function checkDelivery(delivery: any) {
+        expect(delivery.copyHash).toBe(DELIVERY_HASH);
+        expect(delivery.generatedOn).toBeDefined();
+        expect(delivery.owner).toBe(ITEM_TOKEN_OWNER);
+    }
 })
 
 function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
@@ -661,17 +685,24 @@ function mockModel(
             [ SOME_DATA_HASH ]: [ delivered ]
         });
     } else if (restrictedDelivery && fileType === "Collection") {
-        const delivered: LocFileDelivered[] = [ {
+        const fileDelivered: LocFileDelivered[] = [ {
             requestId: collectionLocId,
             hash: SOME_DATA_HASH,
             deliveredFileHash: DELIVERY_HASH,
             generatedOn: new Date(),
             owner: ITEM_TOKEN_OWNER,
         } ]
+        const delivered: Record<string, LocFileDelivered[]> = {};
+        delivered[SOME_DATA_HASH] = fileDelivered;
         locRequestRepository.setup(instance => instance.findAllDeliveries(
             It.Is<{ collectionLocId: string, hash: string }>(query =>
                 query.collectionLocId === collectionLocId &&
                 query.hash === SOME_DATA_HASH ))
+        ).returnsAsync(delivered);
+        locRequestRepository.setup(instance => instance.findAllDeliveries(
+            It.Is<{ collectionLocId: string, hash: string }>(query =>
+                query.collectionLocId === collectionLocId &&
+                query.hash === undefined ))
         ).returnsAsync(delivered);
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())

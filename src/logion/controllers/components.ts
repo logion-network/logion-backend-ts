@@ -22,6 +22,9 @@ export interface components {
       [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
     };
     CollectionDeliveriesResponse: {
+      [key: string]: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[] | undefined;
+    };
+    CollectionFileDeliveriesResponse: {
       deliveries?: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[];
     };
     CheckLatestDeliveryResponse: {
