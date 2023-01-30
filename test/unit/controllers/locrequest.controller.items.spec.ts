@@ -296,6 +296,7 @@ const SOME_FILE = {
     nature: "file-nature",
     submitter: REQUESTER,
     restrictedDelivery: false,
+    size: 123,
 };
 
 async function testDownloadSuccess(app: Express) {

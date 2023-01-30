@@ -215,6 +215,7 @@ const testFile: FileDescription = {
     submitter: SUBMITTER,
     addedOn: moment("2022-08-31T15:53:12.741Z"),
     restrictedDelivery: false,
+    size: 123,
 }
 
 const testLink: LinkDescription = {

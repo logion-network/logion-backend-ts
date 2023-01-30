@@ -22,6 +22,9 @@ export interface components {
       [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
     };
     CollectionDeliveriesResponse: {
+      [key: string]: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[] | undefined;
+    };
+    CollectionFileDeliveriesResponse: {
       deliveries?: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[];
     };
     CheckLatestDeliveryResponse: {
@@ -384,6 +387,8 @@ export interface components {
           submitter?: string;
           /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
           restrictedDelivery?: boolean;
+          /** @description The file's size, in bytes. */
+          size?: number;
         })[];
       /** @description The links attached to this request's LOC */
       links?: ({
@@ -482,6 +487,8 @@ export interface components {
           addedOn?: string;
           /** @description The SS58 address of the file submitter */
           submitter?: string;
+          /** @description The file's content type (MIME) */
+          contentType?: string;
         })[];
       /** @description The links attached to this request's LOC */
       links?: ({

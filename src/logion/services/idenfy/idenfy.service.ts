@@ -6,7 +6,7 @@ import { LocRequestService } from "../locrequest.service.js";
 import { FileDescription, LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model.js";
 import { IdenfyCallbackPayload, IdenfyCallbackPayloadFileTypes, IdenfyVerificationSession } from "./idenfy.types.js";
 import { createWriteStream } from "fs";
-import { writeFile } from "fs/promises";
+import { writeFile, stat } from "fs/promises";
 import os from "os";
 import path from "path";
 import crypto from "crypto";
@@ -19,6 +19,12 @@ const { logger } = Log;
 export interface IdenfyVerificationRedirect {
 
     url: string;
+}
+
+interface IPFSFile {
+    hash: string;
+    cid: string;
+    size: number;
 }
 
 export abstract class IdenfyService {
@@ -158,7 +164,7 @@ export class EnabledIdenfyService extends IdenfyService {
         const submitter = requireDefined(request.ownerAddress);
 
         const randomPrefix = DateTime.now().toMillis().toString();
-        const { hash, cid } = await this.storePayload(randomPrefix, raw);
+        const { hash, cid, size } = await this.storePayload(randomPrefix, raw);
         files.push({
             contentType: "application/json",
             name: "idenfy-callback-payload.json",
@@ -167,12 +173,13 @@ export class EnabledIdenfyService extends IdenfyService {
             hash,
             cid,
             restrictedDelivery: false,
+            size,
         });
 
         for(const fileType of IdenfyCallbackPayloadFileTypes) {
             const fileUrlString = json.fileUrls[fileType];
             if(fileUrlString) {
-                const { fileName, hash, cid, contentType } = await this.storeFile(randomPrefix, fileUrlString);
+                const { fileName, hash, cid, contentType, size } = await this.storeFile(randomPrefix, fileUrlString);
                 files.push({
                     name: fileName,
                     nature: `iDenfy ${ fileType }`,
@@ -181,6 +188,7 @@ export class EnabledIdenfyService extends IdenfyService {
                     hash,
                     cid,
                     restrictedDelivery: false,
+                    size,
                 });
             }
         }
@@ -188,19 +196,21 @@ export class EnabledIdenfyService extends IdenfyService {
         return files;
     }
 
-    private async storePayload(tempFileNamePrefix: string, raw: Buffer): Promise<{ hash: string, cid: string }> {
+    private async storePayload(tempFileNamePrefix: string, raw: Buffer): Promise<IPFSFile> {
         const fileName = path.join(os.tmpdir(), `${ tempFileNamePrefix }-idenfy-callback-payload.json`);
         await writeFile(fileName, raw);
         return await this.hashAndImport(fileName);
     }
 
-    private async hashAndImport(fileName: string): Promise<{ hash: string, cid: string }> {
+    private async hashAndImport(fileName: string): Promise<IPFSFile> {
         const hash = await sha256File(fileName);
         const cid = await this.fileStorageService.importFile(fileName);
-        return { hash, cid };
+        const stats = await stat(fileName);
+        const size = stats.size;
+        return { hash, cid, size };
     }
 
-    private async storeFile(tempFileNamePrefix: string, fileUrlString: string): Promise<{ fileName: string, hash: string, cid: string, contentType: string }> {
+    private async storeFile(tempFileNamePrefix: string, fileUrlString: string): Promise<IPFSFile & { fileName: string, contentType: string }> {
         const fileUrl = new URL(fileUrlString);
         const fileUrlPath = fileUrl.pathname;
         const fileUrlPathElements = fileUrlPath.split("/");
@@ -226,7 +236,11 @@ export class EnabledIdenfyService extends IdenfyService {
                 }
             });
         });
-        const { hash, cid } = await this.hashAndImport(tempFileName);
-        return { fileName, contentType, hash, cid };
+        const ipfsFile = await this.hashAndImport(tempFileName);
+        return {
+            ...ipfsFile,
+            fileName,
+            contentType
+        };
     }
 }

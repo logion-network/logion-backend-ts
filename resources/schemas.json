@@ -29,6 +29,15 @@
             },
             "CollectionDeliveriesResponse": {
                 "type": "object",
+                "additionalProperties": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/components/schemas/CheckLatestCollectionDeliveryResponse"
+                    }
+                }
+            },
+            "CollectionFileDeliveriesResponse": {
+                "type": "object",
                 "properties": {
                     "deliveries": {
                         "type": "array",
@@ -637,6 +646,10 @@
                                 "restrictedDelivery": {
                                     "type": "boolean",
                                     "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
+                                },
+                                "size": {
+                                    "type": "number",
+                                    "description": "The file's size, in bytes."
                                 }
                             }
                         }
