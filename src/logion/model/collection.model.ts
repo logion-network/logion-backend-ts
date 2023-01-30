@@ -149,7 +149,7 @@ export class CollectionItemFile extends Child {
 @Index([ "collectionLocId", "itemId", "hash" ])
 export class CollectionItemFileDelivered extends Child {
 
-    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()", generated: "uuid" })
     id?: string;
 
     @Column({ type: "uuid", name: "collection_loc_id" })

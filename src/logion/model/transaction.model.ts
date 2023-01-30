@@ -53,7 +53,7 @@ export class TransactionAggregateRoot {
         };
     }
 
-    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()" })
+    @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()", generated: "uuid" })
     id?: string;
 
     @Column("bigint", {name: "block_number"})

@@ -1843,9 +1843,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.3.2-1":
-  version: 0.3.2-1
-  resolution: "@logion/rest-api-core@npm:0.3.2-1"
+"@logion/rest-api-core@npm:^0.3.2-2":
+  version: 0.3.2-2
+  resolution: "@logion/rest-api-core@npm:0.3.2-2"
   dependencies:
     "@logion/authenticator": ^0.4.1-1
     dinoloop: ^2.4.0
@@ -1859,7 +1859,7 @@ __metadata:
     swagger-ui-express: ^4.6.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 523ceb9fb36e5faae7c9c3f0615b17c0909fd73ffe2a2b70b86a62e92f39e073ae974c24481f99e0294b075ce8aca8e2b74f7f62ad0c736883794b26e91f7317
+  checksum: dc954f33c6abf26ae13a87344e316cb13f04f4b22df15e3f561c758d3c7a09192f49769984b90098c5c0dbd69ef735de15fa141c0662b83092306bd3bdb5d482
   languageName: node
   linkType: hard
 
@@ -5730,7 +5730,7 @@ __metadata:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-api": ^0.9.0-3
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.3.2-1
+    "@logion/rest-api-core": ^0.3.2-2
     "@polkadot/wasm-crypto": ^6.4.1
     "@tsconfig/node18": ^1.0.1
     "@types/cors": ^2.8.12

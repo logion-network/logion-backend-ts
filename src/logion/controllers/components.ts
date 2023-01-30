@@ -19,7 +19,10 @@ export interface components {
       locId?: string;
     };
     ItemDeliveriesResponse: {
-      [key: string]: (components["schemas"]["CheckLatestDeliveryResponse"])[] | undefined;
+      [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
+    };
+    CollectionDeliveriesResponse: {
+      deliveries?: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[];
     };
     CheckLatestDeliveryResponse: {
       /** @description The hash of the latest delivered copy */
@@ -31,8 +34,11 @@ export interface components {
       generatedOn?: string;
       /** @description The address of the owner of the linked token */
       owner?: string;
-      belongsToCurrentOwner?: boolean;
     };
+    CheckLatestItemDeliveryResponse: {
+      belongsToCurrentOwner?: boolean;
+    } & components["schemas"]["CheckLatestDeliveryResponse"];
+    CheckLatestCollectionDeliveryResponse: components["schemas"]["CheckLatestDeliveryResponse"];
     /** @description Backend configuration which impacts clients */
     Config: {
       /** @description Available features and their status (enabled/disabled) */

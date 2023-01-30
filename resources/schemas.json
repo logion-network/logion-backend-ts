@@ -23,7 +23,18 @@
                 "additionalProperties": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/components/schemas/CheckLatestDeliveryResponse"
+                        "$ref": "#/components/schemas/CheckLatestItemDeliveryResponse"
+                    }
+                }
+            },
+            "CollectionDeliveriesResponse": {
+                "type": "object",
+                "properties": {
+                    "deliveries": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/CheckLatestCollectionDeliveryResponse"
+                        }
                     }
                 }
             },
@@ -42,11 +53,25 @@
                     "owner": {
                         "type": "string",
                         "description": "The address of the owner of the linked token"
-                    },
+                    }
+                }
+            },
+            "CheckLatestItemDeliveryResponse": {
+                "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/CheckLatestDeliveryResponse"
+                }],
+                "properties": {
                     "belongsToCurrentOwner": {
                         "type": "boolean"
                     }
                 }
+            },
+            "CheckLatestCollectionDeliveryResponse": {
+                "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/CheckLatestDeliveryResponse"
+                }]
             },
             "Config": {
                 "description": "Backend configuration which impacts clients",
