@@ -388,7 +388,7 @@ export interface components {
           /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
           restrictedDelivery?: boolean;
           /** @description The file's size, in bytes. */
-          size?: number;
+          size?: string;
         })[];
       /** @description The links attached to this request's LOC */
       links?: ({

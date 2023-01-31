@@ -648,7 +648,7 @@
                                     "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
                                 },
                                 "size": {
-                                    "type": "number",
+                                    "type": "string",
                                     "description": "The file's size, in bytes."
                                 }
                             }
