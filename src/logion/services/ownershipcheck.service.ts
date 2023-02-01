@@ -1,6 +1,5 @@
 import { injectable } from 'inversify';
-import { ItemToken } from '@logion/node-api';
-import { CollectionItem } from '@logion/node-api/dist/Types';
+import { ItemToken, CollectionItem } from '@logion/node-api';
 
 import { Network, AlchemyService } from './alchemy.service.js';
 import { SingularService } from './singular.service.js';

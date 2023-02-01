@@ -39,7 +39,7 @@ import {
     GetCollectionItemFileParams,
     LogionNodeCollectionService
 } from "../services/collection.service.js";
-import { CollectionItem, ItemFile } from "@logion/node-api/dist/Types.js";
+import { CollectionItem, ItemFile } from "@logion/node-api";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";

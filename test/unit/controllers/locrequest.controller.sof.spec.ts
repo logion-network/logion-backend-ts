@@ -8,7 +8,7 @@ import {
     LocType,
     NewSofRequestParameters,
 } from "../../../src/logion/model/locrequest.model.js";
-import { UUID } from "@logion/node-api/dist/UUID.js";
+import { UUID } from "@logion/node-api";
 import { CollectionItemAggregateRoot } from "../../../src/logion/model/collection.model.js";
 import {
     buildMocksForUpdate,

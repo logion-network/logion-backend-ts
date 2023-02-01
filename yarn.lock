@@ -1818,9 +1818,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.9.0-3":
-  version: 0.9.0-3
-  resolution: "@logion/node-api@npm:0.9.0-3"
+"@logion/node-api@npm:^0.10.1-2":
+  version: 0.10.1-2
+  resolution: "@logion/node-api@npm:0.10.1-2"
   dependencies:
     "@polkadot/api": ^9.10.1
     "@polkadot/util": ^10.2.1
@@ -1828,7 +1828,7 @@ __metadata:
     "@types/uuid": ^8.3.4
     fast-sha256: ^1.3.0
     uuid: ^8.3.2
-  checksum: 393e3c6f82b3457cb100b5818d9c0462dcb85ce4739dfa11df347413b4540ebf87a6c0c4e16c781b91d525f8a0cfaddfb104253ab31c645d1c3fb53a067f9f44
+  checksum: d91b102e56f95b143f8ec66daaa5d43ac7afd1bdc7bce495d0e61565356cb7686aca5554b3deb58a2fec307d6d77751c7ff21dca5d39bf71907275efe547233c
   languageName: node
   linkType: hard
 
@@ -5728,7 +5728,7 @@ __metadata:
   resolution: "logion-backend-ts@workspace:."
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.9.0-3
+    "@logion/node-api": ^0.10.1-2
     "@logion/node-exiftool": ^2.3.1-2
     "@logion/rest-api-core": ^0.3.2-2
     "@polkadot/wasm-crypto": ^6.4.1
