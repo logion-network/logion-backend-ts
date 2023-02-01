@@ -1,4 +1,4 @@
-import { CollectionItem } from "@logion/node-api/dist/Types";
+import { CollectionItem } from "@logion/node-api";
 import { Mock } from "moq.ts";
 
 import { AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
