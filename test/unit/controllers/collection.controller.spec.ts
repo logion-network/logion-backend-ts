@@ -524,16 +524,18 @@ describe("CollectionController - collection files - ", () => {
 
     testDownloadFiles("Collection");
 
+    const mockParams = {
+        collectionItemAlreadyInDB: true,
+        fileAlreadyInDB: true,
+        collectionItemPublished: true,
+        filePublished: true,
+        restrictedDelivery: true,
+        isOwner: true,
+        fileType: "Collection" as FileType,
+    };
+
     it('updates restricted delivery flag', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            isOwner: true,
-            fileType: "Collection",
-        }));
+        const app = setupApp(CollectionController, container => mockModel(container, mockParams));
         await request(app)
             .put(`/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }`)
             .send({ restrictedDelivery: true })
@@ -541,15 +543,7 @@ describe("CollectionController - collection files - ", () => {
     })
 
     it('retrieves deliveries info', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            isOwner: true,
-            fileType: "Collection",
-        }));
+        const app = setupApp(CollectionController, container => mockModel(container, mockParams));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/file-deliveries/${ SOME_DATA_HASH }`)
             .expect(200)
@@ -561,15 +555,7 @@ describe("CollectionController - collection files - ", () => {
     })
 
     it('retrieves all deliveries info', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            isOwner: true,
-            fileType: "Collection",
-        }));
+        const app = setupApp(CollectionController, container => mockModel(container, mockParams));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/file-deliveries`)
             .expect(200)
@@ -577,6 +563,35 @@ describe("CollectionController - collection files - ", () => {
             .then(response => {
                 const delivery = response.body[SOME_DATA_HASH][0];
                 checkDelivery(delivery);
+            });
+    })
+
+    it('checks one delivery hash', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, mockParams));
+        await request(app)
+            .put(`/api/collection/${ collectionLocId }/file-deliveries`)
+            .send({
+                copyHash: DELIVERY_HASH
+            })
+            .expect(200)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                checkDelivery(response.body);
+            });
+    })
+
+
+    it('fails to check delivery with wrong hash', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, mockParams));
+        await request(app)
+            .put(`/api/collection/${ collectionLocId }/file-deliveries`)
+            .send({
+                copyHash: "0x11223344"
+            })
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.errorMessage).toEqual("Provided copyHash is not from a delivered copy of a in the collection")
             });
     })
 
@@ -704,6 +719,18 @@ function mockModel(
                 query.collectionLocId === collectionLocId &&
                 query.hash === undefined ))
         ).returnsAsync(delivered);
+        locRequestRepository.setup(instance => instance.findDeliveryByDeliveredFileHash(
+            It.Is<{ collectionLocId: string, deliveredFileHash: string }>(query =>
+                query.collectionLocId === collectionLocId &&
+                query.deliveredFileHash === DELIVERY_HASH
+            ))
+        ).returnsAsync(fileDelivered[0]);
+        locRequestRepository.setup(instance => instance.findDeliveryByDeliveredFileHash(
+            It.Is<{ collectionLocId: string, deliveredFileHash: string }>(query =>
+                query.collectionLocId !== collectionLocId ||
+                query.deliveredFileHash !== DELIVERY_HASH
+            ))
+        ).returnsAsync(null);
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 

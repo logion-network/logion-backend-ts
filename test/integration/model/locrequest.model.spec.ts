@@ -22,6 +22,7 @@ describe('LocRequestRepository - read accesses', () => {
 
     const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
     const anotherHash = "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e";
+    const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";
 
     beforeAll(async () => {
         await connect(ENTITIES);
@@ -152,7 +153,7 @@ describe('LocRequestRepository - read accesses', () => {
     })
 
     it("finds one LOC with restricted deliveries", async () => {
-        const request = requireDefined(await repository.findById("15ed922d-5960-4147-a73f-97d362cb7c46"));
+        const request = requireDefined(await repository.findById(collectionLocId));
         expect(request.files?.length).toBe(2);
         const file = request.files![0];
         expect(file.delivered?.length).toBe(3);
@@ -169,23 +170,36 @@ describe('LocRequestRepository - read accesses', () => {
         expect(file.delivered?.length).toBe(3);
     });
 
-    fit("finds deliveries", async () => {
+    it("finds deliveries", async () => {
         const delivered = await repository.findAllDeliveries({
-            collectionLocId: "15ed922d-5960-4147-a73f-97d362cb7c46",
+            collectionLocId: collectionLocId,
             hash,
         })
         checkDelivery(delivered);
         expect(delivered[anotherHash]).toBeUndefined();
     })
 
-    fit("finds all deliveries", async () => {
+    it("finds all deliveries", async () => {
         const delivered = await repository.findAllDeliveries({
-            collectionLocId: "15ed922d-5960-4147-a73f-97d362cb7c46",
+            collectionLocId: collectionLocId,
         })
         checkDelivery(delivered);
         expect(delivered[anotherHash].length).toEqual(1);
         expect(delivered[anotherHash][0].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
         expect(delivered[anotherHash][0].deliveredFileHash).toEqual("0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a");
+    })
+
+    it("finds one delivery by copy hash", async () => {
+        const deliveredFileHash = "0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a";
+        const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash})
+        expect(delivered?.owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+        expect(delivered?.hash).toEqual("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
+        expect(delivered?.deliveredFileHash).toEqual(deliveredFileHash);
+    })
+
+    it("finds no delivery with unknown copy hash", async () => {
+        const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash: "0xb8af3be22a2395a9961cfe43cdbc7e731f334c8272a9903db29d4ff584b3934a"})
+        expect(delivered).toBeNull();
     })
 
     function checkDelivery(delivered: Record<string, LocFileDelivered[]>) {
