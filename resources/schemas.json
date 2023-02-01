@@ -32,7 +32,7 @@
                 "additionalProperties": {
                     "type": "array",
                     "items": {
-                        "$ref": "#/components/schemas/CheckLatestCollectionDeliveryResponse"
+                        "$ref": "#/components/schemas/CheckCollectionDeliveryResponse"
                     }
                 }
             },
@@ -42,7 +42,7 @@
                     "deliveries": {
                         "type": "array",
                         "items": {
-                            "$ref": "#/components/schemas/CheckLatestCollectionDeliveryResponse"
+                            "$ref": "#/components/schemas/CheckCollectionDeliveryResponse"
                         }
                     }
                 }
@@ -65,6 +65,15 @@
                     }
                 }
             },
+            "CheckCollectionDeliveryRequest": {
+                "type": "object",
+                "properties": {
+                    "copyHash": {
+                        "type": "string",
+                        "description": "The hash of a candidate delivery"
+                    }
+                }
+            },
             "CheckLatestItemDeliveryResponse": {
                 "type": "object",
                 "allOf": [{
@@ -76,7 +85,7 @@
                     }
                 }
             },
-            "CheckLatestCollectionDeliveryResponse": {
+            "CheckCollectionDeliveryResponse": {
                 "type": "object",
                 "allOf": [{
                     "$ref": "#/components/schemas/CheckLatestDeliveryResponse"

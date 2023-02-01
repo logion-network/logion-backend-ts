@@ -22,10 +22,10 @@ export interface components {
       [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
     };
     CollectionDeliveriesResponse: {
-      [key: string]: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[] | undefined;
+      [key: string]: (components["schemas"]["CheckCollectionDeliveryResponse"])[] | undefined;
     };
     CollectionFileDeliveriesResponse: {
-      deliveries?: (components["schemas"]["CheckLatestCollectionDeliveryResponse"])[];
+      deliveries?: (components["schemas"]["CheckCollectionDeliveryResponse"])[];
     };
     CheckLatestDeliveryResponse: {
       /** @description The hash of the latest delivered copy */
@@ -38,10 +38,14 @@ export interface components {
       /** @description The address of the owner of the linked token */
       owner?: string;
     };
+    CheckCollectionDeliveryRequest: {
+      /** @description The hash of a candidate delivery */
+      copyHash?: string;
+    };
     CheckLatestItemDeliveryResponse: {
       belongsToCurrentOwner?: boolean;
     } & components["schemas"]["CheckLatestDeliveryResponse"];
-    CheckLatestCollectionDeliveryResponse: components["schemas"]["CheckLatestDeliveryResponse"];
+    CheckCollectionDeliveryResponse: components["schemas"]["CheckLatestDeliveryResponse"];
     /** @description Backend configuration which impacts clients */
     Config: {
       /** @description Available features and their status (enabled/disabled) */

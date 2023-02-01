@@ -1090,6 +1090,12 @@ export class LocRequestRepository {
         }
         return deliveries;
     }
+
+    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, deliveredFileHash: string }): Promise<LocFileDelivered | null> {
+        const requestId = query.collectionLocId;
+        const { deliveredFileHash } = query;
+        return await this.deliveredRepository.findOneBy({ requestId, deliveredFileHash })
+    }
 }
 
 export interface NewLocRequestParameters {

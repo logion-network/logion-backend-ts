@@ -51,11 +51,12 @@ type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];
 type CheckLatestItemDeliveryResponse = components["schemas"]["CheckLatestItemDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
-type CheckLatestCollectionDeliveryResponse = components["schemas"]["CheckLatestCollectionDeliveryResponse"];
+type CheckCollectionDeliveryResponse = components["schemas"]["CheckCollectionDeliveryResponse"];
 type CollectionFileDeliveriesResponse = components["schemas"]["CollectionFileDeliveriesResponse"];
 type CollectionDeliveriesResponse = components["schemas"]["CollectionDeliveriesResponse"];
 type FileUploadData = components["schemas"]["FileUploadData"];
 type UpdateCollectionFile = components["schemas"]["UpdateCollectionFile"];
+type CheckCollectionDeliveryRequest = components["schemas"]["CheckCollectionDeliveryRequest"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -77,6 +78,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.getAllItemDeliveries(spec)
     CollectionController.getAllCollectionFileDeliveries(spec)
     CollectionController.getAllCollectionDeliveries(spec)
+    CollectionController.checkOneCollectionFileDelivery(spec)
+    CollectionController.downloadFileSource(spec)
 }
 
 @injectable()
@@ -228,8 +231,8 @@ export class CollectionController extends ApiController {
 
     static downloadItemFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}"].get!;
-        operationObject.summary = "Downloads a file of the Collection Item";
-        operationObject.description = "The authenticated user must be the owner or the requester of the LOC";
+        operationObject.summary = "Downloads a copy of a file of the Collection Item";
+        operationObject.description = "The authenticated user must be the owner of the underlying token";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
@@ -308,7 +311,7 @@ export class CollectionController extends ApiController {
 
     static downloadCollectionFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}"].get!;
-        operationObject.summary = "Downloads a file of the Collection LOC";
+        operationObject.summary = "Downloads a copy of a file of the Collection LOC";
         operationObject.description = "The authenticated user must be owner of the collection item";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
@@ -413,8 +416,8 @@ export class CollectionController extends ApiController {
     }
 
     static updateCollectionFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}"].get!;
-        operationObject.summary = "Enable/disable restricted delivery on a file of the Collection LOC";
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}"].put!;
+        operationObject.summary = "Enables/disables restricted delivery on a file of the Collection LOC";
         operationObject.description = "The authenticated user must be owner of the LOC";
         operationObject.responses = getDefaultResponses("UpdateCollectionFile");
         setPathParameters(operationObject, {
@@ -540,7 +543,7 @@ export class CollectionController extends ApiController {
         return { deliveries };
     }
 
-    private async _getAllCollectionFileDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: string }): Promise<CheckLatestCollectionDeliveryResponse[]> {
+    private async _getAllCollectionFileDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: string }): Promise<CheckCollectionDeliveryResponse[]> {
         const { collectionLoc, hash } = query;
         if (!collectionLoc.hasFile(hash)) {
             throw badRequest("File not found")
@@ -552,7 +555,28 @@ export class CollectionController extends ApiController {
         return delivered[hash].map(this.mapToResponse);
     }
 
-    private mapToResponse(deliveredCopy: LocFileDelivered): CheckLatestCollectionDeliveryResponse {
+    static checkOneCollectionFileDelivery(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries"].put!;
+        operationObject.summary = "Provides information about one delivered collection file copy";
+        operationObject.description = "This is a public resource";
+        operationObject.responses = getDefaultResponses("CheckCollectionDeliveryRequest");
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC"
+        });
+    }
+
+    @HttpPut('/:collectionLocId/file-deliveries')
+    @Async()
+    async checkOneCollectionFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string): Promise<CheckCollectionDeliveryResponse> {
+        const deliveredFileHash = requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash"))
+        const delivery = await this.locRequestRepository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash })
+        if (delivery === null) {
+            throw badRequest("Provided copyHash is not from a delivered copy of a in the collection")
+        }
+        return this.mapToResponse(delivery);
+    }
+
+    private mapToResponse(deliveredCopy: LocFileDelivered): CheckCollectionDeliveryResponse {
         return {
             copyHash: deliveredCopy.deliveredFileHash,
             owner: deliveredCopy.owner,
@@ -588,6 +612,18 @@ export class CollectionController extends ApiController {
             view[fileHash] = delivered[fileHash].map(this.mapToResponse)
         }
         return view;
+    }
+
+    static downloadFileSource(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}/source"].get!;
+        operationObject.summary = "Downloads the source of a file of the Collection Item";
+        operationObject.description = "The authenticated user must be the owner or the requester of the LOC";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'itemId': "The ID of the Collection Item",
+            'hash': "The hash of the file",
+        });
     }
 
     @HttpGet('/:collectionLocId/:itemId/files/:hash/source')
