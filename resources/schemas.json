@@ -91,6 +91,17 @@
                     "$ref": "#/components/schemas/CheckLatestDeliveryResponse"
                 }]
             },
+            "CheckCollectionDeliveryWitheOriginalResponse": {
+                "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/CheckCollectionDeliveryResponse"
+                }],
+                "properties": {
+                    "originalFileHash": {
+                        "type": "string"
+                    }
+                }
+            },
             "Config": {
                 "description": "Backend configuration which impacts clients",
                 "type": "object",

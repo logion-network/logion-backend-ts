@@ -52,6 +52,7 @@ type CollectionItemsView = components["schemas"]["CollectionItemsView"];
 type CheckLatestItemDeliveryResponse = components["schemas"]["CheckLatestItemDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
 type CheckCollectionDeliveryResponse = components["schemas"]["CheckCollectionDeliveryResponse"];
+type CheckCollectionDeliveryWitheOriginalResponse = components["schemas"]["CheckCollectionDeliveryWitheOriginalResponse"];
 type CollectionFileDeliveriesResponse = components["schemas"]["CollectionFileDeliveriesResponse"];
 type CollectionDeliveriesResponse = components["schemas"]["CollectionDeliveriesResponse"];
 type FileUploadData = components["schemas"]["FileUploadData"];
@@ -443,7 +444,7 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/latest-deliveries"].get!;
         operationObject.summary = "Provides information about the latest copies delivered to the item's token owner";
         operationObject.description = "This is a public resource";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
+        operationObject.responses = getDefaultResponses("ItemDeliveriesResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
             'itemId': "The ID of the Collection Item",
@@ -504,7 +505,7 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/all-deliveries"].get!;
         operationObject.summary = "Provides information about all delivered copies of a collection file";
         operationObject.description = "Only collection LOC owner is authorized";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
+        operationObject.responses = getDefaultResponses("ItemDeliveriesResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
             'itemId': "The ID of the Collection Item",
@@ -525,7 +526,7 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries/{hash}"].get!;
         operationObject.summary = "Provides information about all copies delivered to the item's token owners";
         operationObject.description = "Only item's collection LOC owner is authorized";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
+        operationObject.responses = getDefaultResponses("CollectionFileDeliveriesResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
             'hash': "The hash of the Collection File",
@@ -559,7 +560,10 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries"].put!;
         operationObject.summary = "Provides information about one delivered collection file copy";
         operationObject.description = "This is a public resource";
-        operationObject.responses = getDefaultResponses("CheckCollectionDeliveryRequest");
+        operationObject.requestBody = getRequestBody({
+            description: "Candidate Collection File Delivered Copy Hash",
+            view: "CheckCollectionDeliveryRequest"});
+        operationObject.responses = getPublicResponses("CheckCollectionDeliveryWitheOriginalResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC"
         });
@@ -567,13 +571,16 @@ export class CollectionController extends ApiController {
 
     @HttpPut('/:collectionLocId/file-deliveries')
     @Async()
-    async checkOneCollectionFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string): Promise<CheckCollectionDeliveryResponse> {
+    async checkOneCollectionFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string): Promise<CheckCollectionDeliveryWitheOriginalResponse> {
         const deliveredFileHash = requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash"))
         const delivery = await this.locRequestRepository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash })
         if (delivery === null) {
-            throw badRequest("Provided copyHash is not from a delivered copy of a in the collection")
+            throw badRequest("Provided copyHash is not from a delivered copy of a file from the collection")
         }
-        return this.mapToResponse(delivery);
+        return {
+            ...this.mapToResponse(delivery),
+            originalFileHash: delivery.hash
+        };
     }
 
     private mapToResponse(deliveredCopy: LocFileDelivered): CheckCollectionDeliveryResponse {
@@ -588,7 +595,7 @@ export class CollectionController extends ApiController {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/file-deliveries"].get!;
         operationObject.summary = "Provides information about all delivered copies";
         operationObject.description = "Only item's collection LOC owner is authorized";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
+        operationObject.responses = getDefaultResponses("CollectionDeliveriesResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC"
         });

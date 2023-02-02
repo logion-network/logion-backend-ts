@@ -46,6 +46,9 @@ export interface components {
       belongsToCurrentOwner?: boolean;
     } & components["schemas"]["CheckLatestDeliveryResponse"];
     CheckCollectionDeliveryResponse: components["schemas"]["CheckLatestDeliveryResponse"];
+    CheckCollectionDeliveryWitheOriginalResponse: {
+      originalFileHash?: string;
+    } & components["schemas"]["CheckCollectionDeliveryResponse"];
     /** @description Backend configuration which impacts clients */
     Config: {
       /** @description Available features and their status (enabled/disabled) */
