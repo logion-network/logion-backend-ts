@@ -16,7 +16,6 @@ import { LocRequestController } from "../controllers/locrequest.controller.js";
 import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.model.js";
 import { FileStorageService } from '../services/file.storage.service.js';
 import { ProtectionSynchronizer } from '../services/protectionsynchronization.service.js';
-import { ErrorService } from "../services/error.service.js";
 import { TransactionController } from '../controllers/transaction.controller.js';
 import { CollectionRepository, CollectionFactory } from "../model/collection.model.js";
 import { NotificationService } from "../services/notification.service.js";
@@ -77,7 +76,6 @@ container.bind(FileStorageService).toSelf();
 container.bind(LocSynchronizer).toSelf();
 container.bind(BlockConsumer).toSelf();
 container.bind(ProtectionSynchronizer).toSelf();
-container.bind(ErrorService).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
 container.bind(LogionNodeCollectionService).toSelf();

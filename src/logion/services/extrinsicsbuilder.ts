@@ -1,20 +1,20 @@
+import { Log } from "@logion/rest-api-core";
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
-import { Address, Block, Extrinsic } from '@polkadot/types/interfaces';
+import { Address, Block, Extrinsic, DispatchErrorModule } from '@polkadot/types/interfaces';
 import { asString, JsonCall, toJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
-import { ErrorService, Module } from "./error.service.js";
 import { ApiPromise } from '@polkadot/api';
+import { BN } from '@polkadot/util';
+import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
+
+const { logger } = Log;
 
 export class ExtrinsicsBuilder {
 
-    constructor(errorService: ErrorService, api: ApiPromise, block: SignedBlockExtended) {
-        this.errorService = errorService;
+    constructor(api: ApiPromise, block: SignedBlockExtended) {
         this.api = api;
         this.block = block;
     }
-
-    private errorService: ErrorService;
 
     private api: ApiPromise;
 
@@ -42,14 +42,6 @@ export class ExtrinsicsBuilder {
                         data: event.data,
                     };
                     extrinsicBuilder.events.push(jsonEvent);
-
-                    if (!this.isGenesisBlock(this.block.block)) {
-                        if (event.method === Event.failure) {
-                            const module: Module = jsonEvent.data[0]['module'];
-                            extrinsicBuilder.error = () => this.errorService.findErrorWithApi(this.api, module);
-                        }
-                        extrinsicBuilder.partialFee = () => this.calculatePartialFee(extrinsicBuilder.extrinsic);
-                    }
                 }
             }
         }
@@ -67,10 +59,65 @@ export class ExtrinsicsBuilder {
             return undefined;
         }
 
+        let error: () => ExtrinsicError | null;
+        if(extrinsicWithEvent.dispatchError && extrinsicWithEvent.dispatchError.isModule) {
+            const module = this.toErrorServiceModule(extrinsicWithEvent.dispatchError.asModule);
+            error = () => this.findErrorWithApi(this.api, module);
+        } else {
+            error = () => null;
+        }
+
+        let partialFee: () => Promise<bigint>;
+        if (!this.isGenesisBlock(this.block.block)) {
+            partialFee = () => this.calculatePartialFee(extrinsic);
+        } else {
+            partialFee = () => Promise.resolve(0n);
+        }
+
         return new ExtrinsicBuilder({
             call: jsonCall,
             extrinsic,
+            error,
+            partialFee,
         });
+    }
+
+    private toErrorServiceModule(dispatchError: DispatchErrorModule): Module {
+        return {
+            index: dispatchError.index.toBn(),
+            // `dispatchError.error` bytes represent a fixed-width integer
+            // which, with SCALE codec, is encoded in little-endian format.
+            // (see https://docs.substrate.io/reference/scale-codec/).
+            error: new BN(dispatchError.error, 'le'),
+        };
+    }
+
+    private findErrorWithApi(api: ApiPromise, module: Module | null): Error {
+        if (module) {
+            try {
+                const metaError = api.registry.findMetaError(module);
+                if (metaError) {
+                    return {
+                        section: metaError.section,
+                        name: metaError.name,
+                        details: metaError.docs.join(', ').trim()
+                    }
+                } else {
+                    return {
+                        section: "unknown",
+                        name: "Unknown",
+                        details: `index:${ module.index } error:${ module.error }`
+                    }
+                }
+            } catch (e) {
+                logger.error("Failed to find meta error: ", e)
+            }
+        }
+        return {
+            section: "unknown",
+            name: "Unknown",
+            details: "An unknown error occurred"
+        }
     }
 
     private isGenesisBlock(block: Block): boolean {
@@ -91,24 +138,26 @@ export class ExtrinsicBuilder {
         params: {
             call: JsonCall,
             extrinsic: Extrinsic,
+            error: () => ExtrinsicError | null,
+            partialFee: () => Promise<bigint>,
         }
     ) {
         this.call = params.call;
         this.extrinsic = params.extrinsic;
         this.signer = params.extrinsic.isSigned ? params.extrinsic.signer : null;
         this.tip = params.extrinsic.isSigned ? params.extrinsic.tip : null;
-        this.partialFee = () => Promise.resolve(0n);
+        this.error = params.error;
+        this.partialFee = params.partialFee;
         this.events = [];
-        this.error = () => null;
     }
 
-    public call: JsonCall;
-    public signer: Address | null;
-    public tip: ICompact<INumber> | null;
-    public extrinsic: Extrinsic;
-    public partialFee: () => Promise<bigint>;
-    public events: JsonEvent[];
-    public error: () => ExtrinsicError | null;
+    public readonly call: JsonCall;
+    public readonly signer: Address | null;
+    public readonly tip: ICompact<INumber> | null;
+    public readonly extrinsic: Extrinsic;
+    public readonly partialFee: () => Promise<bigint>;
+    public readonly events: JsonEvent[];
+    public readonly error: () => ExtrinsicError | null;
 
     build(): JsonExtrinsic {
         return {
@@ -122,7 +171,13 @@ export class ExtrinsicBuilder {
     }
 }
 
-enum Event {
-    success = 'ExtrinsicSuccess',
-    failure = 'ExtrinsicFailed',
+export interface Module {
+    readonly index: BN;
+    readonly error: BN;
+}
+
+export interface Error {
+    readonly section: string;
+    readonly name: string;
+    readonly details: string;
 }
