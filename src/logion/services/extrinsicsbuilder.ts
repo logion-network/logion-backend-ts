@@ -92,31 +92,16 @@ export class ExtrinsicsBuilder {
         };
     }
 
-    private findErrorWithApi(api: ApiPromise, module: Module | null): Error {
-        if (module) {
-            try {
-                const metaError = api.registry.findMetaError(module);
-                if (metaError) {
-                    return {
-                        section: metaError.section,
-                        name: metaError.name,
-                        details: metaError.docs.join(', ').trim()
-                    }
-                } else {
-                    return {
-                        section: "unknown",
-                        name: "Unknown",
-                        details: `index:${ module.index } error:${ module.error }`
-                    }
-                }
-            } catch (e) {
-                logger.error("Failed to find meta error: ", e)
+    private findErrorWithApi(api: ApiPromise, module: Module): Error {
+        const metaError = api.registry.findMetaError(module);
+        if (metaError) {
+            return {
+                section: metaError.section,
+                name: metaError.name,
+                details: metaError.docs.join(', ').trim()
             }
-        }
-        return {
-            section: "unknown",
-            name: "Unknown",
-            details: "An unknown error occurred"
+        } else {
+            throw new Error(`Unable to locate error metadata (index: ${module.index.toString()}, error: ${module.error.toString()})`);
         }
     }
 
