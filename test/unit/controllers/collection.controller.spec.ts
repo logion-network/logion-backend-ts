@@ -576,7 +576,7 @@ describe("CollectionController - collection files - ", () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                checkDelivery(response.body);
+                checkDelivery(response.body, SOME_DATA_HASH);
             });
     })
 
@@ -591,14 +591,15 @@ describe("CollectionController - collection files - ", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toEqual("Provided copyHash is not from a delivered copy of a in the collection")
+                expect(response.body.errorMessage).toEqual("Provided copyHash is not from a delivered copy of a file from the collection")
             });
     })
 
-    function checkDelivery(delivery: any) {
+    function checkDelivery(delivery: any, originalFileHash?: string) {
         expect(delivery.copyHash).toBe(DELIVERY_HASH);
         expect(delivery.generatedOn).toBeDefined();
         expect(delivery.owner).toBe(ITEM_TOKEN_OWNER);
+        expect(delivery.originalFileHash).toBe(originalFileHash);
     }
 })
 
