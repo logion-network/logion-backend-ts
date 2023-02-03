@@ -4,7 +4,6 @@ import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 import { PolkadotService } from "@logion/rest-api-core";
 
 import { BlockExtrinsics } from './types/responses/Block.js';
-import { ErrorService } from "./error.service.js";
 import { ExtrinsicsBuilder } from "./extrinsicsbuilder.js";
 
 @injectable()
@@ -12,7 +11,6 @@ export class BlockExtrinsicsService {
 
     constructor(
         private polkadotService: PolkadotService,
-        private errorService: ErrorService
     ) {}
 
     async getHeadBlockNumber(): Promise<bigint> {
@@ -71,7 +69,7 @@ export class BlockExtrinsicsService {
 
     async getBlockExtrinsics(block: SignedBlockExtended): Promise<BlockExtrinsics> {
         const api = await this.polkadotService.readyApi();
-        const builder = new ExtrinsicsBuilder(this.errorService, api, block);
+        const builder = new ExtrinsicsBuilder(api, block);
         const extrinsics = await builder.build();
         return {
             number: BigInt(block.block.header.number.toString()),
