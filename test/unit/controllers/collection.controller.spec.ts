@@ -287,11 +287,6 @@ function testDownloadFiles(fileType: FileType) {
             `/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }` :
             `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }/${ itemId }`;
 
-    const checkUrl =
-        fileType === "Item" ?
-            `/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/check` :
-            `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }/${ itemId }/check`;
-
     it('fails to download existing file given its hash if no restricted delivery', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
@@ -305,24 +300,6 @@ function testDownloadFiles(fileType: FileType) {
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(url)
-            .expect(403)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                expect(response.body.errorMessage).toBe(`No delivery allowed for this ${ fileType.toLowerCase() }'s files`);
-            });
-    })
-
-    it('check fails when trying download existing file given its hash if no restricted delivery', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: false,
-            fileType,
-        }));
-        await request(app)
-            .get(checkUrl)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -350,24 +327,6 @@ function testDownloadFiles(fileType: FileType) {
             });
     })
 
-    it('check fails when trying to download non-existing file', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            fileType,
-        }));
-        await request(app)
-            .get(checkUrl)
-            .expect(400)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
-            });
-    })
-
     it('fails to download from a non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
@@ -381,28 +340,6 @@ function testDownloadFiles(fileType: FileType) {
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(url)
-            .expect(400)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                if (fileType === "Item") {
-                    expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
-                } else {
-                    expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
-                }
-            });
-    })
-
-    it('check fails when trying to download from a non-existing file', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
-            collectionItemPublished: false,
-            filePublished: false,
-            restrictedDelivery: false,
-            fileType,
-        }));
-        await request(app)
-            .get(checkUrl)
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -440,21 +377,6 @@ function testDownloadFiles(fileType: FileType) {
         expect(fileReallyExists).toBe(false);
     })
 
-    it('check succeeds when trying to download existing file given its hash and is owner', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            isOwner: true,
-            fileType,
-        }));
-        await request(app)
-            .get(checkUrl)
-            .expect(200);
-    })
-
     it('fails to download existing file given its hash and is not owner', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
@@ -469,25 +391,6 @@ function testDownloadFiles(fileType: FileType) {
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(url)
-            .expect(403)
-            .expect('Content-Type', /application\/json/)
-            .then(response => {
-                expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");
-            });
-    })
-
-    it('check fails when trying to download existing file given its hash and is not owner', async () => {
-        const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
-            collectionItemPublished: true,
-            filePublished: true,
-            restrictedDelivery: true,
-            isOwner: false,
-            fileType,
-        }));
-        await request(app)
-            .get(checkUrl)
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {

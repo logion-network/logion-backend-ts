@@ -73,8 +73,6 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.downloadItemFile(spec)
     CollectionController.downloadCollectionFile(spec)
     CollectionController.checkOwnership(spec)
-    CollectionController.canDownloadItemFile(spec)
-    CollectionController.canDownloadCollectionFile(spec)
     CollectionController.updateCollectionFile(spec)
     CollectionController.getLatestItemDeliveries(spec)
     CollectionController.getAllItemDeliveries(spec)
@@ -401,44 +399,6 @@ export class CollectionController extends ApiController {
         if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         }
-    }
-
-    static canDownloadItemFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}/check"].get!;
-        operationObject.summary = "Tells if a file of the Collection Item can be downloaded by authenticated user";
-        operationObject.description = "The authenticated user must be the owner of the underlying token";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
-        setPathParameters(operationObject, {
-            'collectionLocId': "The ID of the Collection LOC",
-            'itemId': "The ID of the Collection Item",
-            'hash': "The hash of the file",
-        });
-    }
-
-    @HttpGet('/:collectionLocId/:itemId/files/:hash/check')
-    @Async()
-    async canDownloadItemFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
-        const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        await this.checkCanDownloadItemFile(authenticated, collectionLocId, itemId, hash);
-    }
-
-    static canDownloadCollectionFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}/check"].get!;
-        operationObject.summary = "Tells if a file of the Collection Item can be downloaded by authenticated user";
-        operationObject.description = "The authenticated user must be the owner of the underlying token";
-        operationObject.responses = getDefaultResponsesWithAnyBody();
-        setPathParameters(operationObject, {
-            'collectionLocId': "The ID of the Collection LOC",
-            'hash': "The hash of the file",
-            'itemId': "The ID of the collection item, used to validate that user is entitled to download file",
-        });
-    }
-
-    @HttpGet('/:collectionLocId/files/:hash/:itemId/check')
-    @Async()
-    async canDownloadCollectionFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
-        const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
     }
 
     static updateCollectionFile(spec: OpenAPIV3.Document) {
