@@ -234,6 +234,48 @@ describe("CollectionController", () => {
                 expect(response.body.errorMessage).toBe("Invalid name. Actually uploaded WrongName.pdf while expecting 'a-file.pdf'");
             });
     })
+
+    const ownershipCheckParams = {
+        collectionItemAlreadyInDB: true,
+        fileAlreadyInDB: false,
+        filePublished: false,
+        restrictedDelivery: true,
+        fileType: "Item" as FileType,
+    };
+
+    it('checks ownership', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            ...ownershipCheckParams,
+            collectionItemPublished: true,
+            isOwner: true
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .expect(200);
+    })
+
+    it('fails to check ownership when not owner', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            ...ownershipCheckParams,
+            collectionItemPublished: true,
+            isOwner: false
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .expect(403);
+    })
+
+    it('fails to check ownership when item not published', async () => {
+        const app = setupApp(CollectionController, container => mockModel(container, {
+            ...ownershipCheckParams,
+            collectionItemPublished: false,
+            isOwner: false
+        }));
+        await request(app)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .expect(400);
+    })
+
 })
 
 type FileType = "Item" | "Collection";

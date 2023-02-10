@@ -72,6 +72,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     CollectionController.addFile(spec)
     CollectionController.downloadItemFile(spec)
     CollectionController.downloadCollectionFile(spec)
+    CollectionController.checkOwnership(spec)
     CollectionController.canDownloadItemFile(spec)
     CollectionController.canDownloadCollectionFile(spec)
     CollectionController.updateCollectionFile(spec)
@@ -376,6 +377,30 @@ export class CollectionController extends ApiController {
     static tempFilePath(params: { collectionLocId: string, itemId: string, hash: string } ) {
         const { collectionLocId, itemId, hash } = params
         return path.join(os.tmpdir(), `download-${ collectionLocId }-${ itemId }-${ hash }`)
+    }
+
+    static checkOwnership(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/items/{itemId}/check"].get!;
+        operationObject.summary = "Tells if the Collection Item is owned by authenticated user";
+        operationObject.description = "The authenticated user must be the owner of the underlying token";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'itemId': "The ID of the Collection Item",
+        });
+    }
+
+    @HttpGet('/:collectionLocId/items/:itemId/check')
+    @Async()
+    async checkOwnership(_body: any, collectionLocId: string, itemId: string): Promise<void> {
+        const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
+            collectionLocId,
+            itemId
+        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+            throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
+        }
     }
 
     static canDownloadItemFile(spec: OpenAPIV3.Document) {
