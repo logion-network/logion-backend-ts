@@ -5,7 +5,6 @@ import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locre
 import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
-import { VerifiedThirdPartyAdapter } from "./verifiedthirdpartyadapter.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 
 export type UserPrivateData = {
@@ -23,7 +22,6 @@ export class LocRequestAdapter {
 
     constructor(
         private locRequestRepository: LocRequestRepository,
-        private verifiedThirdPartyAdapter: VerifiedThirdPartyAdapter,
         private idenfyService: IdenfyService,
         private voteRepository: VoteRepository,
     ) {
@@ -61,8 +59,8 @@ export class LocRequestAdapter {
             description: locDescription.description,
             locType: locDescription.locType,
             identityLoc: userPrivateData.identityLocId,
-            userIdentity: this.toUserIdentityView(userPrivateData.userIdentity),
-            userPostalAddress: this.toUserPostalAddressView(userPrivateData.userPostalAddress),
+            userIdentity: toUserIdentityView(userPrivateData.userIdentity),
+            userPostalAddress: toUserPostalAddressView(userPrivateData.userPostalAddress),
             createdOn: locDescription.createdOn || undefined,
             status: request.status,
             rejectReason: request.rejectReason || undefined,
@@ -91,8 +89,6 @@ export class LocRequestAdapter {
             })),
             seal: locDescription.seal?.hash,
             company: locDescription.company,
-            verifiedThirdParty: locDescription.verifiedThirdParty,
-            selectedParties: await this.verifiedThirdPartyAdapter.selectedParties(id),
             iDenfy,
             voteId: vote?.voteId,
         };
@@ -143,29 +139,29 @@ export class LocRequestAdapter {
             ...description
         };
     }
+}
 
-    private toUserIdentityView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
-        if (userIdentity === undefined) {
-            return undefined;
-        }
-        return {
-            firstName: userIdentity.firstName,
-            lastName: userIdentity.lastName,
-            email: userIdentity.email,
-            phoneNumber: userIdentity.phoneNumber,
-        }
+export function toUserIdentityView(userIdentity: UserIdentity | undefined): UserIdentityView | undefined {
+    if (userIdentity === undefined) {
+        return undefined;
     }
+    return {
+        firstName: userIdentity.firstName,
+        lastName: userIdentity.lastName,
+        email: userIdentity.email,
+        phoneNumber: userIdentity.phoneNumber,
+    }
+}
 
-    private toUserPostalAddressView(userPostalAddress: PostalAddress | undefined): PostalAddressView | undefined {
-        if (userPostalAddress === undefined) {
-            return undefined;
-        }
-        return {
-            line1: userPostalAddress.line1,
-            line2: userPostalAddress.line2,
-            postalCode: userPostalAddress.postalCode,
-            city: userPostalAddress.city,
-            country: userPostalAddress.country,
-        }
+export function toUserPostalAddressView(userPostalAddress: PostalAddress | undefined): PostalAddressView | undefined {
+    if (userPostalAddress === undefined) {
+        return undefined;
+    }
+    return {
+        line1: userPostalAddress.line1,
+        line2: userPostalAddress.line2,
+        postalCode: userPostalAddress.postalCode,
+        city: userPostalAddress.city,
+        country: userPostalAddress.country,
     }
 }

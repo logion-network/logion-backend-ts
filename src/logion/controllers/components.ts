@@ -437,9 +437,6 @@ export interface components {
       };
       /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
       company?: string;
-      /** @description Tells if the user behind this closed Identity LOC is a Verified Third Party */
-      verifiedThirdParty?: boolean;
-      selectedParties?: (components["schemas"]["VerifiedThirdPartyView"])[];
       iDenfy?: {
         /**
          * @description The status of current iDenfy verification session 
@@ -738,28 +735,6 @@ export interface components {
     FileUploadData: {
       hash?: string;
     };
-    SetVerifiedThirdPartyRequest: {
-      isVerifiedThirdParty?: boolean;
-    };
-    SelectVerifiedThirdPartyRequest: {
-      /** @description The ID of the closed Identity LOC of a Verified Third Party */
-      identityLocId?: string;
-    };
-    VerifiedThirdPartyView: {
-      /** @description The first name of the Verified Third Party */
-      firstName?: string;
-      /** @description The last name of the Verified Third Party */
-      lastName?: string;
-      /** @description The ID of the closed Identity LOC of this Verified Third Party */
-      identityLocId?: string;
-      /** @description The SS58 address of the Verified Third Party */
-      address?: string;
-      /** @description Tells if the VTP was selected in the scope of current LOC */
-      selected?: boolean;
-    };
-    VerifiedThirdPartiesView: {
-      verifiedThirdParties?: (components["schemas"]["VerifiedThirdPartyView"])[];
-    };
     /** @description Provides the URL to redirect to in order to start an identity verification process at iDenfy */
     IdenfyVerificationRedirectView: {
       /** @description The URL to redirect to */
@@ -799,6 +774,15 @@ export interface components {
     UpdateCollectionFile: {
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
       restrictedDelivery?: boolean;
+    };
+    VerifiedIssuersIdentityResponse: {
+      issuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
+    };
+    /** @description The identity data of a verified issuer. */
+    VerifiedIssuerIdentity: {
+      /** @description The SS58 address of the issuer */
+      address?: string;
+      identity?: components["schemas"]["UserIdentityView"];
     };
   };
   responses: never;

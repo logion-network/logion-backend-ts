@@ -28,8 +28,9 @@ import {
     requireLength,
     AuthenticationService,
     forbidden,
+    PolkadotService,
 } from "@logion/rest-api-core";
-import { UUID } from "@logion/node-api";
+import { UUID, getVerifiedIssuers } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -41,10 +42,6 @@ import { getUploadedFile } from "./fileupload.js";
 import { PostalAddress } from "../model/postaladdress.js";
 import { downloadAndClean } from "../lib/http.js";
 import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
-import {
-    VerifiedThirdPartySelectionAggregateRoot,
-    VerifiedThirdPartySelectionRepository
-} from "../model/verifiedthirdpartyselection.model.js";
 import { LocRequestService } from "../services/locrequest.service.js";
 import { VoteRepository } from "../model/vote.model.js";
 import { AuthenticatedUser } from "@logion/authenticator";
@@ -110,9 +107,9 @@ export class LocRequestController extends ApiController {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private locRequestAdapter: LocRequestAdapter,
-        private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
         private locRequestService: LocRequestService,
         private voteRepository: VoteRepository,
+        private polkadotService: PolkadotService,
     ) {
         super();
     }
@@ -323,18 +320,10 @@ export class LocRequestController extends ApiController {
     }
 
     private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: string): Promise<boolean> {
-        const verifiedThirdPartyLoc = await this.locRequestRepository.getVerifiedThirdPartyIdentityLoc(submitter);
-        if(!verifiedThirdPartyLoc) {
-            return false;
-        } else {
-            const participants = await this.verifiedThirdPartySelectionRepository.findBy({ locRequestId: request.id })
-            const selectedParticipant = participants.find(participant => this.isSelectedParticipant(verifiedThirdPartyLoc.id, participant));
-            return selectedParticipant !== undefined;
-        }
-    }
-
-    private isSelectedParticipant(verifiedThirdPartyLocId: string | undefined, participant: VerifiedThirdPartySelectionAggregateRoot) {
-        return participant.id.verifiedThirdPartyLocId === verifiedThirdPartyLocId && participant.selected;
+        const api = await this.polkadotService.readyApi();
+        const issuers = await getVerifiedIssuers(api, new UUID(request.id));
+        const selectedParticipant = issuers.find(issuer => issuer.address === submitter);
+        return selectedParticipant !== undefined;
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {

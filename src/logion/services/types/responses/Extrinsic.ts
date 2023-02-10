@@ -41,8 +41,8 @@ function errorToString(error: ExtrinsicError | null): string {
     }
 }
 
-export function extractLocId(locIdKey: string, args: JsonObject): string {
-    return UUID.fromDecimalStringOrThrow(asBigInt(args[locIdKey]).toString()).toString();
+export function extractUuid(argKey: string, args: JsonObject): string {
+    return UUID.fromDecimalStringOrThrow(asBigInt(args[argKey]).toString()).toString();
 }
 
 export function findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {

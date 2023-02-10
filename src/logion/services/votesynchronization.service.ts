@@ -3,7 +3,7 @@ import { Log } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { VoteFactory } from "../model/vote.model.js";
 import { VoteService } from "./vote.service.js";
-import { JsonExtrinsic, toString, extractLocId, findEventData } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, toString, extractUuid, findEventData } from "./types/responses/Extrinsic.js";
 import { asJsonObject, asString } from "@logion/node-api";
 
 const { logger } = Log;
@@ -34,7 +34,7 @@ export class VoteSynchronizer {
     }
 
     private async addVote(extrinsic: JsonExtrinsic, timestamp: Moment) {
-        const locId = extractLocId('loc_id', extrinsic.call.args);
+        const locId = extractUuid('loc_id', extrinsic.call.args);
         const voteId = this.extractVoteId(extrinsic);
         logger.info("Creating vote %s for LOC %s", voteId, locId);
         const vote = this.voteFactory.newVote({

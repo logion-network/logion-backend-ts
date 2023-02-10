@@ -745,16 +745,6 @@
                         "type": "string",
                         "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
                     },
-                    "verifiedThirdParty": {
-                        "type": "boolean",
-                        "description": "Tells if the user behind this closed Identity LOC is a Verified Third Party"
-                    },
-                    "selectedParties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/VerifiedThirdPartyView"
-                        }
-                    },
                     "iDenfy": {
                         "type": "object",
                         "properties": {
@@ -1255,59 +1245,6 @@
                     }
                 }
             },
-            "SetVerifiedThirdPartyRequest": {
-                "type": "object",
-                "properties": {
-                    "isVerifiedThirdParty": {
-                        "type": "boolean"
-                    }
-                }
-            },
-            "SelectVerifiedThirdPartyRequest": {
-                "type": "object",
-                "properties": {
-                    "identityLocId": {
-                        "type": "string",
-                        "description": "The ID of the closed Identity LOC of a Verified Third Party"
-                    }
-                }
-            },
-            "VerifiedThirdPartyView": {
-                "type": "object",
-                "properties": {
-                    "firstName": {
-                        "type": "string",
-                        "description": "The first name of the Verified Third Party"
-                    },
-                    "lastName": {
-                        "type": "string",
-                        "description": "The last name of the Verified Third Party"
-                    },
-                    "identityLocId": {
-                        "type": "string",
-                        "description": "The ID of the closed Identity LOC of this Verified Third Party"
-                    },
-                    "address": {
-                        "type": "string",
-                        "description": "The SS58 address of the Verified Third Party"
-                    },
-                    "selected": {
-                        "type": "boolean",
-                        "description": "Tells if the VTP was selected in the scope of current LOC"
-                    }
-                }
-            },
-            "VerifiedThirdPartiesView": {
-                "type": "object",
-                "properties": {
-                    "verifiedThirdParties": {
-                        "type": "array",
-                        "items": {
-                            "$ref": "#/components/schemas/VerifiedThirdPartyView"
-                        }
-                    }
-                }
-            },
             "IdenfyVerificationRedirectView": {
                 "description": "Provides the URL to redirect to in order to start an identity verification process at iDenfy",
                 "type": "object",
@@ -1378,6 +1315,30 @@
                     "restrictedDelivery": {
                         "type": "boolean",
                         "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
+                    }
+                }
+            },
+            "VerifiedIssuersIdentityResponse": {
+                "type": "object",
+                "properties": {
+                    "issuers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VerifiedIssuerIdentity"
+                        }
+                    }
+                }
+            },
+            "VerifiedIssuerIdentity": {
+                "description": "The identity data of a verified issuer.",
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "The SS58 address of the issuer"
+                    },
+                    "identity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
                     }
                 }
             }
