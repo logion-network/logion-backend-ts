@@ -25,6 +25,10 @@ export class OwnershipCheckService {
                     return this.isOwnerOfErc721OrErc1155(Network.ETH_MAINNET, normalizedAddress, item.token);
                 } else if(tokenType === 'goerli_erc721' || tokenType === 'goerli_erc1155') {
                     return this.isOwnerOfErc721OrErc1155(Network.ETH_GOERLI, normalizedAddress, item.token);
+                } else if(tokenType === 'polygon_erc721' || tokenType === 'polygon_erc1155') {
+                    return this.isOwnerOfErc721OrErc1155(Network.MATIC_MAINNET, normalizedAddress, item.token);
+                } else if(tokenType === 'polygon_mumbai_erc721' || tokenType === 'polygon_mumbai_erc1155') {
+                    return this.isOwnerOfErc721OrErc1155(Network.MATIC_MUMBAI, normalizedAddress, item.token);
                 } else if(tokenType === 'owner') {
                     return normalizedAddress === item.token.id.toLowerCase();
                 } else if(tokenType === 'singular_kusama') {
