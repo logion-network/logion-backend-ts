@@ -23,12 +23,13 @@ import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { CollectionRepository } from "../../../src/logion/model/collection.model.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service.js";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
-import { VerifiedThirdPartyAdapter } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter.js";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
-import { NonTransactionalVerifiedThirdPartySelectionService, VerifiedThirdPartySelectionService } from "../../../src/logion/services/verifiedthirdpartyselection.service.js";
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
+import { PolkadotService } from "@logion/rest-api-core";
+import { LogionNodeApi, UUID } from "@logion/node-api";
+import { Option } from "@polkadot/types-codec";
+import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "@polkadot/types/lookup";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
@@ -129,9 +130,9 @@ export interface Mocks {
     fileStorageService: Mock<FileStorageService>;
     notificationService: Mock<NotificationService>;
     collectionRepository: Mock<CollectionRepository>;
-    verifiedThirdPartySelectionFactory: Mock<VerifiedThirdPartySelectionFactory>;
-    verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
     voteRepository: Mock<VoteRepository>;
+    nodeApi: Mock<LogionNodeApi>;
+    loc: Mock<PalletLogionLocLegalOfficerCase>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -149,21 +150,6 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const { notificationService, collectionRepository } = mockOtherDependencies(container, existingMocks);
 
     container.bind(LocRequestAdapter).toSelf();
-    container.bind(VerifiedThirdPartyAdapter).toSelf();
-
-    const verifiedThirdPartySelectionFactory = existingMocks?.verifiedThirdPartySelectionFactory ? existingMocks.verifiedThirdPartySelectionFactory : new Mock<VerifiedThirdPartySelectionFactory>();
-    container.bind(VerifiedThirdPartySelectionFactory).toConstantValue(verifiedThirdPartySelectionFactory.object());
-
-    const verifiedThirdPartySelectionRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
-    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartySelectionRepository.object());
-
-    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
-
-    container.bind(VerifiedThirdPartySelectionService).toConstantValue(new NonTransactionalVerifiedThirdPartySelectionService(
-        verifiedThirdPartySelectionFactory.object(),
-        verifiedThirdPartySelectionRepository.object(),
-        repository.object()
-    ));
 
     container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(repository.object()));
 
@@ -172,6 +158,14 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const voteRepository = existingMocks?.voteRepository ? existingMocks.voteRepository : new Mock<VoteRepository>();
     container.bind(VoteRepository).toConstantValue(voteRepository.object());
 
+    const polkadotService = new Mock<PolkadotService>();
+    container.bind(PolkadotService).toConstantValue(polkadotService.object());
+
+    const nodeApi = existingMocks?.nodeApi ? existingMocks.nodeApi : new Mock<LogionNodeApi>();
+    polkadotService.setup(instance => instance.readyApi()).returnsAsync(nodeApi.object());
+
+    const loc = existingMocks?.loc ? existingMocks.loc  : new Mock<PalletLogionLocLegalOfficerCase>();
+
     return {
         factory,
         request,
@@ -179,9 +173,9 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         fileStorageService,
         notificationService,
         collectionRepository,
-        verifiedThirdPartySelectionFactory,
-        verifiedThirdPartySelectionRepository,
         voteRepository,
+        nodeApi,
+        loc,
     };
 }
 
@@ -257,7 +251,6 @@ export function setupRequest(
     files: FileDescription[] = [],
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
-    ownerAddress: string = ALICE,
 ) {
     if (locType) {
         request.setup(instance => instance.locType)
@@ -271,13 +264,13 @@ export function setupRequest(
         .returns({
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
-            ownerAddress,
+            ownerAddress: description.ownerAddress || ALICE,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
-    request.setup(instance => instance.ownerAddress).returns(ownerAddress);
+    request.setup(instance => instance.ownerAddress).returns(description.ownerAddress || ALICE);
 }
 
 export function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
@@ -334,10 +327,47 @@ export function checkPrivateData(response: request.Response, expectedUserPrivate
 export function buildMocksForFetch(container: Container, existingMocks?: Partial<Mocks>): Mocks {
     const mocks = buildMocks(container, existingMocks);
 
-    mocks.repository.setup(instance => instance.findById(It.Is<string>(id => id === REQUEST_ID)))
-        .returns(Promise.resolve(mocks.request.object()));
+    setupRequestFetch(REQUEST_ID, mocks.request, mocks);
+    setupLocFetch(REQUEST_ID, mocks.loc, mocks.nodeApi);
 
     return mocks;
+}
+
+export function setupRequestFetch(requestId: string, request: Mock<LocRequestAggregateRoot>, mocks: Mocks) {
+    mocks.repository.setup(instance => instance.findById(requestId))
+        .returns(Promise.resolve(request.object()));
+}
+
+export function setupLoc(
+    loc: Mock<PalletLogionLocLegalOfficerCase>,
+    locType: LocType,
+    closed: boolean,
+    description: Partial<LocRequestDescription> = {},
+) {
+    loc.setup(instance => instance.owner).returns({ toString: () => description.ownerAddress || ALICE } as any);
+    loc.setup(instance => instance.requester).returns({ isAddress: true, asAccount: { toString: () => description.requesterAddress || REQUESTER_ADDRESS }, isLoc: false } as any);
+    loc.setup(instance => instance.metadata).returns({ toArray: () => [] } as any);
+    loc.setup(instance => instance.files).returns({ toArray: () => [] } as any);
+    loc.setup(instance => instance.links).returns({ toArray: () => [] } as any);
+    loc.setup(instance => instance.closed).returns({ isTrue: () => closed } as any);
+    loc.setup(instance => instance.locType).returns({ toString: () => locType } as any);
+    loc.setup(instance => instance.voidInfo).returns({ isSome: false } as any);
+    loc.setup(instance => instance.replacerOf).returns({ isSome: false } as any);
+    loc.setup(instance => instance.collectionLastBlockSubmission).returns({ isSome: false } as any);
+    loc.setup(instance => instance.collectionMaxSize).returns({ isSome: false } as any);
+    loc.setup(instance => instance.collectionCanUpload).returns({ isSome: false } as any);
+    loc.setup(instance => instance.seal).returns({ isSome: false } as any);
+}
+
+export function setupLocFetch(locId: string, loc: Mock<PalletLogionLocLegalOfficerCase> | undefined, nodeApi: Mock<LogionNodeApi>) {
+    const maybeLoc = new Mock<Option<PalletLogionLocLegalOfficerCase>>();
+    maybeLoc.setup(instance => instance.isSome).returns(loc !== undefined);
+    maybeLoc.setup(instance => instance.isNone).returns(loc === undefined);
+    if(loc) {
+        maybeLoc.setup(instance => instance.unwrap()).returns(loc.object());
+    }
+    const locIdUuid = new UUID(locId);
+    nodeApi.setup(instance => instance.query.logionLoc.locMap(locIdUuid.toHexString())).returnsAsync(maybeLoc.object());
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -354,35 +384,51 @@ export type SetupVtpMode = 'NOT_VTP' | 'SELECTED' | 'UNSELECTED';
 export function setupSelectedVtp(
     mocks: {
         repository: Mock<LocRequestRepository>,
-        verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>,
+        nodeApi: Mock<LogionNodeApi>,
     },
     mode: SetupVtpMode,
 ) {
-    const { repository, verifiedThirdPartySelectionRepository } = mocks;
+    const { repository, nodeApi } = mocks;
 
-    if(mode !== 'NOT_VTP') {
-        const vtpIdentityLoc = new Mock<LocRequestAggregateRoot>();
-        vtpIdentityLoc.setup(instance => instance.id).returns(VTP_LOC_ID);
-        vtpIdentityLoc.setup(instance => instance.getDescription()).returns({
+    if(mode !== "NOT_VTP") {
+        const maybeVerifiedIssuer = new Mock<Option<PalletLogionLocVerifiedIssuer>>();
+        const verifiedIssuer = new Mock<PalletLogionLocVerifiedIssuer>();
+        verifiedIssuer.setup(instance => instance.identityLoc).returns({ toString: () => new UUID(VTP_LOC_ID).toDecimalString() } as any);
+        maybeVerifiedIssuer.setup(instance => instance.isSome).returns(true);
+        maybeVerifiedIssuer.setup(instance => instance.unwrap()).returns(verifiedIssuer.object());
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+    } else {
+        const maybeVerifiedIssuer = new Mock<Option<PalletLogionLocVerifiedIssuer>>();
+        maybeVerifiedIssuer.setup(instance => instance.isSome).returns(false);
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+    }
+
+    if(mode === 'SELECTED') {
+        const vtpIdentityLocRequest = new Mock<LocRequestAggregateRoot>();
+        vtpIdentityLocRequest.setup(instance => instance.id).returns(VTP_LOC_ID);
+        vtpIdentityLocRequest.setup(instance => instance.getDescription()).returns({
             
         } as LocRequestDescription);
-        repository.setup(instance => instance.getVerifiedThirdPartyIdentityLoc).returns(address =>
-            address === VTP_ADDRESS && vtpIdentityLoc
-            ? Promise.resolve(vtpIdentityLoc.object())
-            : Promise.resolve(undefined));
-        repository.setup(instance => instance.findById(VTP_LOC_ID)).returnsAsync(vtpIdentityLoc.object());
+        repository.setup(instance => instance.findById(VTP_LOC_ID)).returnsAsync(vtpIdentityLocRequest.object());
 
-        const selection = new Mock<VerifiedThirdPartySelectionAggregateRoot>();
-        selection.setup(instance => instance.id).returns({
-            locRequestId: REQUEST_ID,
-            verifiedThirdPartyLocId: VTP_LOC_ID,
-        });
-        selection.setup(instance => instance.selected).returns(mode === 'SELECTED');
-        verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(
-            It.Is<Partial<VerifiedThirdPartySelectionId>>(args => args.locRequestId === REQUEST_ID)))
-        .returnsAsync([ selection.object() ]);
+        const vtpIdentityLoc = new Mock<PalletLogionLocLegalOfficerCase>();
+        setupLoc(vtpIdentityLoc, "Identity", true);
+        setupLocFetch(VTP_LOC_ID, vtpIdentityLoc, nodeApi);
+
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(new UUID(REQUEST_ID).toDecimalString())).returnsAsync([
+            [
+                {
+                    args: [
+                        {},
+                        {
+                            toString: () => VTP_ADDRESS,
+                        }
+                    ]
+                }
+            ]
+        ] as any);
     } else {
-        repository.setup(instance => instance.getVerifiedThirdPartyIdentityLoc(It.IsAny())).returnsAsync(undefined);
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(new UUID(REQUEST_ID).toDecimalString())).returnsAsync([]);
     }
 }
 

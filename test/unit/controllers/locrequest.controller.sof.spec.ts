@@ -71,7 +71,7 @@ describe('LocRequestController - SoF -', () => {
 })
 
 function mockModelForCreateSofRequest(container: Container, factory: Mock<LocRequestFactory>, locType: LocType, locId: UUID, itemId?: string) {
-    const { request, repository, collectionRepository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container, { factory });
+    const { request, repository, collectionRepository, nodeApi } = buildMocksForUpdate(container, { factory });
 
     const targetLoc = mockRequest("CLOSED", testDataWithUserIdentityWithType(locType));
     targetLoc.setup(instance => instance.id).returns(locId.toString());
@@ -95,6 +95,6 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
             .returns(Promise.resolve(collectionItem.object()));
     }
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, 'NOT_VTP');
+    setupSelectedVtp({ repository, nodeApi }, 'NOT_VTP');
 
 }

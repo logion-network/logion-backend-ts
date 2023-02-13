@@ -27,10 +27,10 @@ import {
     testDataWithUserIdentityWithType,
     userIdentities,
     VTP_ADDRESS,
-    setUpVote, VOTE_ID
+    setUpVote, VOTE_ID, setupLoc
 } from "./locrequest.controller.shared.js";
-import { UserPrivateData } from "../../../src/logion/controllers/adapters/verifiedthirdpartyadapter.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
+import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -160,7 +160,7 @@ describe('LocRequestController - Fetch -', () => {
 });
 
 function mockModelForFetch(container: Container): void {
-    const { request, repository, verifiedThirdPartySelectionRepository } = buildMocksForFetch(container);
+    const { request, repository, nodeApi } = buildMocksForFetch(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "REJECTED", testDataWithUserIdentity);
     request.setup(instance => instance.ownerAddress).returns(ALICE);
@@ -169,7 +169,7 @@ function mockModelForFetch(container: Container): void {
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, 'NOT_VTP');
+    setupSelectedVtp({ repository, nodeApi }, 'NOT_VTP');
     repository.setup(instance => instance.findBy)
         .returns(() => Promise.resolve([ request.object() ]));
 }
@@ -181,26 +181,30 @@ function mockModelForGetSingle(
     locType: LocType,
     identityLocation: IdentityLocation,
     vtpMode: SetupVtpMode = 'NOT_VTP',
-    voteExists = true): void {
-    const { request, repository, verifiedThirdPartySelectionRepository, voteRepository } = buildMocksForFetch(container);
+    voteExists = true
+): void {
+    const { request, repository, voteRepository, nodeApi, loc } = buildMocksForFetch(container);
 
     const data =
         identityLocation === "EmbeddedInLoc" ?
             testDataWithUserIdentityWithType(locType) :
             identityLocation === "Polkadot" ? testDataWithType(locType) :
                 testDataWithLogionIdentity;
-    setupRequest(request, REQUEST_ID, "Transaction", "CLOSED", data,
+    const description = {
+        ...data,
+        requesterAddress: SUBMITTER
+    };
+    setupRequest(request, REQUEST_ID, "Transaction", "CLOSED", description,
         [ testFile ],
         [ testMetadataItem ],
         [ testLink ],
     );
-    request.setup(instance => instance.ownerAddress).returns(ALICE);
-    request.setup(instance => instance.requesterAddress).returns(SUBMITTER);
+    setupLoc(loc, "Transaction", true, description);
 
     mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
     mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setupSelectedVtp({ repository, nodeApi }, vtpMode);
     setUpVote(voteRepository, voteExists);
 }
 

@@ -22,7 +22,8 @@ import {
     SetupVtpMode,
     testData,
     VTP_ADDRESS,
-    setUpVote
+    setUpVote,
+    setupLoc
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 
@@ -224,13 +225,14 @@ const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c78
 const FILE_NAME = "'a-file.pdf'";
 
 function mockModelForAddFile(container: Container, request: Mock<LocRequestAggregateRoot>, vtpMode: SetupVtpMode): void {
-    const { fileStorageService, repository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container, { request });
+    const { fileStorageService, repository, nodeApi, loc } = buildMocksForUpdate(container, { request });
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.hasFile(SOME_DATA_HASH)).returns(false);
     request.setup(instance => instance.addFile(It.IsAny())).returns();
+    setupLoc(loc, "Transaction", false);
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setupSelectedVtp({ repository, nodeApi }, vtpMode);
 
     fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
         .returns(Promise.resolve("cid-42"));
@@ -258,7 +260,7 @@ async function testAddFileForbidden(app: Express) {
     const buffer = Buffer.from(SOME_DATA);
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/files`)
-        .field({ nature: "some nature" })
+        .field({ nature: "some nature", hash: SOME_DATA_HASH })
         .attach('file', buffer, {
             filename: FILE_NAME,
             contentType: 'text/plain',
@@ -267,11 +269,12 @@ async function testAddFileForbidden(app: Express) {
 }
 
 function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode, voteExists = false): void {
-    const { request, fileStorageService, repository, verifiedThirdPartySelectionRepository, voteRepository } = buildMocksForUpdate(container);
+    const { request, fileStorageService, repository, voteRepository, nodeApi, loc } = buildMocksForUpdate(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.ownerAddress).returns(ALICE);
     request.setup(instance => instance.requesterAddress).returns(REQUESTER);
+    setupLoc(loc, "Transaction", false);
 
     const hash = SOME_DATA_HASH;
     request.setup(instance => instance.getFile(hash)).returns({
@@ -283,7 +286,7 @@ function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode, v
     fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
         .returns(Promise.resolve());
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setupSelectedVtp({ repository, nodeApi }, vtpMode);
     setUpVote(voteRepository, voteExists);
 }
 
@@ -329,11 +332,12 @@ async function testDownloadForbidden(app: Express) {
 }
 
 function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAggregateRoot>, vtpMode: SetupVtpMode) {
-    const { fileStorageService, repository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container, { request });
+    const { fileStorageService, repository, nodeApi, loc } = buildMocksForUpdate(container, { request });
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.ownerAddress).returns(ALICE);
     request.setup(instance => instance.requesterAddress).returns(REQUESTER);
+    setupLoc(loc, "Transaction", false);
 
     if(vtpMode !== 'NOT_VTP') {
         request.setup(instance => instance.removeFile(VTP_ADDRESS, SOME_DATA_HASH)).returns(SOME_FILE);
@@ -341,7 +345,7 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
         request.setup(instance => instance.removeFile(ALICE, SOME_DATA_HASH)).returns(SOME_FILE);
     }
 
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setupSelectedVtp({ repository, nodeApi }, vtpMode);
 
     fileStorageService.setup(instance => instance.deleteFile({ oid: SOME_OID })).returns(Promise.resolve());
 }
@@ -358,9 +362,10 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
 }
 
 function mockModelForConfirmFile(container: Container) {
-    const { request, repository } = buildMocksForUpdate(container);
+    const { request, repository, loc } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.confirmFile(SOME_DATA_HASH)).returns();
+    setupLoc(loc, "Transaction", false);
     mockPolkadotIdentityLoc(repository, false);
 }
 
@@ -427,9 +432,10 @@ function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
 }
 
 function mockModelForAnyItem(container: Container, request: Mock<LocRequestAggregateRoot>, vtpMode: SetupVtpMode) {
-    const { repository, verifiedThirdPartySelectionRepository } = buildMocksForUpdate(container, { request });
+    const { repository, nodeApi, loc } = buildMocksForUpdate(container, { request });
+    setupLoc(loc, "Transaction", false);
     mockPolkadotIdentityLoc(repository, false);
-    setupSelectedVtp({ repository, verifiedThirdPartySelectionRepository }, vtpMode);
+    setupSelectedVtp({ repository, nodeApi }, vtpMode);
 }
 
 function mockModelForAddLink(container: Container, request: Mock<LocRequestAggregateRoot>) {

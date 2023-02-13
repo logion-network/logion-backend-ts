@@ -1057,21 +1057,6 @@ export class LocRequestRepository {
         await this.repository.manager.delete(LocRequestAggregateRoot, request.id);
     }
 
-    async getVerifiedThirdPartyIdentityLoc(address: string): Promise<LocRequestAggregateRoot | undefined> {
-        let identityLocs = await this.findBy({
-            expectedRequesterAddress: address,
-            expectedLocTypes: [ "Identity" ],
-            expectedStatuses: [ "CLOSED" ],
-            isVerifiedThirdParty: true,
-        });
-        identityLocs = identityLocs.filter(loc => loc.getVoidInfo() === null);
-        if(identityLocs.length > 0) {
-            return identityLocs[0];
-        } else {
-            return undefined;
-        }
-    }
-
     public async findAllDeliveries(query: { collectionLocId: string, hash?: string }): Promise<Record<string, LocFileDelivered[]>> {
         const { collectionLocId, hash } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");

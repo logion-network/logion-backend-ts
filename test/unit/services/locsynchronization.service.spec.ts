@@ -1,4 +1,5 @@
 import { UUID, JsonObject } from "@logion/node-api";
+import { PolkadotService } from "@logion/rest-api-core";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
@@ -12,6 +13,8 @@ import {
 } from "../../../src/logion/model/collection.model.js";
 import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
+import { NotificationService } from "../../../src/logion/services/notification.service.js";
+import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 
 describe("LocSynchronizer", () => {
 
@@ -19,6 +22,9 @@ describe("LocSynchronizer", () => {
         locRequestRepository = new Mock<LocRequestRepository>();
         collectionFactory = new Mock<CollectionFactory>();
         collectionRepository = new Mock<CollectionRepository>();
+        notificationService = new Mock();
+        directoryService = new Mock();
+        polkadotService = new Mock();
     });
 
     it("sets LOC created date", async () => {
@@ -190,8 +196,15 @@ function locSynchronizer(): LocSynchronizer {
         collectionFactory.object(),
         new NonTransactionalLocRequestService(locRequestRepository.object()),
         new NonTransactionalCollectionService(collectionRepository.object()),
+        notificationService.object(),
+        directoryService.object(),
+        polkadotService.object(),
     );
 }
+
+let notificationService: Mock<NotificationService>;
+let directoryService: Mock<DirectoryService>;
+let polkadotService: Mock<PolkadotService>;
 
 function thenLocCreateDateSet() {
     locRequest.verify(instance => instance.setLocCreatedDate(IS_BLOCK_TIME));
