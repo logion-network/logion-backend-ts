@@ -2895,9 +2895,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"alchemy-sdk@npm:^2.2.3":
-  version: 2.2.3
-  resolution: "alchemy-sdk@npm:2.2.3"
+"alchemy-sdk@npm:^2.4.3":
+  version: 2.4.3
+  resolution: "alchemy-sdk@npm:2.4.3"
   dependencies:
     "@ethersproject/abi": ^5.7.0
     "@ethersproject/abstract-provider": ^5.7.0
@@ -2913,7 +2913,7 @@ __metadata:
     axios: ^0.26.1
     sturdy-websocket: ^0.2.1
     websocket: ^1.0.34
-  checksum: 2ccc5449bf7b9057efacc0a4f7867feb4a4c426754c217ea8ad9efb2b67393ced2cbb4ba6139b7a32157c5fa5a50ae02f256927f9b43fc98514cb7b7efc1fb18
+  checksum: e78a1fb18152bb6690075f90f687572d693edf8d34bda07d18cf8b676491ad06f12afd5a71bb9cf266702bc91fdb62780ab9110868bf9d0a6941e300d87f5d0d
   languageName: node
   linkType: hard
 
@@ -5770,7 +5770,7 @@ __metadata:
     "@types/supertest": ^2.0.11
     "@types/swagger-ui-express": ^4.1.3
     "@types/uuid": ^8.3.4
-    alchemy-sdk: ^2.2.3
+    alchemy-sdk: ^2.4.3
     ansi-regex: ^6.0.1
     axios: ^1.3.2
     body-parser: ^1.20.1

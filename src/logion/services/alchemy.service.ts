@@ -22,10 +22,16 @@ export class AlchemyService {
         if(process.env.ETHEREUM_ALCHEMY_KEY) {
             this.apiKeys[Network.ETH_MAINNET] = process.env.ETHEREUM_ALCHEMY_KEY;
         }
+        if(process.env.POLYGON_MUMBAI_ALCHEMY_KEY) {
+            this.apiKeys[Network.MATIC_MUMBAI] = process.env.POLYGON_MUMBAI_ALCHEMY_KEY;
+        }
+        if(process.env.POLYGON_MAINNET_ALCHEMY_KEY) {
+            this.apiKeys[Network.MATIC_MAINNET] = process.env.POLYGON_MAINNET_ALCHEMY_KEY;
+        }
         this.factory = factory;
     }
 
-    private apiKeys: Partial<Record<Network, string>>;
+    private readonly apiKeys: Partial<Record<Network, string>>;
 
     private factory: AlchemyFactory;
 
