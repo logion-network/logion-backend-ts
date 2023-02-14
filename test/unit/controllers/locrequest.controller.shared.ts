@@ -30,6 +30,7 @@ import { PolkadotService } from "@logion/rest-api-core";
 import { LogionNodeApi, UUID } from "@logion/node-api";
 import { Option } from "@polkadot/types-codec";
 import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "@polkadot/types/lookup";
+import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
@@ -133,6 +134,7 @@ export interface Mocks {
     voteRepository: Mock<VoteRepository>;
     nodeApi: Mock<LogionNodeApi>;
     loc: Mock<PalletLogionLocLegalOfficerCase>;
+    verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -158,6 +160,10 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const voteRepository = existingMocks?.voteRepository ? existingMocks.voteRepository : new Mock<VoteRepository>();
     container.bind(VoteRepository).toConstantValue(voteRepository.object());
 
+    const verifiedThirdPartySelectionRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
+    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
+    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartySelectionRepository.object());
+
     const polkadotService = new Mock<PolkadotService>();
     container.bind(PolkadotService).toConstantValue(polkadotService.object());
 
@@ -174,6 +180,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         notificationService,
         collectionRepository,
         voteRepository,
+        verifiedThirdPartySelectionRepository,
         nodeApi,
         loc,
     };
@@ -369,6 +376,7 @@ export function setupLocFetch(locId: string, loc: Mock<PalletLogionLocLegalOffic
     }
     const locIdUuid = new UUID(locId);
     nodeApi.setup(instance => instance.query.logionLoc.locMap(locIdUuid.toHexString())).returnsAsync(maybeLoc.object());
+    nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(ALICE)).returnsAsync([]);
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {

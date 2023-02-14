@@ -11,6 +11,7 @@ import { CollectionService } from './collection.service.js';
 import { UserIdentity } from '../model/useridentity.js';
 import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
+import { VerifiedThirdPartySelectionService } from './verifiedthirdpartyselection.service.js';
 
 const { logger } = Log;
 
@@ -25,6 +26,7 @@ export class LocSynchronizer {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private polkadotService: PolkadotService,
+        private verifiedThirdPartySelectionService: VerifiedThirdPartySelectionService,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
@@ -91,7 +93,7 @@ export class LocSynchronizer {
                     await this.notifyIssuerNominatedDismissed(extrinsic);
                     break;
                 case "setIssuerSelection":
-                    await this.notifyIssuerSelectedUnselected(extrinsic);
+                    await this.handleIssuerSelectedUnselected(extrinsic);
                     break;
                 default:
                     throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.call.method}`)
@@ -145,7 +147,10 @@ export class LocSynchronizer {
             const issuerAddress = asString(extrinsic.call.args["issuer"]);
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
             if(identityLoc) {
-                logger.info("Notifying nomination/dismissal of issuer %s", issuerAddress);
+                logger.info("Handling nomination/dismissal of issuer %s", issuerAddress);
+                if(!nominated) {
+                    this.verifiedThirdPartySelectionService.unselectAll(issuerAddress);
+                }
                 this.notifyVtpNominatedDismissed({
                     legalOfficerAddress,
                     nominated,
@@ -192,7 +197,7 @@ export class LocSynchronizer {
         }
     }
 
-    private async notifyIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
+    private async handleIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
         const legalOfficerAddress = requireDefined(extrinsic.signer);
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
             const issuerAddress = asString(extrinsic.call.args["issuer"]);
@@ -201,7 +206,8 @@ export class LocSynchronizer {
             const requestId = extractUuid("loc_id", extrinsic.call.args);
             const locRequest = requireDefined(await this.locRequestRepository.findById(requestId));
 
-            logger.info("Notifying selection/unselection of issuer %s", issuerAddress);
+            logger.info("Handling selection/unselection of issuer %s", issuerAddress);
+            this.verifiedThirdPartySelectionService.selectUnselect(locRequest, identityLoc, selected);
             this.notifyVtpSelectedUnselected({
                 legalOfficerAddress,
                 selected,

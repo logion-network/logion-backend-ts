@@ -1,11 +1,11 @@
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
-import { addTag, AuthenticationService, badRequest, getDefaultResponses, getRequestBody, Log, PolkadotService, requireDefined, setControllerTag, setPathParameters } from "@logion/rest-api-core";
+import { addTag, AuthenticationService, badRequest, PolkadotService, setControllerTag } from "@logion/rest-api-core";
 import { components } from "./components.js";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 
-import { UUID, getVerifiedIssuers, VerifiedIssuer, getLegalOfficerVerifiedIssuers } from "@logion/node-api";
+import { UUID, VerifiedIssuer, getLegalOfficerVerifiedIssuers } from "@logion/node-api";
 import { toUserIdentityView } from "./adapters/locrequestadapter.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -14,9 +14,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
         name: tagName,
         description: "Handling of Verified Third Parties"
     });
-    setControllerTag(spec, /^\/api\/loc-request\/.*\/issuers-identity$/, tagName);
-
-    VerifiedThirdPartyController.getVerifiedIssuersIdentity(spec);
+    setControllerTag(spec, /^\/api\/issuers-identity$/, tagName);
 }
 
 type VerifiedIssuersIdentityResponse = components["schemas"]["VerifiedIssuersIdentityResponse"];
@@ -34,33 +32,17 @@ export class VerifiedThirdPartyController extends ApiController {
         super();
     }
 
-    static getVerifiedIssuersIdentity(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/issuers-identity"].get!;
-        operationObject.summary = "Providers selected issuers identity";
-        operationObject.description = "The authenticated user must be the owner or the requester of the LOC.";
-        operationObject.responses = getDefaultResponses("");
-        operationObject.requestBody = getRequestBody({
-            description: "VTP flag",
-            view: "SetVerifiedThirdPartyRequest",
-        });
-        setPathParameters(operationObject, {
-            'issuerAddress': "The VTP address",
-        });
-    }
-
-    @HttpGet('/loc-request/:requestId/issuers-identity')
+    @HttpGet('/issuers-identity')
     @Async()
-    async getVerifiedIssuersIdentity(_body: never, requestId: string): Promise<VerifiedIssuersIdentityResponse> {
+    async getLegalOfficerVerifiedIssuersIdentity(_body: never): Promise<VerifiedIssuersIdentityResponse> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const locRequest = requireDefined(await this.locRequestRepository.findById(requestId)).getDescription();
+        await authenticatedUser.requireLegalOfficerOnNode();
+
         const api = await this.polkadotService.readyApi();
-        const issuers = await getVerifiedIssuers(api, new UUID(requestId));
-        authenticatedUser.require(
-            user => user.is(locRequest.ownerAddress)
-            || user.is(locRequest.requesterAddress)
-            || user.isOneOf(issuers.map(issuer => issuer.address)));
+        const issuers = await getLegalOfficerVerifiedIssuers(api, authenticatedUser.address);
+
         return {
-            issuers: await this.toVerifiedIssuersIdentityResponse(locRequest.ownerAddress, issuers),
+            issuers: await this.toVerifiedIssuersIdentityResponse(authenticatedUser.address, issuers),
         };
     }
 
@@ -90,19 +72,5 @@ export class VerifiedThirdPartyController extends ApiController {
             throw badRequest("No Identity LOC available for issuer");
         }
         return identityLoc;
-    }
-
-    @HttpGet('/issuers-identity')
-    @Async()
-    async getLegalOfficerVerifiedIssuersIdentity(_body: never): Promise<VerifiedIssuersIdentityResponse> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        await authenticatedUser.requireLegalOfficerOnNode();
-
-        const api = await this.polkadotService.readyApi();
-        const issuers = await getLegalOfficerVerifiedIssuers(api, authenticatedUser.address);
-
-        return {
-            issuers: await this.toVerifiedIssuersIdentityResponse(authenticatedUser.address, issuers),
-        };
     }
 }

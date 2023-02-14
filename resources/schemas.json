@@ -571,6 +571,66 @@
                 "title": "CreateLocRequestView",
                 "description": "A LOC Request to create"
             },
+            "LocFileView": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The file's name"
+                    },
+                    "hash": {
+                        "type": "string",
+                        "description": "The file's hash"
+                    },
+                    "nature": {
+                        "type": "string",
+                        "description": "The file's nature"
+                    },
+                    "addedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of addition (chain time)"
+                    },
+                    "submitter": {
+                        "type": "string",
+                        "description": "The SS58 address of the file submitter"
+                    },
+                    "restrictedDelivery": {
+                        "type": "boolean",
+                        "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
+                    },
+                    "size": {
+                        "type": "string",
+                        "description": "The file's size, in bytes."
+                    },
+                    "contentType": {
+                        "type": "string",
+                        "description": "The file's content type (MIME format)."
+                    }
+                }
+            },
+            "LocMetadataItemView": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "The item's name"
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "The item's value"
+                    },
+                    "addedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of addition (chain time)"
+                    },
+                    "submitter": {
+                        "type": "string",
+                        "description": "The SS58 address of the file submitter"
+                    }
+                }
+            },
             "LocRequestView": {
                 "type": "object",
                 "properties": {
@@ -640,38 +700,7 @@
                         "type": "array",
                         "description": "The files attached to this request's LOC",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "The file's name"
-                                },
-                                "hash": {
-                                    "type": "string",
-                                    "description": "The file's hash"
-                                },
-                                "nature": {
-                                    "type": "string",
-                                    "description": "The file's nature"
-                                },
-                                "addedOn": {
-                                    "type": "string",
-                                    "format": "date-time",
-                                    "description": "The date-time of addition (chain time)"
-                                },
-                                "submitter": {
-                                    "type": "string",
-                                    "description": "The SS58 address of the file submitter"
-                                },
-                                "restrictedDelivery": {
-                                    "type": "boolean",
-                                    "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
-                                },
-                                "size": {
-                                    "type": "string",
-                                    "description": "The file's size, in bytes."
-                                }
-                            }
+                            "$ref": "#/components/schemas/LocFileView"
                         }
                     },
                     "links": {
@@ -704,26 +733,7 @@
                         "type": "array",
                         "description": "The metadata attached to this request's LOC",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "name": {
-                                    "type": "string",
-                                    "description": "The item's name"
-                                },
-                                "value": {
-                                    "type": "string",
-                                    "description": "The item's value"
-                                },
-                                "addedOn": {
-                                    "type": "string",
-                                    "format": "date-time",
-                                    "description": "The date-time of addition (chain time)"
-                                },
-                                "submitter": {
-                                    "type": "string",
-                                    "description": "The SS58 address of the metadata item submitter"
-                                }
-                            }
+                            "$ref": "#/components/schemas/LocMetadataItemView"
                         }
                     },
                     "voidInfo": {
@@ -767,6 +777,12 @@
                     "voteId": {
                         "type": "string",
                         "description": "The ID of the vote linked to the present LOC, if applicable"
+                    },
+                    "selectedIssuers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/VerifiedIssuerIdentity"
+                        }
                     }
                 },
                 "title": "LocRequestView",

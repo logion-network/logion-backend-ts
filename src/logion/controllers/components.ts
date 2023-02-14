@@ -324,6 +324,40 @@ export interface components {
       /** @description LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined) */
       draft?: boolean;
     };
+    LocFileView: {
+      /** @description The file's name */
+      name?: string;
+      /** @description The file's hash */
+      hash?: string;
+      /** @description The file's nature */
+      nature?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of addition (chain time)
+       */
+      addedOn?: string;
+      /** @description The SS58 address of the file submitter */
+      submitter?: string;
+      /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
+      restrictedDelivery?: boolean;
+      /** @description The file's size, in bytes. */
+      size?: string;
+      /** @description The file's content type (MIME format). */
+      contentType?: string;
+    };
+    LocMetadataItemView: {
+      /** @description The item's name */
+      name?: string;
+      /** @description The item's value */
+      value?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of addition (chain time)
+       */
+      addedOn?: string;
+      /** @description The SS58 address of the file submitter */
+      submitter?: string;
+    };
     /**
      * LocRequestView 
      * @description An existing LOC Request
@@ -378,25 +412,7 @@ export interface components {
        */
       identityLoc?: string;
       /** @description The files attached to this request's LOC */
-      files?: ({
-          /** @description The file's name */
-          name?: string;
-          /** @description The file's hash */
-          hash?: string;
-          /** @description The file's nature */
-          nature?: string;
-          /**
-           * Format: date-time 
-           * @description The date-time of addition (chain time)
-           */
-          addedOn?: string;
-          /** @description The SS58 address of the file submitter */
-          submitter?: string;
-          /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
-          restrictedDelivery?: boolean;
-          /** @description The file's size, in bytes. */
-          size?: string;
-        })[];
+      files?: (components["schemas"]["LocFileView"])[];
       /** @description The links attached to this request's LOC */
       links?: ({
           /** @description The link's target */
@@ -412,19 +428,7 @@ export interface components {
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];
       /** @description The metadata attached to this request's LOC */
-      metadata?: ({
-          /** @description The item's name */
-          name?: string;
-          /** @description The item's value */
-          value?: string;
-          /**
-           * Format: date-time 
-           * @description The date-time of addition (chain time)
-           */
-          addedOn?: string;
-          /** @description The SS58 address of the metadata item submitter */
-          submitter?: string;
-        })[];
+      metadata?: (components["schemas"]["LocMetadataItemView"])[];
       /** @description Data about LOC voiding */
       voidInfo?: {
         /** @description Voiding reason */
@@ -448,6 +452,7 @@ export interface components {
       };
       /** @description The ID of the vote linked to the present LOC, if applicable */
       voteId?: string;
+      selectedIssuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
     };
     /**
      * LocPublicView 
