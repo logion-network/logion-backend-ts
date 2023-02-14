@@ -782,6 +782,8 @@ export interface components {
     VerifiedIssuerIdentity: {
       /** @description The SS58 address of the issuer */
       address?: string;
+      /** @description The ID of the issuer's Identity LOC */
+      identityLocId?: string;
       identity?: components["schemas"]["UserIdentityView"];
     };
   };

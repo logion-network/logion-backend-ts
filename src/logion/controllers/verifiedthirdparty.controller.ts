@@ -5,7 +5,7 @@ import { addTag, AuthenticationService, badRequest, getDefaultResponses, getRequ
 import { components } from "./components.js";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 
-import { UUID, getVerifiedIssuers, VerifiedIssuer } from "@logion/node-api";
+import { UUID, getVerifiedIssuers, VerifiedIssuer, getLegalOfficerVerifiedIssuers } from "@logion/node-api";
 import { toUserIdentityView } from "./adapters/locrequestadapter.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -70,6 +70,7 @@ export class VerifiedThirdPartyController extends ApiController {
             issuersIdentity.push({
                 address: issuer.address,
                 identity: toUserIdentityView(identityLoc.getDescription().userIdentity),
+                identityLocId: identityLoc.id,
             });
         }
         return issuersIdentity;
@@ -88,5 +89,19 @@ export class VerifiedThirdPartyController extends ApiController {
             throw badRequest("No Identity LOC available for issuer");
         }
         return identityLoc;
+    }
+
+    @HttpGet('/issuers-identity')
+    @Async()
+    async getLegalOfficerVerifiedIssuersIdentity(_body: never): Promise<VerifiedIssuersIdentityResponse> {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        await authenticatedUser.requireLegalOfficerOnNode();
+
+        const api = await this.polkadotService.readyApi();
+        const issuers = await getLegalOfficerVerifiedIssuers(api, authenticatedUser.address);
+
+        return {
+            issuers: await this.toVerifiedIssuersIdentityResponse(authenticatedUser.address, issuers),
+        };
     }
 }

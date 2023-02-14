@@ -1337,6 +1337,10 @@
                         "type": "string",
                         "description": "The SS58 address of the issuer"
                     },
+                    "identityLocId": {
+                        "type": "string",
+                        "description": "The ID of the issuer's Identity LOC"
+                    },
                     "identity": {
                         "$ref": "#/components/schemas/UserIdentityView"
                     }
