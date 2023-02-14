@@ -1,6 +1,6 @@
-import { UUID } from "@logion/node-api";
+import { LogionNodeApi, UUID } from "@logion/node-api";
 import { TestApp } from "@logion/rest-api-core";
-import { ALICE } from "@logion/rest-api-core/dist/TestApp.js";
+import { ALICE, mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { Option } from "@polkadot/types-codec";
 import { PalletLogionLocVerifiedIssuer } from "@polkadot/types/lookup";
 import { Container } from "inversify";
@@ -14,8 +14,8 @@ const { setupApp } = TestApp;
 
 describe("VerifiedThirdPartyController", () => {
 
-    it("provides issuers identity to requester", async () => {
-        const app = setupApp(VerifiedThirdPartyController, mockModelForNominateDismiss);
+    it("provides selected issuers identity to requester", async () => {
+        const app = setupApp(VerifiedThirdPartyController, mockModelForSelected, mockAuthenticationForUserOrLegalOfficer(true, ALICE));
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }/issuers-identity`)
             .expect(200)
@@ -24,11 +24,21 @@ describe("VerifiedThirdPartyController", () => {
                 expect(response.body.issuers.length).toBe(1);
                 expect(response.body.issuers[0].address).toBe(VTP_ADDRESS);
                 expect(response.body.issuers[0].identity).toBeDefined();
+                expect(response.body.issuers[0].identityLocId).toBe(ISSUER_IDENTITY_LOC_ID);
             });
-    })
+    });
 });
 
-function mockModelForNominateDismiss(container: Container) {
+function mockModelForSelected(container: Container) {
+    const { nodeApi, maybeVerifiedIssuer } = mockModelCommon(container);
+
+    nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+}
+
+function mockModelCommon(container: Container): {
+    nodeApi: Mock<LogionNodeApi>,
+    maybeVerifiedIssuer: Mock<Option<PalletLogionLocVerifiedIssuer>>,
+} {
     const { nodeApi, request, repository, loc } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", { userIdentity: { email: VTP_EMAIL } as UserIdentity });
 
@@ -55,7 +65,8 @@ function mockModelForNominateDismiss(container: Container) {
     const verifiedIssuer = new Mock<PalletLogionLocVerifiedIssuer>();
     verifiedIssuer.setup(instance => instance.identityLoc.toString()).returns(new UUID(ISSUER_IDENTITY_LOC_ID).toDecimalString());
     maybeVerifiedIssuer.setup(instance => instance.unwrap()).returns(verifiedIssuer.object());
-    nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+
+    return { nodeApi, maybeVerifiedIssuer };
 }
 
 const VTP_EMAIL = userIdentities["Polkadot"].userIdentity?.email;
