@@ -265,6 +265,7 @@ export function setupRequest(
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
             ownerAddress: description.ownerAddress || ALICE,
+            requesterAddress: description.requesterAddress || REQUESTER_ADDRESS,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);

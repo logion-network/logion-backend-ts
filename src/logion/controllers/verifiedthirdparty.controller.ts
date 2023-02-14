@@ -53,11 +53,12 @@ export class VerifiedThirdPartyController extends ApiController {
     async getVerifiedIssuersIdentity(_body: never, requestId: string): Promise<VerifiedIssuersIdentityResponse> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const locRequest = requireDefined(await this.locRequestRepository.findById(requestId)).getDescription();
-        authenticatedUser.require(user => user.is(locRequest.ownerAddress) || user.is(locRequest.requesterAddress));
-
         const api = await this.polkadotService.readyApi();
         const issuers = await getVerifiedIssuers(api, new UUID(requestId));
-
+        authenticatedUser.require(
+            user => user.is(locRequest.ownerAddress)
+            || user.is(locRequest.requesterAddress)
+            || user.isOneOf(issuers.map(issuer => issuer.address)));
         return {
             issuers: await this.toVerifiedIssuersIdentityResponse(locRequest.ownerAddress, issuers),
         };
