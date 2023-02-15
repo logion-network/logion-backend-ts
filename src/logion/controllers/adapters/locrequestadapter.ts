@@ -6,6 +6,7 @@ import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
+import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../model/verifiedthirdpartyselection.model.js";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -16,6 +17,7 @@ export type UserPrivateData = {
 type LocRequestView = components["schemas"]["LocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
 type PostalAddressView = components["schemas"]["PostalAddressView"];
+type VerifiedIssuerIdentity = components["schemas"]["VerifiedIssuerIdentity"];
 
 @injectable()
 export class LocRequestAdapter {
@@ -24,9 +26,8 @@ export class LocRequestAdapter {
         private locRequestRepository: LocRequestRepository,
         private idenfyService: IdenfyService,
         private voteRepository: VoteRepository,
-    ) {
-
-    }
+        private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+    ) {}
 
     async toView(request: LocRequestAggregateRoot, viewer: string, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
         let userPrivateData: UserPrivateData;
@@ -47,10 +48,18 @@ export class LocRequestAdapter {
                 redirectUrl: request.iDenfyVerification.status === "PENDING" ? this.idenfyService.redirectUrl(request.iDenfyVerification.authToken) : undefined,
             };
         }
+
         let vote: VoteAggregateRoot | null = null;
         if (request.status === 'CLOSED') {
             vote = await this.voteRepository.findByLocId(request.id!);
         }
+
+        let selectedIssuers: VerifiedIssuerIdentity[] = [];
+        if (request.status === 'OPEN' || request.status === 'CLOSED') {
+            const selections = await this.verifiedThirdPartySelectionRepository.findBy({ locRequestId: request.id });
+            selectedIssuers = await this.getSelectedIssuersIdentities(selections);
+        }
+
         const view: LocRequestView = {
             id,
             requesterAddress: locDescription.requesterAddress,
@@ -91,6 +100,7 @@ export class LocRequestAdapter {
             company: locDescription.company,
             iDenfy,
             voteId: vote?.voteId,
+            selectedIssuers,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
@@ -138,6 +148,26 @@ export class LocRequestAdapter {
             identityLocId: undefined,
             ...description
         };
+    }
+
+    async getSelectedIssuersIdentities(selectedIssuers: VerifiedThirdPartySelectionAggregateRoot[]): Promise<VerifiedIssuerIdentity[]> {
+        const identities: VerifiedIssuerIdentity[] = [];
+        for(const selectedIssuer of selectedIssuers) {
+            const issuer = selectedIssuer?.issuer || "";
+            if(selectedIssuer?.identityLocId) {
+                const identityLoc = requireDefined(await this.locRequestRepository.findById(selectedIssuer.identityLocId.toString()));
+                identities.push({
+                    address: issuer,
+                    identityLocId: selectedIssuer.identityLocId,
+                    identity: identityLoc.getDescription().userIdentity,
+                });
+            } else {
+                identities.push({
+                    address: issuer
+                });
+            }
+        }
+        return identities;
     }
 }
 

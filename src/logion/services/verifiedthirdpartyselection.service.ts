@@ -1,7 +1,6 @@
-import { AuthenticatedUser } from "@logion/authenticator";
 import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model.js";
+import { LocRequestAggregateRoot } from "../model/locrequest.model.js";
 import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionFactory, VerifiedThirdPartySelectionId, VerifiedThirdPartySelectionRepository } from "../model/verifiedthirdpartyselection.model.js";
 
 export abstract class VerifiedThirdPartySelectionService {
@@ -9,7 +8,6 @@ export abstract class VerifiedThirdPartySelectionService {
     constructor(
         private verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
-        private locRequestRepository: LocRequestRepository,
     ) {}
 
     async add(selection: VerifiedThirdPartySelectionAggregateRoot) {
@@ -19,30 +17,20 @@ export abstract class VerifiedThirdPartySelectionService {
     async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedThirdPartyLocRequest: LocRequestAggregateRoot, select: boolean) {
         const id: VerifiedThirdPartySelectionId = {
             locRequestId: requireDefined(locRequest.id),
-            verifiedThirdPartyLocId: requireDefined(verifiedThirdPartyLocRequest.id),
+            issuer: requireDefined(verifiedThirdPartyLocRequest.requesterAddress),
         };
         let selection = await this.verifiedThirdPartySelectionRepository.findById(id);
         if(selection) {
             selection.setSelected(select);
             await this.verifiedThirdPartySelectionRepository.save(selection);
         } else if(select) {
-            selection = this.verifiedThirdPartySelectionFactory.newSelection({
-                locRequest,
-                verifiedThirdPartyLocRequest
-            });
+            selection = this.verifiedThirdPartySelectionFactory.newSelection(id, requireDefined(verifiedThirdPartyLocRequest.id));
             await this.verifiedThirdPartySelectionRepository.save(selection);
         } // else (!selection && !select) -> skip
     }
 
-    async nominateDismiss(authenticatedUser: AuthenticatedUser, verifiedThirdPartyLocId: string, nominate: boolean) {
-        const verifiedThirdPartyLocRequest = requireDefined(await this.locRequestRepository.findById(verifiedThirdPartyLocId));
-        authenticatedUser.require(user => user.is(verifiedThirdPartyLocRequest.ownerAddress));
-        verifiedThirdPartyLocRequest.setVerifiedThirdParty(nominate);
-        await this.locRequestRepository.save(verifiedThirdPartyLocRequest);
-        if(!nominate) {
-            await this.verifiedThirdPartySelectionRepository.unselectAll(verifiedThirdPartyLocId);
-        }
-        return verifiedThirdPartyLocRequest;
+    async unselectAll(issuerAddress: string) {
+        await this.verifiedThirdPartySelectionRepository.unselectAll(issuerAddress);
     }
 }
 
@@ -52,9 +40,8 @@ export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThi
     constructor(
         verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
-        locRequestRepository: LocRequestRepository,
     ) {
-        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository, locRequestRepository);
+        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository);
     }
 
     @DefaultTransactional()
@@ -68,8 +55,8 @@ export class TransactionalVerifiedThirdPartySelectionService extends VerifiedThi
     }
 
     @DefaultTransactional()
-    async nominateDismiss(authenticatedUser: AuthenticatedUser, verifiedThirdPartyLocId: string, nominate: boolean) {
-        return super.nominateDismiss(authenticatedUser, verifiedThirdPartyLocId, nominate);
+    async unselectAll(issuerAddress: string) {
+        return super.unselectAll(issuerAddress);
     }
 }
 
@@ -79,8 +66,7 @@ export class NonTransactionalVerifiedThirdPartySelectionService extends Verified
     constructor(
         verifiedThirdPartySelectionFactory: VerifiedThirdPartySelectionFactory,
         verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
-        locRequestRepository: LocRequestRepository,
     ) {
-        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository, locRequestRepository);
+        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository);
     }
 }

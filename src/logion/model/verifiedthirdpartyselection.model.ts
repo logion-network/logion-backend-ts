@@ -1,11 +1,10 @@
 import { injectable } from 'inversify';
 import { Column, Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
-import { LocRequestAggregateRoot } from './locrequest.model.js';
 
 export interface VerifiedThirdPartySelectionId {
     locRequestId: string;
-    verifiedThirdPartyLocId: string;
+    issuer: string;
 }
 
 @Entity("vtp_selection")
@@ -14,7 +13,7 @@ export class VerifiedThirdPartySelectionAggregateRoot {
     get id(): VerifiedThirdPartySelectionId {
         return {
             locRequestId: requireDefined(this.locRequestId),
-            verifiedThirdPartyLocId: requireDefined(this.verifiedThirdPartyLocId),
+            issuer: requireDefined(this.issuer),
         };
     }
 
@@ -25,8 +24,11 @@ export class VerifiedThirdPartySelectionAggregateRoot {
     @PrimaryColumn({ type: "uuid", name: "loc_request_id" })
     locRequestId?: string;
 
-    @PrimaryColumn({ type: "uuid", name: "vtp_loc_id" })
-    verifiedThirdPartyLocId?: string;
+    @PrimaryColumn({ type: "varchar", name: "issuer" })
+    issuer?: string;
+
+    @Column({ type: "uuid", name: "vtp_loc_id" })
+    identityLocId?: string;
 
     @Column("boolean", { default: true })
     selected?: boolean;
@@ -57,40 +59,27 @@ export class VerifiedThirdPartySelectionRepository {
         return this.repository.findBy(spec);
     }
 
-    async unselectAll(verifiedThirdPartyLocId: string) {
-        await this.repository.update({ verifiedThirdPartyLocId }, { selected: false });
+    async unselectAll(issuer: string) {
+        await this.repository.update({ issuer }, { selected: false });
     }
 }
 
 @injectable()
 export class VerifiedThirdPartySelectionFactory {
 
-    newSelection(args: {
-        locRequest: LocRequestAggregateRoot,
-        verifiedThirdPartyLocRequest: LocRequestAggregateRoot,
-    }): VerifiedThirdPartySelectionAggregateRoot {
+    newSelection(id: VerifiedThirdPartySelectionId, identityLocId: string): VerifiedThirdPartySelectionAggregateRoot {
         const {
-            verifiedThirdPartyLocRequest,
-            locRequest,
-        } = args;
-
-        if(verifiedThirdPartyLocRequest.locType !== "Identity") {
-            throw new Error("VTP LOC is not an identity LOC");
-        }
-        if(verifiedThirdPartyLocRequest.status !== "CLOSED") {
-            throw new Error("VTP LOC is not closed");
-        }
-        if(!verifiedThirdPartyLocRequest.verifiedThirdParty) {
-            throw new Error("Party is not verified");
-        }
-        if(locRequest.requesterAddress === verifiedThirdPartyLocRequest.requesterAddress) {
-            throw new Error("Cannot select LOC requester as VTP");
-        }
+            locRequestId,
+            issuer,
+        } = id;
 
         const root = new VerifiedThirdPartySelectionAggregateRoot();
-        root.locRequestId = locRequest.id;
-        root.verifiedThirdPartyLocId = verifiedThirdPartyLocRequest.id;
+        root.locRequestId = locRequestId;
+        root.issuer = issuer;
+
+        root.identityLocId = identityLocId;
         root.selected = true;
+
         return root;
     }
 }

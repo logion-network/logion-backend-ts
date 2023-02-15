@@ -138,11 +138,6 @@ describe('LocRequestRepository - read accesses', () => {
         expect(requests.length).toBe(1);
     })
 
-    it("gets VTP identity LOC", async () => {
-        const identityLoc = await repository.getVerifiedThirdPartyIdentityLoc("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
-        expect(identityLoc).toBeDefined();
-    })
-
     it("finds by requester and owner", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",

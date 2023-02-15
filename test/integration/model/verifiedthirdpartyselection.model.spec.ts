@@ -20,7 +20,7 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
     it("finds by ID", async () => {
         const nomination = await repository.findById({
             locRequestId: "a7b80f86-1c51-4aff-ba32-d8361bb462b1",
-            verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744",
+            issuer: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
         });
         expect(nomination).toBeDefined();
     });
@@ -30,14 +30,14 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
         expect(nominations.length).toBe(2);
     });
 
-    it("finds by VTP LOC ID", async () => {
-        const nominations = await repository.findBy({ verifiedThirdPartyLocId: "a4eb8352-a032-44a6-8087-c95a40da0744" });
+    it("finds by VTP address", async () => {
+        const nominations = await repository.findBy({ issuer: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX" });
         expect(nominations.length).toBe(1);
     });
 
     it("finds selected only", async () => {
         const nominations = await repository.findBy({
-            verifiedThirdPartyLocId: "f2b114f4-1196-4027-9972-e6741f868f0c",
+            issuer: "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb",
             selected: true,
         });
         expect(nominations.length).toBe(1);
@@ -59,7 +59,7 @@ describe("VerifiedThirdPartySelectionRepository - write", () => {
     });
 
     it("unselects by VTP LOC ID", async () => {
-        await repository.unselectAll("a4eb8352-a032-44a6-8087-c95a40da0744");
-        checkNumOfRows(`SELECT * FROM vtp_selection WHERE vtp_loc_id = 'a4eb8352-a032-44a6-8087-c95a40da0744' AND selected IS TRUE`, 0);
+        await repository.unselectAll("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
+        checkNumOfRows(`SELECT * FROM vtp_selection WHERE issuer = '5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX' AND selected IS TRUE`, 0);
     });
 });
