@@ -223,7 +223,6 @@ describe("LocRequestFactory", () => {
             locType,
             seal,
             company: undefined,
-            verifiedThirdParty: false,
         };
     }
 });
@@ -350,26 +349,6 @@ describe("LocRequestAggregateRoot", () => {
             status: "PENDING",
         };
         expect(() => whenSubmitting()).toThrowError();
-    });
-
-    it("sets verified third party flag if closed Identity LOC", () => {
-        givenRequestWithStatus('CLOSED');
-        request.locType = "Identity";
-        request.setVerifiedThirdParty(true);
-        expect(request.verifiedThirdParty).toBe(true);
-        expect(request.getDescription().verifiedThirdParty).toBe(true);
-    });
-
-    it("fails setting verified third party flag if non-closed", () => {
-        givenRequestWithStatus('OPEN');
-        request.locType = "Identity";
-        expect(() => request.setVerifiedThirdParty(true)).toThrowError();
-    });
-
-    it("fails setting verified third party flag if non-Identity", () => {
-        givenRequestWithStatus('CLOSED');
-        request.locType = "Transaction";
-        expect(() => request.setVerifiedThirdParty(true)).toThrowError();
     });
 
     it("initiates iDenfy verification", () => {

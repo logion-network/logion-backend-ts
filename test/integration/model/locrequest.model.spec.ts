@@ -130,14 +130,6 @@ describe('LocRequestRepository - read accesses', () => {
         expect(request?.requesterIdentityLocId).toBeDefined();
     })
 
-    it("finds verified third parties", async () => {
-        const requests = await repository.findBy({
-            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            isVerifiedThirdParty: true,
-        });
-        expect(requests.length).toBe(1);
-    })
-
     it("finds by requester and owner", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
@@ -157,7 +149,9 @@ describe('LocRequestRepository - read accesses', () => {
     it("finds LOC with restricted deliveries based on criteria", async () => {
         const requests = await repository.findBy({
             expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            isVerifiedThirdParty: true,
+            expectedRequesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+            expectedStatuses: ["CLOSED"],
+            expectedLocTypes:["Identity"],
         });
         const request = requests[0];
         expect(request.files?.length).toBe(2);

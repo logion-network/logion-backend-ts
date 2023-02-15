@@ -142,7 +142,6 @@ export class LocRequestController extends ApiController {
             userIdentity: locType === "Identity" ? this.fromUserIdentityView(createLocRequestView.userIdentity) : undefined,
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
             company: createLocRequestView.company,
-            verifiedThirdParty: false,
         }
         if (locType === "Identity") {
             if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress))) {
@@ -819,7 +818,6 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity: undefined,
             userPostalAddress: undefined,
-            verifiedThirdParty: false,
         }
         let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),

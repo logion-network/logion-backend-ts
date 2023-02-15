@@ -35,7 +35,6 @@ export interface LocRequestDescription {
     readonly locType: LocType;
     readonly seal?: PublicSeal;
     readonly company?: string;
-    readonly verifiedThirdParty: boolean;
 }
 
 export interface LocRequestDecision {
@@ -193,7 +192,6 @@ export class LocRequestAggregateRoot {
             locType: this.locType!,
             seal: toPublicSeal(this.seal),
             company: this.company!,
-            verifiedThirdParty: this.verifiedThirdParty || false,
         }
     }
 
@@ -566,13 +564,6 @@ export class LocRequestAggregateRoot {
         this.seal = EmbeddableSeal.from(seal);
     }
 
-    setVerifiedThirdParty(verifiedThirdParty: boolean) {
-        if(this.locType !== "Identity" || this.status !== "CLOSED" || !this.requesterAddress) {
-            throw new Error("Verified third party flag can be set only on closed Polkadot Identity LOCs");
-        }
-        this.verifiedThirdParty = verifiedThirdParty;
-    }
-
     isIdenfySessionInProgress(): boolean {
         return this.iDenfyVerification !== undefined && this.iDenfyVerification.status === "PENDING";
     }
@@ -718,9 +709,6 @@ export class LocRequestAggregateRoot {
 
     @Column(() => EmbeddableSeal, { prefix: ""} )
     seal?: EmbeddableSeal;
-
-    @Column("boolean", { name: "verified_third_party", default: false })
-    verifiedThirdParty?: boolean;
 
     @Column(() => EmbeddableIdenfyVerification, { prefix: ""} )
     iDenfyVerification?: EmbeddableIdenfyVerification;
@@ -912,7 +900,6 @@ export interface FetchLocRequestsSpecification {
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
     readonly expectedIdentityLocType?: IdentityLocType;
-    readonly isVerifiedThirdParty?: boolean;
 }
 
 @injectable()
@@ -1026,14 +1013,6 @@ export class LocRequestRepository {
             builder.andWhere("request.requester_address IS NOT NULL")
         } else if (specification.expectedIdentityLocType === "Logion") {
             builder.andWhere("request.requester_address IS NULL")
-        }
-
-        if(specification.isVerifiedThirdParty !== undefined) {
-            if(specification.isVerifiedThirdParty) {
-                builder.andWhere("request.verified_third_party IS TRUE");
-            } else {
-                builder.andWhere("request.verified_third_party IS FALSE");
-            }
         }
 
         builder
