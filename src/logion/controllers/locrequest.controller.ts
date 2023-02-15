@@ -30,7 +30,7 @@ import {
     forbidden,
     PolkadotService,
 } from "@logion/rest-api-core";
-import { UUID, getVerifiedIssuers } from "@logion/node-api";
+import { UUID } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -45,6 +45,7 @@ import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import { LocRequestService } from "../services/locrequest.service.js";
 import { VoteRepository } from "../model/vote.model.js";
 import { AuthenticatedUser } from "@logion/authenticator";
+import { LocAuthorizationService } from "../services/locauthorization.service.js";
 
 const { logger } = Log;
 
@@ -109,7 +110,7 @@ export class LocRequestController extends ApiController {
         private locRequestAdapter: LocRequestAdapter,
         private locRequestService: LocRequestService,
         private voteRepository: VoteRepository,
-        private polkadotService: PolkadotService,
+        private locAuthorizationService: LocAuthorizationService,
     ) {
         super();
     }
@@ -278,7 +279,7 @@ export class LocRequestController extends ApiController {
 
     private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: string, voter: boolean} > {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.isContributor(request, authenticatedUser)) {
+        if (await this.locAuthorizationService.isContributor(request, authenticatedUser)) {
             return {
                 contributor: authenticatedUser.address,
                 voter: false
@@ -293,36 +294,11 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    private async ensureContributor(request: LocRequestAggregateRoot): Promise<string> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.isContributor(request, authenticatedUser)) {
-            return authenticatedUser.address;
-        } else {
-            throw forbidden("Authenticated user is not allowed to contribute to this LOC");
-        }
-    }
-
-    private async isContributor(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
-        const contributor = authenticatedUser.address;
-        return (
-            request.ownerAddress === contributor ||
-            request.requesterAddress === contributor ||
-            await this.isSelectedThirdParty(request, contributor)
-        );
-    }
-
     private async isVoterOnLoc(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
         return (
             await authenticatedUser.isLegalOfficer() &&
             await this.voteRepository.findByLocId(request.id!) !== null
         );
-    }
-
-    private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: string): Promise<boolean> {
-        const api = await this.polkadotService.readyApi();
-        const issuers = await getVerifiedIssuers(api, new UUID(request.id));
-        const selectedParticipant = issuers.find(issuer => issuer.address === submitter);
-        return selectedParticipant !== undefined;
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {
@@ -494,7 +470,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async addFile(addFileView: AddFileView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.ensureContributor(request);
+        const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
 
         const hash = requireDefined(addFileView.hash, () => badRequest("No hash found for upload file"));
         if(request.hasFile(hash)) {
@@ -570,7 +546,7 @@ export class LocRequestController extends ApiController {
     async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
         let file: FileDescription | undefined;
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.ensureContributor(request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             file = request.removeFile(contributor, hash);
         });
         if(file) {
@@ -728,7 +704,7 @@ export class LocRequestController extends ApiController {
         const name = requireLength(addMetadataView, "name", 3, 255);
         const value = requireLength(addMetadataView, "value", 1, 4096);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.ensureContributor(request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             request.addMetadataItem({ name, value, submitter: contributor });
         });
         this.response.sendStatus(204);
@@ -750,7 +726,7 @@ export class LocRequestController extends ApiController {
     async deleteMetadata(_body: any, requestId: string, name: string): Promise<void> {
         const decodedName = decodeURIComponent(name);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.ensureContributor(request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             request.removeMetadataItem(contributor, decodedName);
         });
     }
@@ -797,7 +773,7 @@ export class LocRequestController extends ApiController {
             () => badRequest("Missing locId"));
         const loc = requireDefined(await this.locRequestRepository.findById(locId),
             () => badRequest("LOC not found"));
-        const contributor = await this.ensureContributor(loc);
+        const contributor = await this.locAuthorizationService.ensureContributor(this.request, loc);
 
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
         let linkNature = `Original LOC`;

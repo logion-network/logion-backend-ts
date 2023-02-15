@@ -793,6 +793,29 @@ export interface components {
       /** @description Tells if the issuer was selected for a given LOC (undefined if not relevant) */
       selected?: boolean;
     };
+    TokensRecordView: {
+      /**
+       * @description The id of the collection loc 
+       * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
+       */
+      collectionLocId?: string;
+      /**
+       * @description The id of the collection item 
+       * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
+       */
+      recordId?: string;
+      /**
+       * Format: date-time 
+       * @description The creation timestamp
+       */
+      addedOn?: string;
+      /** @description The files present in DB */
+      files?: (string)[];
+    };
+    TokensRecordsView: {
+      /** @description The items of a given collection */
+      records?: (components["schemas"]["TokensRecordView"])[];
+    };
   };
   responses: never;
   parameters: never;

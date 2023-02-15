@@ -1365,6 +1365,47 @@
                         "description": "Tells if the issuer was selected for a given LOC (undefined if not relevant)"
                     }
                 }
+            },
+            "TokensRecordView": {
+                "type": "object",
+                "properties": {
+                    "collectionLocId": {
+                        "type": "string",
+                        "description": "The id of the collection loc",
+                        "example": "5e4ef4bb-8657-444c-9880-d89e9403fc85"
+                    },
+                    "recordId": {
+                        "type": "string",
+                        "description": "The id of the collection item",
+                        "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
+                    },
+                    "addedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files present in DB",
+                        "items": {
+                            "type": "string",
+                            "description": "The hash of a file present in DB",
+                            "example": "0x6dec991b1b61b44550769ae3c4b7f54f7cd618391f32bab2bc4e3a96cbb2b198"
+                        }
+                    }
+                }
+            },
+            "TokensRecordsView": {
+                "type": "object",
+                "properties": {
+                    "records": {
+                        "type": "array",
+                        "description": "The items of a given collection",
+                        "items": {
+                            "$ref": "#/components/schemas/TokensRecordView"
+                        }
+                    }
+                }
             }
         }
     }

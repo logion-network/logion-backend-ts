@@ -12,6 +12,8 @@ import { UserIdentity } from '../model/useridentity.js';
 import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
 import { VerifiedThirdPartySelectionService } from './verifiedthirdpartyselection.service.js';
+import { TokensRecordService } from './tokensrecord.service.js';
+import { TokensRecordFactory } from '../model/tokensrecord.model.js';
 
 const { logger } = Log;
 
@@ -27,6 +29,8 @@ export class LocSynchronizer {
         private directoryService: DirectoryService,
         private polkadotService: PolkadotService,
         private verifiedThirdPartySelectionService: VerifiedThirdPartySelectionService,
+        private tokensRecordService: TokensRecordService,
+        private tokensRecordFactory: TokensRecordFactory,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {
@@ -95,6 +99,12 @@ export class LocSynchronizer {
                 case "setIssuerSelection":
                     await this.handleIssuerSelectedUnselected(extrinsic);
                     break;
+                case "addTokensRecord": {
+                    const locId = extractUuid('collection_loc_id', extrinsic.call.args);
+                    const recordId = asHexString(extrinsic.call.args['record_id']);
+                    await this.addTokensRecord(locId, recordId, timestamp)
+                    break;
+                    }
                 default:
                     throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.call.method}`)
             }
@@ -241,6 +251,27 @@ export class LocSynchronizer {
             }
         } catch(e) {
             logger.error("Failed to notify VTP: %s. Mail '%s' not sent.", e, selected ? "vtp-selected" : "vtp-unselected");
+        }
+    }
+
+    private async addTokensRecord(collectionLocId: string, recordId: string, timestamp: Moment) {
+        const loc = await this.locRequestRepository.findById(collectionLocId);
+        if (loc !== null) {
+            logger.info("Adding Tokens Record %s to LOC %s", recordId, collectionLocId);
+            let created = false;
+            await this.tokensRecordService.createIfNotExist(collectionLocId, recordId, () => {
+                created = true;
+                return this.tokensRecordFactory.newTokensRecord({
+                    collectionLocId,
+                    recordId,
+                    addedOn: timestamp
+                });
+            });
+            if(!created) {
+                await this.collectionService.update(collectionLocId, recordId, async item => {
+                    item.setAddedOn(timestamp);
+                });
+            }
         }
     }
 }
