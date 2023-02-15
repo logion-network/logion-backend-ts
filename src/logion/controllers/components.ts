@@ -790,6 +790,8 @@ export interface components {
       /** @description The ID of the issuer's Identity LOC */
       identityLocId?: string;
       identity?: components["schemas"]["UserIdentityView"];
+      /** @description Tells if the issuer was selected for a given LOC (undefined if not relevant) */
+      selected?: boolean;
     };
   };
   responses: never;

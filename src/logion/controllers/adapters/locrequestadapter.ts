@@ -160,11 +160,10 @@ export class LocRequestAdapter {
                     address: issuer,
                     identityLocId: selectedIssuer.identityLocId,
                     identity: identityLoc.getDescription().userIdentity,
+                    selected: selectedIssuer.selected || false,
                 });
             } else {
-                identities.push({
-                    address: issuer
-                });
+                throw new Error("Invalid data");
             }
         }
         return identities;

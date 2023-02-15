@@ -1359,6 +1359,10 @@
                     },
                     "identity": {
                         "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "selected": {
+                        "type": "boolean",
+                        "description": "Tells if the issuer was selected for a given LOC (undefined if not relevant)"
                     }
                 }
             }
