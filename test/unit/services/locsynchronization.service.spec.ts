@@ -16,6 +16,8 @@ import { NonTransactionalCollectionService } from "../../../src/logion/services/
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { VerifiedThirdPartySelectionService } from "src/logion/services/verifiedthirdpartyselection.service.js";
+import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
+import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 
 describe("LocSynchronizer", () => {
 
@@ -27,6 +29,8 @@ describe("LocSynchronizer", () => {
         directoryService = new Mock();
         polkadotService = new Mock();
         verifiedThirdPartySelectionService = new Mock();
+        tokensRecordFactory = new Mock();
+        tokensRecordRepository = new Mock();
     });
 
     it("sets LOC created date", async () => {
@@ -202,6 +206,8 @@ function locSynchronizer(): LocSynchronizer {
         directoryService.object(),
         polkadotService.object(),
         verifiedThirdPartySelectionService.object(),
+        new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
+        tokensRecordFactory.object(),
     );
 }
 
@@ -209,6 +215,8 @@ let notificationService: Mock<NotificationService>;
 let directoryService: Mock<DirectoryService>;
 let polkadotService: Mock<PolkadotService>;
 let verifiedThirdPartySelectionService: Mock<VerifiedThirdPartySelectionService>;
+let tokensRecordRepository: Mock<TokensRecordRepository>;
+let tokensRecordFactory: Mock<TokensRecordFactory>;
 
 function thenLocCreateDateSet() {
     locRequest.verify(instance => instance.setLocCreatedDate(IS_BLOCK_TIME));

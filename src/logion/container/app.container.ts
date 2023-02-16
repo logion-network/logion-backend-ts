@@ -54,6 +54,10 @@ import { VoteController } from "../controllers/vote.controller.js";
 import { VoteRepository, VoteFactory } from "../model/vote.model.js";
 import { VoteService, TransactionalVoteService } from "../services/vote.service.js";
 import { VoteSynchronizer } from "../services/votesynchronization.service.js";
+import { TokensRecordController } from "../controllers/records.controller.js";
+import { TokensRecordFactory, TokensRecordRepository } from "../model/tokensrecord.model.js";
+import { LogionNodeTokensRecordService, TokensRecordService, TransactionalTokensRecordService } from "../services/tokensrecord.service.js";
+import { LocAuthorizationService } from "../services/locauthorization.service.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -131,6 +135,12 @@ container.bind(VoteRepository).toSelf();
 container.bind(VoteService).toService(TransactionalVoteService);
 container.bind(TransactionalVoteService).toSelf();
 container.bind(VoteSynchronizer).toSelf();
+container.bind(TokensRecordRepository).toSelf()
+container.bind(TokensRecordFactory).toSelf()
+container.bind(LogionNodeTokensRecordService).toSelf();
+container.bind(TokensRecordService).toService(TransactionalTokensRecordService);
+container.bind(TransactionalTokensRecordService).toSelf();
+container.bind(LocAuthorizationService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
@@ -142,5 +152,6 @@ container.bind(VerifiedThirdPartyController).toSelf().inTransientScope();
 container.bind(ConfigController).toSelf().inTransientScope();
 container.bind(IdenfyController).toSelf().inTransientScope();
 container.bind(VoteController).toSelf().inTransientScope();
+container.bind(TokensRecordController).toSelf().inTransientScope();
 
 export { container as AppContainer };

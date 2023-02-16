@@ -26,11 +26,12 @@ import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
-import { PolkadotService } from "@logion/rest-api-core";
+import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
 import { LogionNodeApi, UUID } from "@logion/node-api";
 import { Option } from "@polkadot/types-codec";
 import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "@polkadot/types/lookup";
 import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
+import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 
 export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
@@ -171,6 +172,12 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     polkadotService.setup(instance => instance.readyApi()).returnsAsync(nodeApi.object());
 
     const loc = existingMocks?.loc ? existingMocks.loc  : new Mock<PalletLogionLocLegalOfficerCase>();
+
+    const locAuthorizationService = new LocAuthorizationService(
+        container.get(AuthenticationService),
+        polkadotService.object(),
+    );
+    container.bind(LocAuthorizationService).toConstantValue(locAuthorizationService);
 
     return {
         factory,
