@@ -362,13 +362,9 @@ export class TokensRecordController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadFileSource(_body: any, collectionLocId: string, recordId: string, hash: string): Promise<void> {
-        const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
-        authenticated.require(user => user.isOneOf([
-            collectionLoc.ownerAddress,
-            requireDefined(collectionLoc.requesterAddress)
-        ]));
+        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
         const publishedTokensRecordFile = await this.getTokensRecordFile({
             collectionLocId,
