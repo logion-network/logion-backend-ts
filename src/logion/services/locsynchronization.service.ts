@@ -268,8 +268,8 @@ export class LocSynchronizer {
                 });
             });
             if(!created) {
-                await this.collectionService.update(collectionLocId, recordId, async item => {
-                    item.setAddedOn(timestamp);
+                await this.tokensRecordService.update(collectionLocId, recordId, async record => {
+                    record.setAddedOn(timestamp);
                 });
             }
         }
