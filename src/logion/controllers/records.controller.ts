@@ -96,7 +96,6 @@ export class TokensRecordController extends ApiController {
     @HttpGet('/:collectionLocId')
     @Async()
     async getTokensRecords(_body: any, collectionLocId: string): Promise<TokensRecordsView> {
-        await this.authenticationService.authenticatedUser(this.request);
         const records = await this.tokensRecordRepository.findAllBy(collectionLocId);
         return {
             records: records.map(record => record.getDescription()).map(this.toView),
