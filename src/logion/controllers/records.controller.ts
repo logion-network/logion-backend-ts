@@ -341,7 +341,7 @@ export class TokensRecordController extends ApiController {
     async getAllItemDeliveries(_body: any, collectionLocId: string, recordId: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
+        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
         return this.getItemDeliveries({ collectionLocId, recordId });
     }
