@@ -276,6 +276,11 @@ export class TokensRecordRepository {
         }
         return deliveries;
     }
+
+    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, recordId: string, deliveredFileHash: string }): Promise<TokensRecordFileDelivered | null> {
+        const { collectionLocId, recordId, deliveredFileHash } = query;
+        return await this.deliveredRepository.findOneBy({ collectionLocId, recordId, deliveredFileHash });
+    }
 }
 
 @injectable()

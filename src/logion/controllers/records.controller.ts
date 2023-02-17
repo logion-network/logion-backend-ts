@@ -1,6 +1,6 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse } from "dinoloop";
+import { Controller, ApiController, Async, HttpGet, HttpPost, HttpPut, SendsResponse } from "dinoloop";
 import {
     TokensRecordRepository,
     TokensRecordFactory,
@@ -46,6 +46,9 @@ type TokensRecordsView = components["schemas"]["TokensRecordsView"];
 type CheckLatestItemDeliveryResponse = components["schemas"]["CheckLatestItemDeliveryResponse"];
 type ItemDeliveriesResponse = components["schemas"]["ItemDeliveriesResponse"];
 type FileUploadData = components["schemas"]["FileUploadData"];
+type CheckCollectionDeliveryRequest = components["schemas"]["CheckCollectionDeliveryRequest"];
+type CheckCollectionDeliveryResponse = components["schemas"]["CheckCollectionDeliveryResponse"];
+type CheckCollectionDeliveryWitheOriginalResponse = components["schemas"]["CheckCollectionDeliveryWitheOriginalResponse"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Tokens Records';
@@ -383,5 +386,41 @@ export class TokensRecordController extends ApiController {
             name: publishedTokensRecordFile.name,
             contentType: publishedTokensRecordFile.contentType,
         });
+    }
+
+    static checkOneFileDelivery(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/deliveries/check"].put!;
+        operationObject.summary = "Provides information about one delivered collection file copy";
+        operationObject.description = "This is a public resource";
+        operationObject.requestBody = getRequestBody({
+            description: "Candidate Delivered File Hash",
+            view: "CheckCollectionDeliveryRequest"});
+        operationObject.responses = getPublicResponses("CheckCollectionDeliveryWitheOriginalResponse");
+        setPathParameters(operationObject, {
+            'collectionLocId': "The ID of the Collection LOC",
+            'recordId': "The ID of the record",
+        });
+    }
+
+    @HttpPut('/:collectionLocId/:recordId/deliveries/check')
+    @Async()
+    async checkOneFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string, recordId: string): Promise<CheckCollectionDeliveryWitheOriginalResponse> {
+        const deliveredFileHash = requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash"))
+        const delivery = await this.tokensRecordRepository.findDeliveryByDeliveredFileHash({ collectionLocId, recordId, deliveredFileHash });
+        if (delivery === null) {
+            throw badRequest("Provided copyHash is not from a delivered copy of a file from the record");
+        }
+        return {
+            ...this.mapToResponse(delivery),
+            originalFileHash: delivery.hash
+        };
+    }
+
+    private mapToResponse(deliveredCopy: TokensRecordFileDelivered): CheckCollectionDeliveryResponse {
+        return {
+            copyHash: deliveredCopy.deliveredFileHash,
+            owner: deliveredCopy.owner,
+            generatedOn: moment(deliveredCopy.generatedOn).toISOString(),
+        }
     }
 }
