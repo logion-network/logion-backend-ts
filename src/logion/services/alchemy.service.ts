@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Network, Alchemy, AlchemySettings } from "alchemy-sdk";
+import { Network, Alchemy, AlchemySettings, TokenBalance } from "alchemy-sdk";
 
 export { Network } from "alchemy-sdk";
 
@@ -8,6 +8,25 @@ export class AlchemyFactory {
 
     buildAlchemy(settings: AlchemySettings): Alchemy {
         return new Alchemy(settings);
+    }
+}
+
+export class AlchemyChecker {
+
+    constructor(alchemy: Alchemy) {
+        this.alchemy = alchemy;
+    }
+
+    private alchemy: Alchemy;
+
+    async getOwners(contractAddress: string, tokenId: string): Promise<string[]> {
+        const response = await this.alchemy.nft.getOwnersForNft(contractAddress, tokenId);
+        return response.owners;
+    }
+
+    async getBalances(address: string, contractAddress: string): Promise<TokenBalance[]> {
+        const balances = await this.alchemy.core.getTokenBalances(address, [contractAddress]);
+        return balances.tokenBalances;
     }
 }
 
@@ -35,10 +54,10 @@ export class AlchemyService {
 
     private factory: AlchemyFactory;
 
-    async getOwners(network: Network, contractAddress: string, tokenId: string): Promise<string[]> {
-        const alchemy = this.factory.buildAlchemy(this.buildSettings(network));
-        const response = await alchemy.nft.getOwnersForNft(contractAddress, tokenId);
-        return response.owners;
+    getChecker(network: Network): AlchemyChecker {
+        const settings = this.buildSettings(network);
+        const alchemy = this.factory.buildAlchemy(settings);
+        return new AlchemyChecker(alchemy);
     }
 
     private buildSettings(network: Network): AlchemySettings {
