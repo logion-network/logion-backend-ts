@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { ItemToken, CollectionItem } from '@logion/node-api';
+import { ItemToken } from '@logion/node-api';
 
 import { Network, AlchemyService } from './alchemy.service.js';
 import { SingularService } from './singular.service.js';
@@ -12,31 +12,23 @@ export class OwnershipCheckService {
         private singularService: SingularService,
     ) {}
 
-    async isOwner(address: string, item: CollectionItem): Promise<boolean> {
+    async isOwner(address: string, token: ItemToken): Promise<boolean> {
         const normalizedAddress = address.toLowerCase();
-        if(!item.restrictedDelivery) {
-            return true;
+        const tokenType = token.type;
+        if(tokenType === 'ethereum_erc721' || tokenType === 'ethereum_erc1155') {
+            return this.isOwnerOfErc721OrErc1155(Network.ETH_MAINNET, normalizedAddress, token);
+        } else if(tokenType === 'goerli_erc721' || tokenType === 'goerli_erc1155') {
+            return this.isOwnerOfErc721OrErc1155(Network.ETH_GOERLI, normalizedAddress, token);
+        } else if(tokenType === 'polygon_erc721' || tokenType === 'polygon_erc1155') {
+            return this.isOwnerOfErc721OrErc1155(Network.MATIC_MAINNET, normalizedAddress, token);
+        } else if(tokenType === 'polygon_mumbai_erc721' || tokenType === 'polygon_mumbai_erc1155') {
+            return this.isOwnerOfErc721OrErc1155(Network.MATIC_MUMBAI, normalizedAddress, token);
+        } else if(tokenType === 'owner') {
+            return normalizedAddress === token.id.toLowerCase();
+        } else if(tokenType === 'singular_kusama') {
+            return this.isOwnerOfSingularKusama(address, token.id);
         } else {
-            if(!item.token) {
-                throw new Error("Item with restricted delivery but no token defined");
-            } else {
-                const tokenType = item.token.type;
-                if(tokenType === 'ethereum_erc721' || tokenType === 'ethereum_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155(Network.ETH_MAINNET, normalizedAddress, item.token);
-                } else if(tokenType === 'goerli_erc721' || tokenType === 'goerli_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155(Network.ETH_GOERLI, normalizedAddress, item.token);
-                } else if(tokenType === 'polygon_erc721' || tokenType === 'polygon_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155(Network.MATIC_MAINNET, normalizedAddress, item.token);
-                } else if(tokenType === 'polygon_mumbai_erc721' || tokenType === 'polygon_mumbai_erc1155') {
-                    return this.isOwnerOfErc721OrErc1155(Network.MATIC_MUMBAI, normalizedAddress, item.token);
-                } else if(tokenType === 'owner') {
-                    return normalizedAddress === item.token.id.toLowerCase();
-                } else if(tokenType === 'singular_kusama') {
-                    return this.isOwnerOfSingularKusama(address, item.token.id);
-                } else {
-                    throw new Error(`Unsupported token type ${tokenType}`);
-                }
-            }
+            throw new Error(`Unsupported token type ${tokenType}`);
         }
     }
 

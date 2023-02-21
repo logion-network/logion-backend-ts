@@ -292,7 +292,7 @@ export class CollectionController extends ApiController {
 
         if(!publishedCollectionItem.restrictedDelivery) {
             throw forbidden("No delivery allowed for this item's files");
-        } else if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+        } else if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return collectionItem;
@@ -365,7 +365,7 @@ export class CollectionController extends ApiController {
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
         if(!file.restrictedDelivery) {
             throw forbidden("No delivery allowed for this collection's files");
-        } else if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+        } else if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return file;
@@ -396,7 +396,7 @@ export class CollectionController extends ApiController {
             collectionLocId,
             itemId
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
-        if(! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem)) {
+        if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         }
     }
@@ -467,7 +467,7 @@ export class CollectionController extends ApiController {
 
         const ownershipMap: Record<string, boolean> = {};
         for(const owner of owners.values()) {
-            ownershipMap[owner] = await this.ownershipCheckService.isOwner(owner, item);
+            ownershipMap[owner] = item.token !== undefined && await this.ownershipCheckService.isOwner(owner, item.token);
         }
 
         const view: ItemDeliveriesResponse = {};
