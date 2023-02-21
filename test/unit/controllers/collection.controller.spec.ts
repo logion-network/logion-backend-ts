@@ -247,7 +247,7 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             ...ownershipCheckParams,
             collectionItemPublished: true,
-            isOwner: true
+            isOwner: true,
         }));
         await request(app)
             .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
@@ -714,6 +714,10 @@ function mockModel(
         files: [ publishedCollectionItemFile ],
         restrictedDelivery,
         termsAndConditions: [],
+        token: {
+            id: "some-token-id",
+            type: "owner",
+        }
     }
     const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();
     logionNodeCollectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(

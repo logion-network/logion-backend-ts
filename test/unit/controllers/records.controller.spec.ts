@@ -445,6 +445,10 @@ function mockModel(
         files: [],
         restrictedDelivery: false,
         termsAndConditions: [],
+        token: {
+            id: "some-id",
+            type: "owner"
+        }
     }
     const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();
     logionNodeCollectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
