@@ -1,7 +1,7 @@
 import { ItemToken } from "@logion/node-api";
 import { Mock } from "moq.ts";
 
-import { AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
+import { AlchemyChecker, AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { SingularService } from "../../../src/logion/services/singular.service.js";
 
@@ -15,6 +15,11 @@ describe("OwnershipCheckService", () => {
     it("detects no goerli_erc721 ownership", () => testDetectsNoOwnership(goerliErc721Item, Network.ETH_GOERLI));
     it("detects goerli_erc1155 ownership", () => testDetectsOwnership(goerliErc1155Item, owner, Network.ETH_GOERLI));
     it("detects no goerli_erc1155 ownership", () => testDetectsNoOwnership(goerliErc1155Item, Network.ETH_GOERLI));
+
+    it("detects ethereum_erc20 ownership", () => testDetectsOwnership(ethereumErc20, owner, Network.ETH_MAINNET));
+    it("detects no ethereum_erc20 ownership", () => testDetectsNoOwnership(ethereumErc20, Network.ETH_MAINNET));
+    it("detects goerli_erc20 ownership", () => testDetectsOwnership(goerliErc20, owner, Network.ETH_GOERLI));
+    it("detects no goerli_erc20 ownership", () => testDetectsNoOwnership(goerliErc20, Network.ETH_GOERLI));
 
     it("detects owner ownership", () => testDetectsOwnership(ownerItem, owner));
     it("detects no owner ownership", () => testDetectsNoOwnership(ownerItem));
@@ -33,13 +38,28 @@ async function testDetectsOwnership(token: ItemToken, owner: string, network?: N
 
 function mockAlchemyService(network?: Network): AlchemyService {
     const service = new Mock<AlchemyService>();
-    service.setup(instance => instance.getOwners).returns((_network: Network, _contractHash: string, _tokenId: string) => {
-        if(network === _network && contractHash === _contractHash && tokenId === _tokenId) {
+    const checker = new Mock<AlchemyChecker>();
+    checker.setup(instance => instance.getOwners).returns((_contractHash: string, _tokenId: string) => {
+        if(contractHash === _contractHash && tokenId === _tokenId) {
             return Promise.resolve([ owner ]);
         } else {
             return Promise.resolve([]);
         }
     });
+    checker.setup(instance => instance.getBalances).returns((address: string, _contractHash: string) => {
+        if(contractHash === _contractHash && address === owner) {
+            return Promise.resolve([{
+                contractAddress: _contractHash,
+                tokenBalance: "0x01",
+                error: null,
+            }]);
+        } else {
+            return Promise.resolve([]);
+        }
+    });
+    if(network) {
+        service.setup(instance => instance.getChecker(network)).returns(checker.object());
+    }
     return service.object();
 }
 
@@ -103,4 +123,14 @@ const ownerItem: ItemToken = {
 const singularKusamaItem: ItemToken = {
     type: "singular_kusama",
     id: `${singularTokenId}`
+};
+
+const ethereumErc20: ItemToken = {
+    type: "ethereum_erc20",
+    id: `{"contract":"${contractHash}"}`
+};
+
+const goerliErc20: ItemToken = {
+    type: "goerli_erc20",
+    id: `{"contract":"${contractHash}"}`
 };

@@ -10,14 +10,14 @@ describe("AlchemyService", () => {
 
     it("returns some owner with expected input", async () => {
         const service = buildAlchemyService();
-        const owners = await service.getOwners(expectedNetwork, expectedContractAddress, expectedTokenId);
+        const owners = await service.getChecker(expectedNetwork).getOwners(expectedContractAddress, expectedTokenId);
         expect(owners.length).toBe(1);
         expect(owners[0]).toBe(expectedOwners[0]);
     })
 
     it("returns no owner with unexpected input", async () => {
         const service = buildAlchemyService();
-        const owners = await service.getOwners(expectedNetwork, anotherContractAddress, expectedTokenId);
+        const owners = await service.getChecker(expectedNetwork).getOwners(anotherContractAddress, expectedTokenId);
         expect(owners.length).toBe(0);
     })
 })
