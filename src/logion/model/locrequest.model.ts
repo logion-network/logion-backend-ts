@@ -35,6 +35,7 @@ export interface LocRequestDescription {
     readonly locType: LocType;
     readonly seal?: PublicSeal;
     readonly company?: string;
+    readonly template?: string;
 }
 
 export interface LocRequestDecision {
@@ -192,6 +193,7 @@ export class LocRequestAggregateRoot {
             locType: this.locType!,
             seal: toPublicSeal(this.seal),
             company: this.company!,
+            template: this.template,
         }
     }
 
@@ -713,6 +715,9 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableIdenfyVerification, { prefix: ""} )
     iDenfyVerification?: EmbeddableIdenfyVerification;
 
+    @Column({ length: 255, name: "template", nullable: true })
+    template?: string;
+
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
     _metadataToDelete: LocMetadataItem[] = [];
@@ -1088,7 +1093,14 @@ export class LocRequestFactory {
     }
 
     async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest({ ...params, draft: true });
+        const request = await this.newLocRequest({
+            ...params,
+            draft: true,
+            description: {
+                ...params.description,
+                template: "STATEMENT_OF_FACTS"
+            }
+        });
         request.addLink(params);
         request.submit();
         return request;
@@ -1138,6 +1150,7 @@ export class LocRequestFactory {
         request.files = [];
         request.metadata = [];
         request.links = [];
+        request.template = description.template;
         return request;
     }
 

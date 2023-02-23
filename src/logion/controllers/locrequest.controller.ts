@@ -143,6 +143,7 @@ export class LocRequestController extends ApiController {
             userIdentity: locType === "Identity" ? this.fromUserIdentityView(createLocRequestView.userIdentity) : undefined,
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
             company: createLocRequestView.company,
+            template: createLocRequestView.template,
         }
         if (locType === "Identity") {
             if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress))) {
