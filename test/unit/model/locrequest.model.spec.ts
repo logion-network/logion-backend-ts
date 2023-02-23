@@ -197,7 +197,10 @@ describe("LocRequestFactory", () => {
         const target = "target-loc"
         const nature = "Original LOC"
         await whenCreatingSofRequest(target, nature);
-        thenRequestCreatedWithDescription(description);
+        thenRequestCreatedWithDescription({
+            ...description,
+            template: "STATEMENT_OF_FACTS"
+        });
         expect(request.links?.length).toBe(1)
         expect(request.links![0].target).toEqual(target)
         expect(request.links![0].nature).toEqual(nature)
@@ -223,6 +226,7 @@ describe("LocRequestFactory", () => {
             locType,
             seal,
             company: undefined,
+            template: undefined,
         };
     }
 });

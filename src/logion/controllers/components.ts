@@ -323,6 +323,8 @@ export interface components {
       company?: string;
       /** @description LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined) */
       draft?: boolean;
+      /** @description The LOC's template or undefined */
+      template?: string;
     };
     LocFileView: {
       /** @description The file's name */

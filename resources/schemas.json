@@ -566,6 +566,10 @@
                     "draft": {
                         "type": "boolean",
                         "description": "LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined)"
+                    },
+                    "template": {
+                        "type": "string",
+                        "description": "The LOC's template or undefined"
                     }
                 },
                 "title": "CreateLocRequestView",
