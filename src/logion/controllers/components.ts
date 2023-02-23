@@ -455,6 +455,8 @@ export interface components {
       /** @description The ID of the vote linked to the present LOC, if applicable */
       voteId?: string;
       selectedIssuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
+      /** @description The LOC's template or undefined */
+      template?: string;
     };
     /**
      * LocPublicView 

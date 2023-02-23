@@ -787,6 +787,10 @@
                         "items": {
                             "$ref": "#/components/schemas/VerifiedIssuerIdentity"
                         }
+                    },
+                    "template": {
+                        "type": "string",
+                        "description": "The LOC's template or undefined"
                     }
                 },
                 "title": "LocRequestView",

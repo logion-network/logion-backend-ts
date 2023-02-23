@@ -101,6 +101,7 @@ export class LocRequestAdapter {
             iDenfy,
             voteId: vote?.voteId,
             selectedIssuers,
+            template: locDescription.template,
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
