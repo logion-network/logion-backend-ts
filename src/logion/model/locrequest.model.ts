@@ -1098,7 +1098,7 @@ export class LocRequestFactory {
             draft: true,
             description: {
                 ...params.description,
-                template: "STATEMENT_OF_FACTS"
+                template: "statement_of_facts"
             }
         });
         request.addLink(params);

@@ -199,7 +199,7 @@ describe("LocRequestFactory", () => {
         await whenCreatingSofRequest(target, nature);
         thenRequestCreatedWithDescription({
             ...description,
-            template: "STATEMENT_OF_FACTS"
+            template: "statement_of_facts"
         });
         expect(request.links?.length).toBe(1)
         expect(request.links![0].target).toEqual(target)
