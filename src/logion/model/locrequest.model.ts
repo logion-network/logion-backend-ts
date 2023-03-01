@@ -301,17 +301,8 @@ export class LocRequestAggregateRoot {
     }
 
     preClose() {
-        this.ensureOpen();
-        this.status = 'CLOSED';
-    }
-
-    private ensureOpen(warnOnly: boolean = false) {
-        if (this.status !== "OPEN") {
-            if (warnOnly) {
-                logger.warn("LOC is not open")
-            } else {
-                throw new Error("LOC is not open");
-            }
+        if(this.status === "OPEN") {
+            this.status = 'CLOSED';
         }
     }
 
