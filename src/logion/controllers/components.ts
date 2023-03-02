@@ -539,6 +539,8 @@ export interface components {
          */
         voidedOn?: string;
       };
+      /** @description The LOC's template or undefined */
+      template?: string;
     };
     /**
      * FetchLocRequestsSpecificationView 

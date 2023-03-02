@@ -28,7 +28,6 @@ import {
     requireLength,
     AuthenticationService,
     forbidden,
-    PolkadotService,
 } from "@logion/rest-api-core";
 import { UUID } from "@logion/node-api";
 
@@ -346,7 +345,8 @@ export class LocRequestController extends ApiController {
                 target: link.target,
                 nature: link.nature,
                 addedOn: link.addedOn?.toISOString() || undefined,
-            }))
+            })),
+            template: locDescription.template,
         }
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

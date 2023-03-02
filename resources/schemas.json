@@ -919,6 +919,10 @@
                                 "description": "The date-time of voiding (chain time)"
                             }
                         }
+                    },
+                    "template": {
+                        "type": "string",
+                        "description": "The LOC's template or undefined"
                     }
                 },
                 "title": "LocPublicView",
