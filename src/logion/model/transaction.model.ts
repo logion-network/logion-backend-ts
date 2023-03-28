@@ -1,6 +1,7 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
+import { Fees } from './fees.js';
 
 export interface TransactionDescription {
     readonly id: string;
@@ -10,7 +11,7 @@ export interface TransactionDescription {
     readonly to: string | null;
     readonly transferValue: bigint;
     readonly tip: bigint;
-    readonly fee: bigint;
+    readonly fees: Fees;
     readonly reserved: bigint;
     readonly pallet: string;
     readonly method: string;
@@ -44,7 +45,7 @@ export class TransactionAggregateRoot {
             to: this.to || null,
             transferValue: BigInt(this.transferValue || "0"),
             tip: BigInt(this.tip || "0"),
-            fee: BigInt(this.fee || "0"),
+            fees: new Fees(BigInt(this.inclusionFee || "0"), this.storageFee ? BigInt(this.storageFee) : undefined),
             reserved: BigInt(this.reserved || "0"),
             pallet: this.pallet!,
             method: this.method!,
@@ -74,8 +75,11 @@ export class TransactionAggregateRoot {
     @Column("numeric", {precision: AMOUNT_PRECISION})
     tip?: string;
 
-    @Column("numeric", {precision: AMOUNT_PRECISION})
-    fee?: string;
+    @Column("numeric", {name: "fee", precision: AMOUNT_PRECISION})
+    inclusionFee?: string;
+
+    @Column("numeric", {name: "storage_fee", precision: AMOUNT_PRECISION, nullable: true})
+    storageFee?: string;
 
     @Column("numeric", {precision: AMOUNT_PRECISION})
     reserved?: string;
@@ -148,7 +152,10 @@ export class TransactionFactory {
         transaction.to = description.to;
         transaction.transferValue = description.transferValue.toString();
         transaction.tip = description.tip.toString();
-        transaction.fee = description.fee.toString();
+        transaction.inclusionFee = description.fees.inclusionFee.toString();
+        if(description.fees.storageFee && !description.error) {
+            transaction.storageFee = description.fees.storageFee.toString();
+        }
         transaction.reserved = description.reserved.toString();
         transaction.pallet = description.pallet;
         transaction.method = description.method;

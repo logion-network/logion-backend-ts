@@ -1,4 +1,5 @@
 import moment from 'moment';
+import { Fees } from '../../../src/logion/model/fees.js';
 import {
     TransactionAggregateRoot,
     TransactionFactory,
@@ -62,7 +63,7 @@ describe("TransactionFactory", () => {
         extrinsicIndex: 5,
         from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
         to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
-        fee: 12n,
+        fees: new Fees(12n),
         transferValue: 34n,
         tip: 56n,
         reserved: 78n,

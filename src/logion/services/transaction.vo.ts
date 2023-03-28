@@ -1,4 +1,5 @@
 import { Moment } from "moment";
+import { Fees } from "../model/fees.js";
 
 export class BlockWithTransactions {
 
@@ -48,7 +49,7 @@ export class Transaction {
         to?: string,
         transferValue?: bigint,
         tip: bigint,
-        fee: bigint,
+        fees: Fees,
         reserved: bigint,
         pallet: string,
         method: string,
@@ -59,7 +60,7 @@ export class Transaction {
         this.to = builder.to || null;
         this.transferValue = builder.transferValue || 0n;
         this.tip = builder.tip || 0n;
-        this.fee = builder.fee || 0n;
+        this.fees = builder.fees || new Fees(0n);
         this.reserved = builder.reserved || 0n;
         this.pallet = builder.pallet;
         this.method = builder.method;
@@ -70,7 +71,7 @@ export class Transaction {
     readonly to: string | null;
     readonly transferValue: bigint;
     readonly tip: bigint;
-    readonly fee: bigint;
+    readonly fees: Fees;
     readonly reserved: bigint;
     readonly pallet: string;
     readonly method: string;

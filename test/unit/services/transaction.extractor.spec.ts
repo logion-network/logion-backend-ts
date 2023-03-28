@@ -310,7 +310,7 @@ async function expectTransaction(params: ExpectTransactionParams, transactionInd
     expect(transaction.extrinsicIndex).toBe(1);
     expect(transaction.pallet).toBe(params.pallet);
     expect(transaction.method).toBe(params.method);
-    expect(transaction.fee).toBe(params.fee);
+    expect(transaction.fees.inclusionFee).toBe(params.fee);
     expect(transaction.reserved).toBe(params.reserved);
     expect(transaction.tip).toBe(params.tip);
     expect(transaction.transferValue).toBe(params.transferValue);
