@@ -225,6 +225,18 @@ export interface components {
       rejectReason?: string;
     };
     /**
+     * FeesView 
+     * @description The fee breakdown for a given extrinsic
+     */
+    FeesView: {
+      /** @description Inclusion fee */
+      inclusion?: string;
+      /** @description File storage fee (if applicable) */
+      storage?: string;
+      /** @description Total fee (inclusion + storage) */
+      total?: string;
+    };
+    /**
      * TransactionView 
      * @description A transaction between 2 accounts
      */
@@ -239,8 +251,7 @@ export interface components {
        * @description The timestamp of the transaction
        */
       createdOn?: string;
-      /** @description The fee of the transaction. */
-      fee?: string;
+      fees?: components["schemas"]["FeesView"];
       /** @description The SS58 address of the account from which the transaction is done */
       from?: string;
       /** @description The method that created the transaction. */

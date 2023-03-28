@@ -6,6 +6,7 @@ import { BlockWithTransactions, Transaction, TransactionError } from "./transact
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { JsonExtrinsic, findEventData } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
+import { Fees } from "../model/fees.js";
 
 enum ExtrinsicType {
     TIMESTAMP,
@@ -80,7 +81,7 @@ export class TransactionExtractor {
                 pallet: "balances",
                 method: "transfer",
                 tip: 0n,
-                fee: 0n,
+                fees: new Fees(0n),
                 reserved: 0n,
                 from: vaultAddress,
                 transferValue: vaultTransferValue,
@@ -93,7 +94,7 @@ export class TransactionExtractor {
             pallet: this.pallet(extrinsic),
             method: this.methodName(extrinsic),
             tip: this.tip(extrinsic),
-            fee: await this.fee(extrinsic),
+            fees: await this.fees(extrinsic),
             reserved: this.reserved(extrinsic),
             from,
             transferValue,
@@ -116,8 +117,10 @@ export class TransactionExtractor {
         return this.undefinedTo0(extrinsic.tip!);
     }
 
-    private async fee(extrinsic: JsonExtrinsic): Promise<bigint> {
-        return this.undefinedTo0(await extrinsic.partialFee());
+    private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
+        const inclusion = this.undefinedTo0(await extrinsic.partialFee());
+        const storage = extrinsic.storageFee;
+        return new Fees(inclusion, storage);
     }
 
     private reserved(extrinsic: JsonExtrinsic): bigint {

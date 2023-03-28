@@ -54,7 +54,7 @@ export class TransactionController extends ApiController {
         const description = transaction.getDescription();
         const successful = description.error === undefined;
         let total =
-            description.fee +
+            description.fees.totalFee +
             description.tip +
             description.reserved;
         if (successful) {
@@ -69,7 +69,11 @@ export class TransactionController extends ApiController {
             method: description.method,
             transferValue: description.transferValue.toString(),
             tip: description.tip.toString(),
-            fee: description.fee.toString(),
+            fees: {
+                inclusion: description.fees.inclusionFee.toString(),
+                storage: description.fees.storageFee?.toString(),
+                total: description.fees.totalFee.toString(),
+            },
             reserved: description.reserved.toString(),
             total: total.toString(),
             successful,

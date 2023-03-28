@@ -5,6 +5,7 @@ export interface JsonExtrinsic {
     signer: string | null;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
+    storageFee?: bigint;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }

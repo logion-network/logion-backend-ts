@@ -402,6 +402,25 @@
                 "title": "RejectTokenRequestView",
                 "description": "The Tokenization Request to reject"
             },
+            "FeesView": {
+                "title": "FeesView",
+                "description": "The fee breakdown for a given extrinsic",
+                "type": "object",
+                "properties": {
+                    "inclusion": {
+                        "type": "string",
+                        "description": "Inclusion fee"
+                    },
+                    "storage": {
+                        "type": "string",
+                        "description": "File storage fee (if applicable)"
+                    },
+                    "total": {
+                        "type": "string",
+                        "description": "Total fee (inclusion + storage)"
+                    }
+                }
+            },
             "TransactionView": {
                 "type": "object",
                 "properties": {
@@ -415,9 +434,8 @@
                         "format": "date-time",
                         "description": "The timestamp of the transaction"
                     },
-                    "fee": {
-                        "type": "string",
-                        "description": "The fee of the transaction."
+                    "fees": {
+                        "$ref": "#/components/schemas/FeesView"
                     },
                     "from": {
                         "type": "string",

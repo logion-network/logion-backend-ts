@@ -9,6 +9,7 @@ import {
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
 import { ALICE } from "../../helpers/addresses.js";
+import { Fees } from '../../../src/logion/model/fees.js';
 
 describe('TransactionController', () => {
 
@@ -31,7 +32,8 @@ describe('TransactionController', () => {
                 expect(response.body.transactions[0].method).toBe("method");
                 expect(response.body.transactions[0].transferValue).toBe("1");
                 expect(response.body.transactions[0].tip).toBe("2");
-                expect(response.body.transactions[0].fee).toBe("3");
+                expect(response.body.transactions[0].fees.inclusion).toBe("3");
+                expect(response.body.transactions[0].fees.total).toBe("3");
                 expect(response.body.transactions[0].reserved).toBe("4");
                 expect(response.body.transactions[0].total).toBe("10");
                 expect(response.body.transactions[0].successful).toBeTrue();
@@ -43,7 +45,8 @@ describe('TransactionController', () => {
                 expect(response.body.transactions[1].method).toBe("method");
                 expect(response.body.transactions[1].transferValue).toBe("1");
                 expect(response.body.transactions[1].tip).toBe("2");
-                expect(response.body.transactions[1].fee).toBe("3");
+                expect(response.body.transactions[1].fees.inclusion).toBe("3");
+                expect(response.body.transactions[1].fees.total).toBe("3");
                 expect(response.body.transactions[1].reserved).toBe("4");
                 expect(response.body.transactions[1].total).toBe("9");
                 expect(response.body.transactions[1].successful).toBeFalse();
@@ -69,7 +72,7 @@ function mockModelForFetch(container: Container): void {
         method: "method",
         transferValue: 1n,
         tip: 2n,
-        fee: 3n,
+        fees: new Fees(3n),
         reserved: 4n,
     };
     const successfulTransaction = new Mock<TransactionAggregateRoot>();

@@ -41,6 +41,7 @@ export class ExtrinsicsBuilder {
                         method: event.method,
                         data: event.data,
                     };
+                    // TODO: detect and set storage fees (if any)
                     extrinsicBuilder.events.push(jsonEvent);
                 }
             }
@@ -141,6 +142,7 @@ export class ExtrinsicBuilder {
     public readonly tip: ICompact<INumber> | null;
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
+    public storageFee?: bigint;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 
@@ -149,6 +151,7 @@ export class ExtrinsicBuilder {
             call: this.call,
             events: this.events,
             partialFee: () => this.partialFee().then(result => result ? result.toString() : undefined),
+            storageFee: this.storageFee,
             signer: this.signer ? this.signer.toString() : null,
             tip: this.tip !== null ? this.tip.toString() : null,
             error: this.error,
