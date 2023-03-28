@@ -45,7 +45,7 @@ export class TransactionAggregateRoot {
             to: this.to || null,
             transferValue: BigInt(this.transferValue || "0"),
             tip: BigInt(this.tip || "0"),
-            fees: new Fees(BigInt(this.inclusion_fee || "0"), this.storage_fee ? BigInt(this.storage_fee) : undefined),
+            fees: new Fees(BigInt(this.inclusionFee || "0"), this.storageFee ? BigInt(this.storageFee) : undefined),
             reserved: BigInt(this.reserved || "0"),
             pallet: this.pallet!,
             method: this.method!,
@@ -76,10 +76,10 @@ export class TransactionAggregateRoot {
     tip?: string;
 
     @Column("numeric", {name: "fee", precision: AMOUNT_PRECISION})
-    inclusion_fee?: string;
+    inclusionFee?: string;
 
     @Column("numeric", {name: "storage_fee", precision: AMOUNT_PRECISION, nullable: true})
-    storage_fee?: string;
+    storageFee?: string;
 
     @Column("numeric", {precision: AMOUNT_PRECISION})
     reserved?: string;
@@ -152,9 +152,9 @@ export class TransactionFactory {
         transaction.to = description.to;
         transaction.transferValue = description.transferValue.toString();
         transaction.tip = description.tip.toString();
-        transaction.inclusion_fee = description.fees.inclusionFee.toString();
+        transaction.inclusionFee = description.fees.inclusionFee.toString();
         if(description.fees.storageFee && !description.error) {
-            transaction.storage_fee = description.fees.storageFee.toString();
+            transaction.storageFee = description.fees.storageFee.toString();
         }
         transaction.reserved = description.reserved.toString();
         transaction.pallet = description.pallet;
