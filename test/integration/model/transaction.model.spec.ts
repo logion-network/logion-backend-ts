@@ -4,6 +4,7 @@ import {
     TransactionRepository,
 } from "../../../src/logion/model/transaction.model.js";
 import moment from "moment";
+import { EmbeddableFees } from "../../../src/logion/model/fees.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -49,7 +50,8 @@ describe('TransactionRepository', () => {
         transaction.from = "from-address";
         transaction.transferValue = "1";
         transaction.tip = "1";
-        transaction.inclusionFee = "1";
+        transaction.fees = new EmbeddableFees();
+        transaction.fees.inclusionFee = "1";
         transaction.reserved = "1";
         transaction.pallet = "balances";
         transaction.method = "transfer";

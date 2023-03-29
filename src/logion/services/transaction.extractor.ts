@@ -1,12 +1,11 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { getVaultAddress, asArray, asString, JsonObject } from "@logion/node-api";
+import { getVaultAddress, asArray, asString, JsonObject, Fees } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { JsonExtrinsic, findEventData } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
-import { Fees } from "../model/fees.js";
 
 enum ExtrinsicType {
     TIMESTAMP,

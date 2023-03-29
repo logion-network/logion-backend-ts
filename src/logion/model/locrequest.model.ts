@@ -3,6 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
+import { Fees } from "@logion/node-api";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -17,6 +18,7 @@ import {
     IdenfyVerificationSession,
     IdenfyVerificationStatus
 } from "../services/idenfy/idenfy.types.js";
+import { AMOUNT_PRECISION, EmbeddableFees } from "./fees.js";
 
 const { logger } = Log;
 
@@ -627,6 +629,33 @@ export class LocRequestAggregateRoot {
         file.update(restrictedDelivery);
     }
 
+    setFileFees(hash: string, fees: Fees) {
+        const file = this.file(hash);
+        if (!file) {
+            logger.error(`File with hash ${ hash } not found`);
+            return;
+        }
+        file.setFees(fees);
+    }
+
+    setMetadataItemFee(name: string, inclusionFee: bigint) {
+        const metadata = this.metadataItem(name);
+        if (!metadata) {
+            logger.error(`Data with name ${ name } not found`);
+            return;
+        }
+        metadata.setFee(inclusionFee);
+    }
+
+    setLinkFee(target: string, inclusionFee: bigint) {
+        const link = this.link(target);
+        if (!link) {
+            logger.error(`Link with target ${ target } not found`);
+            return;
+        }
+        link.setFee(inclusionFee);
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -768,6 +797,9 @@ export class LocFile extends Child implements HasIndex, Submitted {
     })
     delivered?: LocFileDelivered[];
 
+    @Column(() => EmbeddableFees, { prefix: ""} )
+    fees?: EmbeddableFees;
+
     update(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
         this._toUpdate = true;
@@ -792,6 +824,13 @@ export class LocFile extends Child implements HasIndex, Submitted {
         deliveredFile._toAdd = true;
         this.delivered?.push(deliveredFile);
         return deliveredFile;
+    }
+
+    setFees(fees: Fees) {
+        this.fees = new EmbeddableFees();
+        this.fees.inclusionFee = fees.inclusionFee.toString();
+        this.fees.storageFee = fees.storageFee?.toString();
+        this._toUpdate = true;
     }
 }
 
@@ -856,6 +895,14 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
+
+    @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
+    inclusionFee?: string;
+
+    setFee(inclusionFee: bigint) {
+        this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
 }
 
 interface Submitted {
@@ -887,6 +934,14 @@ export class LocLink extends Child implements HasIndex {
     @ManyToOne(() => LocRequestAggregateRoot, request => request.links)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
+
+    @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
+    inclusionFee?: string;
+
+    setFee(inclusionFee: bigint) {
+        this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
 }
 
 export interface FetchLocRequestsSpecification {

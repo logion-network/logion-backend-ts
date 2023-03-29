@@ -1,15 +1,12 @@
-// TODO: To be removed once Fees is available in @logion/node-api
-export class Fees {
+import { Column } from "typeorm";
 
-    constructor(inclusionFee: bigint, storageFee?: bigint) {
-        this.inclusionFee = inclusionFee;
-        this.storageFee = storageFee;
-    }
+export const AMOUNT_PRECISION = 50;
 
-    readonly inclusionFee: bigint;
-    readonly storageFee?: bigint;
+export class EmbeddableFees {
 
-    get totalFee(): bigint {
-        return this.inclusionFee + (this.storageFee || 0n);
-    }
+    @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
+    inclusionFee?: string;
+
+    @Column("numeric", { name: "storage_fee", precision: AMOUNT_PRECISION, nullable: true })
+    storageFee?: string;
 }

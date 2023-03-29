@@ -1,5 +1,5 @@
-import moment from 'moment';
-import { Fees } from '../../../src/logion/model/fees.js';
+import { Fees } from "@logion/node-api";
+import moment from "moment";
 import {
     TransactionAggregateRoot,
     TransactionFactory,

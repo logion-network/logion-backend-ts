@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { UUID, asBigInt, asHexString, asJsonObject, asString, isHexString } from "@logion/node-api";
+import { UUID, asBigInt, asHexString, asJsonObject, asString, isHexString, Fees } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
@@ -52,44 +52,39 @@ export class LocSynchronizer {
                 case "createPolkadotTransactionLoc":
                 case "createCollectionLoc": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    await this.mutateLoc(locId, loc => loc.setLocCreatedDate(timestamp));
+                    await this.mutateLoc(locId, async loc => loc.setLocCreatedDate(timestamp));
                     break;
                 }
                 case "addMetadata": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    const name = asString(asJsonObject(extrinsic.call.args['item']).name);
-                    await this.mutateLoc(locId, loc => loc.setMetadataItemAddedOn(name, timestamp));
+                    await this.mutateLoc(locId, loc => this.updateMetadataItem(loc, timestamp, extrinsic));
                     break;
                 }
                 case "addFile": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    const hash = this.getFileHash(extrinsic);
-                    await this.mutateLoc(locId, loc => loc.setFileAddedOn(hash, timestamp));
+                    await this.mutateLoc(locId, loc => this.updateFile(loc, timestamp, extrinsic));
                     break;
                 }
                 case "addLink": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    const target = asBigInt(asJsonObject(extrinsic.call.args['link']).id).toString();
-                    await this.mutateLoc(locId, loc => loc.setLinkAddedOn(UUID.fromDecimalStringOrThrow(target).toString(), timestamp));
+                    await this.mutateLoc(locId, loc => this.updateLink(loc, timestamp, extrinsic));
                     break;
                 }
                 case "close":
                 case "closeAndSeal": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    await this.mutateLoc(locId, loc => loc.close(timestamp));
+                    await this.mutateLoc(locId, async loc => loc.close(timestamp));
                     break;
                 }
                 case "makeVoid":
                 case "makeVoidAndReplace": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
-                    await this.mutateLoc(locId, loc => loc.voidLoc(timestamp));
+                    await this.mutateLoc(locId, async loc => loc.voidLoc(timestamp));
                     break;
                 }
                 case "addCollectionItem":
                 case "addCollectionItemWithTermsAndConditions": {
-                    const locId = extractUuid('collection_loc_id', extrinsic.call.args);
-                    const itemId = asHexString(extrinsic.call.args['item_id']);
-                    await this.addCollectionItem(locId, itemId, timestamp)
+                    await this.addCollectionItem(timestamp, extrinsic);
                     break;
                 }
                 case "nominateIssuer":
@@ -101,8 +96,7 @@ export class LocSynchronizer {
                     break;
                 case "addTokensRecord": {
                     const locId = extractUuid('collection_loc_id', extrinsic.call.args);
-                    const recordId = asHexString(extrinsic.call.args['record_id']);
-                    await this.addTokensRecord(locId, recordId, timestamp)
+                    await this.addTokensRecord(locId, timestamp, extrinsic);
                     break;
                     }
                 default:
@@ -122,14 +116,51 @@ export class LocSynchronizer {
         }
     }
 
-    private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => void) {
+    private async mutateLoc(locId: string, mutator: (loc: LocRequestAggregateRoot) => Promise<void>) {
         await this.locRequestService.updateIfExists(locId, async loc => {
             logger.info("Mutating LOC %s : %s", locId, mutator);
-            mutator(loc);
+            await mutator(loc);
         });
     }
 
-    private async addCollectionItem(collectionLocId: string, itemId: string, timestamp: Moment) {
+    private async updateMetadataItem(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const name = asString(asJsonObject(extrinsic.call.args['item']).name);
+        loc.setMetadataItemAddedOn(name, timestamp);
+        const inclusionFee = await extrinsic.partialFee();
+        if(inclusionFee) {
+            loc.setMetadataItemFee(name, BigInt(inclusionFee));
+        } else {
+            throw new Error("Could not get inclusion fee");
+        }
+    }
+
+    private async updateFile(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const hash = this.getFileHash(extrinsic);
+        loc.setFileAddedOn(hash, timestamp);
+        const inclusionFee = await extrinsic.partialFee();
+        const storageFee = extrinsic.storageFee;
+        if(inclusionFee) {
+            loc.setFileFees(hash, new Fees(BigInt(inclusionFee), storageFee));
+        } else {
+            throw new Error("Could not get inclusion fee");
+        }
+    }
+
+    private async updateLink(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const decimalTarget = asBigInt(asJsonObject(extrinsic.call.args['link']).id).toString();
+        const target = UUID.fromDecimalStringOrThrow(decimalTarget).toString();
+        loc.setLinkAddedOn(target, timestamp);
+        const inclusionFee = await extrinsic.partialFee();
+        if(inclusionFee) {
+            loc.setLinkFee(target, BigInt(inclusionFee));
+        } else {
+            throw new Error("Could not get inclusion fee");
+        }
+    }
+
+    private async addCollectionItem(timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const collectionLocId = extractUuid('collection_loc_id', extrinsic.call.args);
+        const itemId = asHexString(extrinsic.call.args['item_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId);
@@ -254,7 +285,8 @@ export class LocSynchronizer {
         }
     }
 
-    private async addTokensRecord(collectionLocId: string, recordId: string, timestamp: Moment) {
+    private async addTokensRecord(collectionLocId: string, timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const recordId = asHexString(extrinsic.call.args['record_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Adding Tokens Record %s to LOC %s", recordId, collectionLocId);
