@@ -31,6 +31,7 @@ import {
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
+import { Fees } from "@logion/node-api";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -210,6 +211,7 @@ function mockModelForGetSingle(
 
 const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 
+const FILE_FEES = new Fees(42n, 24n);
 const testFile: FileDescription = {
     name: "test-file",
     nature: "file-nature",
@@ -220,17 +222,21 @@ const testFile: FileDescription = {
     addedOn: moment("2022-08-31T15:53:12.741Z"),
     restrictedDelivery: false,
     size: 123,
+    fees: FILE_FEES,
 }
 
+const DATA_LINK_FEES = new Fees(42n);
 const testLink: LinkDescription = {
     target: "507a00a1-7387-44b8-ac4d-fa57ccbf6da5",
-    nature: "link-nature"
+    nature: "link-nature",
+    fees: DATA_LINK_FEES,
 }
 
 const testMetadataItem: MetadataItemDescription = {
     name: "test-data",
     value: "test-data-value",
     submitter: SUBMITTER,
+    fees: DATA_LINK_FEES,
 }
 
 async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData) {
@@ -247,15 +253,19 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.hash).toBe(testFile.hash)
             expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
             expect(file.submitter).toBe(SUBMITTER)
+            expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
+            expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
             const link = response.body.links[0]
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)
             expect(link.addedOn).toBe(testLink.addedOn?.toISOString())
+            expect(link.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             const metadataItem = response.body.metadata[0]
             expect(metadataItem.name).toBe(testMetadataItem.name)
             expect(metadataItem.value).toBe(testMetadataItem.value)
             expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
             expect(metadataItem.submitter).toBe(SUBMITTER)
+            expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             checkPrivateData(response, expectedUserPrivateData);
         });
 }

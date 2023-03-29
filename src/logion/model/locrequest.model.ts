@@ -56,6 +56,7 @@ export interface FileDescription {
     readonly submitter: string;
     readonly restrictedDelivery: boolean;
     readonly size: number;
+    readonly fees?: Fees;
 }
 
 export interface MetadataItemDescription {
@@ -63,12 +64,14 @@ export interface MetadataItemDescription {
     readonly value: string;
     readonly addedOn?: Moment;
     readonly submitter: string;
+    readonly fees?: Fees;
 }
 
 export interface LinkDescription {
     readonly target: string;
     readonly nature: string;
     readonly addedOn?: Moment;
+    readonly fees?: Fees;
 }
 
 export interface VoidInfo {
@@ -273,7 +276,8 @@ export class LocRequestAggregateRoot {
             submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
-            size: parseInt(file.size!)
+            size: parseInt(file.size!),
+            fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
         };
     }
 
@@ -347,6 +351,7 @@ export class LocRequestAggregateRoot {
             value: item.value!,
             submitter: item.submitter!,
             addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+            fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
         })
     }
 
@@ -457,11 +462,12 @@ export class LocRequestAggregateRoot {
         return this.toLinkDescription(this.link(name)!)
     }
 
-    private toLinkDescription(item: LocLink): LinkDescription {
+    private toLinkDescription(link: LocLink): LinkDescription {
         return {
-            target: item.target!,
-            nature: item.nature!,
-            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+            target: link.target!,
+            nature: link.nature!,
+            addedOn: link.addedOn ? moment(link.addedOn) : undefined,
+            fees: link.inclusionFee ? new Fees(BigInt(link.inclusionFee)) : undefined,
         }
     }
 
