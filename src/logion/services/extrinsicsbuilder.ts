@@ -38,7 +38,9 @@ export class ExtrinsicsBuilder {
                         method: event.method,
                         data: event.data,
                     };
-                    extrinsicBuilder.storageFee = this.getStorageFee(jsonEvent);
+                    if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
+                        extrinsicBuilder.storageFee = this.getStorageFee(jsonEvent);
+                    }
                     extrinsicBuilder.events.push(jsonEvent);
                 }
             }
@@ -116,16 +118,12 @@ export class ExtrinsicsBuilder {
     }
 
     private getStorageFee(event: JsonEvent): StorageFee | undefined {
-        if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
-            const withdrawnFrom = event.data[0].toString();
-            const fee = BigInt(event.data[1].toString());
-            return {
-                withdrawnFrom,
-                fee,
-            };
-        } else {
-            return undefined;
-        }
+        const withdrawnFrom = event.data[0].toString();
+        const fee = event.data[1].toBigInt();
+        return {
+            withdrawnFrom,
+            fee,
+        };
     }
 }
 
