@@ -631,6 +631,10 @@
                     },
                     "fees": {
                         "$ref": "#/components/schemas/FeesView"
+                    },
+                    "storageFeePaidBy": {
+                        "type": "string",
+                        "description": "Account from which storage fees were withdrawn."
                     }
                 }
             },

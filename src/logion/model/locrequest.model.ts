@@ -57,6 +57,7 @@ export interface FileDescription {
     readonly restrictedDelivery: boolean;
     readonly size: number;
     readonly fees?: Fees;
+    readonly storageFeePaidBy?: string;
 }
 
 export interface MetadataItemDescription {
@@ -278,6 +279,7 @@ export class LocRequestAggregateRoot {
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
             fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
+            storageFeePaidBy: file.storageFeePaidBy,
         };
     }
 
@@ -623,7 +625,7 @@ export class LocRequestAggregateRoot {
         });
     }
 
-    updateFile(params: {
+    setFileRestrictedDelivery(params: {
         hash: string,
         restrictedDelivery: boolean,
     }): void {
@@ -632,16 +634,12 @@ export class LocRequestAggregateRoot {
         }
         const { hash, restrictedDelivery } = params;
         const file = this.getFileOrThrow(hash);
-        file.update(restrictedDelivery);
+        file.setRestrictedDelivery(restrictedDelivery);
     }
 
-    setFileFees(hash: string, fees: Fees) {
-        const file = this.file(hash);
-        if (!file) {
-            logger.error(`File with hash ${ hash } not found`);
-            return;
-        }
-        file.setFees(fees);
+    setFileFees(hash: string, fees: Fees, storageFeePaidBy: string | undefined) {
+        const file = this.getFileOrThrow(hash);
+        file.setFees(fees, storageFeePaidBy);
     }
 
     setMetadataItemFee(name: string, inclusionFee: bigint) {
@@ -806,7 +804,10 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column(() => EmbeddableFees, { prefix: ""} )
     fees?: EmbeddableFees;
 
-    update(restrictedDelivery: boolean) {
+    @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
+    storageFeePaidBy?: string;
+
+    setRestrictedDelivery(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
         this._toUpdate = true;
     }
@@ -832,10 +833,11 @@ export class LocFile extends Child implements HasIndex, Submitted {
         return deliveredFile;
     }
 
-    setFees(fees: Fees) {
+    setFees(fees: Fees, storageFeePaidBy: string | undefined) {
         this.fees = new EmbeddableFees();
         this.fees.inclusionFee = fees.inclusionFee.toString();
         this.fees.storageFee = fees.storageFee?.toString();
+        this.storageFeePaidBy = storageFeePaidBy;
         this._toUpdate = true;
     }
 }

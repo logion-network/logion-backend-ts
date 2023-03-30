@@ -86,6 +86,7 @@ export class LocRequestAdapter {
                 contentType: file.contentType,
                 size: file.size.toString(),
                 fees: toFeesView(file.fees),
+                storageFeePaidBy: file.storageFeePaidBy,
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,

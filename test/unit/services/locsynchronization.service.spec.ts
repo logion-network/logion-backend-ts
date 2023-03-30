@@ -18,6 +18,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { VerifiedThirdPartySelectionService } from "src/logion/services/verifiedthirdpartyselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 describe("LocSynchronizer", () => {
 
@@ -171,8 +172,12 @@ function givenLocExtrinsic(method: string, args: JsonObject) {
     });
     locExtrinsic.setup(instance => instance.error).returns(() => null);
     locExtrinsic.setup(instance => instance.partialFee()).returnsAsync("42");
+    locExtrinsic.setup(instance => instance.signer).returns(ALICE);
     if(method === "addFile") {
-        locExtrinsic.setup(instance => instance.storageFee).returns(24n);
+        locExtrinsic.setup(instance => instance.storageFee).returns({
+            fee: 24n,
+            withdrawnFrom: ALICE
+        });
     }
 }
 
@@ -284,7 +289,7 @@ function thenLinkUpdated() {
 
 function givenLocRequestExpectsFileUpdated() {
     locRequest.setup(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME)).returns(undefined);
-    locRequest.setup(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES)).returns(undefined);
+    locRequest.setup(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE)).returns(undefined);
 }
 
 const FILE_HASH = "0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7";
@@ -292,7 +297,7 @@ const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee === 42n && fees.s
 
 function thenFileUpdated() {
     locRequest.verify(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME));
-    locRequest.verify(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES));
+    locRequest.verify(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE));
 }
 
 function givenLocRequestExpectsVoid() {

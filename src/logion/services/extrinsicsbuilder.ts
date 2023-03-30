@@ -4,7 +4,7 @@ import { asString, JsonCall, toJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
+import { ExtrinsicError, JsonEvent, JsonExtrinsic, StorageFee } from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
 
@@ -115,9 +115,14 @@ export class ExtrinsicsBuilder {
         return partialFee.toBigInt();
     }
 
-    private getStorageFee(event: JsonEvent): bigint | undefined {
+    private getStorageFee(event: JsonEvent): StorageFee | undefined {
         if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
-            return BigInt(event.data[1].toString());
+            const withdrawnFrom = event.data[0].toString();
+            const fee = BigInt(event.data[1].toString());
+            return {
+                withdrawnFrom,
+                fee,
+            };
         } else {
             return undefined;
         }
@@ -147,7 +152,7 @@ export class ExtrinsicBuilder {
     public readonly tip: ICompact<INumber> | null;
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
-    public storageFee?: bigint;
+    public storageFee?: StorageFee;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 

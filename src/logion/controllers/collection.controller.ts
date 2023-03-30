@@ -418,7 +418,7 @@ export class CollectionController extends ApiController {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(collectionLocId, async collection => {
             authenticated.require(user => user.is(collection.ownerAddress));
-            collection.updateFile({
+            collection.setFileRestrictedDelivery({
                 hash,
                 restrictedDelivery: body.restrictedDelivery || false
             });

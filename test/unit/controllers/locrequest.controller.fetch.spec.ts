@@ -223,6 +223,7 @@ const testFile: FileDescription = {
     restrictedDelivery: false,
     size: 123,
     fees: FILE_FEES,
+    storageFeePaidBy: testData.requesterAddress,
 }
 
 const DATA_LINK_FEES = new Fees(42n);
@@ -255,6 +256,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.submitter).toBe(SUBMITTER)
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
             expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
+            expect(file.storageFeePaidBy).toBe(testData.requesterAddress)
             const link = response.body.links[0]
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)

@@ -358,6 +358,8 @@ export interface components {
       /** @description The file's content type (MIME format). */
       contentType?: string;
       fees?: components["schemas"]["FeesView"];
+      /** @description Account from which storage fees were withdrawn. */
+      storageFeePaidBy?: string;
     };
     LocMetadataItemView: {
       /** @description The item's name */
