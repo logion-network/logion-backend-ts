@@ -7,6 +7,7 @@ import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../model/verifiedthirdpartyselection.model.js";
+import { Fees } from "@logion/node-api";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -84,17 +85,21 @@ export class LocRequestAdapter {
                 restrictedDelivery: file.restrictedDelivery,
                 contentType: file.contentType,
                 size: file.size.toString(),
+                fees: toFeesView(file.fees),
+                storageFeePaidBy: file.storageFeePaidBy,
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
                 submitter: item.submitter,
+                fees: toFeesView(item.fees),
             })),
             links: request.getLinks(viewer).map(link => ({
                 target: link.target,
                 nature: link.nature,
                 addedOn: link.addedOn?.toISOString() || undefined,
+                fees: toFeesView(link.fees),
             })),
             seal: locDescription.seal?.hash,
             company: locDescription.company,
@@ -193,5 +198,17 @@ export function toUserPostalAddressView(userPostalAddress: PostalAddress | undef
         postalCode: userPostalAddress.postalCode,
         city: userPostalAddress.city,
         country: userPostalAddress.country,
+    }
+}
+
+export function toFeesView(fees?: Fees) {
+    if(fees) {
+        return {
+            inclusion: fees.inclusionFee.toString(),
+            storage: fees.storageFee?.toString(),
+            total: fees.totalFee.toString(),
+        };
+    } else {
+        return undefined;
     }
 }

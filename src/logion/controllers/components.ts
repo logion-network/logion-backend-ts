@@ -357,6 +357,9 @@ export interface components {
       size?: string;
       /** @description The file's content type (MIME format). */
       contentType?: string;
+      fees?: components["schemas"]["FeesView"];
+      /** @description Account from which storage fees were withdrawn. */
+      storageFeePaidBy?: string;
     };
     LocMetadataItemView: {
       /** @description The item's name */
@@ -370,6 +373,7 @@ export interface components {
       addedOn?: string;
       /** @description The SS58 address of the file submitter */
       submitter?: string;
+      fees?: components["schemas"]["FeesView"];
     };
     /**
      * LocRequestView 
@@ -525,6 +529,7 @@ export interface components {
           addedOn?: string;
           /** @description The link's nature */
           nature?: string;
+          fees?: components["schemas"]["FeesView"];
         })[];
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];

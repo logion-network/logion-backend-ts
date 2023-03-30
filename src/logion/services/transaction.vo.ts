@@ -1,5 +1,5 @@
 import { Moment } from "moment";
-import { Fees } from "../model/fees.js";
+import { Fees } from "@logion/node-api";
 
 export class BlockWithTransactions {
 

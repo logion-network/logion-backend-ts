@@ -628,6 +628,13 @@
                     "contentType": {
                         "type": "string",
                         "description": "The file's content type (MIME format)."
+                    },
+                    "fees": {
+                        "$ref": "#/components/schemas/FeesView"
+                    },
+                    "storageFeePaidBy": {
+                        "type": "string",
+                        "description": "Account from which storage fees were withdrawn."
                     }
                 }
             },
@@ -650,6 +657,9 @@
                     "submitter": {
                         "type": "string",
                         "description": "The SS58 address of the file submitter"
+                    },
+                    "fees": {
+                        "$ref": "#/components/schemas/FeesView"
                     }
                 }
             },
@@ -893,6 +903,9 @@
                                 "nature": {
                                     "type": "string",
                                     "description": "The link's nature"
+                                },
+                                "fees": {
+                                    "$ref": "#/components/schemas/FeesView"
                                 }
                             }
                         }

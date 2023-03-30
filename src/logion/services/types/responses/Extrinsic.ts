@@ -1,11 +1,16 @@
 import { JsonCall, JsonObject, UUID, asBigInt } from "@logion/node-api";
 
+export interface StorageFee {
+    fee: bigint;
+    withdrawnFrom: string;
+}
+
 export interface JsonExtrinsic {
     call: JsonCall;
     signer: string | null;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
-    storageFee?: bigint;
+    storageFee?: StorageFee;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }

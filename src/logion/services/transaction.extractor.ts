@@ -1,12 +1,11 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { getVaultAddress, asArray, asString, JsonObject } from "@logion/node-api";
+import { getVaultAddress, asArray, asString, JsonObject, Fees } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { JsonExtrinsic, findEventData } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
-import { Fees } from "../model/fees.js";
 
 enum ExtrinsicType {
     TIMESTAMP,
@@ -87,6 +86,18 @@ export class TransactionExtractor {
                 transferValue: vaultTransferValue,
                 to: vaultTransferTo,
             }));
+        } else if(extrinsic.storageFee && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees(0n, extrinsic.storageFee.fee),
+                reserved: 0n,
+                from: extrinsic.storageFee.withdrawnFrom,
+                transferValue: 0n,
+                to: undefined,
+            }));
         }
 
         transactions.push(new Transaction({
@@ -119,7 +130,10 @@ export class TransactionExtractor {
 
     private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
         const inclusion = this.undefinedTo0(await extrinsic.partialFee());
-        const storage = extrinsic.storageFee;
+        let storage: bigint | undefined = undefined;
+        if(extrinsic.storageFee?.withdrawnFrom === extrinsic.signer) {
+            storage = extrinsic.storageFee.fee;
+        }
         return new Fees(inclusion, storage);
     }
 

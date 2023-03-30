@@ -1,4 +1,4 @@
-import { UUID, JsonObject } from "@logion/node-api";
+import { UUID, JsonObject, Fees } from "@logion/node-api";
 import { PolkadotService } from "@logion/rest-api-core";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
@@ -18,6 +18,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { VerifiedThirdPartySelectionService } from "src/logion/services/verifiedthirdpartyselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
+import { ALICE } from "../../helpers/addresses.js";
 
 describe("LocSynchronizer", () => {
 
@@ -54,7 +55,7 @@ describe("LocSynchronizer", () => {
         }
     });
 
-    it("sets metadata item added on", async () => {
+    it("updates metadata item", async () => {
         givenLocExtrinsic("addMetadata", {
             loc_id: locId,
             item: {
@@ -63,9 +64,9 @@ describe("LocSynchronizer", () => {
             }
         });
         givenLocRequest();
-        givenLocRequestExpectsMetadataTimestamped();
+        givenLocRequestExpectsMetadataItemUpdated();
         await whenConsumingBlock();
-        thenMetadataTimestamped();
+        thenMetadataUpdated();
         thenLocIsSaved();
     });
 
@@ -78,7 +79,7 @@ describe("LocSynchronizer", () => {
         thenLocIsSaved();
     });
 
-    it("sets link added on", async () => {
+    it("updates link", async () => {
         givenLocExtrinsic("addLink", {
             loc_id: locId,
             link: {
@@ -87,9 +88,23 @@ describe("LocSynchronizer", () => {
             }
         });
         givenLocRequest();
-        givenLocRequestExpectsLinkTimestamped();
+        givenLocRequestExpectsLinkUpdated();
         await whenConsumingBlock();
-        thenLinkTimestamped();
+        thenLinkUpdated();
+        thenLocIsSaved();
+    });
+
+    it("updates file", async () => {
+        givenLocExtrinsic("addFile", {
+            loc_id: locId,
+            file: {
+                hash: FILE_HASH,
+            }
+        });
+        givenLocRequest();
+        givenLocRequestExpectsFileUpdated();
+        await whenConsumingBlock();
+        thenFileUpdated();
         thenLocIsSaved();
     });
 
@@ -156,6 +171,14 @@ function givenLocExtrinsic(method: string, args: JsonObject) {
         args,
     });
     locExtrinsic.setup(instance => instance.error).returns(() => null);
+    locExtrinsic.setup(instance => instance.partialFee()).returnsAsync("42");
+    locExtrinsic.setup(instance => instance.signer).returns(ALICE);
+    if(method === "addFile") {
+        locExtrinsic.setup(instance => instance.storageFee).returns({
+            fee: 24n,
+            withdrawnFrom: ALICE
+        });
+    }
 }
 
 let locExtrinsic: Mock<JsonExtrinsic>;
@@ -226,8 +249,9 @@ function thenLocIsSaved() {
     locRequestRepository.verify(instance => instance.save(locRequest.object()));
 }
 
-function givenLocRequestExpectsMetadataTimestamped() {
+function givenLocRequestExpectsMetadataItemUpdated() {
     locRequest.setup(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME, 42n)).returns(undefined);
 }
 
 const IS_EXPECTED_NAME = It.Is<string>(name => name === METADATA_ITEM_NAME)
@@ -235,8 +259,9 @@ const IS_EXPECTED_NAME = It.Is<string>(name => name === METADATA_ITEM_NAME)
 const METADATA_ITEM_NAME = "name";
 const METADATA_ITEM_VALUE = "value";
 
-function thenMetadataTimestamped() {
+function thenMetadataUpdated() {
     locRequest.verify(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME, 42n));
 }
 
 function givenLocRequestExpectsClose() {
@@ -252,12 +277,27 @@ const LINK_TARGET_UUID = UUID.fromDecimalStringOrThrow(LINK_TARGET).toString();
 const LINK_NATURE = "nature";
 const IS_EXPECTED_TARGET = It.Is<string>(target => target === LINK_TARGET_UUID)
 
-function givenLocRequestExpectsLinkTimestamped() {
+function givenLocRequestExpectsLinkUpdated() {
     locRequest.setup(instance => instance.setLinkAddedOn(IS_EXPECTED_TARGET, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.setLinkFee(IS_EXPECTED_TARGET, 42n)).returns(undefined);
 }
 
-function thenLinkTimestamped() {
+function thenLinkUpdated() {
     locRequest.verify(instance => instance.setLinkAddedOn(IS_EXPECTED_TARGET, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.setLinkFee(IS_EXPECTED_TARGET, 42n));
+}
+
+function givenLocRequestExpectsFileUpdated() {
+    locRequest.setup(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE)).returns(undefined);
+}
+
+const FILE_HASH = "0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7";
+const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee === 42n && fees.storageFee === 24n);
+
+function thenFileUpdated() {
+    locRequest.verify(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE));
 }
 
 function givenLocRequestExpectsVoid() {

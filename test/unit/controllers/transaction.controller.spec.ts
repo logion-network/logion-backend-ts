@@ -1,3 +1,4 @@
+import { Fees } from "@logion/node-api";
 import { TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { TransactionController } from '../../../src/logion/controllers/transaction.controller.js';
@@ -9,7 +10,6 @@ import {
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
 import { ALICE } from "../../helpers/addresses.js";
-import { Fees } from '../../../src/logion/model/fees.js';
 
 describe('TransactionController', () => {
 

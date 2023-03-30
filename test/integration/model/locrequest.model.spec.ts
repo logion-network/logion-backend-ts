@@ -268,7 +268,7 @@ describe('LocRequestRepository.save()', () => {
         const locRequest = givenLoc(id, "Collection", "OPEN");
         await service.addNewRequest(locRequest);
         await service.update(id, async request => {
-            request.updateFile({
+            request.setFileRestrictedDelivery({
                 hash: "hash",
                 restrictedDelivery: true,
             });

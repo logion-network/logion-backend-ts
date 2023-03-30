@@ -3,6 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
+import { Fees } from "@logion/node-api";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -17,6 +18,7 @@ import {
     IdenfyVerificationSession,
     IdenfyVerificationStatus
 } from "../services/idenfy/idenfy.types.js";
+import { AMOUNT_PRECISION, EmbeddableFees } from "./fees.js";
 
 const { logger } = Log;
 
@@ -54,6 +56,8 @@ export interface FileDescription {
     readonly submitter: string;
     readonly restrictedDelivery: boolean;
     readonly size: number;
+    readonly fees?: Fees;
+    readonly storageFeePaidBy?: string;
 }
 
 export interface MetadataItemDescription {
@@ -61,12 +65,14 @@ export interface MetadataItemDescription {
     readonly value: string;
     readonly addedOn?: Moment;
     readonly submitter: string;
+    readonly fees?: Fees;
 }
 
 export interface LinkDescription {
     readonly target: string;
     readonly nature: string;
     readonly addedOn?: Moment;
+    readonly fees?: Fees;
 }
 
 export interface VoidInfo {
@@ -271,7 +277,9 @@ export class LocRequestAggregateRoot {
             submitter: file!.submitter!,
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
-            size: parseInt(file.size!)
+            size: parseInt(file.size!),
+            fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
+            storageFeePaidBy: file.storageFeePaidBy,
         };
     }
 
@@ -345,6 +353,7 @@ export class LocRequestAggregateRoot {
             value: item.value!,
             submitter: item.submitter!,
             addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+            fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
         })
     }
 
@@ -455,11 +464,12 @@ export class LocRequestAggregateRoot {
         return this.toLinkDescription(this.link(name)!)
     }
 
-    private toLinkDescription(item: LocLink): LinkDescription {
+    private toLinkDescription(link: LocLink): LinkDescription {
         return {
-            target: item.target!,
-            nature: item.nature!,
-            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
+            target: link.target!,
+            nature: link.nature!,
+            addedOn: link.addedOn ? moment(link.addedOn) : undefined,
+            fees: link.inclusionFee ? new Fees(BigInt(link.inclusionFee)) : undefined,
         }
     }
 
@@ -615,7 +625,7 @@ export class LocRequestAggregateRoot {
         });
     }
 
-    updateFile(params: {
+    setFileRestrictedDelivery(params: {
         hash: string,
         restrictedDelivery: boolean,
     }): void {
@@ -624,7 +634,30 @@ export class LocRequestAggregateRoot {
         }
         const { hash, restrictedDelivery } = params;
         const file = this.getFileOrThrow(hash);
-        file.update(restrictedDelivery);
+        file.setRestrictedDelivery(restrictedDelivery);
+    }
+
+    setFileFees(hash: string, fees: Fees, storageFeePaidBy: string | undefined) {
+        const file = this.getFileOrThrow(hash);
+        file.setFees(fees, storageFeePaidBy);
+    }
+
+    setMetadataItemFee(name: string, inclusionFee: bigint) {
+        const metadata = this.metadataItem(name);
+        if (!metadata) {
+            logger.error(`Data with name ${ name } not found`);
+            return;
+        }
+        metadata.setFee(inclusionFee);
+    }
+
+    setLinkFee(target: string, inclusionFee: bigint) {
+        const link = this.link(target);
+        if (!link) {
+            logger.error(`Link with target ${ target } not found`);
+            return;
+        }
+        link.setFee(inclusionFee);
     }
 
     @PrimaryColumn({ type: "uuid" })
@@ -768,7 +801,13 @@ export class LocFile extends Child implements HasIndex, Submitted {
     })
     delivered?: LocFileDelivered[];
 
-    update(restrictedDelivery: boolean) {
+    @Column(() => EmbeddableFees, { prefix: ""} )
+    fees?: EmbeddableFees;
+
+    @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
+    storageFeePaidBy?: string;
+
+    setRestrictedDelivery(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
         this._toUpdate = true;
     }
@@ -792,6 +831,14 @@ export class LocFile extends Child implements HasIndex, Submitted {
         deliveredFile._toAdd = true;
         this.delivered?.push(deliveredFile);
         return deliveredFile;
+    }
+
+    setFees(fees: Fees, storageFeePaidBy: string | undefined) {
+        this.fees = new EmbeddableFees();
+        this.fees.inclusionFee = fees.inclusionFee.toString();
+        this.fees.storageFee = fees.storageFee?.toString();
+        this.storageFeePaidBy = storageFeePaidBy;
+        this._toUpdate = true;
     }
 }
 
@@ -856,6 +903,14 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
+
+    @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
+    inclusionFee?: string;
+
+    setFee(inclusionFee: bigint) {
+        this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
 }
 
 interface Submitted {
@@ -887,6 +942,14 @@ export class LocLink extends Child implements HasIndex {
     @ManyToOne(() => LocRequestAggregateRoot, request => request.links)
     @JoinColumn({ name: "request_id" })
     request?: LocRequestAggregateRoot;
+
+    @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
+    inclusionFee?: string;
+
+    setFee(inclusionFee: bigint) {
+        this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
 }
 
 export interface FetchLocRequestsSpecification {

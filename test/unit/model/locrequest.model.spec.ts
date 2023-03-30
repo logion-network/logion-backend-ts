@@ -1154,7 +1154,7 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription) {
 }
 
 function whenUpdatingFile(hash: string, restrictedDelivery: boolean) {
-    request.updateFile({ hash, restrictedDelivery });
+    request.setFileRestrictedDelivery({ hash, restrictedDelivery });
 }
 
 function whenAddingFiles(files: FileDescription[]) {

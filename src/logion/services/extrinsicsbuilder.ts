@@ -1,13 +1,10 @@
-import { Log } from "@logion/rest-api-core";
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
 import { Address, Block, Extrinsic, DispatchErrorModule } from '@polkadot/types/interfaces';
 import { asString, JsonCall, toJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic } from './types/responses/Extrinsic.js';
-
-const { logger } = Log;
+import { ExtrinsicError, JsonEvent, JsonExtrinsic, StorageFee } from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
 
@@ -41,7 +38,7 @@ export class ExtrinsicsBuilder {
                         method: event.method,
                         data: event.data,
                     };
-                    // TODO: detect and set storage fees (if any)
+                    extrinsicBuilder.storageFee = this.getStorageFee(jsonEvent);
                     extrinsicBuilder.events.push(jsonEvent);
                 }
             }
@@ -117,6 +114,19 @@ export class ExtrinsicsBuilder {
         const partialFee = dispatchInfo.partialFee;
         return partialFee.toBigInt();
     }
+
+    private getStorageFee(event: JsonEvent): StorageFee | undefined {
+        if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
+            const withdrawnFrom = event.data[0].toString();
+            const fee = BigInt(event.data[1].toString());
+            return {
+                withdrawnFrom,
+                fee,
+            };
+        } else {
+            return undefined;
+        }
+    }
 }
 
 export class ExtrinsicBuilder {
@@ -142,7 +152,7 @@ export class ExtrinsicBuilder {
     public readonly tip: ICompact<INumber> | null;
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
-    public storageFee?: bigint;
+    public storageFee?: StorageFee;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 

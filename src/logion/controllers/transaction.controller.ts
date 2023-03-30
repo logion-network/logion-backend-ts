@@ -5,6 +5,7 @@ import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from '@
 
 import { components } from './components.js';
 import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model.js";
+import { toFeesView } from './adapters/locrequestadapter.js';
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';
@@ -69,11 +70,7 @@ export class TransactionController extends ApiController {
             method: description.method,
             transferValue: description.transferValue.toString(),
             tip: description.tip.toString(),
-            fees: {
-                inclusion: description.fees.inclusionFee.toString(),
-                storage: description.fees.storageFee?.toString(),
-                total: description.fees.totalFee.toString(),
-            },
+            fees: toFeesView(description.fees),
             reserved: description.reserved.toString(),
             total: total.toString(),
             successful,
