@@ -93,6 +93,7 @@ type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
+type RequesterAddress = components["schemas"]["RequesterAddress"];
 
 @injectable()
 @Controller('/loc-request')
@@ -129,11 +130,14 @@ export class LocRequestController extends ApiController {
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.isOneOf([ createLocRequestView.requesterAddress, createLocRequestView.ownerAddress ]));
         const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
         const locType = requireDefined(createLocRequestView.locType);
+        const requesterAddress = authenticatedUser.address !== ownerAddress ? {
+            type: authenticatedUser.type,
+            address: authenticatedUser.address,
+        } : undefined;
         const description: LocRequestDescription = {
-            requesterAddress: createLocRequestView.requesterAddress,
+            requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
             ownerAddress,
             description: requireDefined(createLocRequestView.description),
@@ -145,11 +149,14 @@ export class LocRequestController extends ApiController {
             template: createLocRequestView.template,
         }
         if (locType === "Identity") {
-            if ((await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress))) {
+            if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {
                 throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
             }
         } else {
-            if (!(await this.existsValidPolkadotIdentityLoc(description.requesterAddress, ownerAddress)) &&
+            if (requesterAddress && requesterAddress.type !== "Polkadot") {
+                throw badRequest("Only Polkadot address can request a Transaction/Collection LOC");
+            }
+            if (!(await this.existsValidIdentityLoc(requesterAddress, ownerAddress)) &&
                 !(await this.existsValidLogionIdentityLoc(description.requesterIdentityLoc))) {
                 throw badRequest("Unable to find a valid (closed) identity LOC.");
             }
@@ -175,14 +182,14 @@ export class LocRequestController extends ApiController {
         return this.locRequestAdapter.toView(request, authenticatedUser.address, { userIdentity, userPostalAddress, identityLocId });
     }
 
-    private async existsValidPolkadotIdentityLoc(requesterAddress: string | undefined, ownerAddress: string): Promise<boolean> {
+    private async existsValidIdentityLoc(requesterAddress: RequesterAddress | undefined, ownerAddress: string): Promise<boolean> {
         if (requesterAddress === undefined) {
             return false;
         }
         const identityLoc = (await this.locRequestRepository.findBy({
             expectedLocTypes: [ "Identity" ],
-            expectedIdentityLocType: "Polkadot",
-            expectedRequesterAddress: requesterAddress,
+            expectedIdentityLocType: requesterAddress.type,
+            expectedRequesterAddress: requesterAddress.address,
             expectedOwnerAddress: ownerAddress,
             expectedStatuses: [ "CLOSED" ]
         })).find(loc => loc.getVoidInfo() === null);
@@ -788,7 +795,10 @@ export class LocRequestController extends ApiController {
         }
 
         const requestDescription: LocRequestDescription = {
-            requesterAddress: contributor,
+            requesterAddress: {
+                address: contributor,
+                type: "Polkadot",
+            },
             ownerAddress: loc.ownerAddress!,
             description,
             locType: 'Transaction',

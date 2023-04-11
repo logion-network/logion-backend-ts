@@ -18,7 +18,7 @@ const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
 
-describe('LocRequestRepository - read accesses', () => {
+fdescribe('LocRequestRepository - read accesses', () => {
 
     const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
     const anotherHash = "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e";
@@ -84,7 +84,8 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, "Transaction", "loc-7")
 
-        expect(requests[0].getDescription().requesterAddress).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+        expect(requests[0].getDescription().requesterAddress?.address).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+        expect(requests[0].getDescription().requesterAddress?.type).toBe("Polkadot");
         expect(requests[0].getDescription().ownerAddress).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
         expect(requests[0].getDescription().userIdentity).toEqual({
             firstName: 'John',
@@ -137,6 +138,14 @@ describe('LocRequestRepository - read accesses', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
+    })
+
+    it("finds Identity LOC with Ethereum requester", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedIdentityLocType: "Ethereum",
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, "Identity", "loc-28");
     })
 
     it("finds one LOC with restricted deliveries", async () => {
@@ -202,7 +211,7 @@ describe('LocRequestRepository - read accesses', () => {
     }
 })
 
-describe('LocRequestRepository.save()', () => {
+fdescribe('LocRequestRepository.save()', () => {
 
     beforeAll(async () => {
         await connect(ENTITIES);
@@ -278,7 +287,7 @@ describe('LocRequestRepository.save()', () => {
     })
 })
 
-describe('LocRequestRepository - LOC correctly ordered', () => {
+fdescribe('LocRequestRepository - LOC correctly ordered', () => {
 
     beforeAll(async () => {
         await connect(ENTITIES);

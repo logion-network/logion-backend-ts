@@ -307,14 +307,23 @@ export interface components {
      * @description The Identity LOC's type 
      * @enum {string}
      */
-    IdentityLocType: "Polkadot" | "Logion";
+    IdentityLocType: "Polkadot" | "Logion" | "Ethereum";
+    /**
+     * @description The address type 
+     * @enum {string}
+     */
+    AddressType: "Polkadot" | "Ethereum";
+    RequesterAddress: {
+      /** @description The type of the address of the requester */
+      type: components["schemas"]["AddressType"];
+      /** @description The address. Depending on type, either a Polkadot address (SS58 format) or Ethereum (usual '0x' prefixed hexadecimal format) */
+      address: string;
+    };
     /**
      * CreateLocRequestView 
      * @description A LOC Request to create
      */
     CreateLocRequestView: {
-      /** @description The SS58 address of the LOC requester */
-      requesterAddress?: string;
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester
@@ -382,8 +391,8 @@ export interface components {
     LocRequestView: {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
-      /** @description The SS58 address of the LOC requester (populated for POLKADOT identity only) */
-      requesterAddress?: string;
+      /** @description The address of the requester */
+      requesterAddress?: components["schemas"]["RequesterAddress"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester (populated for LOGION identity only)
@@ -480,8 +489,8 @@ export interface components {
     LocPublicView: {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
-      /** @description The SS58 address of the LOC requester */
-      requesterAddress?: string;
+      /** @description The address of the requester */
+      requesterAddress?: components["schemas"]["RequesterAddress"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester

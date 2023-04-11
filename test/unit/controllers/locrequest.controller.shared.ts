@@ -13,15 +13,19 @@ import {
     MetadataItemDescription,
     LocType,
     FetchLocRequestsSpecification,
-    IdentityLocType,
     LocRequestDescription,
+    RequesterAddress,
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { CollectionRepository } from "../../../src/logion/model/collection.model.js";
-import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../../../src/logion/services/seal.service.js";
+import {
+    LATEST_SEAL_VERSION,
+    PersonalInfoSealService,
+    Seal,
+} from "../../../src/logion/services/seal.service.js";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
 import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
@@ -33,8 +37,8 @@ import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "
 import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 
-export type IdentityLocation = IdentityLocType | 'EmbeddedInLoc';
-export const REQUESTER_ADDRESS = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ";
+export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
+export const REQUESTER_ADDRESS: RequesterAddress = { type: "Polkadot", address: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ" };
 
 export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
     "Logion": {

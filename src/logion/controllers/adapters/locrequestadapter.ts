@@ -130,7 +130,7 @@ export class LocRequestAdapter {
             const identityLoc = (await this.locRequestRepository.findBy({
                 expectedLocTypes: [ "Identity" ],
                 expectedIdentityLocType: "Polkadot",
-                expectedRequesterAddress: description.requesterAddress,
+                expectedRequesterAddress: description.requesterAddress.address,
                 expectedOwnerAddress: description.ownerAddress,
                 expectedStatuses: [ "CLOSED" ]
             })).find(loc => loc.getVoidInfo() === null);

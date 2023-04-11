@@ -25,9 +25,10 @@ const { logger } = Log;
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 export type IdentityLocType = components["schemas"]["IdentityLocType"];
+export type RequesterAddress = components["schemas"]["RequesterAddress"];
 
 export interface LocRequestDescription {
-    readonly requesterAddress?: string;
+    readonly requesterAddress?: RequesterAddress;
     readonly requesterIdentityLoc?: string;
     readonly ownerAddress: string;
     readonly description: string;
@@ -189,7 +190,7 @@ export class LocRequestAggregateRoot {
                 country: this.userPostalAddress.country || "",
             } : undefined;
         return {
-            requesterAddress: this.requesterAddress,
+            requesterAddress: this.getRequesterAddress(),
             requesterIdentityLoc: this.requesterIdentityLocId,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
@@ -201,6 +202,13 @@ export class LocRequestAggregateRoot {
             company: this.company!,
             template: this.template,
         }
+    }
+
+    getRequesterAddress(): RequesterAddress | undefined {
+        return (this.requesterAddressType === "Polkadot" || this.requesterAddressType === "Ethereum") ? {
+            address: this.requesterAddress!,
+            type: this.requesterAddressType!,
+        } : undefined
     }
 
     getDecision(): LocRequestDecision | undefined {
@@ -669,6 +677,9 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address", nullable: true })
     requesterAddress?: string;
 
+    @Column({ length: 255, name: "requester_address_type", nullable: true })
+    requesterAddressType?: string;
+
     @ManyToOne(() => LocRequestAggregateRoot, { nullable: true })
     @JoinColumn({ name: "requester_identity_loc" })
     _requesterIdentityLoc?: LocRequestAggregateRoot;
@@ -1068,10 +1079,15 @@ export class LocRequestRepository {
                 { expectedLocTypes: specification.expectedLocTypes });
         }
 
-        if (specification.expectedIdentityLocType === "Polkadot") {
-            builder.andWhere("request.requester_address IS NOT NULL")
-        } else if (specification.expectedIdentityLocType === "Logion") {
-            builder.andWhere("request.requester_address IS NULL")
+        if (specification.expectedIdentityLocType) {
+            if (specification.expectedIdentityLocType !== "Logion") {
+                builder
+                    .andWhere("request.requester_address IS NOT NULL")
+                    .andWhere("request.requester_address_type = :expectedIdentityLocType",
+                        { expectedIdentityLocType: specification.expectedIdentityLocType });
+            } else {
+                builder.andWhere("request.requester_address IS NULL")
+            }
         }
 
         builder
@@ -1167,7 +1183,10 @@ export class LocRequestFactory {
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
         request.status = params.draft ? "DRAFT" : "REQUESTED";
-        request.requesterAddress = description.requesterAddress;
+        if (description.requesterAddress) {
+            request.requesterAddress = description.requesterAddress.address;
+            request.requesterAddressType = description.requesterAddress.type;
+        }
         if (description.requesterIdentityLoc) {
             const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
             request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
