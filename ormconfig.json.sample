@@ -6,7 +6,8 @@
     "password": "secret",
     "database": "postgres",
     "entities": [
-        "dist/model/*.model.js"
+        "dist/model/*.model.js",
+        "node_modules/@logion/rest-api-core/dist/SessionEntity.js"
     ],
     "synchronize": false
 }
