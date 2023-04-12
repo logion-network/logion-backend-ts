@@ -1792,9 +1792,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/authenticator@npm:^0.5.0-4":
-  version: 0.5.0-4
-  resolution: "@logion/authenticator@npm:0.5.0-4"
+"@logion/authenticator@npm:^0.5.0-5":
+  version: 0.5.0-5
+  resolution: "@logion/authenticator@npm:0.5.0-5"
   dependencies:
     "@ethersproject/transactions": ^5.6.2
     "@types/luxon": ^3.3.0
@@ -1805,7 +1805,7 @@ __metadata:
     web3-utils: ^1.7.4
   peerDependencies:
     "@logion/node-api": 0.x
-  checksum: 7dbaec746e0f32eac5a943e99edee4f5db456778fb1a178263e7e0646a209dcc26b7984ee330216335e4bf9fdf4b09ba9b36445a81bd2188283b958e80380635
+  checksum: 50c5c10a14cfb897ac1c5aff55149dfd96d4fc433a9a4217a9e14c2b358d79468858e8ad1419d77e3e54f0c175f9e6c78c8d0ef15cd09b7993721e90949ff1cf
   languageName: node
   linkType: hard
 
@@ -1834,11 +1834,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.3.3-7":
-  version: 0.3.3-7
-  resolution: "@logion/rest-api-core@npm:0.3.3-7"
+"@logion/rest-api-core@npm:^0.3.3-8":
+  version: 0.3.3-8
+  resolution: "@logion/rest-api-core@npm:0.3.3-8"
   dependencies:
-    "@logion/authenticator": ^0.5.0-4
+    "@logion/authenticator": ^0.5.0-5
     dinoloop: ^2.4.0
     express: ^4.18.2
     express-fileupload: ^1.4.0
@@ -1850,7 +1850,7 @@ __metadata:
     swagger-ui-express: ^4.6.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 9f094458bf3f7192956a70f94c61366549d1d74cf9add8dc511b9f3fb4d6fc2d07bc11bf495a3752f044c64d4407b28593138a6da885bd2ce539d069151ce933
+  checksum: 20d58eb82ba2200db9c1511ae16f303c594af11e387caa49f88472c66590a316d0bcbafac3a66f69a2bbde5ed63b7c02ffd05c3375137f0e855c8c223bc667d3
   languageName: node
   linkType: hard
 
@@ -5686,7 +5686,7 @@ __metadata:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-api": ^0.12.0-4
     "@logion/node-exiftool": ^2.3.1-2
-    "@logion/rest-api-core": ^0.3.3-7
+    "@logion/rest-api-core": ^0.3.3-8
     "@polkadot/wasm-crypto": ^7.0.3
     "@tsconfig/node18": ^1.0.1
     "@types/cors": ^2.8.12
