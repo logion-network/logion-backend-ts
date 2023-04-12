@@ -15,7 +15,7 @@ export class LocAuthorizationService {
 
     async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot): Promise<string> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
-        if (await this.isContributor(request, authenticatedUser)) {
+        if (authenticatedUser.isPolkadot() && await this.isContributor(request, authenticatedUser)) {
             return authenticatedUser.address;
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");

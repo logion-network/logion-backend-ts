@@ -84,7 +84,8 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, "Transaction", "loc-7")
 
-        expect(requests[0].getDescription().requesterAddress).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+        expect(requests[0].getDescription().requesterAddress?.address).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+        expect(requests[0].getDescription().requesterAddress?.type).toBe("Polkadot");
         expect(requests[0].getDescription().ownerAddress).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
         expect(requests[0].getDescription().userIdentity).toEqual({
             firstName: 'John',
@@ -137,6 +138,14 @@ describe('LocRequestRepository - read accesses', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
+    })
+
+    it("finds Identity LOC with Ethereum requester", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedIdentityLocType: "Ethereum",
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, "Identity", "loc-28");
     })
 
     it("finds one LOC with restricted deliveries", async () => {

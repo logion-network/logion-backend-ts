@@ -216,7 +216,7 @@ describe("LocRequestFactory", () => {
 
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, seal?: PublicSeal): LocRequestDescription {
         return {
-            requesterAddress,
+            requesterAddress: requesterAddress ? { type: "Polkadot", address: requesterAddress } : undefined,
             requesterIdentityLoc,
             ownerAddress: ALICE,
             description: "Mrs ALice, I want to sell my last art work",

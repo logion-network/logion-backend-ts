@@ -7,7 +7,8 @@ const config: DataSourceOptions = JSON.parse(readFileSync("ormconfig.json").toSt
 const migrationConfig: DataSourceOptions = {
     ...config,
     entities: [
-        "dist/model/*.model.js"
+        "dist/model/*.model.js",
+        "node_modules/@logion/rest-api-core/dist/SessionEntity.js"
     ],
     migrations: [
         "dist/migration/*.js"

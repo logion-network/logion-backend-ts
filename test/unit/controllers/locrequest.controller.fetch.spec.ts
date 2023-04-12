@@ -7,7 +7,7 @@ import {
     FileDescription,
     LinkDescription,
     MetadataItemDescription,
-    LocType,
+    LocType, LocRequestDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import moment from "moment";
 import {
@@ -52,7 +52,7 @@ describe('LocRequestController - Fetch -', () => {
                 expect(response.body.requests.length).toBe(1);
                 const request1 = response.body.requests[0];
                 expect(request1.id).toBe(REQUEST_ID);
-                expect(request1.requesterAddress).toBe(testData.requesterAddress);
+                expect(request1.requesterAddress).toEqual(testData.requesterAddress);
                 expect(request1.ownerAddress).toBe(ALICE);
                 expect(request1.status).toBe("REJECTED");
                 expect(request1.rejectReason).toBe(REJECT_REASON);
@@ -191,9 +191,9 @@ function mockModelForGetSingle(
             testDataWithUserIdentityWithType(locType) :
             identityLocation === "Polkadot" ? testDataWithType(locType) :
                 testDataWithLogionIdentity;
-    const description = {
+    const description: Partial<LocRequestDescription> = {
         ...data,
-        requesterAddress: SUBMITTER
+        requesterAddress: { type: "Polkadot", address: SUBMITTER }
     };
     setupRequest(request, REQUEST_ID, "Transaction", "CLOSED", description,
         [ testFile ],
@@ -223,7 +223,7 @@ const testFile: FileDescription = {
     restrictedDelivery: false,
     size: 123,
     fees: FILE_FEES,
-    storageFeePaidBy: testData.requesterAddress,
+    storageFeePaidBy: testData.requesterAddress?.address,
 }
 
 const DATA_LINK_FEES = new Fees(42n);
@@ -256,7 +256,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.submitter).toBe(SUBMITTER)
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
             expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
-            expect(file.storageFeePaidBy).toBe(testData.requesterAddress)
+            expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
             const link = response.body.links[0]
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)

@@ -542,16 +542,38 @@
                 "description": "The Identity LOC's type",
                 "enum": [
                     "Polkadot",
-                    "Logion"
+                    "Logion",
+                    "Ethereum"
+                ]
+            },
+            "AddressType": {
+                "type": "string",
+                "description": "The address type",
+                "enum": [
+                    "Polkadot",
+                    "Ethereum"
+                ]
+            },
+            "RequesterAddress": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "description": "The type of the address of the requester",
+                        "$ref": "#/components/schemas/AddressType"
+                    },
+                    "address": {
+                        "type": "string",
+                        "description": "The address. Depending on type, either a Polkadot address (SS58 format) or Ethereum (usual '0x' prefixed hexadecimal format)"
+                    }
+                },
+                "required": [
+                    "type",
+                    "address"
                 ]
             },
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
-                    "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the LOC requester"
-                    },
                     "requesterIdentityLoc": {
                         "type": "string",
                         "format": "uuid",
@@ -671,8 +693,8 @@
                         "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
                     },
                     "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the LOC requester (populated for POLKADOT identity only)"
+                        "description": "The address of the requester",
+                        "$ref": "#/components/schemas/RequesterAddress"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
@@ -832,8 +854,8 @@
                         "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
                     },
                     "requesterAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the LOC requester"
+                        "description": "The address of the requester",
+                        "$ref": "#/components/schemas/RequesterAddress"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
