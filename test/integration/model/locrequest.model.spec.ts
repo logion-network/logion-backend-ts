@@ -18,7 +18,7 @@ const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
 
-fdescribe('LocRequestRepository - read accesses', () => {
+describe('LocRequestRepository - read accesses', () => {
 
     const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
     const anotherHash = "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e";
@@ -211,7 +211,7 @@ fdescribe('LocRequestRepository - read accesses', () => {
     }
 })
 
-fdescribe('LocRequestRepository.save()', () => {
+describe('LocRequestRepository.save()', () => {
 
     beforeAll(async () => {
         await connect(ENTITIES);
@@ -287,7 +287,7 @@ fdescribe('LocRequestRepository.save()', () => {
     })
 })
 
-fdescribe('LocRequestRepository - LOC correctly ordered', () => {
+describe('LocRequestRepository - LOC correctly ordered', () => {
 
     beforeAll(async () => {
         await connect(ENTITIES);
