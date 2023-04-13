@@ -15,26 +15,28 @@ export class LocAuthorizationService {
 
     async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot): Promise<string> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
-        if (authenticatedUser.isPolkadot() && await this.isContributor(request, authenticatedUser)) {
+        if (await this.isContributor(request, authenticatedUser)) {
             return authenticatedUser.address;
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");
         }
     }
 
-    async isContributor(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
-        const contributor = authenticatedUser.address;
+    async isContributor(request: LocRequestAggregateRoot, contributor: AuthenticatedUser): Promise<boolean> {
         return (
-            request.ownerAddress === contributor ||
-            request.requesterAddress === contributor ||
+            (request.ownerAddress === contributor.address && contributor.isPolkadot()) ||
+            (request.requesterAddress === contributor.address && request.requesterAddressType === contributor.type) ||
             await this.isSelectedThirdParty(request, contributor)
         );
     }
 
-    private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: string): Promise<boolean> {
+    private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
+        if (!submitter.isPolkadot()) {
+            return false;
+        }
         const api = await this.polkadotService.readyApi();
         const issuers = await getVerifiedIssuers(api, new UUID(request.id));
-        const selectedParticipant = issuers.find(issuer => issuer.address === submitter);
+        const selectedParticipant = issuers.find(issuer => issuer.address === submitter.address);
         return selectedParticipant !== undefined;
     }
 }
