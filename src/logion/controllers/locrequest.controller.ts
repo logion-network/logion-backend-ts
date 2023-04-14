@@ -135,7 +135,7 @@ export class LocRequestController extends ApiController {
         const requesterAddress = authenticatedUser.address !== ownerAddress ? {
             type: authenticatedUser.type,
             address: authenticatedUser.address,
-        } : undefined;
+        } : createLocRequestView.requesterAddress;
         const description: LocRequestDescription = {
             requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,

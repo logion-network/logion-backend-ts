@@ -574,6 +574,10 @@
             "CreateLocRequestView": {
                 "type": "object",
                 "properties": {
+                    "requesterAddress": {
+                        "description": "The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC)",
+                        "$ref": "#/components/schemas/RequesterAddress"
+                    },
                     "requesterIdentityLoc": {
                         "type": "string",
                         "format": "uuid",

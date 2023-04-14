@@ -324,6 +324,8 @@ export interface components {
      * @description A LOC Request to create
      */
     CreateLocRequestView: {
+      /** @description The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC) */
+      requesterAddress?: components["schemas"]["RequesterAddress"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester
