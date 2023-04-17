@@ -50,7 +50,8 @@ export class LocSynchronizer {
                 case "createLogionTransactionLoc":
                 case "createPolkadotIdentityLoc":
                 case "createPolkadotTransactionLoc":
-                case "createCollectionLoc": {
+                case "createCollectionLoc":
+                case "createOtherIdentityLoc": {
                     const locId = extractUuid('loc_id', extrinsic.call.args);
                     await this.mutateLoc(locId, async loc => loc.setLocCreatedDate(timestamp));
                     break;

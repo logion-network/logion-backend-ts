@@ -41,7 +41,8 @@ describe("LocSynchronizer", () => {
             "createLogionTransactionLoc",
             "createPolkadotIdentityLoc",
             "createPolkadotTransactionLoc",
-            "createCollectionLoc"
+            "createCollectionLoc",
+            "createOtherIdentityLoc"
         ]
 
         for (const palletMethod of palletMethods) {
