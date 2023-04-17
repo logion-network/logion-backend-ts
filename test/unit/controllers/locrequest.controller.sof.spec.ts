@@ -17,9 +17,9 @@ import {
     REQUEST_ID,
     setupRequest,
     testDataWithUserIdentityWithType,
-    setupSelectedVtp
+    setupSelectedVtp, mockOwner
 } from "./locrequest.controller.shared.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 
 const { setupApp } = TestApp;
 
@@ -76,7 +76,7 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
     const targetLoc = mockRequest("CLOSED", testDataWithUserIdentityWithType(locType));
     targetLoc.setup(instance => instance.id).returns(locId.toString());
     targetLoc.setup(instance => instance.locType).returns(locType);
-    targetLoc.setup(instance => instance.ownerAddress).returns(ALICE);
+    mockOwner(targetLoc, ALICE_ACCOUNT);
     repository.setup(instance => instance.findById(locId.toString()))
         .returns(Promise.resolve(targetLoc.object()));
 

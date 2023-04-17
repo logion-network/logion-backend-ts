@@ -19,16 +19,21 @@ import {
     IdenfyVerificationStatus
 } from "../services/idenfy/idenfy.types.js";
 import { AMOUNT_PRECISION, EmbeddableFees } from "./fees.js";
+import {
+    SupportedAccountId,
+    EmbeddableSupportedAccountId,
+    accountEquals,
+    polkadotAccount
+} from "./supportedaccountid.model.js";
 
 const { logger } = Log;
 
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 export type IdentityLocType = components["schemas"]["IdentityLocType"];
-export type RequesterAddress = components["schemas"]["RequesterAddress"];
 
 export interface LocRequestDescription {
-    readonly requesterAddress?: RequesterAddress;
+    readonly requesterAddress?: SupportedAccountId;
     readonly requesterIdentityLoc?: string;
     readonly ownerAddress: string;
     readonly description: string;
@@ -54,7 +59,7 @@ export interface FileDescription {
     readonly contentType: string;
     readonly nature: string;
     readonly addedOn?: Moment;
-    readonly submitter: string;
+    readonly submitter: SupportedAccountId;
     readonly restrictedDelivery: boolean;
     readonly size: number;
     readonly fees?: Fees;
@@ -65,7 +70,7 @@ export interface MetadataItemDescription {
     readonly name: string;
     readonly value: string;
     readonly addedOn?: Moment;
-    readonly submitter: string;
+    readonly submitter: SupportedAccountId;
     readonly fees?: Fees;
 }
 
@@ -190,7 +195,7 @@ export class LocRequestAggregateRoot {
                 country: this.userPostalAddress.country || "",
             } : undefined;
         return {
-            requesterAddress: this.getRequesterAddress(),
+            requesterAddress: this.getRequester(),
             requesterIdentityLoc: this.requesterIdentityLocId,
             ownerAddress: this.ownerAddress!,
             description: this.description!,
@@ -204,7 +209,7 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    getRequesterAddress(): RequesterAddress | undefined {
+    getRequester(): SupportedAccountId | undefined {
         return (this.requesterAddressType === "Polkadot" || this.requesterAddressType === "Ethereum") ? {
             address: this.requesterAddress!,
             type: this.requesterAddressType!,
@@ -235,7 +240,7 @@ export class LocRequestAggregateRoot {
         file.contentType = fileDescription.contentType;
         file.draft = true;
         file.nature = fileDescription.nature;
-        file.submitter = fileDescription.submitter;
+        file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
         file.delivered = [];
         file._toAdd = true;
@@ -282,7 +287,7 @@ export class LocRequestAggregateRoot {
             oid: file!.oid,
             cid: file!.cid,
             nature: file!.nature!,
-            submitter: file!.submitter!,
+            submitter: file!.submitter!.toSupportedAccountId(),
             addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
@@ -291,14 +296,14 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    private itemViewable(item: { draft?: boolean, submitter?: string }, viewerAddress?: string): boolean {
+    private itemViewable(item: { draft?: boolean, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
         return !item.draft ||
-            viewerAddress === this.ownerAddress ||
-            item.submitter === viewerAddress ||
-            (viewerAddress !== undefined && viewerAddress === this.requesterAddress && item.submitter === this.ownerAddress);
+            accountEquals(viewerAddress, this.getOwner()) ||
+            accountEquals(viewerAddress, item.submitter) ||
+            (accountEquals(viewerAddress, this.getRequester()) && accountEquals(item.submitter, this.getOwner()))
     }
 
-    getFiles(viewerAddress?: string): FileDescription[] {
+    getFiles(viewerAddress?: SupportedAccountId): FileDescription[] {
         return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
     }
 
@@ -346,7 +351,7 @@ export class LocRequestAggregateRoot {
         item.name = itemDescription.name;
         item.value = itemDescription.value;
         item.draft = true;
-        item.submitter = itemDescription.submitter;
+        item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
     }
@@ -359,13 +364,13 @@ export class LocRequestAggregateRoot {
         return ({
             name: item.name!,
             value: item.value!,
-            submitter: item.submitter!,
+            submitter: item.submitter!.toSupportedAccountId(),
             addedOn: item.addedOn ? moment(item.addedOn) : undefined,
             fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
         })
     }
 
-    getMetadataItems(viewerAddress?: string): MetadataItemDescription[] {
+    getMetadataItems(viewerAddress?: SupportedAccountId): MetadataItemDescription[] {
         return orderAndMap(this.metadata?.filter(item => this.itemViewable(item, viewerAddress)), this.toMetadataItemDescription);
     }
 
@@ -383,14 +388,14 @@ export class LocRequestAggregateRoot {
         metadataItem._toUpdate = true;
     }
 
-    removeMetadataItem(removerAddress: string, name: string): void {
+    removeMetadataItem(remover: SupportedAccountId, name: string): void {
         this.ensureEditable();
         const removedItemIndex: number = this.metadata!.findIndex(link => link.name === name);
         if (removedItemIndex === -1) {
             throw new Error("No metadata item with given name");
         }
         const removedItem: LocMetadataItem = this.metadata![removedItemIndex];
-        if (!this.canRemove(removerAddress, removedItem)) {
+        if (!this.canRemove(remover, removedItem)) {
             throw new Error("Item removal not allowed");
         }
         if (!removedItem.draft) {
@@ -399,11 +404,12 @@ export class LocRequestAggregateRoot {
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
     }
 
-    private canRemove(address: string, item: Submitted | LocLink): boolean {
+    private canRemove(address: SupportedAccountId, item: Submitted | LocLink): boolean {
         if (item instanceof LocLink) {
-            return address === this.ownerAddress;
+            return accountEquals(address, this.getOwner());
         } else {
-            return address === this.ownerAddress || address === item.submitter;
+            return accountEquals(address, this.getOwner()) ||
+                accountEquals(address, item.submitter);
         }
     }
 
@@ -435,7 +441,7 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    removeFile(removerAddress: string, hash: string): FileDescription {
+    removeFile(removerAddress: SupportedAccountId, hash: string): FileDescription {
         this.ensureEditable();
         const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
         if (removedFileIndex === -1) {
@@ -481,8 +487,8 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    getLinks(viewerAddress?: string): LinkDescription[] {
-        return orderAndMap(this.links?.filter(link => !link.draft || this.ownerAddress === viewerAddress), this.toLinkDescription);
+    getLinks(viewerAddress?: SupportedAccountId): LinkDescription[] {
+        return orderAndMap(this.links?.filter(link => !link.draft || accountEquals(this.getOwner(), viewerAddress)), this.toLinkDescription);
     }
 
     setLinkAddedOn(target: string, addedOn: Moment) {
@@ -499,14 +505,14 @@ export class LocRequestAggregateRoot {
         link._toUpdate = true;
     }
 
-    removeLink(removerAddress: string, target: string): void {
+    removeLink(remover: SupportedAccountId, target: string): void {
         this.ensureEditable();
         const removedLinkIndex: number = this.links!.findIndex(link => link.target === target);
         if (removedLinkIndex === -1) {
             throw new Error("No link with given target");
         }
         const removedLink: LocLink = this.links![removedLinkIndex];
-        if (!this.canRemove(removerAddress, removedLink)) {
+        if (!this.canRemove(remover, removedLink)) {
             throw new Error("Item removal not allowed");
         }
         if (!removedLink.draft) {
@@ -668,6 +674,10 @@ export class LocRequestAggregateRoot {
         link.setFee(inclusionFee);
     }
 
+    getOwner(): SupportedAccountId {
+        return polkadotAccount(this.ownerAddress || "");
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -792,8 +802,8 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255, nullable: true })
     nature?: string;
 
-    @Column({ length: 255 })
-    submitter?: string;
+    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableSupportedAccountId;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
@@ -908,8 +918,8 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column("boolean", { default: false })
     draft?: boolean;
 
-    @Column({ length: 255 })
-    submitter?: string;
+    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableSupportedAccountId;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
@@ -925,7 +935,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 }
 
 interface Submitted {
-    submitter?: string;
+    submitter?: EmbeddableSupportedAccountId;
 }
 
 @Entity("loc_link")

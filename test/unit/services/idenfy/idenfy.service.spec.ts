@@ -9,6 +9,11 @@ import { DisabledIdenfyService, EnabledIdenfyService } from "../../../../src/log
 import { IdenfyVerificationSession } from "../../../../src/logion/services/idenfy/idenfy.types.js";
 import { NonTransactionalLocRequestService } from "../../../../src/logion/services/locrequest.service.js";
 import { Readable } from "stream";
+import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
+import {
+    accountEquals,
+    polkadotAccount
+} from "../../../../src/logion/model/supportedaccountid.model.js";
 
 describe("DisabledIdenfyService", () => {
 
@@ -66,7 +71,7 @@ describe("EnabledIdenfyService", () => {
                 && file.contentType === EXPECTED_FILES[fileType].contentType
                 && file.nature === EXPECTED_FILES[fileType].nature
                 && file.name === EXPECTED_FILES[fileType].name
-                && file.submitter === LOC_OWNER
+                && accountEquals(file.submitter, LOC_OWNER_ACCOUNT)
             )));
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));
@@ -92,7 +97,7 @@ const IDENFY_API_KEY = "api-key";
 const IDENFY_API_SECRET = "api-secret";
 const IDENFY_SIGNING_KEY = "signing-key";
 const IDENFY_SCAN_REF = "3af0b5c9-8ef3-4815-8796-5ab3ed942917";
-const LOC_OWNER = ALICE;
+const LOC_OWNER_ACCOUNT = polkadotAccount(ALICE);
 
 function mockEnabledIdenfyService(): {
     locRequest: Mock<LocRequestAggregateRoot>,
@@ -105,7 +110,7 @@ function mockEnabledIdenfyService(): {
 } {
     const locRequest = new Mock<LocRequestAggregateRoot>();
     locRequest.setup(instance => instance.id).returns(REQUEST_ID);
-    locRequest.setup(instance => instance.ownerAddress).returns(LOC_OWNER);
+    mockOwner(locRequest, LOC_OWNER_ACCOUNT)
     const description = new Mock<LocRequestDescription>();
     description.setup(instance => instance.userIdentity).returns({
         firstName: "John",

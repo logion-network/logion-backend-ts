@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE, DEFAULT_LEGAL_OFFICER } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -19,8 +19,12 @@ import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service.js";
 import { UUID } from "bson";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
+import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
-const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const SUBMITTER: SupportedAccountId = {
+    type: "Polkadot",
+    address: "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw"
+};
 
 const PUBLIC_SEAL: PublicSeal = {
     hash: "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a",
@@ -442,7 +446,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
 
     it("submitter removes previously added metadata item", () => testRemovesItem(SUBMITTER));
 
-    function testRemovesItem(remover: string) {
+    function testRemovesItem(remover: SupportedAccountId) {
         givenRequestWithStatus('OPEN');
         const items: MetadataItemDescription[] = [
             {
@@ -472,7 +476,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenHasExpectedMetadataIndices();
     }
 
-    it("owner removes previously added metadata item", () => testRemovesItem(OWNER));
+    it("owner removes previously added metadata item", () => testRemovesItem(OWNER_ACCOUNT));
 
     it("confirms metadata item", () => {
         givenRequestWithStatus('OPEN');
@@ -496,7 +500,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
             {
                 name,
                 value: "value-1",
-                submitter: OWNER,
+                submitter: OWNER_ACCOUNT,
             }
         ])
         thenMetadataIsVisibleToRequester(name);
@@ -549,7 +553,7 @@ describe("LocRequestAggregateRoot (links)", () => {
             }
         ];
         whenAddingLinks(links);
-        whenRemovingLink(OWNER, "target-1")
+        whenRemovingLink(OWNER_ACCOUNT, "target-1")
 
         const newLinks: LinkDescription[] = [
             {
@@ -657,7 +661,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("submitter removes previously added files", () => testRemovesFile(SUBMITTER));
 
-    function testRemovesFile(remover: string) {
+    function testRemovesFile(remover: SupportedAccountId) {
         givenRequestWithStatus('OPEN');
         const files: FileDescription[] = [
             {
@@ -703,7 +707,7 @@ describe("LocRequestAggregateRoot (files)", () => {
         thenHasExpectedFileIndices();
     }
 
-    it("owner removes previously added files", () => testRemovesFile(OWNER));
+    it("owner removes previously added files", () => testRemovesFile(OWNER_ACCOUNT));
 
     it("confirms file", () => {
         givenRequestWithStatus('OPEN');
@@ -735,7 +739,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 contentType: "text/plain",
                 cid: "cid-1234",
                 nature: "nature1",
-                submitter: OWNER,
+                submitter: OWNER_ACCOUNT,
                 restrictedDelivery: false,
                 size: 123,
             }
@@ -879,7 +883,7 @@ function givenClosedCollectionLocWithFile(hash: string) {
         contentType: "text/plain",
         cid: "cid-1234",
         nature: "nature1",
-        submitter: OWNER,
+        submitter: OWNER_ACCOUNT,
         restrictedDelivery: true,
         size: 123,
     });
@@ -1019,7 +1023,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             contentType: "text/plain",
             oid: 1235,
             nature: "nature2",
-            submitter: OWNER,
+            submitter: OWNER_ACCOUNT,
             restrictedDelivery: false,
             size: 123,
         });
@@ -1037,7 +1041,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.addMetadataItem({
             name: "Some other name",
             value: "Some other value",
-            submitter: OWNER,
+            submitter: OWNER_ACCOUNT,
         });
         request.confirmMetadataItem("Some other name");
         request.setMetadataItemAddedOn("Some other name", moment()); // Sync
@@ -1064,10 +1068,12 @@ function givenRequestWithStatus(status: LocRequestStatus) {
     request.metadata = [];
     request.links = [];
     request.ownerAddress = OWNER;
-    request.requesterAddress = SUBMITTER;
+    request.requesterAddress = SUBMITTER.address;
+    request.requesterAddressType = SUBMITTER.type;
 }
 
-const OWNER = DEFAULT_LEGAL_OFFICER;
+const OWNER = ALICE;
+const OWNER_ACCOUNT = ALICE_ACCOUNT;
 
 let request: LocRequestAggregateRoot;
 
@@ -1298,15 +1304,15 @@ function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
 }
 
-function whenRemovingMetadataItem(remover: string, name: string) {
+function whenRemovingMetadataItem(remover: SupportedAccountId, name: string) {
     request.removeMetadataItem(remover, name);
 }
 
-function whenRemovingLink(remover: string, target: string) {
+function whenRemovingLink(remover: SupportedAccountId, target: string) {
     request.removeLink(remover, target);
 }
 
-function whenRemovingFile(remover: string, hash: string) {
+function whenRemovingFile(remover: SupportedAccountId, hash: string) {
     removedFile = request.removeFile(remover, hash);
 }
 

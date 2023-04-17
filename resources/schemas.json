@@ -554,7 +554,7 @@
                     "Ethereum"
                 ]
             },
-            "RequesterAddress": {
+            "SupportedAccountId": {
                 "type": "object",
                 "properties": {
                     "type": {
@@ -576,7 +576,7 @@
                 "properties": {
                     "requesterAddress": {
                         "description": "The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC)",
-                        "$ref": "#/components/schemas/RequesterAddress"
+                        "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
@@ -640,8 +640,8 @@
                         "description": "The date-time of addition (chain time)"
                     },
                     "submitter": {
-                        "type": "string",
-                        "description": "The SS58 address of the file submitter"
+                        "description": "The address of the submitter",
+                        "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "restrictedDelivery": {
                         "type": "boolean",
@@ -681,8 +681,8 @@
                         "description": "The date-time of addition (chain time)"
                     },
                     "submitter": {
-                        "type": "string",
-                        "description": "The SS58 address of the file submitter"
+                        "description": "The address of the submitter",
+                        "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "fees": {
                         "$ref": "#/components/schemas/FeesView"
@@ -698,7 +698,7 @@
                     },
                     "requesterAddress": {
                         "description": "The address of the requester",
-                        "$ref": "#/components/schemas/RequesterAddress"
+                        "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
@@ -859,7 +859,7 @@
                     },
                     "requesterAddress": {
                         "description": "The address of the requester",
-                        "$ref": "#/components/schemas/RequesterAddress"
+                        "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "requesterIdentityLoc": {
                         "type": "string",
@@ -901,8 +901,8 @@
                                     "description": "The date-time of addition (chain time)"
                                 },
                                 "submitter": {
-                                    "type": "string",
-                                    "description": "The SS58 address of the file submitter"
+                                    "description": "The address of the submitter",
+                                    "$ref": "#/components/schemas/SupportedAccountId"
                                 },
                                 "contentType": {
                                     "type": "string",
@@ -960,8 +960,8 @@
                                     "description": "The date-time of addition (chain time)"
                                 },
                                 "submitter": {
-                                    "type": "string",
-                                    "description": "The SS58 address of the metadata item submitter"
+                                    "description": "The address of the submitter",
+                                    "$ref": "#/components/schemas/SupportedAccountId"
                                 }
                             }
                         }

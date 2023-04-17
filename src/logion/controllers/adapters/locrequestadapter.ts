@@ -8,6 +8,7 @@ import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../model/verifiedthirdpartyselection.model.js";
 import { Fees } from "@logion/node-api";
+import { SupportedAccountId } from "../../model/supportedaccountid.model.js";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -30,7 +31,7 @@ export class LocRequestAdapter {
         private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
     ) {}
 
-    async toView(request: LocRequestAggregateRoot, viewer: string, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
+    async toView(request: LocRequestAggregateRoot, viewer: SupportedAccountId, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
         let userPrivateData: UserPrivateData;
         if(userPrivateDataArg) {
             userPrivateData = userPrivateDataArg;

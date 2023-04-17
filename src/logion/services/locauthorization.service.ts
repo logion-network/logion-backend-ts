@@ -4,6 +4,7 @@ import { AuthenticationService, forbidden, PolkadotService } from '@logion/rest-
 import { Request } from 'express';
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot } from '../model/locrequest.model';
+import { SupportedAccountId, accountEquals } from "../model/supportedaccountid.model.js";
 
 @injectable()
 export class LocAuthorizationService {
@@ -13,10 +14,10 @@ export class LocAuthorizationService {
         private polkadotService: PolkadotService,
     ) {}
 
-    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot): Promise<string> {
+    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot): Promise<SupportedAccountId> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
         if (await this.isContributor(request, authenticatedUser)) {
-            return authenticatedUser.address;
+            return authenticatedUser;
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");
         }
@@ -24,8 +25,8 @@ export class LocAuthorizationService {
 
     async isContributor(request: LocRequestAggregateRoot, contributor: AuthenticatedUser): Promise<boolean> {
         return (
-            (request.ownerAddress === contributor.address && contributor.isPolkadot()) ||
-            (request.requesterAddress === contributor.address && request.requesterAddressType === contributor.type) ||
+            accountEquals(request.getOwner(), contributor) ||
+            accountEquals(request.getRequester(), contributor) ||
             await this.isSelectedThirdParty(request, contributor)
         );
     }

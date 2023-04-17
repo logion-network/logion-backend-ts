@@ -13,8 +13,9 @@ import {
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
 import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
+import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 
-const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
 
@@ -100,7 +101,7 @@ describe('LocRequestRepository - read accesses', () => {
         const request = await repository.findById(LOC_WITH_FILES);
         checkDescription([request!], "Transaction", "loc-10");
 
-        expect(request!.getFiles(request?.ownerAddress).length).toBe(1);
+        expect(request!.getFiles(request?.getOwner()).length).toBe(1);
         expect(request!.hasFile(hash)).toBe(true);
         const file = request!.getFile(hash);
         expect(file.name).toBe("a file");
@@ -111,14 +112,14 @@ describe('LocRequestRepository - read accesses', () => {
         expect(file.size).toBe(123);
         expect(request!.files![0].draft).toBe(true);
 
-        const metadata = request!.getMetadataItems(request?.ownerAddress);
+        const metadata = request!.getMetadataItems(request?.getOwner());
         expect(metadata.length).toBe(1);
         expect(metadata[0].name).toBe("a name");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(request!.metadata![0].draft).toBe(true);
 
-        const links = request!.getLinks(request?.ownerAddress);
+        const links = request!.getLinks(request?.getOwner());
         expect(links.length).toBe(1);
         expect(links[0].target).toBe("ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d");
         expect(links[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);

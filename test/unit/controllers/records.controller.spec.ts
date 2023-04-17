@@ -14,7 +14,7 @@ import { GetCollectionItemParams, LogionNodeCollectionService } from "../../../s
 import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { TokensRecordController } from "../../../src/logion/controllers/records.controller.js";
 import {
     TokensRecordRepository,
@@ -493,7 +493,7 @@ function mockModel(
     container.bind(TokensRecordService).toConstantValue(new NonTransactionalTokensRecordService(tokensRecordRepository.object()));
 
     const locAuthorityService = new Mock<LocAuthorizationService>();
-    locAuthorityService.setup(instance => instance.ensureContributor(It.IsAny(), It.IsAny())).returnsAsync(ALICE);
+    locAuthorityService.setup(instance => instance.ensureContributor(It.IsAny(), It.IsAny())).returnsAsync(ALICE_ACCOUNT);
     locAuthorityService.setup(instance => instance.isContributor(It.IsAny(), It.IsAny())).returnsAsync(true);
     container.bind(LocAuthorizationService).toConstantValue(locAuthorityService.object());
 }

@@ -313,7 +313,7 @@ export interface components {
      * @enum {string}
      */
     AddressType: "Polkadot" | "Ethereum";
-    RequesterAddress: {
+    SupportedAccountId: {
       /** @description The type of the address of the requester */
       type: components["schemas"]["AddressType"];
       /** @description The address. Depending on type, either a Polkadot address (SS58 format) or Ethereum (usual '0x' prefixed hexadecimal format) */
@@ -325,7 +325,7 @@ export interface components {
      */
     CreateLocRequestView: {
       /** @description The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC) */
-      requesterAddress?: components["schemas"]["RequesterAddress"];
+      requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester
@@ -360,8 +360,8 @@ export interface components {
        * @description The date-time of addition (chain time)
        */
       addedOn?: string;
-      /** @description The SS58 address of the file submitter */
-      submitter?: string;
+      /** @description The address of the submitter */
+      submitter?: components["schemas"]["SupportedAccountId"];
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
       restrictedDelivery?: boolean;
       /** @description The file's size, in bytes. */
@@ -382,8 +382,8 @@ export interface components {
        * @description The date-time of addition (chain time)
        */
       addedOn?: string;
-      /** @description The SS58 address of the file submitter */
-      submitter?: string;
+      /** @description The address of the submitter */
+      submitter?: components["schemas"]["SupportedAccountId"];
       fees?: components["schemas"]["FeesView"];
     };
     /**
@@ -394,7 +394,7 @@ export interface components {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
       /** @description The address of the requester */
-      requesterAddress?: components["schemas"]["RequesterAddress"];
+      requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester (populated for LOGION identity only)
@@ -492,7 +492,7 @@ export interface components {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
       /** @description The address of the requester */
-      requesterAddress?: components["schemas"]["RequesterAddress"];
+      requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
        * Format: uuid 
        * @description The ID of the LOC identifying the requester
@@ -524,8 +524,8 @@ export interface components {
            * @description The date-time of addition (chain time)
            */
           addedOn?: string;
-          /** @description The SS58 address of the file submitter */
-          submitter?: string;
+          /** @description The address of the submitter */
+          submitter?: components["schemas"]["SupportedAccountId"];
           /** @description The file's content type (MIME) */
           contentType?: string;
         })[];
@@ -555,8 +555,8 @@ export interface components {
            * @description The date-time of addition (chain time)
            */
           addedOn?: string;
-          /** @description The SS58 address of the metadata item submitter */
-          submitter?: string;
+          /** @description The address of the submitter */
+          submitter?: components["schemas"]["SupportedAccountId"];
         })[];
       /** @description Data about LOC voiding */
       voidInfo?: {

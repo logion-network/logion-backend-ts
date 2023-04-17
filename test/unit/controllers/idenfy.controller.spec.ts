@@ -6,6 +6,8 @@ import { It, Mock, Times } from "moq.ts";
 import { IdenfyController } from "../../../src/logion/controllers/idenfy.controller.js";
 import { LocRequestAggregateRoot, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
 import { IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
+import { mockRequester } from "./locrequest.controller.shared.js";
+import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { setupApp } = TestApp;
 
@@ -54,7 +56,7 @@ describe("IdenfyController", () => {
 
 function mockVerification(container: Container, requester: string) {
     const locRequest = new Mock<LocRequestAggregateRoot>();
-    locRequest.setup(instance => instance.requesterAddress).returns(requester);
+    mockRequester(locRequest, polkadotAccount(requester));
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID)).returnsAsync(locRequest.object());
