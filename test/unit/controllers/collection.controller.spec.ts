@@ -35,6 +35,7 @@ import {
     LocRequestService,
     NonTransactionalLocRequestService
 } from "../../../src/logion/services/locrequest.service.js";
+import { polkadotAccount, EmbeddableSupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
@@ -586,7 +587,7 @@ function mockModel(
         collectionFile.cid = CID;
         collectionFile.request = collectionLoc;
         collectionFile.requestId = collectionLocId;
-        collectionFile.submitter = collectionRequester;
+        collectionFile.submitter = EmbeddableSupportedAccountId.from(polkadotAccount(collectionRequester));
         collectionFile.index = 0;
         collectionFile.name = FILE_NAME;
         collectionFile.contentType = CONTENT_TYPE;

@@ -14,7 +14,6 @@ import {
     LocType,
     FetchLocRequestsSpecification,
     LocRequestDescription,
-    RequesterAddress,
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
@@ -36,9 +35,10 @@ import { Option } from "@polkadot/types-codec";
 import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "@polkadot/types/lookup";
 import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
+import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
-export const REQUESTER_ADDRESS: RequesterAddress = { type: "Polkadot", address: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ" };
+export const REQUESTER_ADDRESS = polkadotAccount("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
 
 export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
     "Logion": {
@@ -283,13 +283,17 @@ export function setupRequest(
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
             ownerAddress: description.ownerAddress || ALICE,
-            requesterAddress: description.requesterAddress || (description.requesterIdentityLoc ? undefined : REQUESTER_ADDRESS),
+            requesterAddress: description.requesterAddress,
+            requesterIdentityLoc: description.requesterIdentityLoc,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
-    request.setup(instance => instance.ownerAddress).returns(description.ownerAddress || ALICE);
+    mockOwner(request, polkadotAccount(description.ownerAddress || ALICE))
+    if (description.requesterAddress) {
+        mockRequester(request, description.requesterAddress);
+    }
 }
 
 export function mockLogionIdentityLoc(repository: Mock<LocRequestRepository>, exists: boolean) {
@@ -416,11 +420,11 @@ export function setupSelectedVtp(
         verifiedIssuer.setup(instance => instance.identityLoc).returns({ toString: () => new UUID(VTP_LOC_ID).toDecimalString() } as any);
         maybeVerifiedIssuer.setup(instance => instance.isSome).returns(true);
         maybeVerifiedIssuer.setup(instance => instance.unwrap()).returns(verifiedIssuer.object());
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP.address)).returnsAsync(maybeVerifiedIssuer.object());
     } else {
         const maybeVerifiedIssuer = new Mock<Option<PalletLogionLocVerifiedIssuer>>();
         maybeVerifiedIssuer.setup(instance => instance.isSome).returns(false);
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP_ADDRESS)).returnsAsync(maybeVerifiedIssuer.object());
+        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP.address)).returnsAsync(maybeVerifiedIssuer.object());
     }
 
     if(mode === 'SELECTED') {
@@ -441,7 +445,7 @@ export function setupSelectedVtp(
                     args: [
                         {},
                         {
-                            toString: () => VTP_ADDRESS,
+                            toString: () => VTP.address,
                         }
                     ]
                 }
@@ -452,7 +456,7 @@ export function setupSelectedVtp(
     }
 }
 
-export const VTP_ADDRESS = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
+export const VTP = polkadotAccount("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
 export const VTP_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";
 
 export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean) {
@@ -466,3 +470,17 @@ export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean)
 }
 
 export const VOTE_ID = "123";
+
+export function mockOwner(locRequest: Mock<LocRequestAggregateRoot>, owner: SupportedAccountId) {
+    if (owner.type !== "Polkadot") {
+        throw new Error("Mock Setup failure: loc request owner can only be Polkadot account");
+    }
+    locRequest.setup(instance => instance.ownerAddress).returns(owner.address);
+    locRequest.setup(instance => instance.getOwner()).returns(owner);
+}
+
+export function mockRequester(locRequest: Mock<LocRequestAggregateRoot>, requester: SupportedAccountId) {
+    locRequest.setup(instance => instance.requesterAddress).returns(requester.address);
+    locRequest.setup(instance => instance.requesterAddressType).returns(requester.type);
+    locRequest.setup(instance => instance.getRequester()).returns(requester);
+}

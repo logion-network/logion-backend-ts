@@ -161,7 +161,7 @@ export class EnabledIdenfyService extends IdenfyService {
 
         const clientId = json.clientId;
         const request = requireDefined(await this.locRequestRepository.findById(clientId));
-        const submitter = requireDefined(request.ownerAddress);
+        const submitter = request.getOwner();
 
         const randomPrefix = DateTime.now().toMillis().toString();
         const { hash, cid, size } = await this.storePayload(randomPrefix, raw);

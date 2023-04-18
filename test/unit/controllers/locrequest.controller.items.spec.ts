@@ -4,7 +4,7 @@ import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { BOB, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
@@ -21,26 +21,30 @@ import {
     setupSelectedVtp,
     SetupVtpMode,
     testData,
-    VTP_ADDRESS,
+    VTP,
     setUpVote,
-    setupLoc
+    setupLoc, mockRequester, mockOwner
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
-
+import {
+    polkadotAccount,
+    SupportedAccountId,
+    accountEquals
+} from "../../../src/logion/model/supportedaccountid.model.js";
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('LocRequestController - Items -', () => {
 
     it('adds file to loc', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        locRequest.setup(instance => instance.ownerAddress).returns(ALICE);
-        locRequest.setup(instance => instance.requesterAddress).returns(REQUESTER);
+        mockOwner(locRequest, ALICE_ACCOUNT);
+        mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_VTP'));
         await testAddFileSuccess(app, locRequest);
     })
 
     it('adds file to loc - VTP', async () => {
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const locRequest = new Mock<LocRequestAggregateRoot>();
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'SELECTED'), authenticatedUserMock);
         await testAddFileSuccess(app, locRequest);
@@ -48,8 +52,8 @@ describe('LocRequestController - Items -', () => {
 
     it('fails to add file to loc with wrong hash', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        locRequest.setup(instance => instance.ownerAddress).returns(ALICE);
-        locRequest.setup(instance => instance.requesterAddress).returns(REQUESTER);
+        mockOwner(locRequest, ALICE_ACCOUNT);
+        mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_VTP'));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
@@ -78,7 +82,7 @@ describe('LocRequestController - Items -', () => {
 
     it('fails to add file to loc if unselected VTP', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'UNSELECTED'), authenticatedUserMock);
         await testAddFileForbidden(app);
     });
@@ -89,7 +93,7 @@ describe('LocRequestController - Items -', () => {
     });
 
     it('downloads existing file given its hash and is VTP', async () => {
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForDownloadFile(container, 'SELECTED'), authenticatedUserMock);
         await testDownloadSuccess(app);
     });
@@ -113,7 +117,7 @@ describe('LocRequestController - Items -', () => {
     });
 
     it('fails to download existing file given its hash if unselected VTP', async () => {
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForDownloadFile(container, 'UNSELECTED'), authenticatedUserMock);
         await testDownloadForbidden(app);
     });
@@ -126,7 +130,7 @@ describe('LocRequestController - Items -', () => {
 
     it('deletes a file - VTP', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForDeleteFile(container, locRequest, 'SELECTED'), authenticatedUserMock);
         await testDeleteFileSuccess(app, locRequest, 'SELECTED');
     });
@@ -145,10 +149,10 @@ describe('LocRequestController - Items -', () => {
     });
 
     it('adds a metadata item - VTP', async () => {
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const locRequest = mockRequestForMetadata();
-        locRequest.setup(instance => instance.ownerAddress).returns(ALICE);
-        locRequest.setup(instance => instance.requesterAddress).returns(REQUESTER);
+        mockOwner(locRequest, ALICE_ACCOUNT);
+        mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock)
         await testAddMetadataSuccess(app, locRequest);
     });
@@ -174,7 +178,7 @@ describe('LocRequestController - Items -', () => {
     });
 
     it('deletes a metadata item - VTP', async () => {
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const locRequest = mockRequestForMetadata();
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock);
         await testDeleteMetadataSuccess(app, locRequest, true);
@@ -207,7 +211,10 @@ describe('LocRequestController - Items -', () => {
         await request(app)
             .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
             .expect(200)
-        locRequest.verify(instance => instance.removeLink(ALICE, SOME_LINK_TARGET))
+        locRequest.verify(instance => instance.removeLink(
+            It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            SOME_LINK_TARGET
+        ))
     })
 
     it('confirms a link', async () => {
@@ -238,7 +245,7 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
         .returns(Promise.resolve("cid-42"));
 }
 
-const REQUESTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const REQUESTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
 async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
     const buffer = Buffer.from(SOME_DATA);
@@ -272,14 +279,14 @@ function mockModelForDownloadFile(container: Container, vtpMode: SetupVtpMode, v
     const { request, fileStorageService, repository, voteRepository, nodeApi, loc } = buildMocksForUpdate(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.ownerAddress).returns(ALICE);
-    request.setup(instance => instance.requesterAddress).returns(REQUESTER);
+    mockOwner(request, ALICE_ACCOUNT);
+    mockRequester(request, REQUESTER);
     setupLoc(loc, "Transaction", false);
 
     const hash = SOME_DATA_HASH;
     request.setup(instance => instance.getFile(hash)).returns({
         ...SOME_FILE,
-        submitter: vtpMode !== "NOT_VTP" ? VTP_ADDRESS : REQUESTER,
+        submitter: vtpMode !== "NOT_VTP" ? VTP : REQUESTER,
     });
 
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash;
@@ -335,14 +342,20 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
     const { fileStorageService, repository, nodeApi, loc } = buildMocksForUpdate(container, { request });
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.ownerAddress).returns(ALICE);
-    request.setup(instance => instance.requesterAddress).returns(REQUESTER);
+    mockOwner(request, ALICE_ACCOUNT);
+    mockRequester(request, REQUESTER);
     setupLoc(loc, "Transaction", false);
 
-    if(vtpMode !== 'NOT_VTP') {
-        request.setup(instance => instance.removeFile(VTP_ADDRESS, SOME_DATA_HASH)).returns(SOME_FILE);
+    if (vtpMode !== 'NOT_VTP') {
+        request.setup(instance => instance.removeFile(
+            It.Is<SupportedAccountId>(account => accountEquals(account, VTP)),
+            SOME_DATA_HASH
+        )).returns(SOME_FILE);
     } else {
-        request.setup(instance => instance.removeFile(ALICE, SOME_DATA_HASH)).returns(SOME_FILE);
+        request.setup(instance => instance.removeFile(
+            It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            SOME_DATA_HASH
+        )).returns(SOME_FILE);
     }
 
     setupSelectedVtp({ repository, nodeApi }, vtpMode);
@@ -355,9 +368,15 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
         .delete(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}`)
         .expect(200);
     if(vtpMode !== 'NOT_VTP') {
-        locRequest.verify(instance => instance.removeFile(VTP_ADDRESS, SOME_DATA_HASH));
+        locRequest.verify(instance => instance.removeFile(
+            It.Is<SupportedAccountId>(account => accountEquals(account, VTP)),
+            SOME_DATA_HASH
+        ));
     } else {
-        locRequest.verify(instance => instance.removeFile(ALICE, SOME_DATA_HASH));
+        locRequest.verify(instance => instance.removeFile(
+            It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            SOME_DATA_HASH
+        ));
     }
 }
 
@@ -374,9 +393,9 @@ const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.ownerAddress).returns(ALICE);
-    request.setup(instance => instance.requesterAddress).returns(REQUESTER);
-    request.setup(instance => instance.removeMetadataItem(ALICE, SOME_DATA_NAME))
+    mockOwner(request, ALICE_ACCOUNT);
+    mockRequester(request, REQUESTER);
+    request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, SOME_DATA_NAME))
         .returns()
     request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
         .returns()
@@ -411,9 +430,9 @@ async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocReque
         .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }`)
         .expect(200);
     if(isVtp) {
-        locRequest.verify(instance => instance.removeMetadataItem(VTP_ADDRESS, SOME_DATA_NAME));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, VTP)), SOME_DATA_NAME));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(ALICE, SOME_DATA_NAME));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), SOME_DATA_NAME));
     }
 }
 
@@ -422,7 +441,7 @@ const SOME_LINK_NATURE = 'link_nature'
 
 function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
-    request.setup(instance => instance.removeLink(ALICE, SOME_LINK_TARGET))
+    request.setup(instance => instance.removeLink(ALICE_ACCOUNT, SOME_LINK_TARGET))
         .returns()
     request.setup(instance => instance.confirmLink(SOME_LINK_TARGET))
         .returns()

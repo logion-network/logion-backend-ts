@@ -2,7 +2,7 @@ import { TestApp } from "@logion/rest-api-core";
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { ALICE, BOB, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import {
     FileDescription,
     LinkDescription,
@@ -26,12 +26,13 @@ import {
     testDataWithUserIdentity,
     testDataWithUserIdentityWithType,
     userIdentities,
-    VTP_ADDRESS,
-    setUpVote, VOTE_ID, setupLoc
+    VTP,
+    setUpVote, VOTE_ID, setupLoc, mockRequester, mockOwner
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
 import { Fees } from "@logion/node-api";
+import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -126,7 +127,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('succeeds to get single LOC if VTP', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'SELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -144,7 +145,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('fails to get single LOC if unselected VTP', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP_ADDRESS);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'UNSELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -164,8 +165,8 @@ function mockModelForFetch(container: Container): void {
     const { request, repository, nodeApi } = buildMocksForFetch(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "REJECTED", testDataWithUserIdentity);
-    request.setup(instance => instance.ownerAddress).returns(ALICE);
-    request.setup(instance => instance.requesterAddress).returns(SUBMITTER);
+    mockOwner(request, ALICE_ACCOUNT);
+    mockRequester(request, SUBMITTER);
 
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
@@ -193,7 +194,7 @@ function mockModelForGetSingle(
                 testDataWithLogionIdentity;
     const description: Partial<LocRequestDescription> = {
         ...data,
-        requesterAddress: { type: "Polkadot", address: SUBMITTER }
+        requesterAddress: SUBMITTER
     };
     setupRequest(request, REQUEST_ID, "Transaction", "CLOSED", description,
         [ testFile ],
@@ -209,7 +210,7 @@ function mockModelForGetSingle(
     setUpVote(voteRepository, voteExists);
 }
 
-const SUBMITTER = "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw";
+const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
 const FILE_FEES = new Fees(42n, 24n);
 const testFile: FileDescription = {
@@ -253,7 +254,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.nature).toBe(testFile.nature)
             expect(file.hash).toBe(testFile.hash)
             expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
-            expect(file.submitter).toBe(SUBMITTER)
+            expect(file.submitter).toEqual(SUBMITTER)
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
             expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
             expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
@@ -266,7 +267,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(metadataItem.name).toBe(testMetadataItem.name)
             expect(metadataItem.value).toBe(testMetadataItem.value)
             expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
-            expect(metadataItem.submitter).toBe(SUBMITTER)
+            expect(metadataItem.submitter).toEqual(SUBMITTER)
             expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             checkPrivateData(response, expectedUserPrivateData);
         });
