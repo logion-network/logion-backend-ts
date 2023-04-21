@@ -81,5 +81,5 @@ INSERT INTO loc_request_file_delivered (id, request_id, hash, delivered_file_has
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '15ed922d-5960-4147-a73f-97d362cb7c46', '0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e', '0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a', '2021-10-06T12:16:00.000', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw');
 
 -- Open Ethereum Identity locs
-INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6', 'Ethereum', 'loc-28', 'OPEN', 'Identity');
+INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type, sponsorship_id)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6', 'Ethereum', 'loc-28', 'OPEN', 'Identity', '31f59983-229f-43e1-9d11-435f506b722b');

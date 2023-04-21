@@ -347,6 +347,8 @@ export interface components {
       draft?: boolean;
       /** @description The LOC's template or undefined */
       template?: string;
+      /** @description The ID of the sponsorship to use */
+      sponsorshipId?: string;
     };
     LocFileView: {
       /** @description The file's name */
@@ -483,6 +485,8 @@ export interface components {
       selectedIssuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
       /** @description The LOC's template or undefined */
       template?: string;
+      /** @description The ID of the sponsorship to use */
+      sponsorshipId?: string;
     };
     /**
      * LocPublicView 

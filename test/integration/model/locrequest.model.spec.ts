@@ -147,6 +147,7 @@ describe('LocRequestRepository - read accesses', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, "Identity", "loc-28");
+        expect(requests[0].sponsorshipId).toBeDefined();
     })
 
     it("finds one LOC with restricted deliveries", async () => {
