@@ -99,7 +99,11 @@ export class LocSynchronizer {
                     const locId = extractUuid('collection_loc_id', extrinsic.call.args);
                     await this.addTokensRecord(locId, timestamp, extrinsic);
                     break;
-                    }
+                }
+                case "sponsor":
+                case "withdrawSponsorship":
+                    // Nothing sync
+                    break;
                 default:
                     throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.call.method}`)
             }

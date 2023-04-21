@@ -145,6 +145,17 @@ describe("LocSynchronizer", () => {
         thenCollectionItemSaved();
     });
 
+    it("does not throw on skipped extrinsics", async () => {
+        const palletMethods = [
+            "sponsor",
+            "withdrawSponsorship",
+        ];
+        for (const palletMethod of palletMethods) {
+            givenLocExtrinsic(palletMethod, {});
+            await whenConsumingBlock();
+        }
+    });
+
     it("throws with unknown extrinsic", async () => {
         givenLocExtrinsic("unknownExtrinsic", {});
         givenLocRequest();
