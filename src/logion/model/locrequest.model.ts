@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees } from "@logion/node-api";
+import { Fees, UUID } from "@logion/node-api";
 import { appDataSource, Log } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -44,6 +44,7 @@ export interface LocRequestDescription {
     readonly seal?: PublicSeal;
     readonly company?: string;
     readonly template?: string;
+    readonly sponsorshipId?: UUID;
 }
 
 export interface LocRequestDecision {
@@ -206,6 +207,7 @@ export class LocRequestAggregateRoot {
             seal: toPublicSeal(this.seal),
             company: this.company!,
             template: this.template,
+            sponsorshipId: this.sponsorshipId ? new UUID(this.sponsorshipId) : undefined,
         }
     }
 
@@ -763,6 +765,9 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "template", nullable: true })
     template?: string;
 
+    @Column({ type: "uuid", name: "sponsorship_id", nullable: true })
+    sponsorshipId?: string;
+
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
     _metadataToDelete: LocMetadataItem[] = [];
@@ -1234,6 +1239,7 @@ export class LocRequestFactory {
         request.metadata = [];
         request.links = [];
         request.template = description.template;
+        request.sponsorshipId = description.sponsorshipId?.toString();
         return request;
     }
 

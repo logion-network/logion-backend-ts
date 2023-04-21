@@ -614,6 +614,10 @@
                     "template": {
                         "type": "string",
                         "description": "The LOC's template or undefined"
+                    },
+                    "sponsorshipId": {
+                        "type": "string",
+                        "description": "The ID of the sponsorship to use"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -845,6 +849,10 @@
                     "template": {
                         "type": "string",
                         "description": "The LOC's template or undefined"
+                    },
+                    "sponsorshipId": {
+                        "type": "string",
+                        "description": "The ID of the sponsorship to use"
                     }
                 },
                 "title": "LocRequestView",

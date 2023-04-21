@@ -17,7 +17,7 @@ import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service.js";
-import { UUID } from "bson";
+import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
@@ -230,7 +230,8 @@ describe("LocRequestFactory", () => {
             locType,
             seal,
             company: undefined,
-            template: undefined,
+            template: "some-template",
+            sponsorshipId: new UUID(),
         };
     }
 });
