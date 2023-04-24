@@ -46,6 +46,7 @@ import { VoteRepository } from "../model/vote.model.js";
 import { AuthenticatedUser } from "@logion/authenticator";
 import { LocAuthorizationService } from "../services/locauthorization.service.js";
 import { accountEquals, polkadotAccount } from "../model/supportedaccountid.model.js";
+import { SponsorshipService } from "../services/sponsorship.service.js";
 
 const { logger } = Log;
 
@@ -112,6 +113,7 @@ export class LocRequestController extends ApiController {
         private locRequestService: LocRequestService,
         private voteRepository: VoteRepository,
         private locAuthorizationService: LocAuthorizationService,
+        private sponsorshipService: SponsorshipService,
     ) {
         super();
     }
@@ -138,6 +140,14 @@ export class LocRequestController extends ApiController {
             type: authenticatedUser.type,
             address: authenticatedUser.address,
         } : createLocRequestView.requesterAddress;
+        const sponsorshipId = createLocRequestView.sponsorshipId ? new UUID(createLocRequestView.sponsorshipId) : undefined;
+        if (sponsorshipId) {
+            try {
+                await this.sponsorshipService.validateSponsorship(sponsorshipId);
+            } catch (e) {
+                throw badRequest("" + e);
+            }
+        }
         const description: LocRequestDescription = {
             requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
@@ -149,7 +159,7 @@ export class LocRequestController extends ApiController {
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(createLocRequestView.userPostalAddress) : undefined,
             company: createLocRequestView.company,
             template: createLocRequestView.template,
-            sponsorshipId: createLocRequestView.sponsorshipId ? new UUID(createLocRequestView.sponsorshipId) : undefined,
+            sponsorshipId,
         }
         if (locType === "Identity") {
             if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {
@@ -257,7 +267,8 @@ export class LocRequestController extends ApiController {
             expectedOwnerAddress: specificationView.ownerAddress,
             expectedStatuses: requireDefined(specificationView.statuses),
             expectedLocTypes: specificationView.locTypes,
-            expectedIdentityLocType: specificationView.identityLocType
+            expectedIdentityLocType: specificationView.identityLocType,
+            expectedSponsorshipId: specificationView.sponsorshipId ? new UUID(specificationView.sponsorshipId) : undefined,
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
             const userPrivateData = await this.locRequestAdapter.findUserPrivateData(request);

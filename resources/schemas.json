@@ -1022,6 +1022,11 @@
                     },
                     "identityLocType": {
                         "$ref": "#/components/schemas/IdentityLocType"
+                    },
+                    "sponsorshipId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of sponsorship"
                     }
                 },
                 "title": "FetchLocRequestsSpecificationView",
