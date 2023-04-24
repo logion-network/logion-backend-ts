@@ -108,6 +108,7 @@ export class LocRequestAdapter {
             voteId: vote?.voteId,
             selectedIssuers,
             template: locDescription.template,
+            sponsorshipId: locDescription.sponsorshipId?.toString(),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
