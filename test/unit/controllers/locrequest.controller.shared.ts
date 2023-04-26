@@ -193,7 +193,11 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
 
     const sponsorshipService = existingMocks?.sponsorshipService ? existingMocks.sponsorshipService : new Mock<SponsorshipService>();
     container.bind(SponsorshipService).toConstantValue(sponsorshipService?.object());
-    sponsorshipService.setup(instance => instance.validateSponsorship(It.IsAny<UUID>())).returnsAsync();
+    sponsorshipService.setup(instance => instance.validateSponsorship(
+        It.IsAny<UUID>(),
+        It.IsAny<SupportedAccountId>(),
+        It.IsAny<SupportedAccountId>()
+    )).returnsAsync();
 
     return {
         factory,

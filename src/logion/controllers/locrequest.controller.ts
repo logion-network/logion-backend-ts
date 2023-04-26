@@ -143,7 +143,7 @@ export class LocRequestController extends ApiController {
         const sponsorshipId = createLocRequestView.sponsorshipId ? new UUID(createLocRequestView.sponsorshipId) : undefined;
         if (sponsorshipId) {
             try {
-                await this.sponsorshipService.validateSponsorship(sponsorshipId);
+                await this.sponsorshipService.validateSponsorship(sponsorshipId, owner, authenticatedUser);
             } catch (e) {
                 throw badRequest("" + e);
             }

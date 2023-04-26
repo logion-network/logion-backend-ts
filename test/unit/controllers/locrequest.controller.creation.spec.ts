@@ -27,6 +27,7 @@ import {
     ETHEREUM_REQUESTER
 } from "./locrequest.controller.shared.js";
 import { UUID } from "@logion/node-api";
+import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationFailureWithInvalidSignature, setupApp } = TestApp;
 
@@ -241,8 +242,11 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     mockPolkadotIdentityLoc(repository, hasPolkadotIdentityLoc);
     mockLogionIdentityLoc(repository, hasLogionIdentityLoc);
 
-    sponsorshipService.setup(instance => instance.validateSponsorship(It.Is<UUID>(sponsorshipId => sponsorshipId.toString() === EXISTING_SPONSORSHIP_ID.toString())))
-        .throws(new Error("This sponsorship ID is already used"));
+    sponsorshipService.setup(instance => instance.validateSponsorship(
+        It.Is<UUID>(sponsorshipId => sponsorshipId.toString() === EXISTING_SPONSORSHIP_ID.toString()),
+        It.IsAny<SupportedAccountId>(),
+        It.IsAny<SupportedAccountId>()
+    )).throws(new Error("This sponsorship ID is already used"));
 }
 
 function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
