@@ -22,8 +22,11 @@ import {
     mockLogionIdentityLoc,
     testData,
     checkPrivateData,
-    REQUESTER_ADDRESS
+    REQUESTER_ADDRESS,
+    EXISTING_SPONSORSHIP_ID,
+    ETHEREUM_REQUESTER
 } from "./locrequest.controller.shared.js";
+import { UUID } from "@logion/node-api";
 
 const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationFailureWithInvalidSignature, setupApp } = TestApp;
 
@@ -120,6 +123,27 @@ describe('LocRequestController - Creation -', () => {
                 expect(response.body.id).toBeUndefined();
             });
     });
+
+    it('fails to create an ID LOC Request with an already used sponsorship ID', async () => {
+
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ETHEREUM_REQUESTER.address);
+        const app = setupApp(
+            LocRequestController,
+            container => mockModelForCreation(container, "Identity"),
+            mock,
+        )
+        await request(app)
+            .post('/api/loc-request')
+            .send({
+                sponsorshipId: EXISTING_SPONSORSHIP_ID.toString(),
+                ...testDataWithType("Identity")
+            })
+            .expect(400)
+            .expect('Content-Type', /application\/json/)
+            .then(response => {
+                expect(response.body.errorMessage).toEqual("Error: This sponsorship ID is already used");
+            });
+    })
 });
 
 async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: boolean, locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
@@ -179,7 +203,7 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
 }
 
 function mockModelForCreation(container: Container, locType: LocType, notificationService: Mock<NotificationService> | undefined = undefined, hasPolkadotIdentityLoc: boolean = false, hasLogionIdentityLoc: boolean = false): void {
-    const { factory, repository } = buildMocks(container, { notificationService });
+    const { factory, repository, sponsorshipService } = buildMocks(container, { notificationService });
 
     const draft = mockRequest("DRAFT", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
     factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
@@ -216,6 +240,9 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
 
     mockPolkadotIdentityLoc(repository, hasPolkadotIdentityLoc);
     mockLogionIdentityLoc(repository, hasLogionIdentityLoc);
+
+    sponsorshipService.setup(instance => instance.validateSponsorship(It.Is<UUID>(sponsorshipId => sponsorshipId.toString() === EXISTING_SPONSORSHIP_ID.toString())))
+        .throws(new Error("This sponsorship ID is already used"));
 }
 
 function mockModelForCreationWithLogionIdentityLoc(container: Container): void {

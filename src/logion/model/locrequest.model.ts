@@ -25,6 +25,7 @@ import {
     accountEquals,
     polkadotAccount
 } from "./supportedaccountid.model.js";
+import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
 
 const { logger } = Log;
 
@@ -765,7 +766,7 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "template", nullable: true })
     template?: string;
 
-    @Column({ type: "uuid", name: "sponsorship_id", nullable: true })
+    @Column({ type: "uuid", name: "sponsorship_id", nullable: true, unique: true })
     sponsorshipId?: string;
 
     _filesToDelete: LocFile[] = [];
@@ -985,6 +986,7 @@ export interface FetchLocRequestsSpecification {
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
     readonly expectedIdentityLocType?: IdentityLocType;
+    readonly expectedSponsorshipId?: UUID;
 }
 
 @injectable()
@@ -1068,11 +1070,28 @@ export class LocRequestRepository {
     }
 
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
-        let builder = this.repository.createQueryBuilder("request")
+        let builder = this.createQueryBuilder(specification)
             .leftJoinAndSelect("request.files", "file")
             .leftJoinAndSelect("file.delivered", "delivered")
             .leftJoinAndSelect("request.metadata", "metadata_item")
             .leftJoinAndSelect("request.links", "link");
+
+        builder
+            .orderBy("request.voided_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.closed_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.loc_created_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.decision_on", "DESC", "NULLS FIRST")
+            .addOrderBy("request.created_on", "DESC", "NULLS FIRST");
+
+        return builder.getMany();
+    }
+
+    public async existsBy(specification: FetchLocRequestsSpecification): Promise<boolean> {
+        return this.createQueryBuilder(specification).getExists();
+    }
+
+    public createQueryBuilder(specification: FetchLocRequestsSpecification): SelectQueryBuilder<LocRequestAggregateRoot> {
+        let builder = this.repository.createQueryBuilder("request")
 
         if (specification.expectedRequesterAddress) {
             builder.andWhere("request.requester_address = :expectedRequesterAddress",
@@ -1105,6 +1124,11 @@ export class LocRequestRepository {
             }
         }
 
+        if (specification.expectedSponsorshipId) {
+            builder.andWhere("request.sponsorship_id = :expectedSponsorshipId",
+                {expectedSponsorshipId: specification.expectedSponsorshipId.toString() });
+        }
+
         builder
             .orderBy("request.voided_on", "DESC", "NULLS FIRST")
             .addOrderBy("request.closed_on", "DESC", "NULLS FIRST")
@@ -1112,7 +1136,7 @@ export class LocRequestRepository {
             .addOrderBy("request.decision_on", "DESC", "NULLS FIRST")
             .addOrderBy("request.created_on", "DESC", "NULLS FIRST");
 
-        return builder.getMany();
+        return builder;
     }
 
     async deleteDraftOrRejected(request: LocRequestAggregateRoot): Promise<void> {

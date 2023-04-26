@@ -587,6 +587,11 @@ export interface components {
       /** @description The type of the LOC to fetch */
       locTypes?: (components["schemas"]["LocType"])[];
       identityLocType?: components["schemas"]["IdentityLocType"];
+      /**
+       * Format: uuid 
+       * @description The ID of sponsorship
+       */
+      sponsorshipId?: string;
     };
     /**
      * FetchLocRequestsResponseView 

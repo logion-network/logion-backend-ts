@@ -36,9 +36,16 @@ import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "
 import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
 export const REQUESTER_ADDRESS = polkadotAccount("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+export const ETHEREUM_REQUESTER: SupportedAccountId = {
+    type: "Ethereum",
+    address: "0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6"
+}
+
+export const EXISTING_SPONSORSHIP_ID = new UUID("274d0149-7721-456c-ab7a-f12e77d2ee64");
 
 export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
     "Logion": {
@@ -140,6 +147,7 @@ export interface Mocks {
     nodeApi: Mock<LogionNodeApi>;
     loc: Mock<PalletLogionLocLegalOfficerCase>;
     verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
+    sponsorshipService: Mock<SponsorshipService>;
 }
 
 export function buildMocks(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -183,6 +191,10 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     );
     container.bind(LocAuthorizationService).toConstantValue(locAuthorizationService);
 
+    const sponsorshipService = existingMocks?.sponsorshipService ? existingMocks.sponsorshipService : new Mock<SponsorshipService>();
+    container.bind(SponsorshipService).toConstantValue(sponsorshipService?.object());
+    sponsorshipService.setup(instance => instance.validateSponsorship(It.IsAny<UUID>())).returnsAsync();
+
     return {
         factory,
         request,
@@ -194,6 +206,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         verifiedThirdPartySelectionRepository,
         nodeApi,
         loc,
+        sponsorshipService,
     };
 }
 
@@ -326,13 +339,15 @@ export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, 
             }).object() ] :
         [];
 
-    repository.setup(instance => instance.findBy(It.Is<FetchLocRequestsSpecification>(spec =>
+    const specification = It.Is<FetchLocRequestsSpecification>(spec =>
         spec.expectedStatuses !== undefined &&
         spec.expectedStatuses.includes("CLOSED") &&
         spec.expectedLocTypes !== undefined &&
         spec.expectedLocTypes.includes("Identity") &&
         spec.expectedIdentityLocType === "Polkadot"
-    ))).returns(Promise.resolve(identityLocs));
+    );
+    repository.setup(instance => instance.findBy(specification)).returns(Promise.resolve(identityLocs));
+    repository.setup(instance => instance.existsBy(specification)).returns(Promise.resolve(exists));
 
     repository.setup(instance => instance.findById(locId)).returnsAsync(identityLocs[0]);
 }
@@ -380,6 +395,7 @@ export function setupLoc(
     loc.setup(instance => instance.collectionMaxSize).returns({ isSome: false } as any);
     loc.setup(instance => instance.collectionCanUpload).returns({ isSome: false } as any);
     loc.setup(instance => instance.seal).returns({ isSome: false } as any);
+    loc.setup(instance => instance.sponsorshipId).returns({ isSome: false } as any);
 }
 
 export function setupLocFetch(locId: string, loc: Mock<PalletLogionLocLegalOfficerCase> | undefined, nodeApi: Mock<LogionNodeApi>) {

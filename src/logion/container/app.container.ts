@@ -1,4 +1,4 @@
-import { configureContainer, HealthService } from "@logion/rest-api-core";
+import { configureContainer, HealthService, PolkadotService } from "@logion/rest-api-core";
 import { Container } from 'inversify';
 
 import { ProtectionRequestController } from '../controllers/protectionrequest.controller.js';
@@ -58,6 +58,7 @@ import { TokensRecordController } from "../controllers/records.controller.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../model/tokensrecord.model.js";
 import { LogionNodeTokensRecordService, TokensRecordService, TransactionalTokensRecordService } from "../services/tokensrecord.service.js";
 import { LocAuthorizationService } from "../services/locauthorization.service.js";
+import { SponsorshipService } from "../services/sponsorship.service.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -141,6 +142,7 @@ container.bind(LogionNodeTokensRecordService).toSelf();
 container.bind(TokensRecordService).toService(TransactionalTokensRecordService);
 container.bind(TransactionalTokensRecordService).toSelf();
 container.bind(LocAuthorizationService).toSelf();
+container.bind(SponsorshipService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

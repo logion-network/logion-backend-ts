@@ -14,6 +14,7 @@ import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
 import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { UUID } from "@logion/node-api";
 
 const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
@@ -52,6 +53,8 @@ describe('LocRequestRepository - read accesses', () => {
         expect(requests[0].iDenfyVerification?.scanRef).toBeNull();
         expect(requests[0].iDenfyVerification?.status).toBeNull();
         expect(requests[0].iDenfyVerification?.callbackPayload).toBeNull();
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("find LOCS with Polkadot requester", async () => {
@@ -67,6 +70,8 @@ describe('LocRequestRepository - read accesses', () => {
         expect(requestWithItems?.files?.length).toBe(1);
         expect(requestWithItems?.metadata?.length).toBe(1);
         expect(requestWithItems?.links?.length).toBe(1);
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("find LOCS with Logion requester", async () => {
@@ -75,6 +80,8 @@ describe('LocRequestRepository - read accesses', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-14", "loc-15", "loc-16", "loc-17", "loc-18", "loc-19");
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("find by requester and status", async () => {
@@ -95,6 +102,8 @@ describe('LocRequestRepository - read accesses', () => {
             phoneNumber: '+123456',
         });
         expect(requests[0].status).toBe("REJECTED");
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("finds loc with files, metadata and links", async () => {
@@ -139,6 +148,8 @@ describe('LocRequestRepository - read accesses', () => {
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("finds Identity LOC with Ethereum requester", async () => {
@@ -148,6 +159,18 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, "Identity", "loc-28");
         expect(requests[0].sponsorshipId).toBeDefined();
+
+        expect(await repository.existsBy(query)).toBeTrue();
+    })
+
+    it("finds Identity LOC by sponsorship id", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedSponsorshipId: new UUID("31f59983-229f-43e1-9d11-435f506b722b")
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, "Identity", "loc-28");
+
+        expect(await repository.existsBy(query)).toBeTrue();
     })
 
     it("finds one LOC with restricted deliveries", async () => {
@@ -158,16 +181,19 @@ describe('LocRequestRepository - read accesses', () => {
     });
 
     it("finds LOC with restricted deliveries based on criteria", async () => {
-        const requests = await repository.findBy({
+        const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
             expectedRequesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
             expectedStatuses: ["CLOSED"],
             expectedLocTypes:["Identity"],
-        });
+        };
+        const requests = await repository.findBy(query);
         const request = requests[0];
         expect(request.files?.length).toBe(2);
         const file = request.files![0];
         expect(file.delivered?.length).toBe(3);
+
+        expect(await repository.existsBy(query)).toBeTrue();
     });
 
     it("finds deliveries", async () => {
@@ -200,6 +226,15 @@ describe('LocRequestRepository - read accesses', () => {
     it("finds no delivery with unknown copy hash", async () => {
         const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash: "0xb8af3be22a2395a9961cfe43cdbc7e731f334c8272a9903db29d4ff584b3934a"})
         expect(delivered).toBeNull();
+    })
+
+    it("existsBy returns false on non-existent data", async () => {
+        const results: boolean[] = await Promise.all([
+            repository.existsBy({ "expectedOwnerAddress": "Unknown" }),
+            repository.existsBy({ "expectedRequesterAddress": "Unknown" }),
+            repository.existsBy({ "expectedSponsorshipId": new UUID("b293fccf-0972-4d20-b04e-757db329ec57") })
+        ]);
+        expect(results).toEqual([ false, false, false ]);
     })
 
     function checkDelivery(delivered: Record<string, LocFileDelivered[]>) {
