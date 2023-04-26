@@ -228,7 +228,7 @@ describe('LocRequestRepository - read accesses', () => {
         expect(delivered).toBeNull();
     })
 
-    it("", async () => {
+    it("existsBy returns false on non-existent data", async () => {
         const results: boolean[] = await Promise.all([
             repository.existsBy({ "expectedOwnerAddress": "Unknown" }),
             repository.existsBy({ "expectedRequesterAddress": "Unknown" }),
