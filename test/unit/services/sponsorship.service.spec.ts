@@ -1,5 +1,5 @@
 import { Mock, It } from "moq.ts";
-import { Queries, UUID, Sponsorship } from "@logion/node-api";
+import { UUID, Sponsorship, LogionNodeApiClass } from "@logion/node-api";
 import { LocRequestRepository, FetchLocRequestsSpecification } from "../../../src/logion/model/locrequest.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
 import { PolkadotService } from "@logion/rest-api-core";
@@ -8,7 +8,7 @@ import { REQUESTER_ADDRESS } from "../controllers/locrequest.controller.shared.j
 import { polkadotAccount, SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const locRequestRepository: Mock<LocRequestRepository> = new Mock<LocRequestRepository>();
-const queries: Mock<Queries> = new Mock<Queries>();
+const logionApi: Mock<LogionNodeApiClass> = new Mock<LogionNodeApiClass>();
 
 const sponsorshipNotFound = new UUID();
 const sponsorshipAlreadyRequested = new UUID();
@@ -66,8 +66,8 @@ function mockRepository(sponsorshipId: UUID, exists: boolean) {
         .returnsAsync(exists)
 }
 
-function mockQueries(sponsorshipId: UUID, sponsorship: Sponsorship | undefined) {
-    queries.setup(instance => instance.getSponsorship(sponsorshipId))
+function mockLogionApi(sponsorshipId: UUID, sponsorship: Sponsorship | undefined) {
+    logionApi.setup(instance => instance.queries.getSponsorship(sponsorshipId))
         .returnsAsync(sponsorship);
 }
 
@@ -88,14 +88,14 @@ function createService(): SponsorshipService {
     mockRepository(sponsorshipAlreadyOpenDifferentLLO, false);
     mockRepository(validSponsorship, false);
 
-    mockQueries(sponsorshipNotFound, undefined);
-    mockQueries(sponsorshipAlreadyRequested, mockSponsorship(undefined));
-    mockQueries(sponsorshipAlreadyOpenSameLLO, mockSponsorship(openLocId));
-    mockQueries(sponsorshipAlreadyOpenDifferentLLO, mockSponsorship(openLocId));
-    mockQueries(validSponsorship, mockSponsorship(undefined));
+    mockLogionApi(sponsorshipNotFound, undefined);
+    mockLogionApi(sponsorshipAlreadyRequested, mockSponsorship(undefined));
+    mockLogionApi(sponsorshipAlreadyOpenSameLLO, mockSponsorship(openLocId));
+    mockLogionApi(sponsorshipAlreadyOpenDifferentLLO, mockSponsorship(openLocId));
+    mockLogionApi(validSponsorship, mockSponsorship(undefined));
 
     const polkadotService = {
-        queries: () => Promise.resolve(queries.object())
+        readyApi: () => Promise.resolve(logionApi.object())
     }
     return new SponsorshipService(
         polkadotService as PolkadotService,

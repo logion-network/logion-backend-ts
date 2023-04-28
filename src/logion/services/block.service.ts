@@ -25,7 +25,7 @@ export class BlockExtrinsicsService {
 
     async getHeadBlockHash(): Promise<Hash> {
         const api = await this.polkadotService.readyApi();
-        return await api.rpc.chain.getFinalizedHead();
+        return await api.polkadot.rpc.chain.getFinalizedHead();
     }
 
     async getBlocksUpTo(hash: Hash, maxBlocks: bigint): Promise<SignedBlock[]> {
@@ -44,12 +44,12 @@ export class BlockExtrinsicsService {
 
     async getBlockHash(blockNumber: bigint): Promise<Hash> {
         const api = await this.polkadotService.readyApi();
-        return await api.rpc.chain.getBlockHash(blockNumber);
+        return await api.polkadot.rpc.chain.getBlockHash(blockNumber);
     }
 
     async getBlockByHash(hash: Hash): Promise<SignedBlock> {
         const api = await this.polkadotService.readyApi();
-        const block = await api.rpc.chain.getBlock(hash);
+        const block = await api.polkadot.rpc.chain.getBlock(hash);
         if (block === undefined) {
             throw new Error('Block not found');
         } else {
@@ -59,7 +59,7 @@ export class BlockExtrinsicsService {
 
     async getExtendedBlockByHash(hash: Hash): Promise<SignedBlockExtended> {
         const api = await this.polkadotService.readyApi();
-        const block = await api.derive.chain.getBlock(hash);
+        const block = await api.polkadot.derive.chain.getBlock(hash);
         if (block === undefined) {
             throw new Error('Block not found');
         } else {
@@ -69,7 +69,7 @@ export class BlockExtrinsicsService {
 
     async getBlockExtrinsics(block: SignedBlockExtended): Promise<BlockExtrinsics> {
         const api = await this.polkadotService.readyApi();
-        const builder = new ExtrinsicsBuilder(api, block);
+        const builder = new ExtrinsicsBuilder(api.polkadot, block);
         const extrinsics = await builder.build();
         return {
             number: BigInt(block.block.header.number.toString()),

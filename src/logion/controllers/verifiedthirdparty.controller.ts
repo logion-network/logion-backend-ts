@@ -5,7 +5,7 @@ import { addTag, AuthenticationService, badRequest, PolkadotService, setControll
 import { components } from "./components.js";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 
-import { UUID, VerifiedIssuer, getLegalOfficerVerifiedIssuers } from "@logion/node-api";
+import { UUID, VerifiedIssuerType } from "@logion/node-api";
 import { toUserIdentityView } from "./adapters/locrequestadapter.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -39,14 +39,14 @@ export class VerifiedThirdPartyController extends ApiController {
         await authenticatedUser.requireLegalOfficerOnNode();
 
         const api = await this.polkadotService.readyApi();
-        const issuers = await getLegalOfficerVerifiedIssuers(api, authenticatedUser.address);
+        const issuers = await api.queries.getLegalOfficerVerifiedIssuers(authenticatedUser.address);
 
         return {
             issuers: await this.toVerifiedIssuersIdentityResponse(authenticatedUser.address, issuers),
         };
     }
 
-    private async toVerifiedIssuersIdentityResponse(legalOfficerAddress: string, issuers: VerifiedIssuer[]): Promise<VerifiedIssuerIdentity[]> {
+    private async toVerifiedIssuersIdentityResponse(legalOfficerAddress: string, issuers: VerifiedIssuerType[]): Promise<VerifiedIssuerIdentity[]> {
         const issuersIdentity: VerifiedIssuerIdentity[] = [];
         for(const issuer of issuers) {
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuer.address);
@@ -61,7 +61,7 @@ export class VerifiedThirdPartyController extends ApiController {
 
     private async getIssuerIdentityLoc(legalOfficerAddress: string, issuerAddress: string) {
         const api = await this.polkadotService.readyApi();
-        const verifiedIssuer = await api.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
+        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
         if(verifiedIssuer.isNone) {
             throw badRequest(`${issuerAddress} is not an issuer of LO ${legalOfficerAddress}`);
         }

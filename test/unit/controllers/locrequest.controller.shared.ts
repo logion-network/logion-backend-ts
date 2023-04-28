@@ -30,16 +30,15 @@ import { LocRequestService, NonTransactionalLocRequestService } from "../../../s
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
-import { LogionNodeApi, UUID } from "@logion/node-api";
-import { Option } from "@polkadot/types-codec";
-import { PalletLogionLocVerifiedIssuer, PalletLogionLocLegalOfficerCase } from "@polkadot/types/lookup";
+import { LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType } from "@logion/node-api";
 import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
+import { validAccountId } from "@logion/rest-api-core/dist/TestUtil.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
-export const REQUESTER_ADDRESS = polkadotAccount("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+export const REQUESTER_ADDRESS = validAccountId("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
 export const ETHEREUM_REQUESTER: SupportedAccountId = {
     type: "Ethereum",
     address: "0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6"
@@ -144,8 +143,8 @@ export interface Mocks {
     notificationService: Mock<NotificationService>;
     collectionRepository: Mock<CollectionRepository>;
     voteRepository: Mock<VoteRepository>;
-    nodeApi: Mock<LogionNodeApi>;
-    loc: Mock<PalletLogionLocLegalOfficerCase>;
+    nodeApi: Mock<LogionNodeApiClass>;
+    loc: Mock<LocBatch>;
     verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
     sponsorshipService: Mock<SponsorshipService>;
 }
@@ -180,10 +179,10 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const polkadotService = new Mock<PolkadotService>();
     container.bind(PolkadotService).toConstantValue(polkadotService.object());
 
-    const nodeApi = existingMocks?.nodeApi ? existingMocks.nodeApi : new Mock<LogionNodeApi>();
+    const nodeApi = existingMocks?.nodeApi ? existingMocks.nodeApi : new Mock<LogionNodeApiClass>();
     polkadotService.setup(instance => instance.readyApi()).returnsAsync(nodeApi.object());
 
-    const loc = existingMocks?.loc ? existingMocks.loc  : new Mock<PalletLogionLocLegalOfficerCase>();
+    const loc = existingMocks?.loc ? existingMocks.loc  : new Mock<LocBatch>();
 
     const locAuthorizationService = new LocAuthorizationService(
         container.get(AuthenticationService),
@@ -380,38 +379,11 @@ export function setupRequestFetch(requestId: string, request: Mock<LocRequestAgg
         .returns(Promise.resolve(request.object()));
 }
 
-export function setupLoc(
-    loc: Mock<PalletLogionLocLegalOfficerCase>,
-    locType: LocType,
-    closed: boolean,
-    description: Partial<LocRequestDescription> = {},
-) {
-    loc.setup(instance => instance.owner).returns({ toString: () => description.ownerAddress || ALICE } as any);
-    loc.setup(instance => instance.requester).returns({ isAddress: true, asAccount: { toString: () => description.requesterAddress || REQUESTER_ADDRESS }, isLoc: false } as any);
-    loc.setup(instance => instance.metadata).returns({ toArray: () => [] } as any);
-    loc.setup(instance => instance.files).returns({ toArray: () => [] } as any);
-    loc.setup(instance => instance.links).returns({ toArray: () => [] } as any);
-    loc.setup(instance => instance.closed).returns({ isTrue: () => closed } as any);
-    loc.setup(instance => instance.locType).returns({ toString: () => locType } as any);
-    loc.setup(instance => instance.voidInfo).returns({ isSome: false } as any);
-    loc.setup(instance => instance.replacerOf).returns({ isSome: false } as any);
-    loc.setup(instance => instance.collectionLastBlockSubmission).returns({ isSome: false } as any);
-    loc.setup(instance => instance.collectionMaxSize).returns({ isSome: false } as any);
-    loc.setup(instance => instance.collectionCanUpload).returns({ isSome: false } as any);
-    loc.setup(instance => instance.seal).returns({ isSome: false } as any);
-    loc.setup(instance => instance.sponsorshipId).returns({ isSome: false } as any);
-}
-
-export function setupLocFetch(locId: string, loc: Mock<PalletLogionLocLegalOfficerCase> | undefined, nodeApi: Mock<LogionNodeApi>) {
-    const maybeLoc = new Mock<Option<PalletLogionLocLegalOfficerCase>>();
-    maybeLoc.setup(instance => instance.isSome).returns(loc !== undefined);
-    maybeLoc.setup(instance => instance.isNone).returns(loc === undefined);
-    if(loc) {
-        maybeLoc.setup(instance => instance.unwrap()).returns(loc.object());
-    }
+export function setupLocFetch(locId: string, locBatch: Mock<LocBatch>, nodeApi: Mock<LogionNodeApiClass>) {
     const locIdUuid = new UUID(locId);
-    nodeApi.setup(instance => instance.query.logionLoc.locMap(locIdUuid.toHexString())).returnsAsync(maybeLoc.object());
-    nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(ALICE)).returnsAsync([]);
+    nodeApi.setup(instance => instance.batch.locs(It.Is<UUID[]>(ids => ids.length === 1 && ids[0].toString() === locIdUuid.toString())))
+        .returns(locBatch.object());
+    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE)).returnsAsync([]);
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -426,53 +398,21 @@ export function buildMocksForUpdate(container: Container, existingMocks?: Partia
 export type SetupVtpMode = 'NOT_VTP' | 'SELECTED' | 'UNSELECTED';
 
 export function setupSelectedVtp(
-    mocks: {
-        repository: Mock<LocRequestRepository>,
-        nodeApi: Mock<LogionNodeApi>,
-    },
+    loc: Mock<LocBatch>,
     mode: SetupVtpMode,
 ) {
-    const { repository, nodeApi } = mocks;
-
-    if(mode !== "NOT_VTP") {
-        const maybeVerifiedIssuer = new Mock<Option<PalletLogionLocVerifiedIssuer>>();
-        const verifiedIssuer = new Mock<PalletLogionLocVerifiedIssuer>();
-        verifiedIssuer.setup(instance => instance.identityLoc).returns({ toString: () => new UUID(VTP_LOC_ID).toDecimalString() } as any);
-        maybeVerifiedIssuer.setup(instance => instance.isSome).returns(true);
-        maybeVerifiedIssuer.setup(instance => instance.unwrap()).returns(verifiedIssuer.object());
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP.address)).returnsAsync(maybeVerifiedIssuer.object());
-    } else {
-        const maybeVerifiedIssuer = new Mock<Option<PalletLogionLocVerifiedIssuer>>();
-        maybeVerifiedIssuer.setup(instance => instance.isSome).returns(false);
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersMap(ALICE, VTP.address)).returnsAsync(maybeVerifiedIssuer.object());
-    }
-
     if(mode === 'SELECTED') {
-        const vtpIdentityLocRequest = new Mock<LocRequestAggregateRoot>();
-        vtpIdentityLocRequest.setup(instance => instance.id).returns(VTP_LOC_ID);
-        vtpIdentityLocRequest.setup(instance => instance.getDescription()).returns({
-            
-        } as LocRequestDescription);
-        repository.setup(instance => instance.findById(VTP_LOC_ID)).returnsAsync(vtpIdentityLocRequest.object());
-
-        const vtpIdentityLoc = new Mock<PalletLogionLocLegalOfficerCase>();
-        setupLoc(vtpIdentityLoc, "Identity", true);
-        setupLocFetch(VTP_LOC_ID, vtpIdentityLoc, nodeApi);
-
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(new UUID(REQUEST_ID).toDecimalString())).returnsAsync([
-            [
+        loc.setup(instance => instance.getLocsVerifiedIssuers()).returnsAsync({
+            [ new UUID(REQUEST_ID).toDecimalString() ]: [
                 {
-                    args: [
-                        {},
-                        {
-                            toString: () => VTP.address,
-                        }
-                    ]
-                }
+                    address: VTP.address
+                } as unknown as VerifiedIssuerType
             ]
-        ] as any);
+        });
     } else {
-        nodeApi.setup(instance => instance.query.logionLoc.verifiedIssuersByLocMap.entries(new UUID(REQUEST_ID).toDecimalString())).returnsAsync([]);
+        loc.setup(instance => instance.getLocsVerifiedIssuers()).returnsAsync({
+            [ new UUID(REQUEST_ID).toDecimalString() ]: []
+        });
     }
 }
 

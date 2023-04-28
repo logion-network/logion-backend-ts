@@ -27,7 +27,7 @@ import {
     testDataWithUserIdentityWithType,
     userIdentities,
     VTP,
-    setUpVote, VOTE_ID, setupLoc, mockRequester, mockOwner
+    setUpVote, VOTE_ID, mockRequester, mockOwner
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
@@ -53,7 +53,8 @@ describe('LocRequestController - Fetch -', () => {
                 expect(response.body.requests.length).toBe(1);
                 const request1 = response.body.requests[0];
                 expect(request1.id).toBe(REQUEST_ID);
-                expect(request1.requesterAddress).toEqual(testData.requesterAddress);
+                expect(request1.requesterAddress.address).toEqual(testData.requesterAddress?.address);
+                expect(request1.requesterAddress.type).toEqual(testData.requesterAddress?.type);
                 expect(request1.ownerAddress).toBe(ALICE);
                 expect(request1.status).toBe("REJECTED");
                 expect(request1.rejectReason).toBe(REJECT_REASON);
@@ -162,7 +163,7 @@ describe('LocRequestController - Fetch -', () => {
 });
 
 function mockModelForFetch(container: Container): void {
-    const { request, repository, nodeApi } = buildMocksForFetch(container);
+    const { request, repository, loc } = buildMocksForFetch(container);
 
     setupRequest(request, REQUEST_ID, "Transaction", "REJECTED", testDataWithUserIdentity);
     mockOwner(request, ALICE_ACCOUNT);
@@ -171,7 +172,7 @@ function mockModelForFetch(container: Container): void {
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
 
-    setupSelectedVtp({ repository, nodeApi }, 'NOT_VTP');
+    setupSelectedVtp(loc, 'NOT_VTP');
     repository.setup(instance => instance.findBy)
         .returns(() => Promise.resolve([ request.object() ]));
 }
@@ -185,7 +186,7 @@ function mockModelForGetSingle(
     vtpMode: SetupVtpMode = 'NOT_VTP',
     voteExists = true
 ): void {
-    const { request, repository, voteRepository, nodeApi, loc } = buildMocksForFetch(container);
+    const { request, repository, voteRepository, loc } = buildMocksForFetch(container);
 
     const data =
         identityLocation === "EmbeddedInLoc" ?
@@ -201,12 +202,11 @@ function mockModelForGetSingle(
         [ testMetadataItem ],
         [ testLink ],
     );
-    setupLoc(loc, "Transaction", true, description);
 
     mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
     mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
-    setupSelectedVtp({ repository, nodeApi }, vtpMode);
+    setupSelectedVtp(loc, vtpMode);
     setUpVote(voteRepository, voteExists);
 }
 

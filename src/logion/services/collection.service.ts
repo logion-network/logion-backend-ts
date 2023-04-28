@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, PolkadotService, requireDefined } from "@logion/rest-api-core";
-import { ItemFile, CollectionItem, getCollectionItem, UUID } from "@logion/node-api";
+import { ItemFile, CollectionItem, UUID } from "@logion/node-api";
 import { CollectionItemAggregateRoot, CollectionRepository } from "../model/collection.model.js";
 
 export interface GetCollectionItemParams {
@@ -22,11 +22,10 @@ export class LogionNodeCollectionService {
     async getCollectionItem(params: GetCollectionItemParams): Promise<CollectionItem | undefined> {
         const { collectionLocId, itemId } = params;
         const api = await this.polkadotService.readyApi();
-        return await getCollectionItem({
-            api,
-            locId: new UUID(collectionLocId),
+        return await api.queries.getCollectionItem(
+            new UUID(collectionLocId),
             itemId
-        });
+        );
     }
 
     async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<ItemFile | undefined> {
