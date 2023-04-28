@@ -1,5 +1,5 @@
 import { AuthenticatedUser } from "@logion/authenticator";
-import { getVerifiedIssuers, UUID } from "@logion/node-api";
+import { UUID } from "@logion/node-api";
 import { AuthenticationService, forbidden, PolkadotService } from '@logion/rest-api-core';
 import { Request } from 'express';
 import { injectable } from 'inversify';
@@ -36,7 +36,8 @@ export class LocAuthorizationService {
             return false;
         }
         const api = await this.polkadotService.readyApi();
-        const issuers = await getVerifiedIssuers(api, new UUID(request.id));
+        const locId = new UUID(request.id);
+        const issuers = (await api.batch.locs([ locId ]).getLocsVerifiedIssuers())[ locId.toDecimalString() ];
         const selectedParticipant = issuers.find(issuer => issuer.address === submitter.address);
         return selectedParticipant !== undefined;
     }

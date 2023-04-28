@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, PolkadotService, requireDefined } from "@logion/rest-api-core";
-import { UUID, TokensRecord, toTokensRecord, TokensRecordFile } from "@logion/node-api";
+import { UUID, TypesTokensRecord, Adapters, TypesTokensRecordFile } from "@logion/node-api";
 import { TokensRecordAggregateRoot, TokensRecordRepository } from "../model/tokensrecord.model.js";
 
 export interface GetTokensRecordParams {
@@ -19,18 +19,21 @@ export class LogionNodeTokensRecordService {
         private polkadotService: PolkadotService,
     ) {}
 
-    async getTokensRecord(params: GetTokensRecordParams): Promise<TokensRecord | undefined> {
+    async getTokensRecord(params: GetTokensRecordParams): Promise<TypesTokensRecord | undefined> {
         const { collectionLocId, recordId } = params;
         const api = await this.polkadotService.readyApi();
-        const substrateObject = await api.query.logionLoc.tokensRecordsMap(new UUID(collectionLocId).toDecimalString(), recordId);
+        const substrateObject = await api.polkadot.query.logionLoc.tokensRecordsMap(
+            api.adapters.toNonCompactLocId(new UUID(collectionLocId)),
+            recordId
+        );
         if(substrateObject.isSome) {
-            return toTokensRecord(substrateObject.unwrap());
+            return Adapters.toTokensRecord(substrateObject.unwrap());
         } else {
             return undefined;
         }
     }
 
-    async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TokensRecordFile | undefined> {
+    async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TypesTokensRecordFile | undefined> {
         const { hash } = params;
         const record = await this.getTokensRecord(params);
         return record?.files.find(itemFile => itemFile.hash === hash);

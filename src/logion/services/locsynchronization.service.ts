@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { UUID, asBigInt, asHexString, asJsonObject, asString, isHexString, Fees } from "@logion/node-api";
+import { UUID, Adapters, Fees } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
@@ -111,11 +111,11 @@ export class LocSynchronizer {
     }
 
     private getFileHash(extrinsic: JsonExtrinsic): string {
-        const file = asJsonObject(extrinsic.call.args['file']);
-        if("hash_" in file && isHexString(file.hash_)) {
-            return asHexString(file.hash_);
-        } else if("hash" in file && isHexString(file.hash)) {
-            return asHexString(file.hash);
+        const file = Adapters.asJsonObject(extrinsic.call.args['file']);
+        if("hash_" in file && Adapters.isHexString(file.hash_)) {
+            return Adapters.asHexString(file.hash_);
+        } else if("hash" in file && Adapters.isHexString(file.hash)) {
+            return Adapters.asHexString(file.hash);
         } else {
             throw new Error("File has no hash");
         }
@@ -129,7 +129,7 @@ export class LocSynchronizer {
     }
 
     private async updateMetadataItem(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const name = asString(asJsonObject(extrinsic.call.args['item']).name);
+        const name = Adapters.asString(Adapters.asJsonObject(extrinsic.call.args['item']).name);
         loc.setMetadataItemAddedOn(name, timestamp);
         const inclusionFee = await extrinsic.partialFee();
         if(inclusionFee) {
@@ -152,7 +152,7 @@ export class LocSynchronizer {
     }
 
     private async updateLink(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const decimalTarget = asBigInt(asJsonObject(extrinsic.call.args['link']).id).toString();
+        const decimalTarget = Adapters.asBigInt(Adapters.asJsonObject(extrinsic.call.args['link']).id).toString();
         const target = UUID.fromDecimalStringOrThrow(decimalTarget).toString();
         loc.setLinkAddedOn(target, timestamp);
         const inclusionFee = await extrinsic.partialFee();
@@ -165,7 +165,7 @@ export class LocSynchronizer {
 
     private async addCollectionItem(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const collectionLocId = extractUuid('collection_loc_id', extrinsic.call.args);
-        const itemId = asHexString(extrinsic.call.args['item_id']);
+        const itemId = Adapters.asHexString(extrinsic.call.args['item_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId);
@@ -190,7 +190,7 @@ export class LocSynchronizer {
         const nominated = extrinsic.call.method === "nominateIssuer";
         const legalOfficerAddress = requireDefined(extrinsic.signer);
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
-            const issuerAddress = asString(extrinsic.call.args["issuer"]);
+            const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
             if(identityLoc) {
                 logger.info("Handling nomination/dismissal of issuer %s", issuerAddress);
@@ -208,12 +208,12 @@ export class LocSynchronizer {
 
     private async getIssuerIdentityLoc(legalOfficerAddress: string, issuerAddress: string) {
         const api = await this.polkadotService.readyApi();
-        const verifiedIssuer = await api.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
+        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
         if(verifiedIssuer.isNone) {
             throw new Error(`${issuerAddress} is not an issuer of LO ${legalOfficerAddress}`);
         }
 
-        const identityLocId = UUID.fromDecimalStringOrThrow(verifiedIssuer.unwrap().identityLoc.toString());
+        const identityLocId = api.adapters.fromLocId(verifiedIssuer.unwrap().identityLoc);
         const identityLoc = await this.locRequestRepository.findById(identityLocId.toString());
         if(!identityLoc) {
             throw new Error("No Identity LOC available for issuer");
@@ -246,7 +246,7 @@ export class LocSynchronizer {
     private async handleIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
         const legalOfficerAddress = requireDefined(extrinsic.signer);
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
-            const issuerAddress = asString(extrinsic.call.args["issuer"]);
+            const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
             const selected = extrinsic.call.args["selected"] as boolean;
             const requestId = extractUuid("loc_id", extrinsic.call.args);
@@ -291,7 +291,7 @@ export class LocSynchronizer {
     }
 
     private async addTokensRecord(collectionLocId: string, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const recordId = asHexString(extrinsic.call.args['record_id']);
+        const recordId = Adapters.asHexString(extrinsic.call.args['record_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Adding Tokens Record %s to LOC %s", recordId, collectionLocId);

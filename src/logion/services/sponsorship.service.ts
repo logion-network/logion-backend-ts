@@ -14,7 +14,7 @@ export class SponsorshipService {
     }
 
     private async getSponsorship(sponsorshipId: UUID): Promise<Sponsorship | undefined> {
-        return (await this.polkadotService.queries()).getSponsorship(sponsorshipId);
+        return (await this.polkadotService.readyApi()).queries.getSponsorship(sponsorshipId);
     }
 
     async validateSponsorship(sponsorshipId: UUID, legalOfficer: SupportedAccountId, requester: SupportedAccountId): Promise<void> {
