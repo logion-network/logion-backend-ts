@@ -1,4 +1,4 @@
-import { configureContainer, HealthService, PolkadotService } from "@logion/rest-api-core";
+import { configureContainer, HealthService } from "@logion/rest-api-core";
 import { Container } from 'inversify';
 
 import { ProtectionRequestController } from '../controllers/protectionrequest.controller.js';
@@ -123,7 +123,7 @@ container.bind(VaultTransferRequestService).toService(TransactionalVaultTransfer
 container.bind(TransactionalVaultTransferRequestService).toSelf();
 container.bind(VerifiedThirdPartySelectionService).toService(TransactionalVerifiedThirdPartySelectionService);
 container.bind(TransactionalVerifiedThirdPartySelectionService).toSelf();
-if(process.env.IDENFY_SECRET) {
+if(process.env.IDENFY_API_KEY) {
     container.bind(EnabledIdenfyService).toSelf();
     container.bind(IdenfyService).toService(EnabledIdenfyService);
 } else {

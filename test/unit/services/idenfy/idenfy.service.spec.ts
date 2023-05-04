@@ -1,11 +1,15 @@
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosResponseHeaders, CreateAxiosDefaults } from "axios";
-import { It, Mock, PlayTimes } from "moq.ts";
+import { It, Mock, PlayTimes, Times } from "moq.ts";
 import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository, FileDescription } from "src/logion/model/locrequest.model.js";
 import { AxiosFactory } from "src/logion/services/axiosfactory.service.js";
 import { FileStorageService } from "src/logion/services/file.storage.service.js";
 import { LocRequestService } from "src/logion/services/locrequest.service.js";
 import { ALICE } from "../../../helpers/addresses.js";
-import { DisabledIdenfyService, EnabledIdenfyService } from "../../../../src/logion/services/idenfy/idenfy.service.js";
+import {
+    DisabledIdenfyService,
+    EnabledIdenfyService,
+    IdenfyVerificationCreation
+} from "../../../../src/logion/services/idenfy/idenfy.service.js";
 import { IdenfyVerificationSession } from "../../../../src/logion/services/idenfy/idenfy.types.js";
 import { NonTransactionalLocRequestService } from "../../../../src/logion/services/locrequest.service.js";
 import { Readable } from "stream";
@@ -14,6 +18,7 @@ import {
     accountEquals,
     polkadotAccount
 } from "../../../../src/logion/model/supportedaccountid.model.js";
+import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
 
 describe("DisabledIdenfyService", () => {
 
@@ -43,15 +48,15 @@ describe("EnabledIdenfyService", () => {
             data => data.clientId === REQUEST_ID
             && data.firstName === "John"
             && data.lastName === "Doe"
-            && data.successUrl === `${ BASE_URL }/user/idenfy?result=success&locId=${ REQUEST_ID }`
-            && data.errorUrl === `${ BASE_URL }/user/idenfy?result=error&locId=${ REQUEST_ID }`
-            && data.unverifiedUrl === `${ BASE_URL }/user/idenfy?result=unverified&locId=${ REQUEST_ID }`
-            && data.callbackUrl === `${ BASE_URL }/api/idenfy/callback/${ IDENFY_SECRET }`
+            && data.successUrl === VERIFICATION_CREATION.successUrl
+            && data.errorUrl === VERIFICATION_CREATION.errorUrl
+            && data.unverifiedUrl === VERIFICATION_CREATION.unverifiedUrl
+            && data.callbackUrl === `${ BASE_URL }/api/idenfy/callback`
         ))).returnsAsync({
             data: session,
         } as AxiosResponse);
 
-        const redirect = await idenfyService.createVerificationSession(locRequest.object());
+        const redirect = await idenfyService.createVerificationSession(locRequest.object(), VERIFICATION_CREATION);
 
         expect(redirect.url).toBe(`${ EnabledIdenfyService.IDENFY_BASE_URL }/redirect?authToken=${ session.authToken }`);
         locRequest.verify(instance => instance.initIdenfyVerification(session));
@@ -76,10 +81,24 @@ describe("EnabledIdenfyService", () => {
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));
     });
+
+    it("does not handle callback if wrong signature", async () => {
+        const { locRequest, idenfyService, locRequestRepository } = mockEnabledIdenfyService();
+
+        const json = JSON.parse(RAW_IDENFY_PAYLOAD);
+
+        expectAsyncToThrow(
+            () => idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD), "0000000000000000000000000000000000000000000000000000000000000000"),
+            "Request body digest (da38fe34d767fde8d78693628054dc9623fa455d76683fc60aa3c7fee5f8b3b0) did not match Idenfy-Signature (0000000000000000000000000000000000000000000000000000000000000000)."
+        );
+
+        locRequest.verify(instance => instance.updateIdenfyVerification(It.IsAny(), It.IsAny()), Times.Never());
+        locRequest.verify(instance => instance.addFile(It.IsAny()), Times.Never());
+        locRequestRepository.verify(instance => instance.save(It.IsAny()), Times.Never());
+    });
 });
 
 function setupProcessEnv() {
-    process.env.IDENFY_SECRET = IDENFY_SECRET;
     process.env.IDENFY_API_KEY = IDENFY_API_KEY;
     process.env.IDENFY_API_SECRET = IDENFY_API_SECRET;
     process.env.IDENFY_SIGNING_KEY = IDENFY_SIGNING_KEY;
@@ -92,12 +111,16 @@ function tearDownProcessEnv() {
 
 const REQUEST_ID = "21cc7dbf-7af1-4014-acfd-05bc4a110c82";
 const BASE_URL = "https://node.logion.network";
-const IDENFY_SECRET = "some-secret";
 const IDENFY_API_KEY = "api-key";
 const IDENFY_API_SECRET = "api-secret";
 const IDENFY_SIGNING_KEY = "signing-key";
 const IDENFY_SCAN_REF = "3af0b5c9-8ef3-4815-8796-5ab3ed942917";
 const LOC_OWNER_ACCOUNT = polkadotAccount(ALICE);
+const VERIFICATION_CREATION: IdenfyVerificationCreation = {
+    successUrl: `${ BASE_URL }/user/idenfy?result=success&locId=${ REQUEST_ID }`,
+    errorUrl: `${ BASE_URL }/user/idenfy?result=error&locId=${ REQUEST_ID }`,
+    unverifiedUrl: `${ BASE_URL }/user/idenfy?result=unverfied&locId=${ REQUEST_ID }`,
+}
 
 function mockEnabledIdenfyService(): {
     locRequest: Mock<LocRequestAggregateRoot>,

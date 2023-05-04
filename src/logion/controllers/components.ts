@@ -782,6 +782,15 @@ export interface components {
     FileUploadData: {
       hash?: string;
     };
+    /** @description Provides the URLs to resume the identification at Logion site after completion of the identity verification process at iDenfy */
+    IdenfyVerificationCreationView: {
+      /** @description A url where a client will be redirected after a successful verification */
+      successUrl: string;
+      /** @description A url where a client will be redirected after a failed verification */
+      errorUrl: string;
+      /** @description A url where a client will be redirected after a not analyzed verification. E.g. user immediately cancels process */
+      unverifiedUrl: string;
+    };
     /** @description Provides the URL to redirect to in order to start an identity verification process at iDenfy */
     IdenfyVerificationRedirectView: {
       /** @description The URL to redirect to */

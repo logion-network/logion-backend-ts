@@ -1809,9 +1809,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.13.0":
-  version: 0.13.0
-  resolution: "@logion/node-api@npm:0.13.0"
+"@logion/node-api@npm:^0.14.0-4":
+  version: 0.14.0-4
+  resolution: "@logion/node-api@npm:0.14.0-4"
   dependencies:
     "@polkadot/api": ^10.4.1
     "@polkadot/util": ^12.0.1
@@ -1819,7 +1819,7 @@ __metadata:
     "@types/uuid": ^8.3.4
     fast-sha256: ^1.3.0
     uuid: ^8.3.2
-  checksum: c32deb34081bf220fefa36dc0bc9d2143403b1e3075301f00bc154d268f06f10873e43db914f7d9b72e03acdaba1cfbe909f45764e573f6b6a9f65a650861eec
+  checksum: c60fa32f15f94eb4f9f8ff75aea5d84ecb634dac6eefd07409baa35cb0c332051182c8da44dd0a9ab5fa87e697c3a49293ef48f7658e13966b0905c6f04b0aa7
   languageName: node
   linkType: hard
 
@@ -1834,9 +1834,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.4.0-1":
-  version: 0.4.0-1
-  resolution: "@logion/rest-api-core@npm:0.4.0-1"
+"@logion/rest-api-core@npm:^0.4.1-1":
+  version: 0.4.1-1
+  resolution: "@logion/rest-api-core@npm:0.4.1-1"
   dependencies:
     "@logion/authenticator": ^0.5.1-1
     dinoloop: ^2.4.0
@@ -1850,7 +1850,7 @@ __metadata:
     swagger-ui-express: ^4.6.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 17ad48645522ed02160ab32aef6ed5c3347ae4717e5a8a67671231de0b2a85a87b122f4861436c77332a8676f4150baeb5f2d2d2b946b558cbdc38993dfd9d9f
+  checksum: 039246567c64f4f6b15e064409b87267088eb0a72ee386ae637deba902a929ccbb78455ce9de61976a811e922cfd77d18178f771d24e4f449a2a17e057252b9e
   languageName: node
   linkType: hard
 
@@ -5708,9 +5708,9 @@ __metadata:
   resolution: "logion-backend-ts@workspace:."
   dependencies:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.13.0
+    "@logion/node-api": ^0.14.0-4
     "@logion/node-exiftool": ^2.3.1-3
-    "@logion/rest-api-core": ^0.4.0-1
+    "@logion/rest-api-core": ^0.4.1-1
     "@polkadot/wasm-crypto": ^7.1.1
     "@tsconfig/node18": ^1.0.1
     "@types/cors": ^2.8.12

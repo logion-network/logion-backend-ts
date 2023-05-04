@@ -46,7 +46,7 @@ export class ConfigController extends ApiController {
         await this.authenticationService.authenticatedUser(this.request);
         return {
             features: {
-                iDenfy: process.env.IDENFY_SECRET !== undefined,
+                iDenfy: process.env.IDENFY_API_KEY !== undefined,
                 vote: process.env.FEATURE_VOTE === "true",
             }
         }
