@@ -1343,6 +1343,29 @@
                     }
                 }
             },
+            "IdenfyVerificationCreationView": {
+                "description": "Provides the URLs to resume the identification at Logion site after completion of the identity verification process at iDenfy",
+                "type": "object",
+                "properties": {
+                    "successUrl": {
+                        "description": "A url where a client will be redirected after a successful verification",
+                        "type": "string"
+                    },
+                    "errorUrl": {
+                        "description": "A url where a client will be redirected after a failed verification",
+                        "type": "string"
+                    },
+                    "unverifiedUrl": {
+                        "description": "A url where a client will be redirected after a not analyzed verification. E.g. user immediately cancels process",
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "successUrl",
+                    "errorUrl",
+                    "unverifiedUrl"
+                ]
+            },
             "IdenfyVerificationRedirectView": {
                 "description": "Provides the URL to redirect to in order to start an identity verification process at iDenfy",
                 "type": "object",

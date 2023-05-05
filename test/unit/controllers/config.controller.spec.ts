@@ -8,7 +8,6 @@ describe("ConfigController", () => {
 
     it("provides config without iDenfy integration", async () => {
         const app = setupApp(ConfigController, () => {});
-        delete process.env.IDENFY_SECRET;
         delete process.env.IDENFY_API_KEY;
         delete process.env.IDENFY_API_SECRET;
 
@@ -23,7 +22,6 @@ describe("ConfigController", () => {
 
     it("provides config with iDenfy integration", async () => {
         const app = setupApp(ConfigController, () => {});
-        process.env.IDENFY_SECRET = "some-secret";
         process.env.IDENFY_API_KEY = "some-api-key";
         process.env.IDENFY_API_SECRET = "some-api-secret";
 

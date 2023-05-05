@@ -16,6 +16,12 @@ import { AxiosFactory } from "../axiosfactory.service.js";
 
 const { logger } = Log;
 
+export interface IdenfyVerificationCreation {
+    successUrl: string;
+    errorUrl: string;
+    unverifiedUrl: string;
+}
+
 export interface IdenfyVerificationRedirect {
 
     url: string;
@@ -29,7 +35,7 @@ interface IPFSFile {
 
 export abstract class IdenfyService {
 
-    abstract createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect>;
+    abstract createVerificationSession(request: LocRequestAggregateRoot, idenfyVerificationCreation: IdenfyVerificationCreation): Promise<IdenfyVerificationRedirect>;
 
     abstract callback(json: IdenfyCallbackPayload, raw: Buffer, idenfySignature: string): Promise<void>;
 
@@ -65,31 +71,27 @@ export class EnabledIdenfyService extends IdenfyService {
     ) {
         super();
 
-        this.secret = requireDefined(process.env.IDENFY_SECRET);
         this.baseUrl = requireDefined(process.env.BASE_URL, () => new Error("Missing BASE_URL"));
-        this.apiSecret = requireDefined(process.env.IDENFY_API_SECRET, () => new Error("Missing IDENFY_API_SECRET"));
+        const apiKey = requireDefined(process.env.IDENFY_API_KEY, () => new Error("Missing IDENFY_API_KEY"));
+        const apiSecret = requireDefined(process.env.IDENFY_API_SECRET, () => new Error("Missing IDENFY_API_SECRET"));
+        logger.info("EnabledIdenfyService - API Key: %s", apiKey);
         this.signingKey = requireDefined(process.env.IDENFY_SIGNING_KEY, () => new Error("Missing IDENFY_SIGNING_KEY"));
-
         this.axios = this.axiosFactory.create({
             baseURL: EnabledIdenfyService.IDENFY_BASE_URL,
             auth: {
-                username: requireDefined(process.env.IDENFY_API_KEY, () => new Error("Missing IDENFY_API_KEY")),
-                password: this.apiSecret,
+                username: apiKey,
+                password: apiSecret,
             }
         });
     }
 
-    private readonly secret: string;
-
     private readonly baseUrl: string;
-
-    private readonly apiSecret: string;
 
     private readonly signingKey: string;
 
     private readonly axios: AxiosInstance;
 
-    override async createVerificationSession(request: LocRequestAggregateRoot): Promise<IdenfyVerificationRedirect> {
+    override async createVerificationSession(request: LocRequestAggregateRoot, idenfyVerificationCreation: IdenfyVerificationCreation): Promise<IdenfyVerificationRedirect> {
         const canVerify = request.canInitIdenfyVerification();
         if(!canVerify.result) {
             throw new Error(canVerify.error);
@@ -101,10 +103,10 @@ export class EnabledIdenfyService extends IdenfyService {
                 clientId: requestId,
                 firstName: request.getDescription().userIdentity?.firstName,
                 lastName: request.getDescription().userIdentity?.lastName,
-                successUrl: `${ this.baseUrl }/user/idenfy?result=success&locId=${ requestId }`,
-                errorUrl: `${ this.baseUrl }/user/idenfy?result=error&locId=${ requestId }`,
-                unverifiedUrl: `${ this.baseUrl }/user/idenfy?result=unverified&locId=${ requestId }`,
-                callbackUrl: `${ this.baseUrl }/api/idenfy/callback/${ this.secret }`,
+                successUrl: idenfyVerificationCreation.successUrl,
+                errorUrl: idenfyVerificationCreation.errorUrl,
+                unverifiedUrl: idenfyVerificationCreation.unverifiedUrl,
+                callbackUrl: `${ this.baseUrl }/api/idenfy/callback`,
             });
 
             const session: IdenfyVerificationSession = response.data;

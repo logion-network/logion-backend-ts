@@ -6,6 +6,7 @@ import { PolkadotService } from "@logion/rest-api-core";
 import { ALICE_ACCOUNT, CHARLY_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { REQUESTER_ADDRESS } from "../controllers/locrequest.controller.shared.js";
 import { polkadotAccount, SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
 
 const locRequestRepository: Mock<LocRequestRepository> = new Mock<LocRequestRepository>();
 const logionApi: Mock<LogionNodeApiClass> = new Mock<LogionNodeApiClass>();
@@ -23,7 +24,7 @@ describe("SponsorshipService", () => {
     const service = createService();
 
     async function testError(sponsorshipId: UUID, expectedError: string, legalOfficer?: SupportedAccountId, requester?: SupportedAccountId) {
-        expectAsyncToThrow(
+        return expectAsyncToThrow(
             () => service.validateSponsorship(sponsorshipId, legalOfficer ? legalOfficer : ALICE_ACCOUNT, requester ? requester : REQUESTER_ADDRESS),
             expectedError
         )
@@ -101,12 +102,5 @@ function createService(): SponsorshipService {
         polkadotService as PolkadotService,
         locRequestRepository.object()
     );
-}
-
-function expectAsyncToThrow(func: () => Promise<void>, expectedError: string) {
-    const promise = func();
-    promise
-        .then(_ => fail("Call succeeded while an error was expected to throw"))
-        .catch(error => expect(error.toString()).toEqual(`Error: ${ expectedError }`));
 }
 
