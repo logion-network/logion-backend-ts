@@ -24,7 +24,7 @@ describe("SponsorshipService", () => {
     const service = createService();
 
     async function testError(sponsorshipId: UUID, expectedError: string, legalOfficer?: SupportedAccountId, requester?: SupportedAccountId) {
-        expectAsyncToThrow(
+        return expectAsyncToThrow(
             () => service.validateSponsorship(sponsorshipId, legalOfficer ? legalOfficer : ALICE_ACCOUNT, requester ? requester : REQUESTER_ADDRESS),
             expectedError
         )

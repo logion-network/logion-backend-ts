@@ -87,7 +87,7 @@ describe("EnabledIdenfyService", () => {
 
         const json = JSON.parse(RAW_IDENFY_PAYLOAD);
 
-        expectAsyncToThrow(
+        await expectAsyncToThrow(
             () => idenfyService.callback(json, Buffer.from(RAW_IDENFY_PAYLOAD), "0000000000000000000000000000000000000000000000000000000000000000"),
             "Request body digest (da38fe34d767fde8d78693628054dc9623fa455d76683fc60aa3c7fee5f8b3b0) did not match Idenfy-Signature (0000000000000000000000000000000000000000000000000000000000000000)."
         );
