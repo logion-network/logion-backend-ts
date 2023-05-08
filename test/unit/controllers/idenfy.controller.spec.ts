@@ -1,5 +1,6 @@
-import { TestApp } from "@logion/rest-api-core";
-import { ALICE, BOB } from "@logion/rest-api-core/dist/TestApp.js";
+import { AuthenticationService, TestApp } from "@logion/rest-api-core";
+import { ALICE, AuthenticationServiceMock, BOB, mockAuthenticationWithCondition } from "@logion/rest-api-core/dist/TestApp.js";
+import bodyParser from "body-parser";
 import { Container } from "inversify";
 import request from "supertest";
 import { It, Mock } from "moq.ts";
@@ -8,6 +9,10 @@ import { LocRequestAggregateRoot, LocRequestRepository } from "../../../src/logi
 import { IdenfyService, IdenfyVerificationCreation } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { mockRequester } from "./locrequest.controller.shared.js";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import express, { Express } from 'express';
+import { Dino } from 'dinoloop';
+import { ApplicationErrorController } from "@logion/rest-api-core/dist/ApplicationErrorController.js";
+import { JsonResponse } from "@logion/rest-api-core/dist/JsonResponse.js";
 
 const { setupApp } = TestApp;
 
@@ -35,10 +40,12 @@ describe("IdenfyController", () => {
     });
 
     it("provides iDenfy callback", async () => {
-        const app = setupApp(IdenfyController, mockCallback);
+        const app = setupIDenfyCallbackApp();
 
         await request(app)
             .post(`/api/idenfy/callback`)
+            .set("idenfy-signature", "signature")
+            .send({ final: true })
             .expect(200);
 
         service.verify(service => service.callback(It.IsAny(), It.IsAny(), It.IsAny()));
@@ -73,6 +80,37 @@ const VERIFICATION_CREATION: IdenfyVerificationCreation = {
     unverifiedUrl: `https://logion.network/user/idenfy?result=unverfied&locId=${ REQUEST_ID }`,
 }
 let service: Mock<IdenfyService>;
+
+function setupIDenfyCallbackApp(): Express {
+    const app = express();
+    app.use(bodyParser.json({
+        verify: (req, _res, buf) => {
+            (req as any).rawBody = buf;
+        }
+    }));
+    app.use(bodyParser.urlencoded({ extended: false }));
+
+    const dino = new Dino(app, '/api');
+    dino.useRouter(() => express.Router());
+    dino.registerController(IdenfyController);
+    dino.registerApplicationError(ApplicationErrorController);
+    dino.requestEnd(JsonResponse);
+
+    const container = new Container({ defaultScope: "Singleton" });
+
+    mockCallback(container);
+    const authenticationService = new Mock<AuthenticationService>();
+    container.bind(AuthenticationService).toConstantValue(authenticationService.object());
+
+    dino.dependencyResolver<Container>(container,
+        (injector, type) => {
+            return injector.resolve(type);
+        });
+
+    dino.bind();
+
+    return app;
+}
 
 function mockCallback(container: Container) {
 

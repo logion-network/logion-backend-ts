@@ -73,6 +73,21 @@ export class IdenfyController extends ApiController {
     @HttpPost('/callback')
     @Async()
     async callback(body: any): Promise<void> {
-        await this.idenfyService.callback(body as IdenfyCallbackPayload, this.request.rawBody, this.request.headers["idenfy-signature"]);
+        const payload = body as IdenfyCallbackPayload;
+        if(!payload.final) {
+            return;
+        }
+
+        if(!(this.request.rawBody instanceof Buffer)) {
+            throw new Error(`Unexpected raw body type: ${typeof this.request.rawBody}`);
+        }
+        if(!("idenfy-signature" in this.request.headers)) {
+            throw new Error(`Missing signature header`);
+        }
+        if(typeof this.request.headers["idenfy-signature"] !== "string") {
+            throw new Error(`Unexpected signature header type: ${typeof this.request.headers["idenfy-signature"]}`);
+        }
+
+        await this.idenfyService.callback(payload, this.request.rawBody, this.request.headers["idenfy-signature"]);
     }
 }

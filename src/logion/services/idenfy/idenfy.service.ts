@@ -130,10 +130,6 @@ export class EnabledIdenfyService extends IdenfyService {
     }
 
     override async callback(json: IdenfyCallbackPayload, raw: Buffer, idenfySignature: string): Promise<void> {
-        if(!json.final) {
-            return;
-        }
-
         const hmac = crypto.createHmac('sha256', this.signingKey);
         const hexDigest = hmac.update(raw).digest('hex');
         const digest = Buffer.from(hexDigest);
