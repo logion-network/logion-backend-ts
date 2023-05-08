@@ -202,9 +202,9 @@ export class EnabledIdenfyService extends IdenfyService {
 
     private async hashAndImport(fileName: string): Promise<IPFSFile> {
         const hash = await sha256File(fileName);
-        const cid = await this.fileStorageService.importFile(fileName);
         const stats = await stat(fileName);
         const size = stats.size;
+        const cid = await this.fileStorageService.importFile(fileName);
         return { hash, cid, size };
     }
 
