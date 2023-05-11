@@ -2,7 +2,7 @@ import { injectable } from 'inversify';
 import { Log } from "@logion/rest-api-core";
 
 import { ProtectionRequestRepository, FetchProtectionRequestsSpecification } from '../model/protectionrequest.model.js';
-import { asArray, asString } from '@logion/node-api';
+import { Adapters } from '@logion/node-api';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
 import { ProtectionRequestService } from './protectionrequest.service.js';
 import { DirectoryService } from "./directory.service.js";
@@ -27,7 +27,7 @@ export class ProtectionSynchronizer {
                 return
             }
             if (extrinsic.call.method === "createRecovery") {
-                const legalOfficerAddresses = asArray(extrinsic.call.args['legal_officers']).map(address => asString(address));
+                const legalOfficerAddresses = Adapters.asArray(extrinsic.call.args['legal_officers']).map(address => Adapters.asString(address));
                 for (const legalOfficerAddress of legalOfficerAddresses) {
                     if (await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
                         const signer = extrinsic.signer!;

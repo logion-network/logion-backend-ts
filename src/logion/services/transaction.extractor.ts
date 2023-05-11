@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { getVaultAddress, asArray, asString, JsonObject, Fees } from "@logion/node-api";
+import { Vault, Adapters, TypesJsonObject, Fees } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
@@ -68,8 +68,8 @@ export class TransactionExtractor {
             to = this.to(call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
             const signer = requireDefined(extrinsic.signer);
-            const otherSignatories = asArray(extrinsic.call.args['other_signatories']).map(signatory => asString(signatory));
-            const vaultAddress = getVaultAddress(signer, otherSignatories);
+            const otherSignatories = Adapters.asArray(extrinsic.call.args['other_signatories']).map(signatory => Adapters.asString(signatory));
+            const vaultAddress = Vault.getVaultAddress(signer, otherSignatories);
 
             const call = this.extrinsicDataExtractor.getCall(extrinsic);
             const vaultTransferValue = this.transferValue(call);
@@ -150,11 +150,11 @@ export class TransactionExtractor {
         return extrinsic.signer || "";
     }
 
-    private to(extrinsicOrCall: { args: JsonObject }): string | undefined {
+    private to(extrinsicOrCall: { args: TypesJsonObject }): string | undefined {
         return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsicOrCall: { args: JsonObject }): bigint {
+    private transferValue(extrinsicOrCall: { args: TypesJsonObject }): bigint {
         return this.extrinsicDataExtractor.getValue(extrinsicOrCall);
     }
 

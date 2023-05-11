@@ -1,4 +1,4 @@
-import { JsonCall, JsonObject, UUID, asBigInt } from "@logion/node-api";
+import { TypesJsonCall, TypesJsonObject, UUID, Adapters } from "@logion/node-api";
 
 export interface StorageFee {
     fee: bigint;
@@ -6,7 +6,7 @@ export interface StorageFee {
 }
 
 export interface JsonExtrinsic {
-    call: JsonCall;
+    call: TypesJsonCall;
     signer: string | null;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
@@ -29,7 +29,7 @@ export interface JsonEvent {
     data: any[];
 }
 
-function methodToString(call: JsonCall): string {
+function methodToString(call: TypesJsonCall): string {
     return `method [${call.section}.${call.method}]`
 }
 
@@ -47,8 +47,8 @@ function errorToString(error: ExtrinsicError | null): string {
     }
 }
 
-export function extractUuid(argKey: string, args: JsonObject): string {
-    return UUID.fromDecimalStringOrThrow(asBigInt(args[argKey]).toString()).toString();
+export function extractUuid(argKey: string, args: TypesJsonObject): string {
+    return UUID.fromDecimalStringOrThrow(Adapters.asBigInt(args[argKey]).toString()).toString();
 }
 
 export function findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {

@@ -4,7 +4,7 @@ import { injectable } from "inversify";
 import { VoteFactory } from "../model/vote.model.js";
 import { VoteService } from "./vote.service.js";
 import { JsonExtrinsic, toString, extractUuid, findEventData } from "./types/responses/Extrinsic.js";
-import { asJsonObject, asString } from "@logion/node-api";
+import { Adapters } from "@logion/node-api";
 
 const { logger } = Log;
 
@@ -60,12 +60,12 @@ export class VoteSynchronizer {
             throw new Error("Failed to extract VoteUpdated event data");
         } else {
             const voteId = data[0].toString();
-            const ballot = asJsonObject(data[1].toJSON());
+            const ballot = Adapters.asJsonObject(data[1].toJSON());
             const closed = data[2].isTrue;
             const approved = data[3].isTrue;
 
-            const voter = asString(ballot.voter);
-            const result = asString(ballot.status);
+            const voter = Adapters.asString(ballot.voter);
+            const result = Adapters.asString(ballot.status);
             logger.info(`Adding ballot for voter ${voter} to vote ${voteId}`);
             await this.voteService.update(voteId, async vote => {
                 vote.addBallot(voter, result === "VotedYes" ? "Yes" : "No");

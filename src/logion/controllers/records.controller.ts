@@ -31,7 +31,7 @@ import {
     getDefaultResponsesNoContent,
     getDefaultResponses,
 } from "@logion/rest-api-core";
-import { TokensRecordFile } from "@logion/node-api";
+import { TypesTokensRecordFile } from "@logion/node-api";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
@@ -202,7 +202,7 @@ export class TokensRecordController extends ApiController {
         });
     }
 
-    private async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TokensRecordFile> {
+    private async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TypesTokensRecordFile> {
         const publishedTokensRecordFile = await this.logionNodeTokensRecordService.getTokensRecordFile(params);
         if (publishedTokensRecordFile) {
             return publishedTokensRecordFile;
