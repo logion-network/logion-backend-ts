@@ -1,6 +1,6 @@
 import { ICompact, INumber } from '@polkadot/types-codec/types/interfaces';
 import { Address, Block, Extrinsic, DispatchErrorModule } from '@polkadot/types/interfaces';
-import { asString, JsonCall, toJsonCall } from "@logion/node-api";
+import { Adapters, TypesJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
@@ -53,9 +53,9 @@ export class ExtrinsicsBuilder {
     private createBuilder(extrinsicWithEvent: TxWithEvent): ExtrinsicBuilder | undefined {
         const extrinsic = extrinsicWithEvent.extrinsic;
         const call = extrinsic.method;
-        const jsonCall = toJsonCall(call);
+        const jsonCall = Adapters.toJsonCall(call);
 
-        if(asString(jsonCall.section) === "sudo") {
+        if(jsonCall.section === "sudo") {
             return undefined;
         }
 
@@ -130,7 +130,7 @@ export class ExtrinsicsBuilder {
 export class ExtrinsicBuilder {
     constructor(
         params: {
-            call: JsonCall,
+            call: TypesJsonCall,
             extrinsic: Extrinsic,
             error: () => ExtrinsicError | null,
             partialFee: () => Promise<bigint>,
@@ -145,7 +145,7 @@ export class ExtrinsicBuilder {
         this.events = [];
     }
 
-    public readonly call: JsonCall;
+    public readonly call: TypesJsonCall;
     public readonly signer: Address | null;
     public readonly tip: ICompact<INumber> | null;
     public readonly extrinsic: Extrinsic;

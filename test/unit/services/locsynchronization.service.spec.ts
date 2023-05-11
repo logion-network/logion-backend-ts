@@ -1,4 +1,4 @@
-import { UUID, JsonObject, Fees } from "@logion/node-api";
+import { UUID, TypesJsonObject, Fees } from "@logion/node-api";
 import { PolkadotService } from "@logion/rest-api-core";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
@@ -175,7 +175,7 @@ let locRequestRepository: Mock<LocRequestRepository>;
 let collectionFactory: Mock<CollectionFactory>;
 let collectionRepository: Mock<CollectionRepository>;
 
-function givenLocExtrinsic(method: string, args: JsonObject) {
+function givenLocExtrinsic(method: string, args: TypesJsonObject) {
     locExtrinsic = new Mock<JsonExtrinsic>();
     locExtrinsic.setup(instance => instance.call).returns({
         section: "logionLoc",

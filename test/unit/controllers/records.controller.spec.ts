@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { CollectionItem, TokensRecord as ChainTokensRecord, TokensRecordFile as ChainTokensRecordFile } from "@logion/node-api";
+import { CollectionItem, TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import moment from "moment";
 import request from "supertest";
