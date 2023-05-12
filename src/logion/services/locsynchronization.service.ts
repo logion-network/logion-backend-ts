@@ -11,7 +11,7 @@ import { CollectionService } from './collection.service.js';
 import { UserIdentity } from '../model/useridentity.js';
 import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
-import { VerifiedThirdPartySelectionService } from './verifiedthirdpartyselection.service.js';
+import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
 import { TokensRecordFactory } from '../model/tokensrecord.model.js';
 
@@ -28,7 +28,7 @@ export class LocSynchronizer {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private polkadotService: PolkadotService,
-        private verifiedThirdPartySelectionService: VerifiedThirdPartySelectionService,
+        private verifiedIssuerSelectionService: VerifiedIssuerSelectionService,
         private tokensRecordService: TokensRecordService,
         private tokensRecordFactory: TokensRecordFactory,
     ) {}
@@ -195,12 +195,12 @@ export class LocSynchronizer {
             if(identityLoc) {
                 logger.info("Handling nomination/dismissal of issuer %s", issuerAddress);
                 if(!nominated) {
-                    this.verifiedThirdPartySelectionService.unselectAll(issuerAddress);
+                    this.verifiedIssuerSelectionService.unselectAll(issuerAddress);
                 }
-                this.notifyVtpNominatedDismissed({
+                this.notifyVerifiedIssuerNominatedDismissed({
                     legalOfficerAddress,
                     nominated,
-                    vtp: identityLoc.getDescription().userIdentity,
+                    issuer: identityLoc.getDescription().userIdentity,
                 });
             }
         }
@@ -221,25 +221,25 @@ export class LocSynchronizer {
         return identityLoc;
     }
 
-    private async notifyVtpNominatedDismissed(args: {
+    private async notifyVerifiedIssuerNominatedDismissed(args: {
         legalOfficerAddress: string,
         nominated: boolean,
-        vtp?: UserIdentity,
+        issuer?: UserIdentity,
     }) {
-        const { legalOfficerAddress, nominated, vtp } = args;
+        const { legalOfficerAddress, nominated, issuer } = args;
         try {
             const legalOfficer = await this.directoryService.get(legalOfficerAddress);
             const data = {
                 legalOfficer,
-                walletUser: vtp,
+                walletUser: issuer,
             };
             if(nominated) {
-                await this.notificationService.notify(vtp?.email, "vtp-nominated", data);
+                await this.notificationService.notify(issuer?.email, "verified-issuer-nominated", data);
             } else {
-                await this.notificationService.notify(vtp?.email, "vtp-dismissed", data);
+                await this.notificationService.notify(issuer?.email, "verified-issuer-dismissed", data);
             }
         } catch(e) {
-            logger.error("Failed to notify VTP: %s. Mail '%s' not sent.", e, nominated ? "vtp-nominated" : "vtp-dismissed");
+            logger.error("Failed to notify verified issuer: %s. Mail '%s' not sent.", e, nominated ? "verified-issuer-nominated" : "verified-issuer-dismissed");
         }
     }
 
@@ -253,40 +253,40 @@ export class LocSynchronizer {
             const locRequest = requireDefined(await this.locRequestRepository.findById(requestId));
 
             logger.info("Handling selection/unselection of issuer %s", issuerAddress);
-            this.verifiedThirdPartySelectionService.selectUnselect(locRequest, identityLoc, selected);
-            this.notifyVtpSelectedUnselected({
+            this.verifiedIssuerSelectionService.selectUnselect(locRequest, identityLoc, selected);
+            this.notifyVerifiedIssuerSelectedUnselected({
                 legalOfficerAddress,
                 selected,
                 locRequest,
-                vtp: identityLoc.getDescription().userIdentity,
+                issuer: identityLoc.getDescription().userIdentity,
             });
         }
     }
 
-    private async notifyVtpSelectedUnselected(args: {
+    private async notifyVerifiedIssuerSelectedUnselected(args: {
         legalOfficerAddress: string,
         selected: boolean,
         locRequest: LocRequestAggregateRoot,
-        vtp?: UserIdentity,
+        issuer?: UserIdentity,
     }) {
-        const { legalOfficerAddress, selected, locRequest, vtp } = args;
+        const { legalOfficerAddress, selected, locRequest, issuer } = args;
         try {
             const legalOfficer = await this.directoryService.get(legalOfficerAddress);
             const data = {
                 legalOfficer,
-                walletUser: vtp,
+                walletUser: issuer,
                 loc: {
                     ...locRequest.getDescription(),
                     id: locRequest.id,
                 }
             };
             if(selected) {
-                await this.notificationService.notify(vtp?.email, "vtp-selected", data);
+                await this.notificationService.notify(issuer?.email, "verified-issuer-selected", data);
             } else {
-                await this.notificationService.notify(vtp?.email, "vtp-unselected", data);
+                await this.notificationService.notify(issuer?.email, "verified-issuer-unselected", data);
             }
         } catch(e) {
-            logger.error("Failed to notify VTP: %s. Mail '%s' not sent.", e, selected ? "vtp-selected" : "vtp-unselected");
+            logger.error("Failed to notify verified issuer: %s. Mail '%s' not sent.", e, selected ? "verified-issuer-selected" : "verified-issuer-unselected");
         }
     }
 

@@ -18,7 +18,7 @@ import { fillInSpec as fillInSpecForCollection, CollectionController } from "./c
 import { fillInSpec as fillInSpecForVaultTransferRequest, VaultTransferRequestController } from "./controllers/vaulttransferrequest.controller.js";
 import { fillInSpec as fillInSpecForLoFile, LoFileController } from "./controllers/lofile.controller.js";
 import { fillInSpec as fillInSpecForSettings, SettingController } from "./controllers/setting.controller.js";
-import { fillInSpec as fillInSpecVerifiedThirdParty, VerifiedThirdPartyController } from "./controllers/verifiedthirdparty.controller.js";
+import { fillInSpec as fillInSpecVerifiedIssuer, VerifiedIssuerController } from "./controllers/verifiedissuer.controller.js";
 import { fillInSpec as fillInSpecConfig, ConfigController } from "./controllers/config.controller.js";
 import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/idenfy.controller.js";
 import { fillInSpec as fillInSpecVote, VoteController } from "./controllers/vote.controller.js";
@@ -55,7 +55,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecForLoFile(spec);
     fillInSpecForSettings(spec);
     fillInSpecForVaultTransferRequest(spec);
-    fillInSpecVerifiedThirdParty(spec);
+    fillInSpecVerifiedIssuer(spec);
     fillInSpecConfig(spec);
     fillInSpecIdenfy(spec);
     fillInSpecVote(spec);
@@ -116,7 +116,7 @@ export function setupApp(expressConfig?: ExpressConfig): Express {
     dino.registerController(VaultTransferRequestController);
     dino.registerController(LoFileController);
     dino.registerController(SettingController);
-    dino.registerController(VerifiedThirdPartyController);
+    dino.registerController(VerifiedIssuerController);
     dino.registerController(ConfigController);
     dino.registerController(IdenfyController);
     dino.registerController(VoteController);

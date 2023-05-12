@@ -63,7 +63,7 @@ INSERT INTO loc_request (id, owner_address, requester_address, requester_address
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-25', 'OPEN', 'Collection');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-26', 'OPEN', 'Collection');
--- Closed Identity LOC of VTP
+-- Closed Identity LOC of verified issuer
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
 VALUES ('15ed922d-5960-4147-a73f-97d362cb7c46', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-27', 'CLOSED', 'Identity');
 INSERT INTO loc_request_file (request_id, hash, name, oid, content_type, added_on, "index", draft, nature, submitter_address, submitter_address_type, restricted_delivery, size)

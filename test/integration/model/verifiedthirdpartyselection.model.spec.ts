@@ -1,17 +1,17 @@
 import { TestDb } from "@logion/rest-api-core";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
+import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../../src/logion/model/verifiedissuerselection.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
-describe("VerifiedThirdPartySelectionRepository - read", () => {
+describe("VerifiedIssuerSelectionRepository - read", () => {
 
     beforeAll(async () => {
-        await connect([ VerifiedThirdPartySelectionAggregateRoot ]);
-        await executeScript("test/integration/model/vtp_selection.sql");
-        repository = new VerifiedThirdPartySelectionRepository();
+        await connect([ VerifiedIssuerAggregateRoot ]);
+        await executeScript("test/integration/model/issuer_selection.sql");
+        repository = new VerifiedIssuerSelectionRepository();
     });
 
-    let repository: VerifiedThirdPartySelectionRepository;
+    let repository: VerifiedIssuerSelectionRepository;
 
     afterAll(async () => {
         await disconnect();
@@ -30,7 +30,7 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
         expect(nominations.length).toBe(2);
     });
 
-    it("finds by VTP address", async () => {
+    it("finds by issuer address", async () => {
         const nominations = await repository.findBy({ issuer: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX" });
         expect(nominations.length).toBe(1);
     });
@@ -44,22 +44,22 @@ describe("VerifiedThirdPartySelectionRepository - read", () => {
     });
 });
 
-describe("VerifiedThirdPartySelectionRepository - write", () => {
+describe("VerifiedIssuerSelectionRepository - write", () => {
 
     beforeEach(async () => {
-        await connect([ VerifiedThirdPartySelectionAggregateRoot ]);
-        await executeScript("test/integration/model/vtp_selection.sql");
-        repository = new VerifiedThirdPartySelectionRepository();
+        await connect([ VerifiedIssuerAggregateRoot ]);
+        await executeScript("test/integration/model/issuer_selection.sql");
+        repository = new VerifiedIssuerSelectionRepository();
     });
 
-    let repository: VerifiedThirdPartySelectionRepository;
+    let repository: VerifiedIssuerSelectionRepository;
 
     afterEach(async () => {
         await disconnect();
     });
 
-    it("unselects by VTP LOC ID", async () => {
+    it("unselects by issuer LOC ID", async () => {
         await repository.unselectAll("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
-        checkNumOfRows(`SELECT * FROM vtp_selection WHERE issuer = '5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX' AND selected IS TRUE`, 0);
+        checkNumOfRows(`SELECT * FROM issuer_selection WHERE issuer = '5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX' AND selected IS TRUE`, 0);
     });
 });

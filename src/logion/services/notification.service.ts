@@ -29,10 +29,10 @@ export const templateValues = [
     "vault-transfer-rejected",
     "vault-transfer-accepted",
     "vault-transfer-cancelled",
-    "vtp-dismissed",
-    "vtp-nominated",
-    "vtp-selected",
-    "vtp-unselected",
+    "verified-issuer-dismissed",
+    "verified-issuer-nominated",
+    "verified-issuer-selected",
+    "verified-issuer-unselected",
     "sof-requested",
 ] as const;
 

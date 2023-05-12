@@ -31,7 +31,7 @@ import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/servic
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
 import { LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType } from "@logion/node-api";
-import { VerifiedThirdPartySelectionRepository } from "../../../src/logion/model/verifiedthirdpartyselection.model.js";
+import { VerifiedIssuerSelectionRepository } from "../../../src/logion/model/verifiedissuerselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
@@ -145,7 +145,7 @@ export interface Mocks {
     voteRepository: Mock<VoteRepository>;
     nodeApi: Mock<LogionNodeApiClass>;
     loc: Mock<LocBatch>;
-    verifiedThirdPartySelectionRepository: Mock<VerifiedThirdPartySelectionRepository>;
+    verifiedIssuerSelectionRepository: Mock<VerifiedIssuerSelectionRepository>;
     sponsorshipService: Mock<SponsorshipService>;
 }
 
@@ -172,9 +172,9 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const voteRepository = existingMocks?.voteRepository ? existingMocks.voteRepository : new Mock<VoteRepository>();
     container.bind(VoteRepository).toConstantValue(voteRepository.object());
 
-    const verifiedThirdPartySelectionRepository = existingMocks?.verifiedThirdPartySelectionRepository ? existingMocks.verifiedThirdPartySelectionRepository : new Mock<VerifiedThirdPartySelectionRepository>();
-    verifiedThirdPartySelectionRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
-    container.bind(VerifiedThirdPartySelectionRepository).toConstantValue(verifiedThirdPartySelectionRepository.object());
+    const verifiedIssuerSelectionRepository = existingMocks?.verifiedIssuerSelectionRepository ? existingMocks.verifiedIssuerSelectionRepository : new Mock<VerifiedIssuerSelectionRepository>();
+    verifiedIssuerSelectionRepository.setup(instance => instance.findBy(It.IsAny())).returnsAsync([]);
+    container.bind(VerifiedIssuerSelectionRepository).toConstantValue(verifiedIssuerSelectionRepository.object());
 
     const polkadotService = new Mock<PolkadotService>();
     container.bind(PolkadotService).toConstantValue(polkadotService.object());
@@ -206,7 +206,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         notificationService,
         collectionRepository,
         voteRepository,
-        verifiedThirdPartySelectionRepository,
+        verifiedIssuerSelectionRepository: verifiedIssuerSelectionRepository,
         nodeApi,
         loc,
         sponsorshipService,
@@ -395,17 +395,17 @@ export function buildMocksForUpdate(container: Container, existingMocks?: Partia
     return mocks;
 }
 
-export type SetupVtpMode = 'NOT_VTP' | 'SELECTED' | 'UNSELECTED';
+export type SetupIssuerMode = 'NOT_ISSUER' | 'SELECTED' | 'UNSELECTED';
 
-export function setupSelectedVtp(
+export function setupSelectedIssuer(
     loc: Mock<LocBatch>,
-    mode: SetupVtpMode,
+    mode: SetupIssuerMode,
 ) {
     if(mode === 'SELECTED') {
         loc.setup(instance => instance.getLocsVerifiedIssuers()).returnsAsync({
             [ new UUID(REQUEST_ID).toDecimalString() ]: [
                 {
-                    address: VTP.address
+                    address: ISSUER.address
                 } as unknown as VerifiedIssuerType
             ]
         });
@@ -416,8 +416,8 @@ export function setupSelectedVtp(
     }
 }
 
-export const VTP = polkadotAccount("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
-export const VTP_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";
+export const ISSUER = polkadotAccount("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
+export const ISSUER_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";
 
 export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean) {
     if (exists) {

@@ -18,15 +18,15 @@ import {
     mockPolkadotIdentityLoc,
     REQUEST_ID,
     setupRequest,
-    setupSelectedVtp,
-    SetupVtpMode,
+    setupSelectedIssuer,
+    SetupIssuerMode,
     testData,
     testDataWithLogionIdentity,
     testDataWithType,
     testDataWithUserIdentity,
     testDataWithUserIdentityWithType,
     userIdentities,
-    VTP,
+    ISSUER,
     setUpVote, VOTE_ID, mockRequester, mockOwner
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
@@ -127,8 +127,8 @@ describe('LocRequestController - Fetch -', () => {
             .expect(403);
     });
 
-    it('succeeds to get single LOC if VTP', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
+    it('succeeds to get single LOC if verified issuer', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'SELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -138,15 +138,15 @@ describe('LocRequestController - Fetch -', () => {
 
     it('succeeds to get single LOC when LLO with Vote', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_VTP', true), mock);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_ISSUER', true), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
             .expect(200)
             .expect('Content-Type', /application\/json/);
     });
 
-    it('fails to get single LOC if unselected VTP', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, VTP.address);
+    it('fails to get single LOC if unselected verified issuer', async () => {
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'UNSELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -155,7 +155,7 @@ describe('LocRequestController - Fetch -', () => {
 
     it('fails to get single LOC when LLO without Vote', async () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_VTP', false), mock);
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_ISSUER', false), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
             .expect(403);
@@ -172,7 +172,7 @@ function mockModelForFetch(container: Container): void {
     request.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON);
 
-    setupSelectedVtp(loc, 'NOT_VTP');
+    setupSelectedIssuer(loc, 'NOT_ISSUER');
     repository.setup(instance => instance.findBy)
         .returns(() => Promise.resolve([ request.object() ]));
 }
@@ -183,7 +183,7 @@ function mockModelForGetSingle(
     container: Container,
     locType: LocType,
     identityLocation: IdentityLocation,
-    vtpMode: SetupVtpMode = 'NOT_VTP',
+    issuerMode: SetupIssuerMode = 'NOT_ISSUER',
     voteExists = true
 ): void {
     const { request, repository, voteRepository, loc } = buildMocksForFetch(container);
@@ -206,7 +206,7 @@ function mockModelForGetSingle(
     mockPolkadotIdentityLoc(repository, identityLocation === "Polkadot");
     mockLogionIdentityLoc(repository, identityLocation === "Logion");
 
-    setupSelectedVtp(loc, vtpMode);
+    setupSelectedIssuer(loc, issuerMode);
     setUpVote(voteRepository, voteExists);
 }
 
