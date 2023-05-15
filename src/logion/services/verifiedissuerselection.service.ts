@@ -38,10 +38,10 @@ export abstract class VerifiedIssuerSelectionService {
 export class TransactionalVerifiedIssuerSelectionService extends VerifiedIssuerSelectionService {
 
     constructor(
-        verifiedThirdPartySelectionFactory: VerifiedIssuerSelectionFactory,
-        verifiedThirdPartySelectionRepository: VerifiedIssuerSelectionRepository,
+        verifiedIssuerSelectionFactory: VerifiedIssuerSelectionFactory,
+        verifiedIssuerSelectionRepository: VerifiedIssuerSelectionRepository,
     ) {
-        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository);
+        super(verifiedIssuerSelectionFactory, verifiedIssuerSelectionRepository);
     }
 
     @DefaultTransactional()
@@ -50,8 +50,8 @@ export class TransactionalVerifiedIssuerSelectionService extends VerifiedIssuerS
     }
 
     @DefaultTransactional()
-    async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedThirdPartyLocRequest: LocRequestAggregateRoot, select: boolean) {
-        return super.selectUnselect(locRequest, verifiedThirdPartyLocRequest, select);
+    async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedIssuerLocRequest: LocRequestAggregateRoot, select: boolean) {
+        return super.selectUnselect(locRequest, verifiedIssuerLocRequest, select);
     }
 
     @DefaultTransactional()
@@ -64,9 +64,9 @@ export class TransactionalVerifiedIssuerSelectionService extends VerifiedIssuerS
 export class NonTransactionalVerifiedIssuerSelectionService extends VerifiedIssuerSelectionService {
 
     constructor(
-        verifiedThirdPartySelectionFactory: VerifiedIssuerSelectionFactory,
-        verifiedThirdPartySelectionRepository: VerifiedIssuerSelectionRepository,
+        verifiedIssuerSelectionFactory: VerifiedIssuerSelectionFactory,
+        verifiedIssuerSelectionRepository: VerifiedIssuerSelectionRepository,
     ) {
-        super(verifiedThirdPartySelectionFactory, verifiedThirdPartySelectionRepository);
+        super(verifiedIssuerSelectionFactory, verifiedIssuerSelectionRepository);
     }
 }
