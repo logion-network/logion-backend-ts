@@ -17,7 +17,7 @@ import {
     REQUEST_ID,
     setupRequest,
     testDataWithUserIdentityWithType,
-    setupSelectedVtp, mockOwner
+    setupSelectedIssuer, mockOwner
 } from "./locrequest.controller.shared.js";
 import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 
@@ -95,6 +95,6 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
             .returns(Promise.resolve(collectionItem.object()));
     }
 
-    setupSelectedVtp(loc, 'NOT_VTP');
+    setupSelectedIssuer(loc, 'NOT_ISSUER');
 
 }

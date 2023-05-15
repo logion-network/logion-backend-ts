@@ -2,15 +2,15 @@ import { injectable } from 'inversify';
 import { Column, Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
 
-export interface VerifiedThirdPartySelectionId {
+export interface VerifiedIssuerSelectionId {
     locRequestId: string;
     issuer: string;
 }
 
-@Entity("vtp_selection")
-export class VerifiedThirdPartySelectionAggregateRoot {
+@Entity("issuer_selection")
+export class VerifiedIssuerAggregateRoot {
 
-    get id(): VerifiedThirdPartySelectionId {
+    get id(): VerifiedIssuerSelectionId {
         return {
             locRequestId: requireDefined(this.locRequestId),
             issuer: requireDefined(this.issuer),
@@ -27,35 +27,35 @@ export class VerifiedThirdPartySelectionAggregateRoot {
     @PrimaryColumn({ type: "varchar", name: "issuer" })
     issuer?: string;
 
-    @Column({ type: "uuid", name: "vtp_loc_id" })
+    @Column({ type: "uuid", name: "issuer_loc_id" })
     identityLocId?: string;
 
     @Column("boolean", { default: true })
     selected?: boolean;
 }
 
-export interface FindBySpecification extends Partial<VerifiedThirdPartySelectionId> {
+export interface FindBySpecification extends Partial<VerifiedIssuerSelectionId> {
     selected?: boolean;
 }
 
 @injectable()
-export class VerifiedThirdPartySelectionRepository {
+export class VerifiedIssuerSelectionRepository {
 
     constructor() {
-        this.repository = appDataSource.getRepository(VerifiedThirdPartySelectionAggregateRoot);
+        this.repository = appDataSource.getRepository(VerifiedIssuerAggregateRoot);
     }
 
-    readonly repository: Repository<VerifiedThirdPartySelectionAggregateRoot>;
+    readonly repository: Repository<VerifiedIssuerAggregateRoot>;
 
-    async save(selection: VerifiedThirdPartySelectionAggregateRoot): Promise<void> {
+    async save(selection: VerifiedIssuerAggregateRoot): Promise<void> {
         await this.repository.save(selection);
     }
 
-    async findById(id: VerifiedThirdPartySelectionId): Promise<VerifiedThirdPartySelectionAggregateRoot | null> {
+    async findById(id: VerifiedIssuerSelectionId): Promise<VerifiedIssuerAggregateRoot | null> {
         return await this.repository.findOneBy(id);
     }
 
-    async findBy(spec: FindBySpecification): Promise<VerifiedThirdPartySelectionAggregateRoot[]> {
+    async findBy(spec: FindBySpecification): Promise<VerifiedIssuerAggregateRoot[]> {
         return this.repository.findBy(spec);
     }
 
@@ -65,15 +65,15 @@ export class VerifiedThirdPartySelectionRepository {
 }
 
 @injectable()
-export class VerifiedThirdPartySelectionFactory {
+export class VerifiedIssuerSelectionFactory {
 
-    newSelection(id: VerifiedThirdPartySelectionId, identityLocId: string): VerifiedThirdPartySelectionAggregateRoot {
+    newSelection(id: VerifiedIssuerSelectionId, identityLocId: string): VerifiedIssuerAggregateRoot {
         const {
             locRequestId,
             issuer,
         } = id;
 
-        const root = new VerifiedThirdPartySelectionAggregateRoot();
+        const root = new VerifiedIssuerAggregateRoot();
         root.locRequestId = locRequestId;
         root.issuer = issuer;
 

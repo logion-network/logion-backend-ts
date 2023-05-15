@@ -6,7 +6,7 @@ import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
-import { VerifiedThirdPartySelectionAggregateRoot, VerifiedThirdPartySelectionRepository } from "../../model/verifiedthirdpartyselection.model.js";
+import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
 import { Fees } from "@logion/node-api";
 import { SupportedAccountId } from "../../model/supportedaccountid.model.js";
 
@@ -28,7 +28,7 @@ export class LocRequestAdapter {
         private locRequestRepository: LocRequestRepository,
         private idenfyService: IdenfyService,
         private voteRepository: VoteRepository,
-        private verifiedThirdPartySelectionRepository: VerifiedThirdPartySelectionRepository,
+        private verifiedIssuerSelectionRepository: VerifiedIssuerSelectionRepository,
     ) {}
 
     async toView(request: LocRequestAggregateRoot, viewer: SupportedAccountId, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
@@ -58,7 +58,7 @@ export class LocRequestAdapter {
 
         let selectedIssuers: VerifiedIssuerIdentity[] = [];
         if (request.status === 'OPEN' || request.status === 'CLOSED') {
-            const selections = await this.verifiedThirdPartySelectionRepository.findBy({ locRequestId: request.id });
+            const selections = await this.verifiedIssuerSelectionRepository.findBy({ locRequestId: request.id });
             selectedIssuers = await this.getSelectedIssuersIdentities(selections);
         }
 
@@ -158,7 +158,7 @@ export class LocRequestAdapter {
         };
     }
 
-    async getSelectedIssuersIdentities(selectedIssuers: VerifiedThirdPartySelectionAggregateRoot[]): Promise<VerifiedIssuerIdentity[]> {
+    async getSelectedIssuersIdentities(selectedIssuers: VerifiedIssuerAggregateRoot[]): Promise<VerifiedIssuerIdentity[]> {
         const identities: VerifiedIssuerIdentity[] = [];
         for(const selectedIssuer of selectedIssuers) {
             const issuer = selectedIssuer?.issuer || "";

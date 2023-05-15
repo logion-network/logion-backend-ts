@@ -9,10 +9,10 @@ import { UUID, VerifiedIssuerType } from "@logion/node-api";
 import { toUserIdentityView } from "./adapters/locrequestadapter.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
-    const tagName = 'Verified Third Parties';
+    const tagName = 'Verified Issuers';
     addTag(spec, {
         name: tagName,
-        description: "Handling of Verified Third Parties"
+        description: "Handling of Verified Issuers"
     });
     setControllerTag(spec, /^\/api\/issuers-identity$/, tagName);
 }
@@ -22,7 +22,7 @@ type VerifiedIssuerIdentity = components["schemas"]["VerifiedIssuerIdentity"];
 
 @injectable()
 @Controller('')
-export class VerifiedThirdPartyController extends ApiController {
+export class VerifiedIssuerController extends ApiController {
 
     constructor(
         private locRequestRepository: LocRequestRepository,

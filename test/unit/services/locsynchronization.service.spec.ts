@@ -15,7 +15,7 @@ import { NonTransactionalLocRequestService } from "../../../src/logion/services/
 import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
-import { VerifiedThirdPartySelectionService } from "src/logion/services/verifiedthirdpartyselection.service.js";
+import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 import { ALICE } from "../../helpers/addresses.js";
@@ -29,7 +29,7 @@ describe("LocSynchronizer", () => {
         notificationService = new Mock();
         directoryService = new Mock();
         polkadotService = new Mock();
-        verifiedThirdPartySelectionService = new Mock();
+        verifiedIssuerSelectionService = new Mock();
         tokensRecordFactory = new Mock();
         tokensRecordRepository = new Mock();
     });
@@ -240,7 +240,7 @@ function locSynchronizer(): LocSynchronizer {
         notificationService.object(),
         directoryService.object(),
         polkadotService.object(),
-        verifiedThirdPartySelectionService.object(),
+        verifiedIssuerSelectionService.object(),
         new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
         tokensRecordFactory.object(),
     );
@@ -249,7 +249,7 @@ function locSynchronizer(): LocSynchronizer {
 let notificationService: Mock<NotificationService>;
 let directoryService: Mock<DirectoryService>;
 let polkadotService: Mock<PolkadotService>;
-let verifiedThirdPartySelectionService: Mock<VerifiedThirdPartySelectionService>;
+let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 let tokensRecordFactory: Mock<TokensRecordFactory>;
 

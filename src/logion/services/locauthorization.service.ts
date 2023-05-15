@@ -27,11 +27,11 @@ export class LocAuthorizationService {
         return (
             accountEquals(request.getOwner(), contributor) ||
             accountEquals(request.getRequester(), contributor) ||
-            await this.isSelectedThirdParty(request, contributor)
+            await this.isSelectedIssuer(request, contributor)
         );
     }
 
-    private async isSelectedThirdParty(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
+    private async isSelectedIssuer(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
         if (!submitter.isPolkadot()) {
             return false;
         }
