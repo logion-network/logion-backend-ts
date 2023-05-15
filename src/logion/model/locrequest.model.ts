@@ -539,11 +539,15 @@ export class LocRequestAggregateRoot {
     }
 
     preVoid(reason: string) {
-        if (this.voidInfo !== undefined && this.voidInfo.reason !== null) {
+        if (this.isVoid()) {
             throw new Error("LOC is already void")
         }
         this.voidInfo = new EmbeddableVoidInfo();
         this.voidInfo.reason = reason;
+    }
+
+    isVoid(): boolean {
+        return this.voidInfo !== undefined && (this.voidInfo.reason !== null && this.voidInfo.reason !== undefined);
     }
 
     voidLoc(timestamp: Moment) {
@@ -558,10 +562,10 @@ export class LocRequestAggregateRoot {
     }
 
     getVoidInfo(): VoidInfo | null {
-        if (this.voidInfo !== undefined && this.voidInfo.reason !== null) {
+        if (this.isVoid()) {
             return {
-                reason: this.voidInfo.reason || "",
-                voidedOn: this.voidInfo.voidedOn ? moment(this.voidInfo.voidedOn) : null
+                reason: this.voidInfo?.reason || "",
+                voidedOn: this.voidInfo?.voidedOn ? moment(this.voidInfo.voidedOn) : null
             };
         } else {
             return null;
