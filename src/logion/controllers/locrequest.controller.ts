@@ -641,7 +641,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.preVoid(body.reason!);
+            request.preVoid(body.reason || "");
         });
         this.response.sendStatus(204);
     }
