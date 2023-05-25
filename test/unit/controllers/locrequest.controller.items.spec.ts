@@ -9,7 +9,7 @@ import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
     LinkDescription,
-    MetadataItemDescription,
+    MetadataItemDescription, FileDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import { fileExists } from "../../helpers/filehelper.js";
 import {
@@ -236,7 +236,7 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.hasFile(SOME_DATA_HASH)).returns(false);
-    request.setup(instance => instance.addFile(It.IsAny())).returns();
+    request.setup(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>())).returns();
 
     setupSelectedIssuer(loc, issuerMode);
 
@@ -259,7 +259,7 @@ async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggre
             contentType: 'text/plain',
         })
         .expect(200);
-    locRequest.verify(instance => instance.addFile(It.IsAny()));
+    locRequest.verify(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>()));
 }
 
 async function testAddFileForbidden(app: Express) {
@@ -296,7 +296,7 @@ function mockModelForDownloadFile(container: Container, issuerMode: SetupIssuerM
 }
 
 const SOME_OID = 123456;
-const SOME_FILE = {
+const SOME_FILE: FileDescription = {
     name: "file-name",
     contentType: "text/plain",
     hash: SOME_DATA_HASH,
@@ -305,6 +305,7 @@ const SOME_FILE = {
     submitter: REQUESTER,
     restrictedDelivery: false,
     size: 123,
+    status: "DRAFT",
 };
 
 async function testDownloadSuccess(app: Express) {

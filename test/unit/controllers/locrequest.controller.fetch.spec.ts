@@ -225,6 +225,7 @@ const testFile: FileDescription = {
     size: 123,
     fees: FILE_FEES,
     storageFeePaidBy: testData.requesterAddress?.address,
+    status: "DRAFT",
 }
 
 const DATA_LINK_FEES = new Fees(42n);

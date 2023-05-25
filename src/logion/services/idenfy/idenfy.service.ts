@@ -3,7 +3,11 @@ import { AxiosError, AxiosInstance } from "axios";
 import { injectable } from "inversify";
 import { DateTime } from "luxon";
 import { LocRequestService } from "../locrequest.service.js";
-import { FileDescription, LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model.js";
+import {
+    LocRequestAggregateRoot,
+    LocRequestRepository,
+    FileParams
+} from "../../model/locrequest.model.js";
 import { IdenfyCallbackPayload, IdenfyCallbackPayloadFileTypes, IdenfyVerificationSession } from "./idenfy.types.js";
 import { createWriteStream } from "fs";
 import { writeFile, stat } from "fs/promises";
@@ -139,7 +143,7 @@ export class EnabledIdenfyService extends IdenfyService {
             throw new Error(`Request body digest (${digest}) did not match Idenfy-Signature (${checksum}).`)
         }
 
-        let files: FileDescription[];
+        let files: FileParams[];
         if(json.status.overall === "APPROVED" || json.status.overall === "SUSPECTED") {
             files = await this.downloadFiles(json, raw);
         } else {
@@ -149,13 +153,13 @@ export class EnabledIdenfyService extends IdenfyService {
         await this.locRequestService.update(json.clientId, async request => {
             request.updateIdenfyVerification(json, raw.toString());
             for(const file of files) {
-                request.addFile(file);
+                request.addFile(file, true);
             }   
         });
     }
 
-    private async downloadFiles(json: IdenfyCallbackPayload, raw: Buffer): Promise<FileDescription[]> {
-        const files: FileDescription[] = [];
+    private async downloadFiles(json: IdenfyCallbackPayload, raw: Buffer): Promise<FileParams[]> {
+        const files: FileParams[] = [];
 
         const clientId = json.clientId;
         const request = requireDefined(await this.locRequestRepository.findById(clientId));

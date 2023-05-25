@@ -54,14 +54,13 @@ export interface LocRequestDecision {
     readonly rejectReason?: string;
 }
 
-export interface FileDescriptionParams {
+export interface FileParams {
     readonly name: string;
     readonly hash: string;
     readonly oid?: number;
     readonly cid?: string;
     readonly contentType: string;
     readonly nature: string;
-    readonly addedOn?: Moment;
     readonly submitter: SupportedAccountId;
     readonly restrictedDelivery: boolean;
     readonly size: number;
@@ -69,25 +68,24 @@ export interface FileDescriptionParams {
     readonly storageFeePaidBy?: string;
 }
 
-export interface FileDescription extends FileDescriptionParams {
-    readonly status: ItemStatus;
-    readonly rejectReason?: string;
-    readonly reviewedOn?: Moment;
-    readonly acknowledgedOn?: Moment;
+export interface FileDescription extends FileParams, ItemLifecycle {
 }
 
 export interface MetadataItemParams {
     readonly name: string;
     readonly value: string;
-    readonly addedOn?: Moment;
     readonly submitter: SupportedAccountId;
     readonly fees?: Fees;
 }
 
-export interface MetadataItemDescription extends MetadataItemParams {
+export interface MetadataItemDescription extends MetadataItemParams, ItemLifecycle {
+}
+
+export interface ItemLifecycle {
     readonly status: ItemStatus;
     readonly rejectReason?: string;
     readonly reviewedOn?: Moment;
+    readonly addedOn?: Moment;
     readonly acknowledgedOn?: Moment;
 }
 
@@ -103,6 +101,85 @@ export interface VoidInfo {
     readonly voidedOn: Moment | null;
 }
 
+export class EmbeddableLifecycle {
+
+    @Column("varchar", { length: 255 })
+    status?: ItemStatus
+
+    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
+    rejectReason?: string | null;
+
+    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
+    reviewedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "added_on", nullable: true })
+    addedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
+    acknowledgedOn?: Date;
+
+    requestReview() {
+        if (this.status !== "DRAFT") {
+            throw badRequest(`Cannot request a review on item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_PENDING";
+    }
+
+    accept() {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot accept an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_ACCEPTED";
+        this.reviewedOn = moment().toDate();
+    }
+
+    reject(reason: string) {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot reject an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_REJECTED";
+        this.rejectReason = reason;
+        this.reviewedOn = moment().toDate();
+    }
+
+    confirm() {
+        if (this.status !== "REVIEW_ACCEPTED" && this.status !== "PUBLISHED") {
+            throw badRequest(`Cannot confirm item with status ${ this.status }`);
+        }
+        this.status = "PUBLISHED";
+    }
+
+    confirmAcknowledged() {
+        if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
+            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
+        }
+        this.status = "ACKNOWLEDGED";
+    }
+
+    setAddedOn(addedOn: Moment) {
+        if (this.addedOn) {
+            logger.warn("Item added on date is already set");
+        }
+        this.addedOn = addedOn.toDate();
+        this.status = "PUBLISHED";
+    }
+
+    getDescription(): ItemLifecycle {
+        return {
+            status: this.status!,
+            rejectReason: this.status === "REVIEW_REJECTED" ? this.rejectReason! : undefined,
+            reviewedOn: this.reviewedOn ? moment(this.reviewedOn) : undefined,
+            addedOn: this.addedOn ? moment(this.addedOn) : undefined,
+            acknowledgedOn: this.acknowledgedOn ? moment(this.acknowledgedOn) : undefined,
+        }
+    }
+
+    static from(alreadyReviewed: boolean) {
+        const lifecycle = new EmbeddableLifecycle();
+        lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        return lifecycle;
+    }
+}
 class EmbeddableVoidInfo {
 
     @Column("text", { name: "void_reason", nullable: true })
@@ -243,7 +320,7 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    addFile(fileDescription: FileDescriptionParams, alreadyReviewed: boolean) {
+    addFile(fileDescription: FileParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
@@ -256,7 +333,7 @@ export class LocRequestAggregateRoot {
         file.hash! = fileDescription.hash;
         file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
-        file.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        file.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
         file.nature = fileDescription.nature;
         file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
@@ -271,12 +348,32 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    confirmFile(hash: string) {
-        const file = this.getFileOrThrow(hash);
-        file.draft = false;
-        file._toUpdate = true;
+    requestFileReview(hash: string) {
+        this.mutateFile(hash, item => item.requestReview());
     }
 
+    acceptFile(hash: string) {
+        this.mutateFile(hash, item => item.accept());
+    }
+
+    rejectFile(hash: string, reason: string) {
+        this.mutateFile(hash, item => item.reject(reason));
+    }
+
+    confirmFile(hash: string) {
+        this.mutateFile(hash, item => item.confirm());
+    }
+
+    confirmFileAcknowledged(hash: string) {
+        this.mutateFile(hash, item => item.confirmAcknowledged());
+    }
+
+    private mutateFile(hash: string, mutator: (item: EmbeddableLifecycle) => void) {
+        const file = this.getFileOrThrow(hash);
+        mutator(file.lifecycle!);
+        file._toUpdate = true;
+    }
+    
     private getFileOrThrow(hash: string) {
         const file = this.file(hash);
         if(!file) {
@@ -311,6 +408,7 @@ export class LocRequestAggregateRoot {
             size: parseInt(file.size!),
             fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
             storageFeePaidBy: file.storageFeePaidBy,
+            ...(file.lifecycle!.getDescription()),
         };
     }
 
@@ -323,8 +421,7 @@ export class LocRequestAggregateRoot {
     }
 
     getFiles(viewerAddress?: SupportedAccountId): FileDescription[] {
-        // TODO Temporary - Adapt similarly to getMetadataItems()
-        return orderAndMap(this.files?.filter(item => this.itemViewable({ status: "DRAFT", submitter: item.submitter }, viewerAddress)), file => this.toFileDescription(file));
+        return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -370,7 +467,7 @@ export class LocRequestAggregateRoot {
         item.index = this.metadata!.length;
         item.name = itemDescription.name;
         item.value = itemDescription.value;
-        item.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
@@ -385,12 +482,8 @@ export class LocRequestAggregateRoot {
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
-            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
             fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
-            status: item.status!,
-            rejectReason: item.status === "REVIEW_REJECTED" ? item.rejectReason! : undefined,
-            reviewedOn: item.reviewedOn ? moment(item.reviewedOn) : undefined,
-            acknowledgedOn: item.acknowledgedOn ? moment(item.acknowledgedOn) : undefined,
+            ...(item.lifecycle!.getDescription()),
         })
     }
 
@@ -404,11 +497,7 @@ export class LocRequestAggregateRoot {
             logger.error(`MetadataItem with name ${ name } not found`);
             return;
         }
-        if (metadataItem.addedOn) {
-            logger.warn("MetadataItem added on date is already set");
-        }
-        metadataItem.addedOn = addedOn.toDate();
-        metadataItem.status = "PUBLISHED";
+        metadataItem.lifecycle?.setAddedOn(addedOn);
         metadataItem._toUpdate = true;
     }
 
@@ -453,16 +542,16 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(name, item => item.confirm());
     }
 
-    confirmMetadataItemAcknowledge(name: string) {
-        this.mutateMetadataItem(name, item => item.confirmAcknowledge());
+    confirmMetadataItemAcknowledged(name: string) {
+        this.mutateMetadataItem(name, item => item.confirmAcknowledged());
     }
 
-    mutateMetadataItem(name: string, mutator: (item: LocMetadataItem) => void) {
+    private mutateMetadataItem(name: string, mutator: (item: EmbeddableLifecycle) => void) {
         const metadataItem = requireDefined(
             this.metadataItem(name),
             () => badRequest(`Metadata Item not found: ${ name }`)
         );
-        mutator(metadataItem);
+        mutator(metadataItem.lifecycle!);
         metadataItem._toUpdate = true;
     }
 
@@ -480,11 +569,7 @@ export class LocRequestAggregateRoot {
             logger.error(`File with hash ${ hash } not found`);
             return;
         }
-        if (file.addedOn) {
-            logger.warn("File added on date is already set");
-        }
-        file.addedOn = addedOn.toDate();
-        file.draft = false;
+        file.lifecycle?.setAddedOn(addedOn);
         file._toUpdate = true;
     }
 
@@ -498,7 +583,7 @@ export class LocRequestAggregateRoot {
         if (!this.canRemove(removerAddress, removedFile)) {
             throw new Error("Item removal not allowed");
         }
-        if (!removedFile.draft) {
+        if (removedFile.status === "ACKNOWLEDGED" || removedFile.status === 'PUBLISHED') {
             throw new Error("Only draft files can be removed");
         }
         deleteIndexedChild(removedFileIndex, this.files!, this._filesToDelete)
@@ -879,17 +964,12 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
     storageFeePaidBy?: string;
 
-    @Column("varchar", { length: 255 })
-    status?: ItemStatus
+    @Column(() => EmbeddableLifecycle, { prefix: "" })
+    lifecycle?: EmbeddableLifecycle
 
-    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
-    rejectReason?: string | null;
-
-    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
-    reviewedOn?: Date;
-
-    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
-    acknowledgedOn?: Date;
+    get status(): ItemStatus | undefined {
+        return this.lifecycle?.status;
+    }
 
     setRestrictedDelivery(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
@@ -966,9 +1046,6 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column({ name: "index" })
     index?: number;
 
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
-
     @PrimaryColumn({ length: 255 })
     name?: string;
 
@@ -988,59 +1065,16 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
     inclusionFee?: string;
 
-    @Column("varchar", { length: 255 })
-    status?: ItemStatus
-
-    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
-    rejectReason?: string | null;
-
-    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
-    reviewedOn?: Date;
-
-    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
-    acknowledgedOn?: Date;
-
     setFee(inclusionFee: bigint) {
         this.inclusionFee = inclusionFee.toString();
         this._toUpdate = true;
     }
 
-    requestReview() {
-        if (this.status !== "DRAFT") {
-            throw badRequest(`Cannot request a review on item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_PENDING";
-    }
+    @Column(() => EmbeddableLifecycle, { prefix: "" })
+    lifecycle?: EmbeddableLifecycle
 
-    accept() {
-        if (this.status !== "REVIEW_PENDING") {
-            throw badRequest(`Cannot accept an item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_ACCEPTED";
-        this.reviewedOn = moment().toDate();
-    }
-
-    reject(reason: string) {
-        if (this.status !== "REVIEW_PENDING") {
-            throw badRequest(`Cannot reject an item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_REJECTED";
-        this.rejectReason = reason;
-        this.reviewedOn = moment().toDate();
-    }
-
-    confirm() {
-        if (this.status !== "REVIEW_ACCEPTED" && this.status !== "PUBLISHED") {
-            throw badRequest(`Cannot confirm item with status ${ this.status }`);
-        }
-        this.status = "PUBLISHED";
-    }
-
-    confirmAcknowledge() {
-        if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
-            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
-        }
-        this.status = "ACKNOWLEDGED";
+    get status(): ItemStatus | undefined {
+        return this.lifecycle?.status;
     }
 }
 

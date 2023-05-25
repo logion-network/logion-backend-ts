@@ -13,7 +13,7 @@ import {
     LocType,
     LocRequestRepository,
     MetadataItemParams,
-    ItemStatus
+    ItemStatus, FileParams
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -605,7 +605,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("adds and exposes files", () => {
         givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
+        const files: FileParams[] = [
             {
                 hash: "hash1",
                 name: "name1",
@@ -627,7 +627,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files);
+        whenAddingFiles(files, false);
         thenExposesFiles(files);
         thenExposesFileByHash("hash1", files[0]);
         thenExposesFileByHash("hash2", files[1]);
@@ -637,7 +637,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("does not accept several files with same hash", () => {
         givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
+        const files: FileParams[] = [
             {
                 hash: "hash1",
                 name: "name1",
@@ -659,14 +659,14 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        expect(() => whenAddingFiles(files)).toThrowError();
+        expect(() => whenAddingFiles(files, false)).toThrowError();
     });
 
     it("submitter removes previously added files", () => testRemovesFile(SUBMITTER));
 
     function testRemovesFile(remover: SupportedAccountId) {
         givenRequestWithStatus('OPEN');
-        const files: FileDescription[] = [
+        const files: FileParams[] = [
             {
                 hash: "hash1",
                 name: "name1",
@@ -688,11 +688,11 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files);
+        whenAddingFiles(files, false);
         whenRemovingFile(remover, "hash1");
         thenReturnedRemovedFile(files[0]);
 
-        const newFiles: FileDescription[] = [
+        const newFiles: FileParams[] = [
             {
                 hash: "hash2",
                 name: "name2",
@@ -726,9 +726,9 @@ describe("LocRequestAggregateRoot (files)", () => {
                 restrictedDelivery: false,
                 size: 123,
             }
-        ]);
+        ], true);
         whenConfirmingFile(hash)
-        thenFileIsNotDraft(hash)
+        thenFileStatusIs(hash, "PUBLISHED")
         thenFileRequiresUpdate(hash)
     })
 
@@ -746,7 +746,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 restrictedDelivery: false,
                 size: 123,
             }
-        ]);
+        ], true);
         thenFileIsVisibleToRequester(hash)
     })
 
@@ -839,7 +839,7 @@ describe("LocRequestAggregateRoot (files)", () => {
     it("updates file", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Collection";
-        const file: FileDescription = {
+        const file: FileParams = {
             hash: "hash1",
             name: "name1",
             contentType: "text/plain",
@@ -849,7 +849,7 @@ describe("LocRequestAggregateRoot (files)", () => {
             restrictedDelivery: false,
             size: 123,
         };
-        whenAddingFiles([ file ]);
+        whenAddingFiles([ file ], false);
         whenUpdatingFile("hash1", false);
         thenExposesFileByHash("hash1", { ...file, restrictedDelivery: false });
         whenUpdatingFile("hash1", true);
@@ -859,7 +859,7 @@ describe("LocRequestAggregateRoot (files)", () => {
     it("fails to update file for Identity LOC", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Identity";
-        const file: FileDescription = {
+        const file: FileParams = {
             hash: "hash1",
             name: "name1",
             contentType: "text/plain",
@@ -869,7 +869,7 @@ describe("LocRequestAggregateRoot (files)", () => {
             restrictedDelivery: false,
             size: 123,
         };
-        whenAddingFiles([ file ]);
+        whenAddingFiles([ file ], false);
         expect(() => {
             whenUpdatingFile("hash1", true);
         }).toThrowError("Can change restricted delivery of file only on Collection LOC.");
@@ -889,7 +889,7 @@ function givenClosedCollectionLocWithFile(hash: string) {
         submitter: OWNER_ACCOUNT,
         restrictedDelivery: true,
         size: 123,
-    });
+    }, true);
     request.close(moment());
 }
 
@@ -933,7 +933,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
 
     it("sets file timestamp", () => {
         givenRequestWithStatus("OPEN")
-        const files: FileDescription[] = [
+        const files: FileParams[] = [
             {
                 hash: "hash1",
                 name: "name1",
@@ -955,10 +955,10 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files);
+        whenAddingFiles(files, true);
         const addedOn = moment();
         whenSettingFileAddedOn("hash1", addedOn);
-        thenFileIsNotDraft("hash1")
+        thenFileStatusIs("hash1", "PUBLISHED")
         thenFileRequiresUpdate("hash1")
         thenExposesFileByHash("hash1", {
             hash: "hash1",
@@ -980,8 +980,9 @@ describe("LocRequestAggregateRoot (processes)", () => {
         // User creates and submits
         givenRequestWithStatus("DRAFT");
 
+        const fileHash = "hash1";
         request.addFile({
-            hash: "hash1",
+            hash: fileHash,
             name: "name1",
             contentType: "text/plain",
             oid: 1234,
@@ -989,7 +990,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             submitter: SUBMITTER,
             restrictedDelivery: false,
             size: 123,
-        });
+        }, false);
         expect(request.getFiles(SUBMITTER).length).toBe(1);
         const itemName = "Some name";
         request.addMetadataItem({
@@ -999,11 +1000,15 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, false);
         expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
 
-        // User requests metadata review
+        // User requests reviews
+        request.requestFileReview(fileHash);
+        thenFileStatusIs(fileHash, "REVIEW_PENDING");
         request.requestMetadataItemReview(itemName);
         thenMetadataItemStatusIs(itemName, "REVIEW_PENDING");
 
-        // LLO accepts metadata
+        // LLO accepts items
+        request.acceptFile(fileHash);
+        thenFileStatusIs(fileHash, "REVIEW_ACCEPTED");
         request.acceptMetadataItem(itemName);
         thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
 
@@ -1023,14 +1028,15 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.accept(moment());
         thenRequestStatusIs("OPEN");
 
-        request.confirmFile("hash1");
-        request.setFileAddedOn("hash1", moment()); // Sync
 
         // User publishes
-        thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
+        request.confirmFile(fileHash);
+        request.setFileAddedOn(fileHash, moment()); // Sync
+        request.confirmFileAcknowledged(fileHash);
+
         request.confirmMetadataItem(itemName);
         request.setMetadataItemAddedOn(itemName, moment()); // Sync
-        request.confirmMetadataItemAcknowledge(itemName);
+        request.confirmMetadataItemAcknowledged(itemName);
 
         // LLO adds other data
         request.addFile({
@@ -1042,7 +1048,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             submitter: OWNER_ACCOUNT,
             restrictedDelivery: false,
             size: 123,
-        });
+        }, true);
         request.confirmFile("hash2");
         request.setFileAddedOn("hash2", moment()); // Sync
 
@@ -1062,7 +1068,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, true);
         request.confirmMetadataItem(someOtherName);
         request.setMetadataItemAddedOn(someOtherName, moment()); // Sync
-        request.confirmMetadataItemAcknowledge(someOtherName);
+        request.confirmMetadataItemAcknowledged(someOtherName);
 
         // LLO closes
         request.preClose();
@@ -1181,32 +1187,27 @@ function whenUpdatingFile(hash: string, restrictedDelivery: boolean) {
     request.setFileRestrictedDelivery({ hash, restrictedDelivery });
 }
 
-function whenAddingFiles(files: FileDescription[]) {
-    files.forEach(file => request.addFile(file));
+function whenAddingFiles(files: FileParams[], alreadyReviewed: boolean) {
+    files.forEach(file => request.addFile(file, alreadyReviewed));
 }
 
-function thenExposesFiles(expectedFiles: FileDescription[]) {
+function thenExposesFiles(expectedFiles: FileParams[]) {
     request.getFiles().forEach((file, index) => {
         expectSameFiles(file, expectedFiles[index]);
     });
 }
 
-function expectSameFiles(f1: FileDescription, f2: FileDescription) {
-    expect(f1.hash).toEqual(f2.hash);
-    expect(f1.name).toEqual(f2.name);
+function expectSameFiles(f1: FileDescription, f2: Partial<FileDescription>) {
+    expect(f1.hash).toEqual(f2.hash!);
+    expect(f1.name).toEqual(f2.name!);
     expect(f1.oid).toEqual(f2.oid);
-    expect(f1.contentType).toEqual(f2.contentType);
-    expect(f1.nature).toEqual(f2.nature);
-    expect(f1.submitter).toEqual(f2.submitter);
-    expect(f1.restrictedDelivery).toEqual(f2.restrictedDelivery);
-    if(f1.addedOn === undefined) {
-        expect(f2.addedOn).not.toBeDefined();
-    } else {
-        expect(f1.addedOn.isSame(f2.addedOn!)).toBe(true);
-    }
+    expect(f1.contentType).toEqual(f2.contentType!);
+    expect(f1.nature).toEqual(f2.nature!);
+    expect(f1.submitter).toEqual(f2.submitter!);
+    expect(f1.restrictedDelivery).toEqual(f2.restrictedDelivery!);
 }
 
-function thenExposesFileByHash(hash: string, expectedFile: FileDescription) {
+function thenExposesFileByHash(hash: string, expectedFile: Partial<FileDescription>) {
     expectSameFiles(request.getFile(hash), expectedFile);
 }
 
@@ -1218,11 +1219,11 @@ function whenAddingMetadata(metadata: MetadataItemParams[], alreadyReviewed: boo
     metadata.forEach(item => request.addMetadataItem(item, alreadyReviewed));
 }
 
-function thenExposesMetadata(expectedMetadata: MetadataItemParams[]) {
+function thenExposesMetadata(expectedMetadata: Partial<MetadataItemDescription>[]) {
     request.getMetadataItems().forEach((item, index) => {
-        expect(item.name).toBe(expectedMetadata[index].name);
-        expect(item.value).toBe(expectedMetadata[index].value);
-        expect(item.submitter).toBe(expectedMetadata[index].submitter);
+        expect(item.name).toBe(expectedMetadata[index].name!);
+        expect(item.value).toBe(expectedMetadata[index].value!);
+        expect(item.submitter).toBe(expectedMetadata[index].submitter!);
         if (item.addedOn === undefined) {
             expect(expectedMetadata[index].addedOn).not.toBeDefined()
         } else {
@@ -1231,14 +1232,14 @@ function thenExposesMetadata(expectedMetadata: MetadataItemParams[]) {
     });
 }
 
-function thenExposesMetadataItemByName(name: string, expectedMetadataItem: MetadataItemParams) {
+function thenExposesMetadataItemByName(name: string, expectedMetadataItem: Partial<MetadataItemDescription>) {
     expectSameMetadataItems(request.getMetadataItem(name), expectedMetadataItem)
 }
 
-function expectSameMetadataItems(item1: MetadataItemDescription, item2: MetadataItemParams) {
-    expect(item1.name).toEqual(item2.name);
-    expect(item1.value).toEqual(item2.value);
-    expect(item1.submitter).toEqual(item2.submitter);
+function expectSameMetadataItems(item1: MetadataItemDescription, item2: Partial<MetadataItemDescription>) {
+    expect(item1.name).toEqual(item2.name!);
+    expect(item1.value).toEqual(item2.value!);
+    expect(item1.submitter).toEqual(item2.submitter!);
     if (item1.addedOn === undefined) {
         expect(item2.addedOn).toBeUndefined()
     } else {
@@ -1285,8 +1286,8 @@ function whenConfirmingFile(hash: string) {
     request.confirmFile(hash);
 }
 
-function thenFileIsNotDraft(hash: string) {
-    expect(request.files?.find(file => file.hash === hash)?.draft).toBeFalse();
+function thenFileStatusIs(hash: string, status: ItemStatus) {
+    expect(request.files?.find(file => file.hash === hash)?.status).toEqual(status)
 }
 
 function thenFileRequiresUpdate(hash: string) {
@@ -1340,7 +1341,7 @@ function whenSubmitting() {
     request.submit();
 }
 
-function thenReturnedRemovedFile(expectedFile: FileDescription) {
+function thenReturnedRemovedFile(expectedFile: FileParams) {
     expectSameFiles(removedFile, expectedFile);
 }
 
