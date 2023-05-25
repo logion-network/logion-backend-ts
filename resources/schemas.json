@@ -623,6 +623,18 @@
                 "title": "CreateLocRequestView",
                 "description": "A LOC Request to create"
             },
+            "ItemStatus": {
+                "type": "string",
+                "description": "The request's status",
+                "enum": [
+                    "DRAFT",
+                    "REVIEW_PENDING",
+                    "REVIEW_ACCEPTED",
+                    "REVIEW_REJECTED",
+                    "PUBLISHED",
+                    "ACKNOWLEDGED"
+                ]
+            },
             "LocFileView": {
                 "type": "object",
                 "properties": {
@@ -665,8 +677,29 @@
                     "storageFeePaidBy": {
                         "type": "string",
                         "description": "Account from which storage fees were withdrawn."
+                    },
+                    "status": {
+                        "description": "The file's status",
+                        "$ref": "#/components/schemas/ItemStatus"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
+                    },
+                    "reviewedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of review"
+                    },
+                    "acknowledgedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge (chain time)"
                     }
-                }
+                },
+                "required": [
+                    "status"
+                ]
             },
             "LocMetadataItemView": {
                 "type": "object",
@@ -690,8 +723,29 @@
                     },
                     "fees": {
                         "$ref": "#/components/schemas/FeesView"
+                    },
+                    "status": {
+                        "description": "The item's status",
+                        "$ref": "#/components/schemas/ItemStatus"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
+                    },
+                    "reviewedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of review"
+                    },
+                    "acknowledgedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge (chain time)"
                     }
-                }
+                },
+                "required": [
+                    "status"
+                ]
             },
             "LocRequestView": {
                 "type": "object",
@@ -1511,6 +1565,26 @@
                         }
                     }
                 }
+            },
+            "ReviewItemView": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "type": "string",
+                        "description": "The review's outcome",
+                        "enum": [
+                            "ACCEPT",
+                            "REJECT"
+                        ]
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    }
+                },
+                "required": [
+                    "decision"
+                ]
             }
         }
     }

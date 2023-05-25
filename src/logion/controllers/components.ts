@@ -350,6 +350,11 @@ export interface components {
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
     };
+    /**
+     * @description The request's status 
+     * @enum {string}
+     */
+    ItemStatus: "DRAFT" | "REVIEW_PENDING" | "REVIEW_ACCEPTED" | "REVIEW_REJECTED" | "PUBLISHED" | "ACKNOWLEDGED";
     LocFileView: {
       /** @description The file's name */
       name?: string;
@@ -373,6 +378,20 @@ export interface components {
       fees?: components["schemas"]["FeesView"];
       /** @description Account from which storage fees were withdrawn. */
       storageFeePaidBy?: string;
+      /** @description The file's status */
+      status: components["schemas"]["ItemStatus"];
+      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
+      rejectReason?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of review
+       */
+      reviewedOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge (chain time)
+       */
+      acknowledgedOn?: string;
     };
     LocMetadataItemView: {
       /** @description The item's name */
@@ -387,6 +406,20 @@ export interface components {
       /** @description The address of the submitter */
       submitter?: components["schemas"]["SupportedAccountId"];
       fees?: components["schemas"]["FeesView"];
+      /** @description The item's status */
+      status: components["schemas"]["ItemStatus"];
+      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
+      rejectReason?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of review
+       */
+      reviewedOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge (chain time)
+       */
+      acknowledgedOn?: string;
     };
     /**
      * LocRequestView 
@@ -866,6 +899,15 @@ export interface components {
     TokensRecordsView: {
       /** @description The items of a given collection */
       records?: (components["schemas"]["TokensRecordView"])[];
+    };
+    ReviewItemView: {
+      /**
+       * @description The review's outcome 
+       * @enum {string}
+       */
+      decision: "ACCEPT" | "REJECT";
+      /** @description The rejection reason */
+      rejectReason?: string;
     };
   };
   responses: never;

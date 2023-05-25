@@ -95,6 +95,10 @@ export class LocRequestAdapter {
                 addedOn: item.addedOn?.toISOString() || undefined,
                 submitter: item.submitter,
                 fees: toFeesView(item.fees),
+                status: item.status,
+                rejectReason: item.rejectReason,
+                reviewedOn: item.reviewedOn?.toISOString(),
+                acknowledgedOn: item.acknowledgedOn?.toISOString(),
             })),
             links: request.getLinks(viewer).map(link => ({
                 target: link.target,

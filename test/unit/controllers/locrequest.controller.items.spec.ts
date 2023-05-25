@@ -145,7 +145,7 @@ describe('LocRequestController - Items -', () => {
     it('adds a metadata item', async () => {
         const locRequest = mockRequestForMetadata();
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
-        await testAddMetadataSuccess(app, locRequest);
+        await testAddMetadataSuccess(app, locRequest, true);
     });
 
     it('adds a metadata item - verified issuer', async () => {
@@ -154,7 +154,7 @@ describe('LocRequestController - Items -', () => {
         mockOwner(locRequest, ALICE_ACCOUNT);
         mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock)
-        await testAddMetadataSuccess(app, locRequest);
+        await testAddMetadataSuccess(app, locRequest, false);
     });
 
     it('fails to add a metadata item when not contributor', async () => {
@@ -399,18 +399,18 @@ function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
         name: SOME_DATA_NAME,
         value: SOME_DATA_VALUE,
         submitter: REQUESTER
-    }))
+    }, false))
         .returns()
     return request;
 }
 
-async function testAddMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
+async function testAddMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, alreadyReviewed: boolean) {
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
         .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
         .expect(204)
     locRequest.verify(instance => instance.addMetadataItem(
-        It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE)));
+        It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE), alreadyReviewed));
 }
 
 async function testAddMetadataForbidden(app: Express) {

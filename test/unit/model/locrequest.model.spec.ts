@@ -11,7 +11,9 @@ import {
     LinkDescription,
     VoidInfo,
     LocType,
-    LocRequestRepository
+    LocRequestRepository,
+    MetadataItemParams,
+    ItemStatus
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -412,7 +414,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
 
     it("does not accept several metadata items with same name", () => {
         givenRequestWithStatus('OPEN');
-        const items: MetadataItemDescription[] = [
+        const items: MetadataItemParams[] = [
             {
                 name: "same name",
                 value: "some value",
@@ -424,12 +426,12 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        expect(() => whenAddingMetadata(items)).toThrowError();
+        expect(() => whenAddingMetadata(items, false)).toThrowError();
     });
 
     it("adds and exposes metadata", () => {
         givenRequestWithStatus('OPEN');
-        const metadata: MetadataItemDescription[] = [
+        const metadata: MetadataItemParams[] = [
             {
                 name: "name1",
                 value: "value1",
@@ -441,7 +443,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingMetadata(metadata);
+        whenAddingMetadata(metadata, false);
         thenExposesMetadata(metadata);
     });
 
@@ -449,7 +451,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
 
     function testRemovesItem(remover: SupportedAccountId) {
         givenRequestWithStatus('OPEN');
-        const items: MetadataItemDescription[] = [
+        const items: MetadataItemParams[] = [
             {
                 name: "name1",
                 value: "some nice value",
@@ -461,10 +463,10 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingMetadata(items);
+        whenAddingMetadata(items, false);
         whenRemovingMetadataItem(remover, "name2")
 
-        const newItems: MetadataItemDescription[] = [
+        const newItems: MetadataItemParams[] = [
             {
                 name: "name1",
                 value: "some nice value",
@@ -488,9 +490,9 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 value: "value-1",
                 submitter: SUBMITTER,
             }
-        ])
+        ], true)
         whenConfirmingMetadataItem(name)
-        thenMetadataItemIsNotDraft(name)
+        thenMetadataItemStatusIs(name, "PUBLISHED")
         thenMetadataItemRequiresUpdate(name)
     })
 
@@ -503,7 +505,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 value: "value-1",
                 submitter: OWNER_ACCOUNT,
             }
-        ])
+        ], false)
         thenMetadataIsVisibleToRequester(name);
     })
 })
@@ -899,10 +901,10 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             name: "data-1",
             value: "value-1",
             submitter: SUBMITTER,
-        }])
+        }], true)
         const addedOn = moment();
         whenSettingMetadataItemAddedOn("data-1", addedOn);
-        thenMetadataItemIsNotDraft("data-1")
+        thenMetadataItemStatusIs("data-1", "PUBLISHED")
         thenMetadataItemRequiresUpdate("data-1")
         thenExposesMetadataItemByName("data-1", {
             name: "data-1",
@@ -989,12 +991,22 @@ describe("LocRequestAggregateRoot (processes)", () => {
             size: 123,
         });
         expect(request.getFiles(SUBMITTER).length).toBe(1);
+        const itemName = "Some name";
         request.addMetadataItem({
-            name: "Some name",
+            name: itemName,
             value: "Some value",
             submitter: SUBMITTER,
-        });
+        }, false);
         expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
+
+        // User requests metadata review
+        request.requestMetadataItemReview(itemName);
+        thenMetadataItemStatusIs(itemName, "REVIEW_PENDING");
+
+        // LLO accepts metadata
+        request.acceptMetadataItem(itemName);
+        thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
+
         request.submit();
         thenRequestStatusIs("REQUESTED");
 
@@ -1007,15 +1019,18 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("DRAFT");
         request.submit();
 
-        // LLO accepts and publishes
+        // LLO accepts
         request.accept(moment());
         thenRequestStatusIs("OPEN");
 
         request.confirmFile("hash1");
         request.setFileAddedOn("hash1", moment()); // Sync
 
-        request.confirmMetadataItem("Some name");
-        request.setMetadataItemAddedOn("Some name", moment()); // Sync
+        // User publishes
+        thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
+        request.confirmMetadataItem(itemName);
+        request.setMetadataItemAddedOn(itemName, moment()); // Sync
+        request.confirmMetadataItemAcknowledge(itemName);
 
         // LLO adds other data
         request.addFile({
@@ -1039,13 +1054,15 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.confirmLink(target);
         request.setLinkAddedOn(target, moment()); // Sync
 
+        const someOtherName = "Some other name";
         request.addMetadataItem({
-            name: "Some other name",
+            name: someOtherName,
             value: "Some other value",
             submitter: OWNER_ACCOUNT,
-        });
-        request.confirmMetadataItem("Some other name");
-        request.setMetadataItemAddedOn("Some other name", moment()); // Sync
+        }, true);
+        request.confirmMetadataItem(someOtherName);
+        request.setMetadataItemAddedOn(someOtherName, moment()); // Sync
+        request.confirmMetadataItemAcknowledge(someOtherName);
 
         // LLO closes
         request.preClose();
@@ -1197,11 +1214,11 @@ function thenHasFile(hash: string) {
     expect(request.hasFile(hash)).toBe(true);
 }
 
-function whenAddingMetadata(metadata: MetadataItemDescription[]) {
-    metadata.forEach(item => request.addMetadataItem(item));
+function whenAddingMetadata(metadata: MetadataItemParams[], alreadyReviewed: boolean) {
+    metadata.forEach(item => request.addMetadataItem(item, alreadyReviewed));
 }
 
-function thenExposesMetadata(expectedMetadata: MetadataItemDescription[]) {
+function thenExposesMetadata(expectedMetadata: MetadataItemParams[]) {
     request.getMetadataItems().forEach((item, index) => {
         expect(item.name).toBe(expectedMetadata[index].name);
         expect(item.value).toBe(expectedMetadata[index].value);
@@ -1214,11 +1231,11 @@ function thenExposesMetadata(expectedMetadata: MetadataItemDescription[]) {
     });
 }
 
-function thenExposesMetadataItemByName(name: string, expectedMetadataItem: MetadataItemDescription) {
+function thenExposesMetadataItemByName(name: string, expectedMetadataItem: MetadataItemParams) {
     expectSameMetadataItems(request.getMetadataItem(name), expectedMetadataItem)
 }
 
-function expectSameMetadataItems(item1: MetadataItemDescription, item2: MetadataItemDescription) {
+function expectSameMetadataItems(item1: MetadataItemDescription, item2: MetadataItemParams) {
     expect(item1.name).toEqual(item2.name);
     expect(item1.value).toEqual(item2.value);
     expect(item1.submitter).toEqual(item2.submitter);
@@ -1247,8 +1264,8 @@ function whenConfirmingMetadataItem(name: string) {
     request.confirmMetadataItem(name);
 }
 
-function thenMetadataItemIsNotDraft(name: string) {
-    expect(request.metadataItem(name)?.draft).toBeFalse();
+function thenMetadataItemStatusIs(name: string, expectedStatus: ItemStatus) {
+    expect(request.metadataItem(name)?.status).toEqual(expectedStatus);
 }
 
 function thenMetadataItemRequiresUpdate(name: string) {

@@ -4,7 +4,7 @@ import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneTo
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { Fees, UUID } from "@logion/node-api";
-import { appDataSource, Log } from "@logion/rest-api-core";
+import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
 import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
@@ -32,6 +32,7 @@ const { logger } = Log;
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 export type IdentityLocType = components["schemas"]["IdentityLocType"];
+export type ItemStatus = components["schemas"]["ItemStatus"];
 
 export interface LocRequestDescription {
     readonly requesterAddress?: SupportedAccountId;
@@ -53,7 +54,7 @@ export interface LocRequestDecision {
     readonly rejectReason?: string;
 }
 
-export interface FileDescription {
+export interface FileDescriptionParams {
     readonly name: string;
     readonly hash: string;
     readonly oid?: number;
@@ -68,12 +69,26 @@ export interface FileDescription {
     readonly storageFeePaidBy?: string;
 }
 
-export interface MetadataItemDescription {
+export interface FileDescription extends FileDescriptionParams {
+    readonly status: ItemStatus;
+    readonly rejectReason?: string;
+    readonly reviewedOn?: Moment;
+    readonly acknowledgedOn?: Moment;
+}
+
+export interface MetadataItemParams {
     readonly name: string;
     readonly value: string;
     readonly addedOn?: Moment;
     readonly submitter: SupportedAccountId;
     readonly fees?: Fees;
+}
+
+export interface MetadataItemDescription extends MetadataItemParams {
+    readonly status: ItemStatus;
+    readonly rejectReason?: string;
+    readonly reviewedOn?: Moment;
+    readonly acknowledgedOn?: Moment;
 }
 
 export interface LinkDescription {
@@ -228,7 +243,7 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    addFile(fileDescription: FileDescription) {
+    addFile(fileDescription: FileDescriptionParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
@@ -241,7 +256,7 @@ export class LocRequestAggregateRoot {
         file.hash! = fileDescription.hash;
         file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
-        file.draft = true;
+        file.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
         file.nature = fileDescription.nature;
         file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
@@ -299,15 +314,17 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    private itemViewable(item: { draft?: boolean, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
-        return !item.draft ||
+    private itemViewable(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
+        return item.status === 'PUBLISHED' ||
+            item.status === 'ACKNOWLEDGED' ||
             accountEquals(viewerAddress, this.getOwner()) ||
             accountEquals(viewerAddress, item.submitter) ||
             (accountEquals(viewerAddress, this.getRequester()) && accountEquals(item.submitter, this.getOwner()))
     }
 
     getFiles(viewerAddress?: SupportedAccountId): FileDescription[] {
-        return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
+        // TODO Temporary - Adapt similarly to getMetadataItems()
+        return orderAndMap(this.files?.filter(item => this.itemViewable({ status: "DRAFT", submitter: item.submitter }, viewerAddress)), file => this.toFileDescription(file));
     }
 
     setLocCreatedDate(timestamp: Moment) {
@@ -342,7 +359,7 @@ export class LocRequestAggregateRoot {
         return (this.closedOn !== undefined && this.closedOn !== null) ? moment(this.closedOn) : null;
     }
 
-    addMetadataItem(itemDescription: MetadataItemDescription) {
+    addMetadataItem(itemDescription: MetadataItemParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasMetadataItem(itemDescription.name)) {
             throw new Error("A metadata item with given name was already added to this LOC");
@@ -353,7 +370,7 @@ export class LocRequestAggregateRoot {
         item.index = this.metadata!.length;
         item.name = itemDescription.name;
         item.value = itemDescription.value;
-        item.draft = true;
+        item.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
@@ -370,6 +387,10 @@ export class LocRequestAggregateRoot {
             submitter: item.submitter!.toSupportedAccountId(),
             addedOn: item.addedOn ? moment(item.addedOn) : undefined,
             fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
+            status: item.status!,
+            rejectReason: item.status === "REVIEW_REJECTED" ? item.rejectReason! : undefined,
+            reviewedOn: item.reviewedOn ? moment(item.reviewedOn) : undefined,
+            acknowledgedOn: item.acknowledgedOn ? moment(item.acknowledgedOn) : undefined,
         })
     }
 
@@ -387,7 +408,7 @@ export class LocRequestAggregateRoot {
             logger.warn("MetadataItem added on date is already set");
         }
         metadataItem.addedOn = addedOn.toDate();
-        metadataItem.draft = false;
+        metadataItem.status = "PUBLISHED";
         metadataItem._toUpdate = true;
     }
 
@@ -401,7 +422,7 @@ export class LocRequestAggregateRoot {
         if (!this.canRemove(remover, removedItem)) {
             throw new Error("Item removal not allowed");
         }
-        if (!removedItem.draft) {
+        if (removedItem.status === "ACKNOWLEDGED" || removedItem.status === 'PUBLISHED') {
             throw new Error("Only draft metadata can be removed");
         }
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
@@ -416,9 +437,32 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    requestMetadataItemReview(name: string) {
+        this.mutateMetadataItem(name, item => item.requestReview());
+    }
+
+    acceptMetadataItem(name: string) {
+        this.mutateMetadataItem(name, item => item.accept());
+    }
+
+    rejectMetadataItem(name: string, reason: string) {
+        this.mutateMetadataItem(name, item => item.reject(reason));
+    }
+
     confirmMetadataItem(name: string) {
-        const metadataItem = this.metadataItem(name)!;
-        metadataItem.draft = false;
+        this.mutateMetadataItem(name, item => item.confirm());
+    }
+
+    confirmMetadataItemAcknowledge(name: string) {
+        this.mutateMetadataItem(name, item => item.confirmAcknowledge());
+    }
+
+    mutateMetadataItem(name: string, mutator: (item: LocMetadataItem) => void) {
+        const metadataItem = requireDefined(
+            this.metadataItem(name),
+            () => badRequest(`Metadata Item not found: ${ name }`)
+        );
+        mutator(metadataItem);
         metadataItem._toUpdate = true;
     }
 
@@ -806,9 +850,6 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255, name: "content_type" })
     contentType?: string;
 
-    @Column("boolean")
-    draft?: boolean;
-
     @Column({ length: 255, nullable: true })
     nature?: string;
 
@@ -837,6 +878,18 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
     storageFeePaidBy?: string;
+
+    @Column("varchar", { length: 255 })
+    status?: ItemStatus
+
+    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
+    rejectReason?: string | null;
+
+    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
+    reviewedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
+    acknowledgedOn?: Date;
 
     setRestrictedDelivery(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
@@ -925,9 +978,6 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column("text", { name: "value_text", default: "" })
     value?: string;
 
-    @Column("boolean", { default: false })
-    draft?: boolean;
-
     @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
     submitter?: EmbeddableSupportedAccountId;
 
@@ -938,9 +988,59 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column("numeric", { name: "inclusion_fee", precision: AMOUNT_PRECISION, nullable: true })
     inclusionFee?: string;
 
+    @Column("varchar", { length: 255 })
+    status?: ItemStatus
+
+    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
+    rejectReason?: string | null;
+
+    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
+    reviewedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
+    acknowledgedOn?: Date;
+
     setFee(inclusionFee: bigint) {
         this.inclusionFee = inclusionFee.toString();
         this._toUpdate = true;
+    }
+
+    requestReview() {
+        if (this.status !== "DRAFT") {
+            throw badRequest(`Cannot request a review on item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_PENDING";
+    }
+
+    accept() {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot accept an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_ACCEPTED";
+        this.reviewedOn = moment().toDate();
+    }
+
+    reject(reason: string) {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot reject an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_REJECTED";
+        this.rejectReason = reason;
+        this.reviewedOn = moment().toDate();
+    }
+
+    confirm() {
+        if (this.status !== "REVIEW_ACCEPTED" && this.status !== "PUBLISHED") {
+            throw badRequest(`Cannot confirm item with status ${ this.status }`);
+        }
+        this.status = "PUBLISHED";
+    }
+
+    confirmAcknowledge() {
+        if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
+            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
+        }
+        this.status = "ACKNOWLEDGED";
     }
 }
 
