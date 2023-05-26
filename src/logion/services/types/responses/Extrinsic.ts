@@ -8,7 +8,7 @@ export interface StorageFee {
 export interface LegalFee {
     fee: bigint;
     withdrawnFrom: string;
-    beneficiary: string;
+    beneficiary?: string;
 }
 
 export interface JsonExtrinsic {
