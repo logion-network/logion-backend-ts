@@ -131,7 +131,9 @@ export class ExtrinsicsBuilder {
 
     private getLegalFee(event: JsonEvent): LegalFee | undefined {
         const withdrawnFrom = event.data[0].toString();
-        const beneficiary = event.data[1].toString();
+        const beneficiary: string | undefined = event.data[1].isLegalOfficer ?
+            event.data[1].asLegalOfficer.toString() :
+            undefined;
         const fee = event.data[2].toBigInt();
         return {
             withdrawnFrom,
