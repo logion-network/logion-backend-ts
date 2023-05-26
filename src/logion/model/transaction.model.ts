@@ -7,7 +7,7 @@ import { EmbeddableFees } from './fees.js';
 export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
 
 function asTransactionType(type?: string): TransactionType {
-    if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT") {
+    if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT" || type === "STORAGE_FEE" || type === "OTHER_FEES") {
         return type;
     } else {
         throw new Error(`Unexpected value ${type}`);
