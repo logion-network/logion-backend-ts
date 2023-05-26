@@ -43,6 +43,17 @@ export class AddReviewAck1684933448365 implements MigrationInterface {
               AND loc.status in ('REQUESTED', 'OPEN')
               AND loc.owner_address = item.submitter_address
         `);
+        // LOC (REQUESTED, OPEN), SUBMITTER = OWNER => ITEM draft=true > REVIEW_ACCEPTED
+        await queryRunner.query(`
+            UPDATE ${ table } item
+            SET "status" = 'REVIEW_REJECTED'
+            FROM loc_request loc
+            WHERE 1=1
+              AND item.draft = 'true'
+              AND loc.id = item.request_id
+              AND loc.status = 'REJECTED'
+              AND loc.owner_address = item.submitter_address
+        `);
         // EVERYTHING ELSE => ITEM draft=true > REVIEW_PENDING
         await queryRunner.query(`
             UPDATE ${ table } item

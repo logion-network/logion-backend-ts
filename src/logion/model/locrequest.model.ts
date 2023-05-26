@@ -149,11 +149,12 @@ export class EmbeddableLifecycle {
         this.status = "PUBLISHED";
     }
 
-    confirmAcknowledged() {
+    confirmAcknowledged(acknowledgedOn?: Moment) {
         if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
         }
         this.status = "ACKNOWLEDGED";
+        this.acknowledgedOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
     }
 
     setAddedOn(addedOn: Moment) {
@@ -177,6 +178,7 @@ export class EmbeddableLifecycle {
     static from(alreadyReviewed: boolean) {
         const lifecycle = new EmbeddableLifecycle();
         lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        lifecycle.acknowledgedOn = alreadyReviewed ? moment().toDate() : undefined;
         return lifecycle;
     }
 }
@@ -364,8 +366,8 @@ export class LocRequestAggregateRoot {
         this.mutateFile(hash, item => item.confirm());
     }
 
-    confirmFileAcknowledged(hash: string) {
-        this.mutateFile(hash, item => item.confirmAcknowledged());
+    confirmFileAcknowledged(hash: string, acknowledgedOn?: Moment) {
+        this.mutateFile(hash, item => item.confirmAcknowledged(acknowledgedOn));
     }
 
     private mutateFile(hash: string, mutator: (item: EmbeddableLifecycle) => void) {
@@ -403,7 +405,6 @@ export class LocRequestAggregateRoot {
             cid: file!.cid,
             nature: file!.nature!,
             submitter: file!.submitter!.toSupportedAccountId(),
-            addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
             fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
@@ -542,8 +543,8 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(name, item => item.confirm());
     }
 
-    confirmMetadataItemAcknowledged(name: string) {
-        this.mutateMetadataItem(name, item => item.confirmAcknowledged());
+    confirmMetadataItemAcknowledged(name: string, acknowledgedOn?: Moment) {
+        this.mutateMetadataItem(name, item => item.confirmAcknowledged(acknowledgedOn));
     }
 
     private mutateMetadataItem(name: string, mutator: (item: EmbeddableLifecycle) => void) {
@@ -919,9 +920,6 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @Column({ name: "index" })
     index?: number;
-
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
 
     @Column({ length: 255 })
     name?: string;
