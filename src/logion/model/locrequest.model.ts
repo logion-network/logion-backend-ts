@@ -251,7 +251,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot submit with ongoing iDenfy verification session");
         }
         this.status = 'REQUESTED';
-        this.updateAllItemsStatus(undefined, "REVIEW_PENDING");
+        this.updateAllItemsStatus("REVIEW_PENDING");
     }
 
     reject(reason: string, rejectedOn: Moment): void {
@@ -262,7 +262,7 @@ export class LocRequestAggregateRoot {
         this.status = 'REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
-        this.updateAllItemsStatus("DRAFT", "REVIEW_REJECTED");
+        this.updateAllItemsStatus("REVIEW_REJECTED");
     }
 
     rework(): void {
@@ -270,7 +270,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot rework a non-rejected request");
         }
         this.status = 'DRAFT';
-        this.updateAllItemsStatus(undefined, "DRAFT");
+        this.updateAllItemsStatus("DRAFT");
     }
 
     accept(decisionOn: Moment): void {
@@ -379,11 +379,9 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    private updateAllItemsStatus(statusFrom: ItemStatus | undefined, statusTo: ItemStatus) {
-        this.metadata?.filter(item => statusFrom === undefined || item.status === statusFrom)
-            .forEach(item => item.status = statusTo);
-        this.files?.filter(item => statusFrom === undefined || item.status === statusFrom)
-            .forEach(item => item.status = statusTo);
+    private updateAllItemsStatus(statusTo: ItemStatus) {
+        this.metadata?.forEach(item => item.status = statusTo);
+        this.files?.forEach(item => item.status = statusTo);
     }
     
     private getFileOrThrow(hash: string) {
