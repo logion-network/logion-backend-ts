@@ -208,6 +208,7 @@ export function toFeesView(fees?: Fees) {
         return {
             inclusion: fees.inclusionFee.toString(),
             storage: fees.storageFee?.toString(),
+            legal: fees.legalFee?.toString(),
             total: fees.totalFee.toString(),
         };
     } else {

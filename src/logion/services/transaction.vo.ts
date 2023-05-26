@@ -1,5 +1,6 @@
 import { Moment } from "moment";
 import { Fees } from "@logion/node-api";
+import { TransactionType } from "../model/transaction.model";
 
 export class BlockWithTransactions {
 
@@ -54,6 +55,7 @@ export class Transaction {
         pallet: string,
         method: string,
         error?: TransactionError,
+        type: TransactionType,
     }) {
         this.extrinsicIndex = builder.extrinsicIndex;
         this.from = builder.from;
@@ -65,6 +67,7 @@ export class Transaction {
         this.pallet = builder.pallet;
         this.method = builder.method;
         this.error = builder.error;
+        this.type = builder.type;
     }
     readonly extrinsicIndex: number;
     readonly from: string;
@@ -76,4 +79,5 @@ export class Transaction {
     readonly pallet: string;
     readonly method: string;
     readonly error?: TransactionError;
+    readonly type: TransactionType;
 }

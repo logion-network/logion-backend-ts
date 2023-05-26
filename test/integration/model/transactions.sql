@@ -9,7 +9,8 @@ INSERT INTO transaction (block_number,
                          reserved,
                          pallet,
                          method,
-                         successful)
+                         successful,
+                         type)
 VALUES (1,
         1,
         '2021-07-19 15:17:11.000000',
@@ -21,7 +22,8 @@ VALUES (1,
         0,
         'balances',
         'transfer',
-        true);
+        true,
+        'EXTRINSIC');
 
 INSERT INTO transaction (block_number,
                          extrinsic_index,
@@ -37,7 +39,8 @@ INSERT INTO transaction (block_number,
                          successful,
                          error_section,
                          error_name,
-                         error_details)
+                         error_details,
+                         type)
 VALUES (2,
         1,
         '2021-07-20 15:17:11.000000',
@@ -52,4 +55,5 @@ VALUES (2,
         false,
         'balances',
         'SomeError',
-        'with many details');
+        'with many details',
+        'EXTRINSIC');

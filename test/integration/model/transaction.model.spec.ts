@@ -57,6 +57,7 @@ describe('TransactionRepository', () => {
         transaction.method = "transfer";
         transaction.createdOn = moment().toISOString()
         transaction.successful = true;
+        transaction.type = "EXTRINSIC";
         // When
         await repository.save(transaction)
         // Then

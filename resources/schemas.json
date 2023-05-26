@@ -415,6 +415,10 @@
                         "type": "string",
                         "description": "File storage fee (if applicable)"
                     },
+                    "legal": {
+                        "type": "string",
+                        "description": "Legal fee (if applicable)"
+                    },
                     "total": {
                         "type": "string",
                         "description": "Total fee (inclusion + storage)"
@@ -489,10 +493,21 @@
                                 "description": "Some details about the error."
                             }
                         }
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The transaction's type",
+                        "enum": [
+                            "EXTRINSIC",
+                            "VAULT_OUT",
+                            "LEGAL_FEE",
+                            "STORAGE_FEE",
+                            "OTHER_FEES"
+                        ]
                     }
                 },
                 "title": "TransactionView",
-                "description": "A transaction between 2 accounts"
+                "description": "A transaction altering one or two account's balance"
             },
             "UserIdentityView": {
                 "type": "object",

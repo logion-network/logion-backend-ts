@@ -85,6 +85,7 @@ export class TransactionExtractor {
                 from: vaultAddress,
                 transferValue: vaultTransferValue,
                 to: vaultTransferTo,
+                type: "VAULT_OUT",
             }));
         }
 
@@ -99,81 +100,38 @@ export class TransactionExtractor {
             from,
             transferValue,
             to,
-            error: this.error(extrinsic)
+            error: this.error(extrinsic),
+            type: "EXTRINSIC",
         }));
 
-        if(extrinsic.storageFee || extrinsic.legalFee) {
+        if(extrinsic.storageFee && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees(0n, extrinsic.storageFee.fee),
+                reserved: 0n,
+                from: extrinsic.storageFee.withdrawnFrom,
+                transferValue: 0n,
+                to: undefined,
+                type: "STORAGE_FEE",
+            }));
+        }
 
-            if(extrinsic.storageFee && extrinsic.legalFee) {
-                if(extrinsic.storageFee.withdrawnFrom === extrinsic.legalFee.withdrawnFrom && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
-                    // Both storage and legal fees are withdrawn from an account which is not the signer
-                    transactions.push(new Transaction({
-                        extrinsicIndex: index,
-                        pallet: this.pallet(extrinsic),
-                        method: this.methodName(extrinsic),
-                        tip: 0n,
-                        fees: new Fees(0n, extrinsic.storageFee.fee, extrinsic.legalFee.fee),
-                        reserved: 0n,
-                        from: extrinsic.storageFee.withdrawnFrom,
-                        transferValue: 0n,
-                        to: undefined,
-                    }));
-                } else {
-                    // Storage and legal fees are withdrawn from two different accounts which is are not the signer
-                    if(extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
-                        transactions.push(new Transaction({
-                            extrinsicIndex: index,
-                            pallet: this.pallet(extrinsic),
-                            method: this.methodName(extrinsic),
-                            tip: 0n,
-                            fees: new Fees(0n, extrinsic.storageFee.fee),
-                            reserved: 0n,
-                            from: extrinsic.storageFee.withdrawnFrom,
-                            transferValue: 0n,
-                            to: undefined,
-                        }));
-                    }
-                    if(extrinsic.legalFee.withdrawnFrom !== extrinsic.signer) {
-                        transactions.push(new Transaction({
-                            extrinsicIndex: index,
-                            pallet: this.pallet(extrinsic),
-                            method: this.methodName(extrinsic),
-                            tip: 0n,
-                            fees: new Fees(0n, extrinsic.legalFee.fee),
-                            reserved: 0n,
-                            from: extrinsic.legalFee.withdrawnFrom,
-                            transferValue: 0n,
-                            to: undefined,
-                        }));
-                    }
-                }
-            } else if(extrinsic.storageFee && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
-                // Only storage fees are applied and withdrawn from an account which is not the signer
-                transactions.push(new Transaction({
-                    extrinsicIndex: index,
-                    pallet: this.pallet(extrinsic),
-                    method: this.methodName(extrinsic),
-                    tip: 0n,
-                    fees: new Fees(0n, extrinsic.storageFee.fee),
-                    reserved: 0n,
-                    from: extrinsic.storageFee.withdrawnFrom,
-                    transferValue: 0n,
-                    to: undefined,
-                }));
-            } else if(extrinsic.legalFee && extrinsic.legalFee.withdrawnFrom !== extrinsic.signer) {
-                // Only legal fees are applied and transferred from an account which is not the signer to a benaficiary
-                transactions.push(new Transaction({
-                    extrinsicIndex: index,
-                    pallet: this.pallet(extrinsic),
-                    method: this.methodName(extrinsic),
-                    tip: 0n,
-                    fees: new Fees(0n),
-                    reserved: 0n,
-                    from: extrinsic.legalFee.withdrawnFrom,
-                    transferValue: extrinsic.legalFee.fee,
-                    to: extrinsic.legalFee.beneficiary,
-                }));
-            }
+        if(extrinsic.legalFee && extrinsic.legalFee.withdrawnFrom !== extrinsic.signer) {
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees(0n),
+                reserved: 0n,
+                from: extrinsic.legalFee.withdrawnFrom,
+                transferValue: extrinsic.legalFee.fee,
+                to: extrinsic.legalFee.beneficiary,
+                type: "LEGAL_FEE",
+            }));
         }
 
         return transactions;
