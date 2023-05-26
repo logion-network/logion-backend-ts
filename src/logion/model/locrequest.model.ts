@@ -162,7 +162,9 @@ export class EmbeddableLifecycle {
             logger.warn("Item added on date is already set");
         }
         this.addedOn = addedOn.toDate();
-        this.status = "PUBLISHED";
+        if(this.status === "REVIEW_ACCEPTED") {
+            this.status = "PUBLISHED";
+        }
     }
 
     getDescription(): ItemLifecycle {
