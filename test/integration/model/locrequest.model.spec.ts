@@ -119,14 +119,14 @@ describe('LocRequestRepository - read accesses', () => {
         expect(file.addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(file.nature).toBe("some nature");
         expect(file.size).toBe(123);
-        expect(request!.files![0].draft).toBe(true);
+        expect(request!.files![0].status).toBe("DRAFT");
 
         const metadata = request!.getMetadataItems(request?.getOwner());
         expect(metadata.length).toBe(1);
         expect(metadata[0].name).toBe("a name");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
-        expect(request!.metadata![0].draft).toBe(true);
+        expect(request!.metadata![0].status).toBe("DRAFT");
 
         const links = request!.getLinks(request?.getOwner());
         expect(links.length).toBe(1);
@@ -380,7 +380,6 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.files = []
     locRequest.addFile({
         name: "fileName",
-        addedOn: moment(),
         hash: "hash",
         oid: 123,
         contentType: "content/type",
@@ -388,14 +387,13 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         submitter: SUBMITTER,
         restrictedDelivery: false,
         size: 789,
-    })
+    }, false)
     locRequest.metadata = []
     locRequest.addMetadataItem({
         name: "itemName",
-        addedOn: moment(),
         value: "something valuable",
         submitter: SUBMITTER,
-    })
+    }, false)
     return locRequest;
 }
 

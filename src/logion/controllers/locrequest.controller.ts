@@ -96,6 +96,7 @@ type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 type SupportedAccountId = components["schemas"]["SupportedAccountId"];
+type ReviewItemView = components["schemas"]["ReviewItemView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -503,6 +504,7 @@ export class LocRequestController extends ApiController {
 
         try {
             await this.locRequestService.update(requestId, async request => {
+                const alreadyReviewed = accountEquals(contributor, request.getOwner());
                 request.addFile({
                     name: file.name,
                     contentType: file.mimetype,
@@ -512,7 +514,7 @@ export class LocRequestController extends ApiController {
                     submitter: contributor,
                     restrictedDelivery: addFileView.restrictedDelivery || false,
                     size: file.size,
-                });
+                }, alreadyReviewed);
             });
         } catch(e) {
             await this.fileStorageService.deleteFile({ cid });
@@ -579,6 +581,37 @@ export class LocRequestController extends ApiController {
         }
     }
 
+    @HttpPost('/:requestId/files/:hash/review-request')
+    @Async()
+    @SendsResponse()
+    async requestFileReview(_body: any, requestId: string, hash: string) {
+        await this.locRequestService.update(requestId, async request => {
+            if (request.status !== 'OPEN') {
+                throw badRequest("LOC must be OPEN for requesting item review");
+            }
+            await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.requestFileReview(hash);
+        });
+        this.response.sendStatus(204);
+    }
+
+    @HttpPost('/:requestId/files/:hash/review')
+    @Async()
+    @SendsResponse()
+    async reviewFile(view: ReviewItemView, requestId: string, hash: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            if (view.decision === "ACCEPT") {
+                request.acceptFile(hash);
+            } else {
+                const reason = requireDefined(view.rejectReason, () => badRequest("Reason is required"));
+                request.rejectFile(hash, reason);
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
     static confirmFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/confirm"].put!;
         operationObject.summary = "Confirms a file of the LOC";
@@ -594,10 +627,21 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
-        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.confirmFile(hash);
+        });
+        this.response.sendStatus(204);
+    }
+
+    @HttpPut('/:requestId/files/:hash/confirm-acknowledged')
+    @Async()
+    @SendsResponse()
+    async confirmFileAcknowledged(_body: any, requestId: string, hash: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmFile(hash);
+            request.confirmFileAcknowledged(hash)
         });
         this.response.sendStatus(204);
     }
@@ -730,7 +774,8 @@ export class LocRequestController extends ApiController {
         const value = requireLength(addMetadataView, "value", 1, 4096);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.addMetadataItem({ name, value, submitter: contributor });
+            const alreadyReviewed = accountEquals(contributor, request.getOwner());
+            request.addMetadataItem({ name, value, submitter: contributor }, alreadyReviewed);
         });
         this.response.sendStatus(204);
     }
@@ -756,6 +801,39 @@ export class LocRequestController extends ApiController {
         });
     }
 
+    @HttpPost('/:requestId/metadata/:name/review-request')
+    @Async()
+    @SendsResponse()
+    async requestMetadataReview(_body: any, requestId: string, name: string) {
+        const decodedName = decodeURIComponent(name);
+        await this.locRequestService.update(requestId, async request => {
+            if (request.status !== 'OPEN') {
+                throw badRequest("LOC must be OPEN for requesting item review");
+            }
+            await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.requestMetadataItemReview(decodedName);
+        });
+        this.response.sendStatus(204);
+    }
+
+    @HttpPost('/:requestId/metadata/:name/review')
+    @Async()
+    @SendsResponse()
+    async reviewMetadata(view: ReviewItemView, requestId: string, name: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const decodedName = decodeURIComponent(name);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            if (view.decision === "ACCEPT") {
+                request.acceptMetadataItem(decodedName);
+            } else {
+                const reason = requireDefined(view.rejectReason, () => badRequest("Reason is required"));
+                request.rejectMetadataItem(decodedName, reason);
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
     static confirmMetadata(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{name}/confirm"].put!;
         operationObject.summary = "Confirms a metadata item of the LOC";
@@ -771,11 +849,23 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmMetadata(_body: any, requestId: string, name: string) {
-        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        const decodedName = decodeURIComponent(name);
+        await this.locRequestService.update(requestId, async request => {
+            await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.confirmMetadataItem(decodedName);
+        });
+        this.response.sendStatus(204);
+    }
+
+    @HttpPut('/:requestId/metadata/:name/confirm-acknowledged')
+    @Async()
+    @SendsResponse()
+    async confirmMetadataAcknowledged(_body: any, requestId: string, name: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const decodedName = decodeURIComponent(name);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmMetadataItem(decodedName);
+            request.confirmMetadataItemAcknowledged(decodedName)
         });
         this.response.sendStatus(204);
     }

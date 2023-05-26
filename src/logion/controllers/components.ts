@@ -233,12 +233,14 @@ export interface components {
       inclusion?: string;
       /** @description File storage fee (if applicable) */
       storage?: string;
+      /** @description Legal fee (if applicable) */
+      legal?: string;
       /** @description Total fee (inclusion + storage) */
       total?: string;
     };
     /**
      * TransactionView 
-     * @description A transaction between 2 accounts
+     * @description A transaction altering one or two account's balance
      */
     TransactionView: {
       /**
@@ -278,6 +280,11 @@ export interface components {
         /** @description Some details about the error. */
         details?: string;
       };
+      /**
+       * @description The transaction's type 
+       * @enum {string}
+       */
+      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
     };
     /**
      * UserIdentityView 
@@ -350,6 +357,11 @@ export interface components {
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
     };
+    /**
+     * @description The request's status 
+     * @enum {string}
+     */
+    ItemStatus: "DRAFT" | "REVIEW_PENDING" | "REVIEW_ACCEPTED" | "REVIEW_REJECTED" | "PUBLISHED" | "ACKNOWLEDGED";
     LocFileView: {
       /** @description The file's name */
       name?: string;
@@ -373,6 +385,20 @@ export interface components {
       fees?: components["schemas"]["FeesView"];
       /** @description Account from which storage fees were withdrawn. */
       storageFeePaidBy?: string;
+      /** @description The file's status */
+      status: components["schemas"]["ItemStatus"];
+      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
+      rejectReason?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of review
+       */
+      reviewedOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge (chain time)
+       */
+      acknowledgedOn?: string;
     };
     LocMetadataItemView: {
       /** @description The item's name */
@@ -387,6 +413,20 @@ export interface components {
       /** @description The address of the submitter */
       submitter?: components["schemas"]["SupportedAccountId"];
       fees?: components["schemas"]["FeesView"];
+      /** @description The item's status */
+      status: components["schemas"]["ItemStatus"];
+      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
+      rejectReason?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of review
+       */
+      reviewedOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge (chain time)
+       */
+      acknowledgedOn?: string;
     };
     /**
      * LocRequestView 
@@ -866,6 +906,15 @@ export interface components {
     TokensRecordsView: {
       /** @description The items of a given collection */
       records?: (components["schemas"]["TokensRecordView"])[];
+    };
+    ReviewItemView: {
+      /**
+       * @description The review's outcome 
+       * @enum {string}
+       */
+      decision: "ACCEPT" | "REJECT";
+      /** @description The rejection reason */
+      rejectReason?: string;
     };
   };
   responses: never;

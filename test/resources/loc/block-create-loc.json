@@ -1,0 +1,56 @@
+{
+  "number": "2223",
+  "extrinsics": [
+    {
+      "method": {
+        "pallet": "timestamp",
+        "method": "set"
+      },
+      "signer": null,
+      "args": {
+        "now": "1626699240000"
+      },
+      "tip": null,
+      "hash": "0x3f833763bf7bd16d11fb0aa4a5a83c766ce7096ff05390e75d9ee903a0325eb9",
+      "info": {},
+      "events": [
+        {
+          "method": {
+            "pallet": "system",
+            "method": "ExtrinsicSuccess"
+          },
+          "data": [
+            {
+              "weight": "161650000",
+              "class": "Mandatory",
+              "paysFee": "Yes"
+            }
+          ]
+        }
+      ],
+      "success": true,
+      "paysFee": false
+    },
+    {
+      "method": {
+        "pallet": "logionLoc",
+        "method": "createPolkadotTransactionLoc"
+      },
+      "signer": "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
+      "args": {
+        "loc_id": "152292557446437458866632603140408927898"
+      },
+      "tip": "0",
+      "hash": "0x1396964da957529b1b7f63fccb39315bd55efff97f19664e9c9d134f7c529933",
+      "partialFee": "125000149",
+      "events": [],
+      "success": true,
+      "paysFee": true,
+      "legalFee": {
+        "fee": "125000150",
+        "withdrawnFrom": "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb",
+        "beneficiary": "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy"
+      }
+    }
+  ]
+}

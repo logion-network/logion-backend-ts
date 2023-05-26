@@ -74,6 +74,7 @@ function mockModelForFetch(container: Container): void {
         tip: 2n,
         fees: new Fees(3n),
         reserved: 4n,
+        type: "EXTRINSIC"
     };
     const successfulTransaction = new Mock<TransactionAggregateRoot>();
     successfulTransaction.setup(instance => instance.getDescription()).returns(transactionDescription);

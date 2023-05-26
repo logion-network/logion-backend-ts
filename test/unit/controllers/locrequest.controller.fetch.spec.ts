@@ -225,6 +225,7 @@ const testFile: FileDescription = {
     size: 123,
     fees: FILE_FEES,
     storageFeePaidBy: testData.requesterAddress?.address,
+    status: "DRAFT",
 }
 
 const DATA_LINK_FEES = new Fees(42n);
@@ -239,6 +240,7 @@ const testMetadataItem: MetadataItemDescription = {
     value: "test-data-value",
     submitter: SUBMITTER,
     fees: DATA_LINK_FEES,
+    status: "DRAFT",
 }
 
 async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData) {
@@ -269,6 +271,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
             expect(metadataItem.submitter).toEqual(SUBMITTER)
             expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
+            expect(metadataItem.status).toBe(testMetadataItem.status)
             checkPrivateData(response, expectedUserPrivateData);
         });
 }

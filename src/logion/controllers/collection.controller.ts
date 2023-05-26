@@ -104,7 +104,7 @@ export class CollectionController extends ApiController {
     static getCollectionItems(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}"].get!;
         operationObject.summary = "Gets the info of all published Collection Items in a collection";
-        operationObject.description = "Must be authenticated as the owner or requested of the collection.";
+        operationObject.description = "Must be authenticated as the owner or requester of the collection.";
         operationObject.responses = getPublicResponses("CollectionItemsView");
         setPathParameters(operationObject, {
             'collectionLocId': "The id of the collection loc",

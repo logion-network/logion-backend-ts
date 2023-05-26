@@ -5,12 +5,19 @@ export interface StorageFee {
     withdrawnFrom: string;
 }
 
+export interface LegalFee {
+    fee: bigint;
+    withdrawnFrom: string;
+    beneficiary: string;
+}
+
 export interface JsonExtrinsic {
     call: TypesJsonCall;
     signer: string | null;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
     storageFee?: StorageFee;
+    legalFee?: LegalFee;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }

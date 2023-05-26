@@ -17,7 +17,7 @@ import {
     LocRequestRepository,
     LocRequestAggregateRoot,
     LocFile,
-    LocFileDelivered
+    LocFileDelivered, EmbeddableLifecycle
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import {
@@ -583,6 +583,7 @@ function mockModel(
         collectionLoc.files = [];
     } else if (fileAlreadyInDB && fileType === "Collection") {
         const collectionFile = new LocFile();
+        collectionFile.lifecycle = EmbeddableLifecycle.from(true);
         collectionFile.hash = SOME_DATA_HASH;
         collectionFile.cid = CID;
         collectionFile.request = collectionLoc;

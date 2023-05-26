@@ -77,7 +77,7 @@ describe("EnabledIdenfyService", () => {
                 && file.nature === EXPECTED_FILES[fileType].nature
                 && file.name === EXPECTED_FILES[fileType].name
                 && accountEquals(file.submitter, LOC_OWNER_ACCOUNT)
-            )));
+            ), false));
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));
     });
@@ -93,7 +93,7 @@ describe("EnabledIdenfyService", () => {
         );
 
         locRequest.verify(instance => instance.updateIdenfyVerification(It.IsAny(), It.IsAny()), Times.Never());
-        locRequest.verify(instance => instance.addFile(It.IsAny()), Times.Never());
+        locRequest.verify(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>()), Times.Never());
         locRequestRepository.verify(instance => instance.save(It.IsAny()), Times.Never());
     });
 });
@@ -146,7 +146,7 @@ function mockEnabledIdenfyService(): {
     locRequest.setup(instance => instance.canInitIdenfyVerification()).returns({ result: true });
     locRequest.setup(instance => instance.initIdenfyVerification(It.IsAny())).returns();
     locRequest.setup(instance => instance.updateIdenfyVerification(It.IsAny(), It.IsAny())).returns();
-    locRequest.setup(instance => instance.addFile(It.IsAny())).returns();
+    locRequest.setup(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>())).returns();
 
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(REQUEST_ID)).returnsAsync(locRequest.object());

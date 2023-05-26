@@ -1,7 +1,7 @@
 import { requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { IdenfyService } from "../../services/idenfy/idenfy.service.js";
-import { LocRequestAggregateRoot, LocRequestRepository } from "../../model/locrequest.model.js";
+import { LocRequestAggregateRoot, LocRequestRepository, ItemLifecycle } from "../../model/locrequest.model.js";
 import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
@@ -81,20 +81,20 @@ export class LocRequestAdapter {
                 name: file.name,
                 hash: file.hash,
                 nature: file.nature,
-                addedOn: file.addedOn?.toISOString() || undefined,
                 submitter: file.submitter,
                 restrictedDelivery: file.restrictedDelivery,
                 contentType: file.contentType,
                 size: file.size.toString(),
                 fees: toFeesView(file.fees),
                 storageFeePaidBy: file.storageFeePaidBy,
+                ...toLifecycleView(file),
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,
                 value: item.value,
-                addedOn: item.addedOn?.toISOString() || undefined,
                 submitter: item.submitter,
                 fees: toFeesView(item.fees),
+                ...toLifecycleView(item),
             })),
             links: request.getLinks(viewer).map(link => ({
                 target: link.target,
@@ -208,9 +208,20 @@ export function toFeesView(fees?: Fees) {
         return {
             inclusion: fees.inclusionFee.toString(),
             storage: fees.storageFee?.toString(),
+            legal: fees.legalFee?.toString(),
             total: fees.totalFee.toString(),
         };
     } else {
         return undefined;
+    }
+}
+
+export function toLifecycleView(item: ItemLifecycle) {
+    return {
+        status: item.status,
+        rejectReason: item.rejectReason,
+        reviewedOn: item.reviewedOn?.toISOString(),
+        addedOn: item.addedOn?.toISOString(),
+        acknowledgedOn: item.acknowledgedOn?.toISOString(),
     }
 }

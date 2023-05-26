@@ -415,6 +415,10 @@
                         "type": "string",
                         "description": "File storage fee (if applicable)"
                     },
+                    "legal": {
+                        "type": "string",
+                        "description": "Legal fee (if applicable)"
+                    },
                     "total": {
                         "type": "string",
                         "description": "Total fee (inclusion + storage)"
@@ -489,10 +493,21 @@
                                 "description": "Some details about the error."
                             }
                         }
+                    },
+                    "type": {
+                        "type": "string",
+                        "description": "The transaction's type",
+                        "enum": [
+                            "EXTRINSIC",
+                            "VAULT_OUT",
+                            "LEGAL_FEE",
+                            "STORAGE_FEE",
+                            "OTHER_FEES"
+                        ]
                     }
                 },
                 "title": "TransactionView",
-                "description": "A transaction between 2 accounts"
+                "description": "A transaction altering one or two account's balance"
             },
             "UserIdentityView": {
                 "type": "object",
@@ -623,6 +638,18 @@
                 "title": "CreateLocRequestView",
                 "description": "A LOC Request to create"
             },
+            "ItemStatus": {
+                "type": "string",
+                "description": "The request's status",
+                "enum": [
+                    "DRAFT",
+                    "REVIEW_PENDING",
+                    "REVIEW_ACCEPTED",
+                    "REVIEW_REJECTED",
+                    "PUBLISHED",
+                    "ACKNOWLEDGED"
+                ]
+            },
             "LocFileView": {
                 "type": "object",
                 "properties": {
@@ -665,8 +692,29 @@
                     "storageFeePaidBy": {
                         "type": "string",
                         "description": "Account from which storage fees were withdrawn."
+                    },
+                    "status": {
+                        "description": "The file's status",
+                        "$ref": "#/components/schemas/ItemStatus"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
+                    },
+                    "reviewedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of review"
+                    },
+                    "acknowledgedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge (chain time)"
                     }
-                }
+                },
+                "required": [
+                    "status"
+                ]
             },
             "LocMetadataItemView": {
                 "type": "object",
@@ -690,8 +738,29 @@
                     },
                     "fees": {
                         "$ref": "#/components/schemas/FeesView"
+                    },
+                    "status": {
+                        "description": "The item's status",
+                        "$ref": "#/components/schemas/ItemStatus"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
+                    },
+                    "reviewedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of review"
+                    },
+                    "acknowledgedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge (chain time)"
                     }
-                }
+                },
+                "required": [
+                    "status"
+                ]
             },
             "LocRequestView": {
                 "type": "object",
@@ -1511,6 +1580,26 @@
                         }
                     }
                 }
+            },
+            "ReviewItemView": {
+                "type": "object",
+                "properties": {
+                    "decision": {
+                        "type": "string",
+                        "description": "The review's outcome",
+                        "enum": [
+                            "ACCEPT",
+                            "REJECT"
+                        ]
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "The rejection reason"
+                    }
+                },
+                "required": [
+                    "decision"
+                ]
             }
         }
     }

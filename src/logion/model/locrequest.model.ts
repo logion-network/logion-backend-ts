@@ -4,7 +4,7 @@ import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneTo
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
 import { Fees, UUID } from "@logion/node-api";
-import { appDataSource, Log } from "@logion/rest-api-core";
+import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
 import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
@@ -32,6 +32,7 @@ const { logger } = Log;
 export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 export type IdentityLocType = components["schemas"]["IdentityLocType"];
+export type ItemStatus = components["schemas"]["ItemStatus"];
 
 export interface LocRequestDescription {
     readonly requesterAddress?: SupportedAccountId;
@@ -53,14 +54,13 @@ export interface LocRequestDecision {
     readonly rejectReason?: string;
 }
 
-export interface FileDescription {
+export interface FileParams {
     readonly name: string;
     readonly hash: string;
     readonly oid?: number;
     readonly cid?: string;
     readonly contentType: string;
     readonly nature: string;
-    readonly addedOn?: Moment;
     readonly submitter: SupportedAccountId;
     readonly restrictedDelivery: boolean;
     readonly size: number;
@@ -68,12 +68,25 @@ export interface FileDescription {
     readonly storageFeePaidBy?: string;
 }
 
-export interface MetadataItemDescription {
+export interface FileDescription extends FileParams, ItemLifecycle {
+}
+
+export interface MetadataItemParams {
     readonly name: string;
     readonly value: string;
-    readonly addedOn?: Moment;
     readonly submitter: SupportedAccountId;
     readonly fees?: Fees;
+}
+
+export interface MetadataItemDescription extends MetadataItemParams, ItemLifecycle {
+}
+
+export interface ItemLifecycle {
+    readonly status: ItemStatus;
+    readonly rejectReason?: string;
+    readonly reviewedOn?: Moment;
+    readonly addedOn?: Moment;
+    readonly acknowledgedOn?: Moment;
 }
 
 export interface LinkDescription {
@@ -88,6 +101,89 @@ export interface VoidInfo {
     readonly voidedOn: Moment | null;
 }
 
+export class EmbeddableLifecycle {
+
+    @Column("varchar", { length: 255 })
+    status?: ItemStatus
+
+    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
+    rejectReason?: string | null;
+
+    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
+    reviewedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "added_on", nullable: true })
+    addedOn?: Date;
+
+    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
+    acknowledgedOn?: Date;
+
+    requestReview() {
+        if (this.status !== "DRAFT") {
+            throw badRequest(`Cannot request a review on item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_PENDING";
+    }
+
+    accept() {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot accept an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_ACCEPTED";
+        this.reviewedOn = moment().toDate();
+    }
+
+    reject(reason: string) {
+        if (this.status !== "REVIEW_PENDING") {
+            throw badRequest(`Cannot reject an item with status ${ this.status }`);
+        }
+        this.status = "REVIEW_REJECTED";
+        this.rejectReason = reason;
+        this.reviewedOn = moment().toDate();
+    }
+
+    confirm() {
+        if (this.status !== "REVIEW_ACCEPTED" && this.status !== "PUBLISHED") {
+            throw badRequest(`Cannot confirm item with status ${ this.status }`);
+        }
+        this.status = "PUBLISHED";
+    }
+
+    confirmAcknowledged(acknowledgedOn?: Moment) {
+        if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
+            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
+        }
+        this.status = "ACKNOWLEDGED";
+        this.acknowledgedOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
+    }
+
+    setAddedOn(addedOn: Moment) {
+        if (this.addedOn) {
+            logger.warn("Item added on date is already set");
+        }
+        this.addedOn = addedOn.toDate();
+        if(this.status === "REVIEW_ACCEPTED") {
+            this.status = "PUBLISHED";
+        }
+    }
+
+    getDescription(): ItemLifecycle {
+        return {
+            status: this.status!,
+            rejectReason: this.status === "REVIEW_REJECTED" ? this.rejectReason! : undefined,
+            reviewedOn: this.reviewedOn ? moment(this.reviewedOn) : undefined,
+            addedOn: this.addedOn ? moment(this.addedOn) : undefined,
+            acknowledgedOn: this.acknowledgedOn ? moment(this.acknowledgedOn) : undefined,
+        }
+    }
+
+    static from(alreadyReviewed: boolean) {
+        const lifecycle = new EmbeddableLifecycle();
+        lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        lifecycle.acknowledgedOn = alreadyReviewed ? moment().toDate() : undefined;
+        return lifecycle;
+    }
+}
 class EmbeddableVoidInfo {
 
     @Column("text", { name: "void_reason", nullable: true })
@@ -157,6 +253,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot submit with ongoing iDenfy verification session");
         }
         this.status = 'REQUESTED';
+        this.updateAllItemsStatus("REVIEW_PENDING");
     }
 
     reject(reason: string, rejectedOn: Moment): void {
@@ -167,6 +264,7 @@ export class LocRequestAggregateRoot {
         this.status = 'REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
+        this.updateAllItemsStatus("REVIEW_REJECTED");
     }
 
     rework(): void {
@@ -174,6 +272,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot rework a non-rejected request");
         }
         this.status = 'DRAFT';
+        this.updateAllItemsStatus("DRAFT");
     }
 
     accept(decisionOn: Moment): void {
@@ -228,7 +327,7 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    addFile(fileDescription: FileDescription) {
+    addFile(fileDescription: FileParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
@@ -241,7 +340,7 @@ export class LocRequestAggregateRoot {
         file.hash! = fileDescription.hash;
         file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
-        file.draft = true;
+        file.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
         file.nature = fileDescription.nature;
         file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
@@ -256,12 +355,37 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    requestFileReview(hash: string) {
+        this.mutateFile(hash, item => item.requestReview());
+    }
+
+    acceptFile(hash: string) {
+        this.mutateFile(hash, item => item.accept());
+    }
+
+    rejectFile(hash: string, reason: string) {
+        this.mutateFile(hash, item => item.reject(reason));
+    }
+
     confirmFile(hash: string) {
+        this.mutateFile(hash, item => item.confirm());
+    }
+
+    confirmFileAcknowledged(hash: string, acknowledgedOn?: Moment) {
+        this.mutateFile(hash, item => item.confirmAcknowledged(acknowledgedOn));
+    }
+
+    private mutateFile(hash: string, mutator: (item: EmbeddableLifecycle) => void) {
         const file = this.getFileOrThrow(hash);
-        file.draft = false;
+        mutator(file.lifecycle!);
         file._toUpdate = true;
     }
 
+    private updateAllItemsStatus(statusTo: ItemStatus) {
+        this.metadata?.forEach(item => item.status = statusTo);
+        this.files?.forEach(item => item.status = statusTo);
+    }
+    
     private getFileOrThrow(hash: string) {
         const file = this.file(hash);
         if(!file) {
@@ -291,16 +415,16 @@ export class LocRequestAggregateRoot {
             cid: file!.cid,
             nature: file!.nature!,
             submitter: file!.submitter!.toSupportedAccountId(),
-            addedOn: file!.addedOn !== undefined ? moment(file!.addedOn) : undefined,
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
             fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
             storageFeePaidBy: file.storageFeePaidBy,
+            ...(file.lifecycle!.getDescription()),
         };
     }
 
-    private itemViewable(item: { draft?: boolean, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
-        return !item.draft ||
+    private itemViewable(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
+        return item.status === 'ACKNOWLEDGED' ||
             accountEquals(viewerAddress, this.getOwner()) ||
             accountEquals(viewerAddress, item.submitter) ||
             (accountEquals(viewerAddress, this.getRequester()) && accountEquals(item.submitter, this.getOwner()))
@@ -342,7 +466,7 @@ export class LocRequestAggregateRoot {
         return (this.closedOn !== undefined && this.closedOn !== null) ? moment(this.closedOn) : null;
     }
 
-    addMetadataItem(itemDescription: MetadataItemDescription) {
+    addMetadataItem(itemDescription: MetadataItemParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasMetadataItem(itemDescription.name)) {
             throw new Error("A metadata item with given name was already added to this LOC");
@@ -353,7 +477,7 @@ export class LocRequestAggregateRoot {
         item.index = this.metadata!.length;
         item.name = itemDescription.name;
         item.value = itemDescription.value;
-        item.draft = true;
+        item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
@@ -368,8 +492,8 @@ export class LocRequestAggregateRoot {
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
-            addedOn: item.addedOn ? moment(item.addedOn) : undefined,
             fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
+            ...(item.lifecycle!.getDescription()),
         })
     }
 
@@ -383,11 +507,7 @@ export class LocRequestAggregateRoot {
             logger.error(`MetadataItem with name ${ name } not found`);
             return;
         }
-        if (metadataItem.addedOn) {
-            logger.warn("MetadataItem added on date is already set");
-        }
-        metadataItem.addedOn = addedOn.toDate();
-        metadataItem.draft = false;
+        metadataItem.lifecycle?.setAddedOn(addedOn);
         metadataItem._toUpdate = true;
     }
 
@@ -401,7 +521,7 @@ export class LocRequestAggregateRoot {
         if (!this.canRemove(remover, removedItem)) {
             throw new Error("Item removal not allowed");
         }
-        if (!removedItem.draft) {
+        if (removedItem.status === "ACKNOWLEDGED" || removedItem.status === 'PUBLISHED') {
             throw new Error("Only draft metadata can be removed");
         }
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
@@ -416,9 +536,32 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    requestMetadataItemReview(name: string) {
+        this.mutateMetadataItem(name, item => item.requestReview());
+    }
+
+    acceptMetadataItem(name: string) {
+        this.mutateMetadataItem(name, item => item.accept());
+    }
+
+    rejectMetadataItem(name: string, reason: string) {
+        this.mutateMetadataItem(name, item => item.reject(reason));
+    }
+
     confirmMetadataItem(name: string) {
-        const metadataItem = this.metadataItem(name)!;
-        metadataItem.draft = false;
+        this.mutateMetadataItem(name, item => item.confirm());
+    }
+
+    confirmMetadataItemAcknowledged(name: string, acknowledgedOn?: Moment) {
+        this.mutateMetadataItem(name, item => item.confirmAcknowledged(acknowledgedOn));
+    }
+
+    private mutateMetadataItem(name: string, mutator: (item: EmbeddableLifecycle) => void) {
+        const metadataItem = requireDefined(
+            this.metadataItem(name),
+            () => badRequest(`Metadata Item not found: ${ name }`)
+        );
+        mutator(metadataItem.lifecycle!);
         metadataItem._toUpdate = true;
     }
 
@@ -436,11 +579,7 @@ export class LocRequestAggregateRoot {
             logger.error(`File with hash ${ hash } not found`);
             return;
         }
-        if (file.addedOn) {
-            logger.warn("File added on date is already set");
-        }
-        file.addedOn = addedOn.toDate();
-        file.draft = false;
+        file.lifecycle?.setAddedOn(addedOn);
         file._toUpdate = true;
     }
 
@@ -454,7 +593,7 @@ export class LocRequestAggregateRoot {
         if (!this.canRemove(removerAddress, removedFile)) {
             throw new Error("Item removal not allowed");
         }
-        if (!removedFile.draft) {
+        if (removedFile.status === "ACKNOWLEDGED" || removedFile.status === 'PUBLISHED') {
             throw new Error("Only draft files can be removed");
         }
         deleteIndexedChild(removedFileIndex, this.files!, this._filesToDelete)
@@ -791,9 +930,6 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ name: "index" })
     index?: number;
 
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
-
     @Column({ length: 255 })
     name?: string;
 
@@ -805,9 +941,6 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @Column({ length: 255, name: "content_type" })
     contentType?: string;
-
-    @Column("boolean")
-    draft?: boolean;
 
     @Column({ length: 255, nullable: true })
     nature?: string;
@@ -837,6 +970,13 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
     storageFeePaidBy?: string;
+
+    @Column(() => EmbeddableLifecycle, { prefix: "" })
+    lifecycle?: EmbeddableLifecycle
+
+    get status(): ItemStatus | undefined {
+        return this.lifecycle?.status;
+    }
 
     setRestrictedDelivery(restrictedDelivery: boolean) {
         this.restrictedDelivery = restrictedDelivery;
@@ -869,6 +1009,14 @@ export class LocFile extends Child implements HasIndex, Submitted {
         this.fees.inclusionFee = fees.inclusionFee.toString();
         this.fees.storageFee = fees.storageFee?.toString();
         this.storageFeePaidBy = storageFeePaidBy;
+        this._toUpdate = true;
+    }
+
+    set status(status: ItemStatus | undefined) {
+        if (!this.lifecycle) {
+            this.lifecycle = EmbeddableLifecycle.from(false);
+        }
+        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
@@ -913,9 +1061,6 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column({ name: "index" })
     index?: number;
 
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
-
     @PrimaryColumn({ length: 255 })
     name?: string;
 
@@ -924,9 +1069,6 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     @Column("text", { name: "value_text", default: "" })
     value?: string;
-
-    @Column("boolean", { default: false })
-    draft?: boolean;
 
     @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
     submitter?: EmbeddableSupportedAccountId;
@@ -940,6 +1082,21 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     setFee(inclusionFee: bigint) {
         this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
+
+    @Column(() => EmbeddableLifecycle, { prefix: "" })
+    lifecycle?: EmbeddableLifecycle
+
+    get status(): ItemStatus | undefined {
+        return this.lifecycle?.status;
+    }
+
+    set status(status: ItemStatus | undefined) {
+        if (!this.lifecycle) {
+            this.lifecycle = EmbeddableLifecycle.from(false);
+        }
+        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
