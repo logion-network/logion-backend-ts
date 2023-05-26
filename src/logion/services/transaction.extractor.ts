@@ -85,21 +85,11 @@ export class TransactionExtractor {
                 from: vaultAddress,
                 transferValue: vaultTransferValue,
                 to: vaultTransferTo,
-            }));
-        } else if(extrinsic.storageFee && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
-            transactions.push(new Transaction({
-                extrinsicIndex: index,
-                pallet: this.pallet(extrinsic),
-                method: this.methodName(extrinsic),
-                tip: 0n,
-                fees: new Fees(0n, extrinsic.storageFee.fee),
-                reserved: 0n,
-                from: extrinsic.storageFee.withdrawnFrom,
-                transferValue: 0n,
-                to: undefined,
+                type: "VAULT_OUT",
             }));
         }
 
+        // Actual extrinsic with only fees applied to the signer
         transactions.push(new Transaction({
             extrinsicIndex: index,
             pallet: this.pallet(extrinsic),
@@ -110,8 +100,39 @@ export class TransactionExtractor {
             from,
             transferValue,
             to,
-            error: this.error(extrinsic)
+            error: this.error(extrinsic),
+            type: "EXTRINSIC",
         }));
+
+        if(extrinsic.storageFee && extrinsic.storageFee.withdrawnFrom !== extrinsic.signer) {
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees(0n, extrinsic.storageFee.fee),
+                reserved: 0n,
+                from: extrinsic.storageFee.withdrawnFrom,
+                transferValue: 0n,
+                to: undefined,
+                type: "STORAGE_FEE",
+            }));
+        }
+
+        if(extrinsic.legalFee && extrinsic.legalFee.withdrawnFrom !== extrinsic.signer) {
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees(0n),
+                reserved: 0n,
+                from: extrinsic.legalFee.withdrawnFrom,
+                transferValue: extrinsic.legalFee.fee,
+                to: extrinsic.legalFee.beneficiary,
+                type: "LEGAL_FEE",
+            }));
+        }
 
         return transactions;
     }
@@ -134,7 +155,11 @@ export class TransactionExtractor {
         if(extrinsic.storageFee?.withdrawnFrom === extrinsic.signer) {
             storage = extrinsic.storageFee.fee;
         }
-        return new Fees(inclusion, storage);
+        let legal: bigint | undefined = undefined;
+        if(extrinsic.legalFee?.withdrawnFrom === extrinsic.signer) {
+            legal = extrinsic.legalFee.fee;
+        }
+        return new Fees(inclusion, storage, legal);
     }
 
     private reserved(extrinsic: JsonExtrinsic): bigint {

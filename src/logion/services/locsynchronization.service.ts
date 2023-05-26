@@ -52,8 +52,7 @@ export class LocSynchronizer {
                 case "createPolkadotTransactionLoc":
                 case "createCollectionLoc":
                 case "createOtherIdentityLoc": {
-                    const locId = extractUuid('loc_id', extrinsic.call.args);
-                    await this.mutateLoc(locId, async loc => loc.setLocCreatedDate(timestamp));
+                    await this.handleLocCreation(extrinsic, timestamp);
                     break;
                 }
                 case "addMetadata": {
@@ -100,9 +99,15 @@ export class LocSynchronizer {
                     await this.addTokensRecord(locId, timestamp, extrinsic);
                     break;
                 }
+                case "acknowledgeFile":
+                    await this.confirmAcknowledgedFile(timestamp, extrinsic);
+                    break;
+                case "acknowledgeMetadata":
+                    await this.confirmAcknowledgedMetadata(timestamp, extrinsic);
+                    break;
                 case "sponsor":
                 case "withdrawSponsorship":
-                    // Nothing sync
+                    // Nothing to sync
                     break;
                 default:
                     throw new Error(`Unexpected method in pallet logionLoc: ${extrinsic.call.method}`)
@@ -110,14 +115,16 @@ export class LocSynchronizer {
         }
     }
 
-    private getFileHash(extrinsic: JsonExtrinsic): string {
-        const file = Adapters.asJsonObject(extrinsic.call.args['file']);
-        if("hash_" in file && Adapters.isHexString(file.hash_)) {
-            return Adapters.asHexString(file.hash_);
-        } else if("hash" in file && Adapters.isHexString(file.hash)) {
-            return Adapters.asHexString(file.hash);
+    private async handleLocCreation(extrinsic: JsonExtrinsic, timestamp: Moment) {
+        const locId = extractUuid('loc_id', extrinsic.call.args);
+        const inclusionFee = await extrinsic.partialFee();
+        if(inclusionFee) {
+            await this.mutateLoc(locId, async loc => {
+                loc.setLocCreatedDate(timestamp);
+                // TODO set fees (inclusion and legal)
+            });
         } else {
-            throw new Error("File has no hash");
+            throw new Error("Could not get inclusion fee");
         }
     }
 
@@ -148,6 +155,17 @@ export class LocSynchronizer {
             loc.setFileFees(hash, new Fees(BigInt(inclusionFee), storageFee?.fee), extrinsic.storageFee?.withdrawnFrom);
         } else {
             throw new Error("Could not get inclusion fee");
+        }
+    }
+
+    private getFileHash(extrinsic: JsonExtrinsic): string {
+        const file = Adapters.asJsonObject(extrinsic.call.args['file']);
+        if("hash_" in file && Adapters.isHexString(file.hash_)) {
+            return Adapters.asHexString(file.hash_);
+        } else if("hash" in file && Adapters.isHexString(file.hash)) {
+            return Adapters.asHexString(file.hash);
+        } else {
+            throw new Error("File has no hash");
         }
     }
 
@@ -310,5 +328,17 @@ export class LocSynchronizer {
                 });
             }
         }
+    }
+
+    private async confirmAcknowledgedFile(timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const locId = extractUuid('loc_id', extrinsic.call.args);
+        const hash = Adapters.asHexString(extrinsic.call.args['hash']);
+        await this.mutateLoc(locId, async loc => loc.confirmFileAcknowledged(hash, timestamp));
+    }
+
+    private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const locId = extractUuid('loc_id', extrinsic.call.args);
+        const name = Adapters.asString(extrinsic.call.args['name']);
+        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(name, timestamp));
     }
 }

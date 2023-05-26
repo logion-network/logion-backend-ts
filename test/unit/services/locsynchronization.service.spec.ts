@@ -163,6 +163,30 @@ describe("LocSynchronizer", () => {
         givenCollectionFactory();
         await expectAsync(whenConsumingBlock()).toBeRejected();
     });
+
+    it("confirms metadata acknowledged", async () => {
+        givenLocExtrinsic("acknowledgeMetadata", {
+            loc_id: locId,
+            name: METADATA_ITEM_NAME,
+        });
+        givenLocRequest();
+        givenLocRequestExpectsMetadataItemAcknowledged();
+        await whenConsumingBlock();
+        thenMetadataAcknowledged();
+        thenLocIsSaved();
+    });
+
+    it("confirms file acknowledged", async () => {
+        givenLocExtrinsic("acknowledgeFile", {
+            loc_id: locId,
+            hash: FILE_HASH,
+        });
+        givenLocRequest();
+        givenLocRequestExpectsFileAcknowledged();
+        await whenConsumingBlock();
+        thenFileAcknowledged();
+        thenLocIsSaved();
+    });
 });
 
 const locDecimalUuid = "130084474896785895402627605545662412605";
@@ -322,4 +346,20 @@ function thenLocVoided() {
 
 function thenCollectionItemSaved() {
     collectionRepository.verify(instance => instance.save(collectionItem.object()))
+}
+
+function givenLocRequestExpectsMetadataItemAcknowledged() {
+    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME, IS_BLOCK_TIME)).returns(undefined);
+}
+
+function thenMetadataAcknowledged() {
+    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME, IS_BLOCK_TIME));
+}
+
+function givenLocRequestExpectsFileAcknowledged() {
+    locRequest.setup(instance => instance.confirmFileAcknowledged(FILE_HASH, IS_BLOCK_TIME)).returns(undefined);
+}
+
+function thenFileAcknowledged() {
+    locRequest.verify(instance => instance.confirmFileAcknowledged(FILE_HASH, IS_BLOCK_TIME));
 }

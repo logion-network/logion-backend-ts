@@ -233,12 +233,14 @@ export interface components {
       inclusion?: string;
       /** @description File storage fee (if applicable) */
       storage?: string;
+      /** @description Legal fee (if applicable) */
+      legal?: string;
       /** @description Total fee (inclusion + storage) */
       total?: string;
     };
     /**
      * TransactionView 
-     * @description A transaction between 2 accounts
+     * @description A transaction altering one or two account's balance
      */
     TransactionView: {
       /**
@@ -278,6 +280,11 @@ export interface components {
         /** @description Some details about the error. */
         details?: string;
       };
+      /**
+       * @description The transaction's type 
+       * @enum {string}
+       */
+      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
     };
     /**
      * UserIdentityView 

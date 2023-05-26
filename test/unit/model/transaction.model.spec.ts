@@ -52,6 +52,7 @@ function aTransaction(): TransactionAggregateRoot {
     transaction.to = "to";
     transaction.createdOn = moment().toISOString();
     transaction.transferValue = "123456";
+    transaction.type = "EXTRINSIC";
     return transaction;
 }
 
@@ -69,7 +70,8 @@ describe("TransactionFactory", () => {
         reserved: 78n,
         pallet: "recovery",
         method: "createRecovery",
-        createdOn: moment().toISOString()
+        createdOn: moment().toISOString(),
+        type: "EXTRINSIC",
     };
 
     it("creates expected successful root", () => {

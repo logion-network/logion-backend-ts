@@ -59,7 +59,7 @@ export class TransactionController extends ApiController {
             description.tip +
             description.reserved;
         if (successful) {
-            total += description.transferValue ;
+            total += description.transferValue;
         }
         return {
             id: description.id,
@@ -74,7 +74,8 @@ export class TransactionController extends ApiController {
             reserved: description.reserved.toString(),
             total: total.toString(),
             successful,
-            error: description.error
+            error: description.error,
+            type: description.type,
         }
     }
 }

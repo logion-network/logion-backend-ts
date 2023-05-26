@@ -23,7 +23,7 @@
         "typeorm": "node ./node_modules/typeorm/cli.js -d ./dist/db-tools/ormconfig.js"
     },
     "dependencies": {
-        "@logion/node-api": "^0.14.0",
+        "@logion/node-api": "^0.15.0-1",
         "@logion/node-exiftool": "^2.3.1-3",
         "@logion/rest-api-core": "^0.4.1",
         "@polkadot/wasm-crypto": "^7.1.1",

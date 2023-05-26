@@ -216,6 +216,26 @@ describe("TransactionExtractor", () => {
         });
         await expectTransaction(approvalParams, 1);
     });
+
+    it('finds logionLoc.createTransactionLoc transactions', async () => {
+        const block = givenBlock("loc/block-create-loc.json");
+        block.number = BigInt(block.number);
+        var blockWithTransactions = await transactionExtractor.extractBlockWithTransactions(block);
+        expect(blockWithTransactions!.blockNumber).toBe(block.number);
+        expect(blockWithTransactions!.transactions.length).toBe(2);
+
+        // Actual extrinsic
+        const transaction1 = blockWithTransactions!.transactions[0];
+        expect(transaction1.fees.legalFee).toBeUndefined();
+        expect(transaction1.from).toBe("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy");
+
+        // Legal fee transfer
+        const transaction2 = blockWithTransactions!.transactions[1];
+        expect(transaction2.fees.inclusionFee).toBe(0n);
+        expect(transaction2.transferValue).toBe(125000150n);
+        expect(transaction2.from).toBe("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
+        expect(transaction2.to).toBe("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy");
+    });
 })
 
 function givenBlock(fileName: string): BlockExtrinsics {
@@ -256,6 +276,10 @@ function givenBlock(fileName: string): BlockExtrinsics {
             extrinsic.error = () => error;
         } else {
             extrinsic.error = () => null;
+        }
+
+        if(extrinsic.legalFee?.fee) {
+            extrinsic.legalFee.fee = BigInt(extrinsic.legalFee.fee);
         }
 
         extrinsic.events = extrinsic.events.map((event: any) => ({

@@ -4,6 +4,16 @@ import { appDataSource } from "@logion/rest-api-core";
 import { Fees } from '@logion/node-api';
 import { EmbeddableFees } from './fees.js';
 
+export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
+
+function asTransactionType(type?: string): TransactionType {
+    if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT") {
+        return type;
+    } else {
+        throw new Error(`Unexpected value ${type}`);
+    }
+}
+
 export interface TransactionDescription {
     readonly id: string;
     readonly blockNumber: bigint,
@@ -18,6 +28,7 @@ export interface TransactionDescription {
     readonly method: string;
     readonly createdOn: string;
     readonly error?: TransactionDescriptionError;
+    readonly type: TransactionType;
 }
 
 export interface TransactionDescriptionError {
@@ -51,7 +62,8 @@ export class TransactionAggregateRoot {
             pallet: this.pallet!,
             method: this.method!,
             createdOn: this.createdOn!,
-            error
+            error,
+            type: asTransactionType(this.type),
         };
     }
 
@@ -103,6 +115,8 @@ export class TransactionAggregateRoot {
     @Column({ name: "error_details", nullable: true })
     errorDetails?: string;
 
+    @Column({name: "type", length: 255})
+    type?: string;
 }
 
 @injectable()
@@ -168,6 +182,9 @@ export class TransactionFactory {
             transaction.errorName = description.error.name;
             transaction.errorDetails = description.error.details;
         }
+
+        transaction.type = description.type;
+
         return transaction;
     }
 }

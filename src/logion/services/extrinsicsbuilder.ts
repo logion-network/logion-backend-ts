@@ -4,7 +4,7 @@ import { Adapters, TypesJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic, StorageFee } from './types/responses/Extrinsic.js';
+import { ExtrinsicError, JsonEvent, JsonExtrinsic, LegalFee, StorageFee } from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
 
@@ -40,6 +40,9 @@ export class ExtrinsicsBuilder {
                     };
                     if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
                         extrinsicBuilder.storageFee = this.getStorageFee(jsonEvent);
+                    }
+                    if(event.section === "logionLoc" && event.method === "LegalFeeWithdrawn") {
+                        extrinsicBuilder.legalFee = this.getLegalFee(jsonEvent);
                     }
                     extrinsicBuilder.events.push(jsonEvent);
                 }
@@ -125,6 +128,17 @@ export class ExtrinsicsBuilder {
             fee,
         };
     }
+
+    private getLegalFee(event: JsonEvent): LegalFee | undefined {
+        const withdrawnFrom = event.data[0].toString();
+        const beneficiary = event.data[1].toString();
+        const fee = event.data[2].toBigInt();
+        return {
+            withdrawnFrom,
+            beneficiary,
+            fee,
+        };
+    }
 }
 
 export class ExtrinsicBuilder {
@@ -151,6 +165,7 @@ export class ExtrinsicBuilder {
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
     public storageFee?: StorageFee;
+    public legalFee?: LegalFee;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 
@@ -160,6 +175,7 @@ export class ExtrinsicBuilder {
             events: this.events,
             partialFee: () => this.partialFee().then(result => result ? result.toString() : undefined),
             storageFee: this.storageFee,
+            legalFee: this.legalFee,
             signer: this.signer ? this.signer.toString() : null,
             tip: this.tip !== null ? this.tip.toString() : null,
             error: this.error,
