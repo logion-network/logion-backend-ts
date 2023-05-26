@@ -262,7 +262,7 @@ export class LocRequestAggregateRoot {
         this.status = 'REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
-        this.updateAllItemsStatus("DRAFT", "REVIEW_PENDING");
+        this.updateAllItemsStatus("DRAFT", "REVIEW_REJECTED");
     }
 
     rework(): void {
