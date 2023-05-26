@@ -1024,6 +1024,9 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("DRAFT");
         request.submit();
 
+        request.acceptFile(fileHash);
+        request.acceptMetadataItem(itemName);
+
         // LLO accepts
         request.accept(moment());
         thenRequestStatusIs("OPEN");

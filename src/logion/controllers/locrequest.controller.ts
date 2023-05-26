@@ -586,6 +586,9 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async requestFileReview(_body: any, requestId: string, hash: string) {
         await this.locRequestService.update(requestId, async request => {
+            if (request.status !== 'OPEN') {
+                throw badRequest("LOC must be OPEN for requesting item review");
+            }
             await this.locAuthorizationService.ensureContributor(this.request, request);
             request.requestFileReview(hash);
         });
@@ -804,6 +807,9 @@ export class LocRequestController extends ApiController {
     async requestMetadataReview(_body: any, requestId: string, name: string) {
         const decodedName = decodeURIComponent(name);
         await this.locRequestService.update(requestId, async request => {
+            if (request.status !== 'OPEN') {
+                throw badRequest("LOC must be OPEN for requesting item review");
+            }
             await this.locAuthorizationService.ensureContributor(this.request, request);
             request.requestMetadataItemReview(decodedName);
         });

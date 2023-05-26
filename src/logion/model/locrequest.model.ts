@@ -251,6 +251,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot submit with ongoing iDenfy verification session");
         }
         this.status = 'REQUESTED';
+        this.updateAllItemsStatus(undefined, "REVIEW_PENDING");
     }
 
     reject(reason: string, rejectedOn: Moment): void {
@@ -261,6 +262,7 @@ export class LocRequestAggregateRoot {
         this.status = 'REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
+        this.updateAllItemsStatus("DRAFT", "REVIEW_PENDING");
     }
 
     rework(): void {
@@ -268,6 +270,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot rework a non-rejected request");
         }
         this.status = 'DRAFT';
+        this.updateAllItemsStatus(undefined, "DRAFT");
     }
 
     accept(decisionOn: Moment): void {
@@ -374,6 +377,13 @@ export class LocRequestAggregateRoot {
         const file = this.getFileOrThrow(hash);
         mutator(file.lifecycle!);
         file._toUpdate = true;
+    }
+
+    private updateAllItemsStatus(statusFrom: ItemStatus | undefined, statusTo: ItemStatus) {
+        this.metadata?.filter(item => statusFrom === undefined || item.status === statusFrom)
+            .forEach(item => item.status = statusTo);
+        this.files?.filter(item => statusFrom === undefined || item.status === statusFrom)
+            .forEach(item => item.status = statusTo);
     }
     
     private getFileOrThrow(hash: string) {
@@ -1002,6 +1012,14 @@ export class LocFile extends Child implements HasIndex, Submitted {
         this.storageFeePaidBy = storageFeePaidBy;
         this._toUpdate = true;
     }
+
+    set status(status: ItemStatus | undefined) {
+        if (!this.lifecycle) {
+            this.lifecycle = EmbeddableLifecycle.from(false);
+        }
+        this.lifecycle.status = status;
+        this._toUpdate = true;
+    }
 }
 
 @Entity("loc_request_file_delivered")
@@ -1073,6 +1091,14 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     get status(): ItemStatus | undefined {
         return this.lifecycle?.status;
+    }
+
+    set status(status: ItemStatus | undefined) {
+        if (!this.lifecycle) {
+            this.lifecycle = EmbeddableLifecycle.from(false);
+        }
+        this.lifecycle.status = status;
+        this._toUpdate = true;
     }
 }
 
