@@ -424,8 +424,7 @@ export class LocRequestAggregateRoot {
     }
 
     private itemViewable(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
-        return item.status === 'PUBLISHED' ||
-            item.status === 'ACKNOWLEDGED' ||
+        return item.status === 'ACKNOWLEDGED' ||
             accountEquals(viewerAddress, this.getOwner()) ||
             accountEquals(viewerAddress, item.submitter) ||
             (accountEquals(viewerAddress, this.getRequester()) && accountEquals(item.submitter, this.getOwner()))
