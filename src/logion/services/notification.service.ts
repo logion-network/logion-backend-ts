@@ -34,6 +34,8 @@ export const templateValues = [
     "verified-issuer-selected",
     "verified-issuer-unselected",
     "sof-requested",
+    "review-requested",
+    "data-reviewed",
 ] as const;
 
 export type Template = typeof templateValues[number];

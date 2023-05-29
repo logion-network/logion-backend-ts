@@ -585,13 +585,17 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async requestFileReview(_body: any, requestId: string, hash: string) {
-        await this.locRequestService.update(requestId, async request => {
+        const request = await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
             await this.locAuthorizationService.ensureContributor(this.request, request);
             request.requestFileReview(hash);
         });
+
+        const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+        this.notify("LegalOfficer", "review-requested", request.getDescription(), userIdentity);
+
         this.response.sendStatus(204);
     }
 
@@ -600,7 +604,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async reviewFile(view: ReviewItemView, requestId: string, hash: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        await this.locRequestService.update(requestId, async request => {
+        const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
                 request.acceptFile(hash);
@@ -609,6 +613,10 @@ export class LocRequestController extends ApiController {
                 request.rejectFile(hash, reason);
             }
         });
+
+        const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+        this.notify("WalletUser", "data-reviewed", request.getDescription(), userIdentity);
+
         this.response.sendStatus(204);
     }
 
