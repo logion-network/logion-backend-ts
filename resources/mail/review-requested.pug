@@ -1,0 +1,35 @@
+| logion notification - LOC data to be reviewed
+| Dear #{legalOfficer.userIdentity.firstName} #{legalOfficer.userIdentity.lastName},
+|
+| Please note, you can't answer this email. The logion network will never ask you to provide any kind of information or access to a web address through its email notifications.
+|
+| The following user has requested your review:
+| __________________________________________________________
+|
+| Type:
+| *******
+| #{loc.locType}
+|
+| Description:
+| **************
+| #{loc.description}
+|
+| Name:
+| *******
+| #{walletUser.firstName} #{walletUser.lastName}
+|
+| Identification key:
+| *******************
+| #{loc.requesterAddress}
+|
+| Email:
+| *******
+| #{walletUser.email}
+|
+| Telephone:
+| ************
+| #{walletUser.phoneNumber}
+|
+| __________________________________________________________
+|
+include /footer.pug
