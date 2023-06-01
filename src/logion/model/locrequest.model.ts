@@ -142,11 +142,12 @@ export class EmbeddableLifecycle {
         this.reviewedOn = moment().toDate();
     }
 
-    confirm() {
-        if (this.status !== "REVIEW_ACCEPTED" && this.status !== "PUBLISHED") {
+    confirm(isAcknowledged: boolean) {
+        const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
+        if (this.status !== "REVIEW_ACCEPTED" && this.status !== acknowledgedOrPublished) {
             throw badRequest(`Cannot confirm item with status ${ this.status }`);
         }
-        this.status = "PUBLISHED";
+        this.status = acknowledgedOrPublished;
     }
 
     confirmAcknowledged(acknowledgedOn?: Moment) {
@@ -356,28 +357,32 @@ export class LocRequestAggregateRoot {
     }
 
     requestFileReview(hash: string) {
-        this.mutateFile(hash, item => item.requestReview());
+        this.mutateFile(hash, item => item.lifecycle!.requestReview());
     }
 
     acceptFile(hash: string) {
-        this.mutateFile(hash, item => item.accept());
+        this.mutateFile(hash, item => item.lifecycle!.accept());
     }
 
     rejectFile(hash: string, reason: string) {
-        this.mutateFile(hash, item => item.reject(reason));
+        this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
     confirmFile(hash: string) {
-        this.mutateFile(hash, item => item.confirm());
+        this.mutateFile(hash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+    }
+
+    isOwner(account?: SupportedAccountId) {
+        return accountEquals(account, { address: this.ownerAddress, type: "Polkadot" });
     }
 
     confirmFileAcknowledged(hash: string, acknowledgedOn?: Moment) {
-        this.mutateFile(hash, item => item.confirmAcknowledged(acknowledgedOn));
+        this.mutateFile(hash, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
     }
 
-    private mutateFile(hash: string, mutator: (item: EmbeddableLifecycle) => void) {
+    private mutateFile(hash: string, mutator: (item: LocFile) => void) {
         const file = this.getFileOrThrow(hash);
-        mutator(file.lifecycle!);
+        mutator(file);
         file._toUpdate = true;
     }
 
@@ -537,31 +542,31 @@ export class LocRequestAggregateRoot {
     }
 
     requestMetadataItemReview(name: string) {
-        this.mutateMetadataItem(name, item => item.requestReview());
+        this.mutateMetadataItem(name, item => item.lifecycle!.requestReview());
     }
 
     acceptMetadataItem(name: string) {
-        this.mutateMetadataItem(name, item => item.accept());
+        this.mutateMetadataItem(name, item => item.lifecycle!.accept());
     }
 
     rejectMetadataItem(name: string, reason: string) {
-        this.mutateMetadataItem(name, item => item.reject(reason));
+        this.mutateMetadataItem(name, item => item.lifecycle!.reject(reason));
     }
 
     confirmMetadataItem(name: string) {
-        this.mutateMetadataItem(name, item => item.confirm());
+        this.mutateMetadataItem(name, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
     confirmMetadataItemAcknowledged(name: string, acknowledgedOn?: Moment) {
-        this.mutateMetadataItem(name, item => item.confirmAcknowledged(acknowledgedOn));
+        this.mutateMetadataItem(name, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
     }
 
-    private mutateMetadataItem(name: string, mutator: (item: EmbeddableLifecycle) => void) {
+    private mutateMetadataItem(name: string, mutator: (item: LocMetadataItem) => void) {
         const metadataItem = requireDefined(
             this.metadataItem(name),
             () => badRequest(`Metadata Item not found: ${ name }`)
         );
-        mutator(metadataItem.lifecycle!);
+        mutator(metadataItem);
         metadataItem._toUpdate = true;
     }
 
