@@ -56,7 +56,7 @@ describe('LocRequestController - Fetch -', () => {
                 expect(request1.requesterAddress.address).toEqual(testData.requesterAddress?.address);
                 expect(request1.requesterAddress.type).toEqual(testData.requesterAddress?.type);
                 expect(request1.ownerAddress).toBe(ALICE);
-                expect(request1.status).toBe("REJECTED");
+                expect(request1.status).toBe("REVIEW_REJECTED");
                 expect(request1.rejectReason).toBe(REJECT_REASON);
                 const userIdentity = request1.userIdentity;
                 expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity)
@@ -165,7 +165,7 @@ describe('LocRequestController - Fetch -', () => {
 function mockModelForFetch(container: Container): void {
     const { request, repository, loc } = buildMocksForFetch(container);
 
-    setupRequest(request, REQUEST_ID, "Transaction", "REJECTED", testDataWithUserIdentity);
+    setupRequest(request, REQUEST_ID, "Transaction", "REVIEW_REJECTED", testDataWithUserIdentity);
     mockOwner(request, ALICE_ACCOUNT);
     mockRequester(request, SUBMITTER);
 

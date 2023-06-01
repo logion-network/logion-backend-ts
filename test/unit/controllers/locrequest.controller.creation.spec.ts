@@ -101,7 +101,7 @@ describe('LocRequestController - Creation -', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.status).toBe("REVIEW_PENDING");
                 expect(response.body.locType).toBe("Transaction");
                 expect(response.body.requesterAddress).toBeUndefined();
                 expect(response.body.requesterIdentityLoc).toBe(expectedUserPrivateData.identityLocId);
@@ -163,7 +163,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
         .then(response => {
             if (expectedStatus === 200) {
                 expect(response.body.id).toBeDefined();
-                expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.status).toBe("REVIEW_PENDING");
                 expect(response.body.locType).toBe(locType);
                 checkPrivateData(response, expectedUserPrivateData);
                 expect(response.body.seal).toEqual(SEAL.hash)
@@ -189,7 +189,7 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
         .expect('Content-Type', /application\/json/)
         .then(response => {
             expect(response.body.id).toBeDefined();
-            expect(response.body.status).toBe("REQUESTED");
+            expect(response.body.status).toBe("REVIEW_PENDING");
             expect(response.body.locType).toBe(locType);
             checkPrivateData(response, expectedUserPrivateData);
         });
@@ -218,7 +218,7 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     repository.setup(instance => instance.save(draft.object()))
         .returns(Promise.resolve());
 
-    const requested = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
+    const requested = mockRequest("REVIEW_PENDING", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
     factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
         params.description.requesterAddress?.address === testData.requesterAddress?.address &&
         params.description.requesterAddress?.type === testData.requesterAddress?.type &&
@@ -230,7 +230,7 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     repository.setup(instance => instance.save(requested.object()))
         .returns(Promise.resolve());
 
-    const requestByLO = mockRequest("REQUESTED", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
+    const requestByLO = mockRequest("REVIEW_PENDING", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
     factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.ownerAddress == ALICE &&
         params.description.description == testData.description
@@ -255,7 +255,7 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     mockLogionIdentityLoc(repository, true);
     mockPolkadotIdentityLoc(repository, false);
 
-    const request = mockRequest("REQUESTED", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
+    const request = mockRequest("REVIEW_PENDING", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
     factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
         params.description.ownerAddress == ALICE

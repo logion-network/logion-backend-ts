@@ -253,23 +253,23 @@ export class LocRequestAggregateRoot {
         if(this.iDenfyVerification && this.iDenfyVerification.status === "PENDING") {
             throw new Error("Cannot submit with ongoing iDenfy verification session");
         }
-        this.status = 'REQUESTED';
+        this.status = 'REVIEW_PENDING';
         this.updateAllItemsStatus("REVIEW_PENDING");
     }
 
     reject(reason: string, rejectedOn: Moment): void {
-        if (this.status != 'REQUESTED') {
+        if (this.status != 'REVIEW_PENDING') {
             throw new Error("Cannot reject already decided request");
         }
 
-        this.status = 'REJECTED';
+        this.status = 'REVIEW_REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
         this.updateAllItemsStatus("REVIEW_REJECTED");
     }
 
     rework(): void {
-        if (this.status != 'REJECTED') {
+        if (this.status != 'REVIEW_REJECTED') {
             throw new Error("Cannot rework a non-rejected request");
         }
         this.status = 'DRAFT';
@@ -277,12 +277,19 @@ export class LocRequestAggregateRoot {
     }
 
     accept(decisionOn: Moment): void {
-        if (this.status != 'REQUESTED') {
+        if (this.status != 'REVIEW_PENDING') {
             throw new Error("Cannot accept already decided request");
         }
-
-        this.status = 'OPEN';
+        this.status = 'REVIEW_ACCEPTED';
         this.decisionOn = decisionOn.toISOString();
+    }
+
+    open(createdOn: Moment): void {
+        if (this.status != 'REVIEW_ACCEPTED') {
+            throw new Error("Cannot accept already decided request");
+        }
+        this.status = 'OPEN';
+        this.createdOn = createdOn.toISOString();
     }
 
     getDescription(): LocRequestDescription {
@@ -320,10 +327,10 @@ export class LocRequestAggregateRoot {
     }
 
     getDecision(): LocRequestDecision | undefined {
-        if (this.status !== 'REQUESTED') {
+        if (this.status !== 'DRAFT' && this.status !== 'REVIEW_PENDING') {
             return {
                 decisionOn: this.decisionOn!,
-                rejectReason: this.status === 'REJECTED' ? this.rejectReason! : undefined
+                rejectReason: this.status === 'REVIEW_REJECTED' ? this.rejectReason! : undefined
             }
         }
     }
@@ -444,8 +451,8 @@ export class LocRequestAggregateRoot {
             logger.warn("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
-        if (this.status === "REQUESTED") {
-            this.accept(timestamp);
+        if (this.status === "REVIEW_ACCEPTED") {
+            this.open(timestamp);
         }
     }
 
@@ -1306,7 +1313,7 @@ export class LocRequestRepository {
     }
 
     async deleteDraftOrRejected(request: LocRequestAggregateRoot): Promise<void> {
-        if(request.status !== "DRAFT" && request.status !== "REJECTED") {
+        if(request.status !== "DRAFT" && request.status !== "REVIEW_REJECTED") {
             throw new Error("Cannot delete non-draft and non-rejected request");
         }
 
@@ -1387,7 +1394,7 @@ export class LocRequestFactory {
         this.ensureUserIdentityPresent(description, isUserRequest)
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
-        request.status = params.draft ? "DRAFT" : "REQUESTED";
+        request.status = params.draft ? "DRAFT" : "REVIEW_PENDING";
         if (description.requesterAddress) {
             request.requesterAddress = description.requesterAddress.address;
             request.requesterAddressType = description.requesterAddress.type;

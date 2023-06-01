@@ -191,7 +191,7 @@ export class LocRequestController extends ApiController {
         }
         await this.locRequestService.addNewRequest(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.locRequestAdapter.findUserPrivateData(request);
-        if (request.status === "REQUESTED" && !accountEquals(authenticatedUser, owner)) {
+        if (request.status === "REVIEW_PENDING" && !accountEquals(authenticatedUser, owner)) {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
         return this.locRequestAdapter.toView(request, authenticatedUser, { userIdentity, userPostalAddress, identityLocId });

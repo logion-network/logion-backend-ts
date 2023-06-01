@@ -154,7 +154,7 @@ function mockModelForReject(container: Container, notificationService: Mock<Noti
 function buildMocksForDecision(container: Container, notificationService: Mock<NotificationService>, rejectReason?: string): Mocks {
     const mocks = buildMocksForUpdate(container, { notificationService });
 
-    setupRequest(mocks.request, REQUEST_ID, "Transaction", "REQUESTED", testData);
+    setupRequest(mocks.request, REQUEST_ID, "Transaction", "REVIEW_PENDING", testData);
     mocks.request.setup(instance => instance.getDecision())
         .returns({ decisionOn: DECISION_TIMESTAMP, rejectReason });
 
@@ -220,6 +220,6 @@ function mockModelForCancel(container: Container) {
 
 function mockModelForRework(container: Container) {
     const { request } = buildMocksForUpdate(container);
-    setupRequest(request, REQUEST_ID, "Identity", "REJECTED");
+    setupRequest(request, REQUEST_ID, "Identity", "REVIEW_REJECTED");
     request.setup(instance => instance.rework()).returns(undefined);
 }

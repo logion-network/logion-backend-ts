@@ -1,10 +1,10 @@
 -- Requested Transaction locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-1', 'REQUESTED', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-1', 'REVIEW_PENDING', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-2', 'REQUESTED', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-2', 'REVIEW_PENDING', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-3', 'REQUESTED', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-3', 'REVIEW_PENDING', 'Transaction');
 -- Open Transaction locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-4', 'OPEN', 'Transaction');
@@ -14,11 +14,11 @@ INSERT INTO loc_request (id, owner_address, requester_address, requester_address
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-6', 'OPEN', 'Transaction');
 -- Rejected locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, reject_reason, first_name, last_name, email, phone_number, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-7', 'REJECTED', 'Not a valid case', 'John', 'Doe', 'john.doe@logion.network', '+123456', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-7', 'REVIEW_REJECTED', 'Not a valid case', 'John', 'Doe', 'john.doe@logion.network', '+123456', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, reject_reason, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-8', 'REJECTED', 'Not a valid case', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-8', 'REVIEW_REJECTED', 'Not a valid case', 'Transaction');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, reject_reason, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-9', 'REJECTED', 'Not a valid case', 'Transaction');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-9', 'REVIEW_REJECTED', 'Not a valid case', 'Transaction');
 -- Loc with files, metadata and links
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
 VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-10', 'OPEN', 'Transaction');
@@ -51,11 +51,11 @@ INSERT INTO loc_request (id, requester_identity_loc, owner_address, description,
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '518536e4-71e6-4c4f-82db-b16cbfb495ed', '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', 'loc-19', 'OPEN', 'Transaction');
 -- Requested Collection locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-21', 'REQUESTED', 'Collection');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-21', 'REVIEW_PENDING', 'Collection');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-22', 'REQUESTED', 'Collection');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-22', 'REVIEW_PENDING', 'Collection');
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
-VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-23', 'REQUESTED', 'Collection');
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty', '5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW', 'Polkadot', 'loc-23', 'REVIEW_PENDING', 'Collection');
 -- Open Collection locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-24', 'OPEN', 'Collection');

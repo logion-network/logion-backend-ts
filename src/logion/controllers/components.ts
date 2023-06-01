@@ -304,7 +304,7 @@ export interface components {
      * @description The request's status 
      * @enum {string}
      */
-    LocRequestStatus: "OPEN" | "REQUESTED" | "REJECTED" | "CLOSED" | "DRAFT";
+    LocRequestStatus: "OPEN" | "REVIEW_PENDING" | "REVIEW_REJECTED" | "REVIEW_ACCEPTED" | "CLOSED" | "DRAFT";
     /**
      * @description The LOC's type 
      * @enum {string}
