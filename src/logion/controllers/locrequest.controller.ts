@@ -28,6 +28,7 @@ import {
     requireLength,
     AuthenticationService,
     forbidden,
+    unauthorized,
 } from "@logion/rest-api-core";
 import { UUID } from "@logion/node-api";
 
@@ -636,8 +637,13 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async confirmFile(_body: any, requestId: string, hash: string) {
         await this.locRequestService.update(requestId, async request => {
-            await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.confirmFile(hash);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const file = request.getFile(hash);
+            if((file.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(file.submitter, contributor)) {
+                request.confirmFile(hash);
+            } else {
+                throw unauthorized("Contributor cannot confirm");
+            }
         });
         this.response.sendStatus(204);
     }
@@ -859,8 +865,13 @@ export class LocRequestController extends ApiController {
     async confirmMetadata(_body: any, requestId: string, name: string) {
         const decodedName = decodeURIComponent(name);
         await this.locRequestService.update(requestId, async request => {
-            await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.confirmMetadataItem(decodedName);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const item = request.getMetadataItem(decodedName);
+            if((item.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(item.submitter, contributor)) {
+                request.confirmMetadataItem(decodedName);
+            } else {
+                throw unauthorized("Contributor cannot confirm");
+            }
         });
         this.response.sendStatus(204);
     }

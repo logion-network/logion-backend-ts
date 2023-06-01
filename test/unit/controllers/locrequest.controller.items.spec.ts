@@ -4,7 +4,7 @@ import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { BOB, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { BOB, ALICE_ACCOUNT, ALICE } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
@@ -185,13 +185,11 @@ describe('LocRequestController - Items -', () => {
     });
 
     it('confirms a metadata item', async () => {
-        const locRequest = mockRequestForMetadata();
-        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
+        const app = setupApp(LocRequestController, (container) => mockModelForConfirmMetadata(container))
         const dataName = encodeURIComponent(SOME_DATA_NAME)
         await request(app)
             .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }/confirm`)
-            .expect(204)
-        locRequest.verify(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
+            .expect(204);
     });
 
     it('adds a link', async () => {
@@ -381,6 +379,7 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
 function mockModelForConfirmFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
+    request.setup(instance => instance.getFile(SOME_DATA_HASH)).returns({ submitter: { type: "Polkadot", address: ALICE } } as FileDescription);
     request.setup(instance => instance.confirmFile(SOME_DATA_HASH)).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -461,5 +460,13 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
     repository.setup(instance => instance.findById(SOME_LINK_TARGET))
         .returns(Promise.resolve(linkTargetRequest.object()));
 
+    mockPolkadotIdentityLoc(repository, false);
+}
+
+function mockModelForConfirmMetadata(container: Container) {
+    const { request, repository } = buildMocksForUpdate(container);
+    setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
+    request.setup(instance => instance.getMetadataItem(SOME_DATA_NAME)).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
+    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME)).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
