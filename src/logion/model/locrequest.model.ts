@@ -284,12 +284,14 @@ export class LocRequestAggregateRoot {
         this.decisionOn = decisionOn.toISOString();
     }
 
-    open(createdOn: Moment): void {
-        if (this.status != 'REVIEW_ACCEPTED') {
+    open(createdOn?: Moment): void {
+        if (this.status != 'REVIEW_ACCEPTED' && this.status != 'OPEN') {
             throw new Error("Cannot accept already decided request");
         }
         this.status = 'OPEN';
-        this.createdOn = createdOn.toISOString();
+        if (createdOn) {
+            this.createdOn = createdOn.toISOString();
+        }
     }
 
     getDescription(): LocRequestDescription {
@@ -451,7 +453,7 @@ export class LocRequestAggregateRoot {
             logger.warn("LOC created date is already set");
         }
         this.locCreatedOn = timestamp.toISOString();
-        if (this.status === "REVIEW_ACCEPTED") {
+        if (this.status === "REVIEW_ACCEPTED" || this.status === "OPEN") {
             this.open(timestamp);
         }
     }
@@ -834,6 +836,12 @@ export class LocRequestAggregateRoot {
 
     getOwner(): SupportedAccountId {
         return polkadotAccount(this.ownerAddress || "");
+    }
+
+    canOpen(user: SupportedAccountId | undefined): boolean {
+        return user !== undefined
+            && accountEquals(user, this.getRequester())
+            && user.type === 'Polkadot';
     }
 
     @PrimaryColumn({ type: "uuid" })

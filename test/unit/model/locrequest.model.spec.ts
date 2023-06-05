@@ -256,6 +256,12 @@ describe("LocRequestAggregateRoot", () => {
         thenDecisionOnIs(ACCEPTED_ON);
     });
 
+    it("opens an accepted request", () => {
+        givenRequestWithStatus('REVIEW_ACCEPTED');
+        whenOpening();
+        thenRequestStatusIs('OPEN');
+    });
+
     it("fails reject given already open", () => {
         givenRequestWithStatus('OPEN');
         expect(() => whenRejecting(REJECT_REASON, REJECTED_ON)).toThrowError();
@@ -1113,6 +1119,10 @@ function whenRejecting(rejectReason: string, rejectedOn: Moment) {
 
 function whenAccepting(acceptedOn: Moment) {
     request.accept(acceptedOn);
+}
+
+function whenOpening() {
+    request.open();
 }
 
 function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
