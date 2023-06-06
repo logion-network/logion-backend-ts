@@ -53,7 +53,7 @@ describe("LocRequestFactory", () => {
         givenLocDescription(description);
         await whenCreatingLocRequest(false);
         thenRequestCreatedWithDescription(description);
-        thenStatusIs("REQUESTED");
+        thenStatusIs("REVIEW_PENDING");
     });
 
     it("creates an open Transaction LOC with requester address", async () => {
@@ -96,7 +96,7 @@ describe("LocRequestFactory", () => {
         givenLocDescription(description);
         await whenCreatingLocRequest(false);
         thenRequestCreatedWithDescription(description);
-        thenStatusIs("REQUESTED");
+        thenStatusIs("REVIEW_PENDING");
     });
 
     it("creates an open Collection LOC with requester address", async () => {
@@ -157,7 +157,7 @@ describe("LocRequestFactory", () => {
         thenRequestSealIs(SEAL);
         expect(description.userIdentity).toEqual(userIdentity)
         expect(description.userPostalAddress).toEqual(userPostalAddress)
-        thenStatusIs("REQUESTED");
+        thenStatusIs("REVIEW_PENDING");
     });
 
     it("creates an open Identity LOC with requester address", async () => {
@@ -241,19 +241,25 @@ describe("LocRequestFactory", () => {
 describe("LocRequestAggregateRoot", () => {
 
     it("rejects requested", () => {
-        givenRequestWithStatus('REQUESTED');
+        givenRequestWithStatus('REVIEW_PENDING');
         whenRejecting(REJECT_REASON, REJECTED_ON);
-        thenRequestStatusIs('REJECTED');
+        thenRequestStatusIs('REVIEW_REJECTED');
         thenRequestRejectReasonIs(REJECT_REASON);
         thenDecisionOnIs(REJECTED_ON);
     });
 
     it("accepts requested", () => {
-        givenRequestWithStatus('REQUESTED');
+        givenRequestWithStatus('REVIEW_PENDING');
         whenAccepting(ACCEPTED_ON);
-        thenRequestStatusIs('OPEN');
+        thenRequestStatusIs('REVIEW_ACCEPTED');
         thenRequestRejectReasonIs(undefined);
         thenDecisionOnIs(ACCEPTED_ON);
+    });
+
+    it("opens an accepted request", () => {
+        givenRequestWithStatus('REVIEW_ACCEPTED');
+        whenOpening();
+        thenRequestStatusIs('OPEN');
     });
 
     it("fails reject given already open", () => {
@@ -267,12 +273,12 @@ describe("LocRequestAggregateRoot", () => {
     });
 
     it("fails reject given already rejected", () => {
-        givenRequestWithStatus('REJECTED');
+        givenRequestWithStatus('REVIEW_REJECTED');
         expect(() => whenRejecting(REJECT_REASON, REJECTED_ON)).toThrowError();
     });
 
     it("fails accept given already rejected", () => {
-        givenRequestWithStatus('REJECTED');
+        givenRequestWithStatus('REVIEW_REJECTED');
         expect(() => whenAccepting(ACCEPTED_ON)).toThrowError();
     });
 
@@ -337,7 +343,7 @@ describe("LocRequestAggregateRoot", () => {
     });
 
     it("accepts if pending when setting creation date", () => {
-        givenRequestWithStatus('REQUESTED');
+        givenRequestWithStatus('REVIEW_ACCEPTED');
         const locCreatedDate = moment();
         whenSettingLocCreatedDate(locCreatedDate);
         thenStatusIs('OPEN');
@@ -346,11 +352,11 @@ describe("LocRequestAggregateRoot", () => {
     it("submits if draft", () => {
         givenRequestWithStatus('DRAFT');
         whenSubmitting();
-        thenRequestStatusIs('REQUESTED');
+        thenRequestStatusIs('REVIEW_PENDING');
     });
 
     it("fails submit given non-draft", () => {
-        givenRequestWithStatus('REQUESTED');
+        givenRequestWithStatus('REVIEW_PENDING');
         expect(() => whenSubmitting()).toThrowError();
     });
 
@@ -1013,11 +1019,11 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
 
         request.submit();
-        thenRequestStatusIs("REQUESTED");
+        thenRequestStatusIs("REVIEW_PENDING");
 
         // LLO rejects
         request.reject("Because.", moment());
-        thenRequestStatusIs("REJECTED");
+        thenRequestStatusIs("REVIEW_REJECTED");
 
         // User reworks and submits again
         request.rework();
@@ -1029,10 +1035,13 @@ describe("LocRequestAggregateRoot (processes)", () => {
 
         // LLO accepts
         request.accept(moment());
+        thenRequestStatusIs("REVIEW_ACCEPTED");
+
+        // User opens
+        request.open(moment());
         thenRequestStatusIs("OPEN");
 
-
-        // User publishes
+        // User publishes items
         request.confirmFile(fileHash);
         request.setFileAddedOn(fileHash, moment()); // Sync
         request.confirmFileAcknowledged(fileHash);
@@ -1112,6 +1121,10 @@ function whenAccepting(acceptedOn: Moment) {
     request.accept(acceptedOn);
 }
 
+function whenOpening() {
+    request.open();
+}
+
 function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
 }
@@ -1181,7 +1194,7 @@ const repository = new Mock<LocRequestRepository>();
 
 function thenRequestCreatedWithDescription(description: LocRequestDescription) {
     expect(request.id).toBe(requestId);
-    expect(request.status).toBe('REQUESTED');
+    expect(request.status).toBe('REVIEW_PENDING');
     expect(request.getDescription()).toEqual(description);
     expect(request.decisionOn).toBeUndefined();
 }

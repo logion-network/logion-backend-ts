@@ -3,16 +3,25 @@ import { LocRequestController } from "../../../src/logion/controllers/locrequest
 import { Container } from "inversify";
 import request from "supertest";
 import { Mock, It, Times } from "moq.ts";
-import {
-    LocType, LocFile, LocFileDelivered,
-} from "../../../src/logion/model/locrequest.model.js";
+import { LocType, LocFile, } from "../../../src/logion/model/locrequest.model.js";
 import { Moment } from "moment";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
-import { buildMocksForUpdate, mockPolkadotIdentityLoc, Mocks, REQUEST_ID, setupRequest, testData, testDataWithType, userIdentities } from "./locrequest.controller.shared.js";
+import {
+    buildMocksForUpdate,
+    mockPolkadotIdentityLoc,
+    Mocks,
+    REQUEST_ID,
+    setupRequest,
+    testData,
+    testDataWithType,
+    userIdentities,
+    REQUESTER_ADDRESS, ETHEREUM_REQUESTER
+} from "./locrequest.controller.shared.js";
 import { BOB } from "../../helpers/addresses.js";
+import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";
 
-const { setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser } = TestApp;
+const { setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
 describe('LocRequestController - Life Cycle - Authenticated LLO is **NOT** LOC owner', () => {
 
@@ -145,6 +154,28 @@ describe('LocRequestController - Life Cycle - Authenticated LLO is LOC owner', (
     })
 });
 
+describe("LocRequestController - Life Cycle - Authenticated user opens LOC", () => {
+
+    function authenticatePolkadotRequester(address: string) {
+        return mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, address));
+    }
+
+    it('opens an accepted request', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(REQUESTER_ADDRESS.address))
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/open`)
+            .expect(204)
+    })
+
+    it('fails to open an accepted request when not requester', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester("5CdRcqWggMitHtaGq1iFMqJCySfb8k31GSxC32txLe6KPP7z"))
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/open`)
+            .expect(401)
+    })
+
+})
+
 function mockModelForReject(container: Container, notificationService: Mock<NotificationService>): void {
     const { request } = buildMocksForDecision(container, notificationService, REJECT_REASON);
     request.setup(instance => instance.reject(It.Is<string>(reason => reason === REJECT_REASON), It.IsAny<Moment>()))
@@ -154,7 +185,7 @@ function mockModelForReject(container: Container, notificationService: Mock<Noti
 function buildMocksForDecision(container: Container, notificationService: Mock<NotificationService>, rejectReason?: string): Mocks {
     const mocks = buildMocksForUpdate(container, { notificationService });
 
-    setupRequest(mocks.request, REQUEST_ID, "Transaction", "REQUESTED", testData);
+    setupRequest(mocks.request, REQUEST_ID, "Transaction", "REVIEW_PENDING", testData);
     mocks.request.setup(instance => instance.getDecision())
         .returns({ decisionOn: DECISION_TIMESTAMP, rejectReason });
 
@@ -171,6 +202,8 @@ function mockModelForAccept(container: Container, notificationService: Mock<Noti
     const { request } = buildMocksForDecision(container, notificationService);
     request.setup(instance => instance.accept(It.Is<string>(It.IsAny<Moment>())))
         .returns();
+    request.setup(instance => instance.canOpen(It.IsAny<SupportedAccountId>()))
+        .returns(true);
 }
 
 function mockModelForPreClose(container: Container, locType: LocType, userIdentity?: UserIdentity) {
@@ -190,6 +223,23 @@ function mockModelForPreVoid(container: Container) {
     const { request } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Identity", "OPEN", testData);
     request.setup(instance => instance.preVoid(VOID_REASON)).returns();
+}
+
+function mockModelForOpen(container: Container, locType: LocType, userIdentity?: UserIdentity) {
+    const { request, repository } = buildMocksForUpdate(container);
+
+    const data = {
+        ...testDataWithType(locType),
+        userIdentity
+    };
+    setupRequest(request, REQUEST_ID, locType, "REVIEW_ACCEPTED", data);
+    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address === REQUESTER_ADDRESS.address)))
+        .returns(true);
+    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address !== REQUESTER_ADDRESS.address)))
+        .returns(false);
+    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params === undefined)))
+        .returns(false);
+    request.setup(instance => instance.open()).returns();
 }
 
 const VOID_REASON = "Expired";
@@ -220,6 +270,6 @@ function mockModelForCancel(container: Container) {
 
 function mockModelForRework(container: Container) {
     const { request } = buildMocksForUpdate(container);
-    setupRequest(request, REQUEST_ID, "Identity", "REJECTED");
+    setupRequest(request, REQUEST_ID, "Identity", "REVIEW_REJECTED");
     request.setup(instance => instance.rework()).returns(undefined);
 }

@@ -38,7 +38,7 @@ describe('LocRequestController - SoF -', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.id).toBe(REQUEST_ID);
-                expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.status).toBe("REVIEW_PENDING");
             })
         factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(param =>
                 param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() }` &&
@@ -61,7 +61,7 @@ describe('LocRequestController - SoF -', () => {
             .expect('Content-Type', /application\/json/)
             .then(response => {
                 expect(response.body.id).toBe(REQUEST_ID);
-                expect(response.body.status).toBe("REQUESTED");
+                expect(response.body.status).toBe("REVIEW_PENDING");
             })
         factory.verify(instance => instance.newSofRequest(It.Is<NewSofRequestParameters>(param =>
             param.description.description === `Statement of Facts for LOC ${ LOC_ID.toDecimalString() } - ${ itemId }` &&
@@ -80,7 +80,7 @@ function mockModelForCreateSofRequest(container: Container, factory: Mock<LocReq
     repository.setup(instance => instance.findById(locId.toString()))
         .returns(Promise.resolve(targetLoc.object()));
 
-    setupRequest(request, REQUEST_ID, locType, "REQUESTED", testDataWithUserIdentityWithType(locType));
+    setupRequest(request, REQUEST_ID, locType, "REVIEW_PENDING", testDataWithUserIdentityWithType(locType));
 
     factory.setup(instance => instance.newSofRequest(It.IsAny<NewSofRequestParameters>()))
         .returns(Promise.resolve(request.object()));

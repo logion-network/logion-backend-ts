@@ -191,7 +191,7 @@ export class LocRequestController extends ApiController {
         }
         await this.locRequestService.addNewRequest(request);
         const { userIdentity, userPostalAddress, identityLocId } = await this.locRequestAdapter.findUserPrivateData(request);
-        if (request.status === "REQUESTED" && !accountEquals(authenticatedUser, owner)) {
+        if (request.status === "REVIEW_PENDING") {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
         return this.locRequestAdapter.toView(request, authenticatedUser, { userIdentity, userPostalAddress, identityLocId });
@@ -419,6 +419,9 @@ export class LocRequestController extends ApiController {
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.accept(moment());
+            if (!request.canOpen(request.getRequester())) {
+                request.open();
+            }
         });
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
         this.notify("WalletUser", "loc-accepted", request.getDescription(), userIdentity, request.getDecision());
@@ -656,6 +659,26 @@ export class LocRequestController extends ApiController {
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.confirmFileAcknowledged(hash)
+        });
+        this.response.sendStatus(204);
+    }
+
+    static openLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/open"].post!;
+        operationObject.summary = "Opens a LOC";
+        operationObject.description = "The authenticated user must be the Polkadot requester of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
+    }
+
+    @HttpPost('/:requestId/open')
+    @Async()
+    @SendsResponse()
+    async openLoc(_body: any, requestId: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => request.canOpen(authenticatedUser), "LOC must be opened by Polkadot requester");
+            request.open();
         });
         this.response.sendStatus(204);
     }

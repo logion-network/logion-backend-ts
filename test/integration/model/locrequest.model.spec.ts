@@ -41,7 +41,7 @@ describe('LocRequestRepository - read accesses', () => {
     it("find by owner, status and type", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedOwnerAddress: ALICE,
-            expectedStatuses: [ "OPEN", "REQUESTED" ],
+            expectedStatuses: [ "OPEN", "REVIEW_PENDING" ],
             expectedLocTypes: [ "Transaction" ]
         }
         const requests = await repository.findBy(query);
@@ -87,7 +87,7 @@ describe('LocRequestRepository - read accesses', () => {
     it("find by requester and status", async () => {
         const query: FetchLocRequestsSpecification = {
             expectedRequesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
-            expectedStatuses: [ "REJECTED" ],
+            expectedStatuses: [ "REVIEW_REJECTED" ],
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, "Transaction", "loc-7")
@@ -101,7 +101,7 @@ describe('LocRequestRepository - read accesses', () => {
             email: 'john.doe@logion.network',
             phoneNumber: '+123456',
         });
-        expect(requests[0].status).toBe("REJECTED");
+        expect(requests[0].status).toBe("REVIEW_REJECTED");
 
         expect(await repository.existsBy(query)).toBeTrue();
     })
@@ -342,7 +342,7 @@ describe('LocRequestRepository - LOC correctly ordered', () => {
         const locs = await repository.findBy({
             expectedLocTypes: ["Collection", "Identity", "Transaction"],
             expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            expectedStatuses: ["CLOSED", "OPEN", "REJECTED", "REQUESTED"]
+            expectedStatuses: ["CLOSED", "OPEN", "REVIEW_REJECTED", "REVIEW_PENDING"]
         });
 
         const descriptions = locs.map(loc => loc.description);
