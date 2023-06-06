@@ -259,7 +259,7 @@ export class LocRequestAggregateRoot {
 
     reject(reason: string, rejectedOn: Moment): void {
         if (this.status != 'REVIEW_PENDING') {
-            throw new Error("Cannot reject already decided request");
+            throw new Error(`Cannot reject request with status ${ this.status }`);
         }
 
         this.status = 'REVIEW_REJECTED';
@@ -286,7 +286,7 @@ export class LocRequestAggregateRoot {
 
     open(createdOn?: Moment): void {
         if (this.status != 'REVIEW_ACCEPTED' && this.status != 'OPEN') {
-            throw new Error("Cannot accept already decided request");
+            throw new Error(`Cannot open request with status ${ this.status }`);
         }
         this.status = 'OPEN';
         if (createdOn) {
@@ -841,7 +841,8 @@ export class LocRequestAggregateRoot {
     canOpen(user: SupportedAccountId | undefined): boolean {
         return user !== undefined
             && accountEquals(user, this.getRequester())
-            && user.type === 'Polkadot';
+            && user.type === 'Polkadot'
+            && (this.status === 'REVIEW_ACCEPTED' || this.status === 'OPEN')
     }
 
     @PrimaryColumn({ type: "uuid" })
