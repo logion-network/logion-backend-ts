@@ -295,7 +295,7 @@ describe('LocRequestRepository.save()', () => {
         const id = uuid()
         const locRequest = givenLoc(id, "Transaction", "DRAFT")
         await service.addNewRequest(locRequest);
-        await service.deleteDraftOrRejected(id, async () => {});
+        await service.deleteDraftRejectedOrAccepted(id, async () => {});
         await checkAggregate(id, 0)
     })
 
@@ -305,7 +305,7 @@ describe('LocRequestRepository.save()', () => {
         locRequest.submit();
         locRequest.reject("Because", moment());
         await service.addNewRequest(locRequest);
-        await service.deleteDraftOrRejected(id, async () => {});
+        await service.deleteDraftRejectedOrAccepted(id, async () => {});
         await checkAggregate(id, 0);
     })
 

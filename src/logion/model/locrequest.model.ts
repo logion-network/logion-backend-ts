@@ -269,8 +269,8 @@ export class LocRequestAggregateRoot {
     }
 
     rework(): void {
-        if (this.status != 'REVIEW_REJECTED') {
-            throw new Error("Cannot rework a non-rejected request");
+        if (this.status != 'REVIEW_REJECTED' && this.status != 'REVIEW_ACCEPTED') {
+            throw new Error("Cannot rework a non-reviewed request");
         }
         this.status = 'DRAFT';
         this.updateAllItemsStatus("DRAFT");
@@ -370,7 +370,14 @@ export class LocRequestAggregateRoot {
     }
 
     acceptFile(hash: string) {
+        this.ensureAcceptedOrOpen();
         this.mutateFile(hash, item => item.lifecycle!.accept());
+    }
+
+    private ensureAcceptedOrOpen() {
+        if(this.status !== "REVIEW_ACCEPTED" && this.status !== "OPEN") {
+            throw new Error("Request must be accepted or open");
+        }
     }
 
     rejectFile(hash: string, reason: string) {
@@ -555,6 +562,7 @@ export class LocRequestAggregateRoot {
     }
 
     acceptMetadataItem(name: string) {
+        this.ensureAcceptedOrOpen();
         this.mutateMetadataItem(name, item => item.lifecycle!.accept());
     }
 
@@ -1321,9 +1329,9 @@ export class LocRequestRepository {
         return builder;
     }
 
-    async deleteDraftOrRejected(request: LocRequestAggregateRoot): Promise<void> {
-        if(request.status !== "DRAFT" && request.status !== "REVIEW_REJECTED") {
-            throw new Error("Cannot delete non-draft and non-rejected request");
+    async deleteDraftRejectedOrAccepted(request: LocRequestAggregateRoot): Promise<void> {
+        if(request.status !== "DRAFT" && request.status !== "REVIEW_REJECTED" && request.status !== "REVIEW_ACCEPTED") {
+            throw new Error("Cannot delete non-draft and non-reviewed request");
         }
 
         await this.repository.manager.delete(LocFile, { requestId: request.id });
