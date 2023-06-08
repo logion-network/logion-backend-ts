@@ -261,7 +261,7 @@ function mockModelForCancel(container: Container) {
     ipfsFile.setup(instance => instance.cid).returns("");
     request.setup(instance => instance.files).returns([ dbFile.object(), ipfsFile.object() ])
 
-    repository.setup(instance => instance.deleteDraftOrRejected(request.object()))
+    repository.setup(instance => instance.deleteDraftRejectedOrAccepted(request.object()))
         .returns(Promise.resolve());
 
     fileStorageService.setup(instance => instance.deleteFile(dbFile.object())).returnsAsync();

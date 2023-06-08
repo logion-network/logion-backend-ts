@@ -459,7 +459,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async cancelLocRequest(_ignoredBody: any, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const request = await this.locRequestService.deleteDraftOrRejected(requestId, async request => {
+        const request = await this.locRequestService.deleteDraftRejectedOrAccepted(requestId, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
         });
         for(const file of request.files || []) {
@@ -522,6 +522,7 @@ export class LocRequestController extends ApiController {
             });
         } catch(e) {
             await this.fileStorageService.deleteFile({ cid });
+            throw e;
         }
     }
 

@@ -240,7 +240,7 @@ describe("LocRequestFactory", () => {
 
 describe("LocRequestAggregateRoot", () => {
 
-    it("rejects requested", () => {
+    it("rejects pending", () => {
         givenRequestWithStatus('REVIEW_PENDING');
         whenRejecting(REJECT_REASON, REJECTED_ON);
         thenRequestStatusIs('REVIEW_REJECTED');
@@ -248,7 +248,7 @@ describe("LocRequestAggregateRoot", () => {
         thenDecisionOnIs(REJECTED_ON);
     });
 
-    it("accepts requested", () => {
+    it("accepts pending", () => {
         givenRequestWithStatus('REVIEW_PENDING');
         whenAccepting(ACCEPTED_ON);
         thenRequestStatusIs('REVIEW_ACCEPTED');
@@ -983,7 +983,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
 describe("LocRequestAggregateRoot (processes)", () => {
 
     it("full life-cycle", () => {
-        // User creates and submits
+        // User creates a draft
         givenRequestWithStatus("DRAFT");
 
         const fileHash = "hash1";
@@ -1006,35 +1006,41 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, false);
         expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
 
-        // User requests reviews
-        request.requestFileReview(fileHash);
+        // User requests review
+        request.submit();
+        thenRequestStatusIs("REVIEW_PENDING");
         thenFileStatusIs(fileHash, "REVIEW_PENDING");
-        request.requestMetadataItemReview(itemName);
         thenMetadataItemStatusIs(itemName, "REVIEW_PENDING");
 
-        // LLO accepts items
+        // LLO rejects
+        request.reject("Because.", moment());
+        thenRequestStatusIs("REVIEW_REJECTED");
+        thenFileStatusIs(fileHash, "REVIEW_REJECTED");
+        thenMetadataItemStatusIs(itemName, "REVIEW_REJECTED");
+
+        // User reworks and submits again
+        request.rework();
+        thenRequestStatusIs("DRAFT");
+        thenFileStatusIs(fileHash, "DRAFT");
+        thenMetadataItemStatusIs(itemName, "DRAFT");
+        request.submit();
+
+        // LLO accepts
+        request.accept(moment());
+        thenRequestStatusIs("REVIEW_ACCEPTED");
         request.acceptFile(fileHash);
         thenFileStatusIs(fileHash, "REVIEW_ACCEPTED");
         request.acceptMetadataItem(itemName);
         thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
 
-        request.submit();
-        thenRequestStatusIs("REVIEW_PENDING");
-
-        // LLO rejects
-        request.reject("Because.", moment());
-        thenRequestStatusIs("REVIEW_REJECTED");
-
         // User reworks and submits again
         request.rework();
-        thenRequestStatusIs("DRAFT");
         request.submit();
 
+        // LLO accepts again
+        request.accept(moment());
         request.acceptFile(fileHash);
         request.acceptMetadataItem(itemName);
-
-        // LLO accepts
-        request.accept(moment());
         thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User opens
