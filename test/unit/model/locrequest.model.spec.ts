@@ -52,7 +52,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         await whenCreatingLocRequest(false);
-        thenRequestCreatedWithDescription(description);
+        thenRequestCreatedWithDescription(description, "REVIEW_PENDING");
         thenStatusIs("REVIEW_PENDING");
     });
 
@@ -61,7 +61,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description)
+        thenRequestCreatedWithDescription(description, "OPEN");
     });
 
     it("creates an open Transaction LOC with requester id loc", async () => {
@@ -73,7 +73,7 @@ describe("LocRequestFactory", () => {
         repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description)
+        thenRequestCreatedWithDescription(description, "OPEN")
     });
 
     it("fails to create an open Transaction LOC with 2 requesters", async () => {
@@ -95,8 +95,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         await whenCreatingLocRequest(false);
-        thenRequestCreatedWithDescription(description);
-        thenStatusIs("REVIEW_PENDING");
+        thenRequestCreatedWithDescription(description, "REVIEW_PENDING");
     });
 
     it("creates an open Collection LOC with requester address", async () => {
@@ -104,7 +103,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description)
+        thenRequestCreatedWithDescription(description, "OPEN");
     });
 
     it("creates an open Collection LOC with requester id loc", async () => {
@@ -116,7 +115,7 @@ describe("LocRequestFactory", () => {
         repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description)
+        thenRequestCreatedWithDescription(description, "OPEN");
     });
 
     it("fails to create an open Collection LOC with 2 requesters", async () => {
@@ -138,7 +137,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description);
+        thenRequestCreatedWithDescription(description, "OPEN");
     });
 
     it("creates Identity LOC request", async () => {
@@ -153,11 +152,10 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, userPostalAddress, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingLocRequest(false);
-        thenRequestCreatedWithDescription(description);
+        thenRequestCreatedWithDescription(description, "REVIEW_PENDING");
         thenRequestSealIs(SEAL);
-        expect(description.userIdentity).toEqual(userIdentity)
-        expect(description.userPostalAddress).toEqual(userPostalAddress)
-        thenStatusIs("REVIEW_PENDING");
+        expect(description.userIdentity).toEqual(userIdentity);
+        expect(description.userPostalAddress).toEqual(userPostalAddress);
     });
 
     it("creates an open Identity LOC with requester address", async () => {
@@ -165,7 +163,7 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
         await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description)
+        thenRequestCreatedWithDescription(description, "OPEN");
     });
 
     it("fails to create an open Identity LOC with requester id loc", async () => {
@@ -206,7 +204,7 @@ describe("LocRequestFactory", () => {
         thenRequestCreatedWithDescription({
             ...description,
             template: "statement_of_facts"
-        });
+        }, "REVIEW_PENDING");
         expect(request.links?.length).toBe(1)
         expect(request.links![0].target).toEqual(target)
         expect(request.links![0].nature).toEqual(nature)
@@ -1198,9 +1196,9 @@ async function whenCreatingOpenLoc() {
 
 const repository = new Mock<LocRequestRepository>();
 
-function thenRequestCreatedWithDescription(description: LocRequestDescription) {
+function thenRequestCreatedWithDescription(description: LocRequestDescription, expectedStatus: LocRequestStatus) {
     expect(request.id).toBe(requestId);
-    expect(request.status).toBe('REVIEW_PENDING');
+    expect(request.status).toBe(expectedStatus);
     expect(request.getDescription()).toEqual(description);
     expect(request.decisionOn).toBeUndefined();
 }

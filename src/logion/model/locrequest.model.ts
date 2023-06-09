@@ -1409,9 +1409,13 @@ export class LocRequestFactory {
         const { description } = params;
         this.ensureCorrectRequester(description)
         this.ensureUserIdentityPresent(description, isUserRequest)
+
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
-        request.status = params.draft ? "DRAFT" : "REVIEW_PENDING";
+
+        const nonDraftStatus = isUserRequest ? "REVIEW_PENDING" : "OPEN";
+        request.status = params.draft ? "DRAFT" : nonDraftStatus;
+
         if (description.requesterAddress) {
             request.requesterAddress = description.requesterAddress.address;
             request.requesterAddressType = description.requesterAddress.type;
