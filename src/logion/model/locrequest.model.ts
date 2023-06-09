@@ -273,6 +273,8 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot rework a non-reviewed request");
         }
         this.status = 'DRAFT';
+        this.decisionOn = null;
+        this.rejectReason = null;
         this.updateAllItemsStatus("DRAFT");
     }
 
