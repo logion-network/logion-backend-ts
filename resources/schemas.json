@@ -724,6 +724,10 @@
                         "type": "string",
                         "description": "The item's name"
                     },
+                    "nameHash": {
+                        "type": "string",
+                        "description": "The item's name hash"
+                    },
                     "value": {
                         "type": "string",
                         "description": "The item's value"
@@ -760,7 +764,8 @@
                     }
                 },
                 "required": [
-                    "status"
+                    "status",
+                    "nameHash"
                 ]
             },
             "LocRequestView": {
@@ -1027,6 +1032,10 @@
                                 "name": {
                                     "type": "string",
                                     "description": "The item's name"
+                                },
+                                "nameHash": {
+                                    "type": "string",
+                                    "description": "The item's name hash"
                                 },
                                 "value": {
                                     "type": "string",

@@ -31,6 +31,8 @@ import {
     SupportedAccountId,
     accountEquals
 } from "../../../src/logion/model/supportedaccountid.model.js";
+import { sha256String } from "../../../src/logion/lib/crypto/hashing.js";
+
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('LocRequestController - Items -', () => {
@@ -186,9 +188,8 @@ describe('LocRequestController - Items -', () => {
 
     it('confirms a metadata item', async () => {
         const app = setupApp(LocRequestController, (container) => mockModelForConfirmMetadata(container))
-        const dataName = encodeURIComponent(SOME_DATA_NAME)
         await request(app)
-            .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }/confirm`)
+            .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH }/confirm`)
             .expect(204);
     });
 
@@ -385,15 +386,16 @@ function mockModelForConfirmFile(container: Container) {
 }
 
 const SOME_DATA_NAME = "data name with exotic char !é\"/&'"
+const SOME_DATA_NAME_HASH = sha256String("data name with exotic char !é\"/&'");
 const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
     mockRequester(request, REQUESTER);
-    request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, SOME_DATA_NAME))
+    request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, SOME_DATA_NAME_HASH))
         .returns()
-    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME))
+    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME_HASH))
         .returns()
     request.setup(instance => instance.addMetadataItem({
         name: SOME_DATA_NAME,
@@ -421,14 +423,13 @@ async function testAddMetadataForbidden(app: Express) {
 }
 
 async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, isVerifiedIssuer: boolean) {
-    const dataName = encodeURIComponent(SOME_DATA_NAME)
     await request(app)
-        .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ dataName }`)
+        .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH }`)
         .expect(200);
     if(isVerifiedIssuer) {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), SOME_DATA_NAME));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), SOME_DATA_NAME_HASH));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), SOME_DATA_NAME));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), SOME_DATA_NAME_HASH));
     }
 }
 
@@ -466,7 +467,7 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
 function mockModelForConfirmMetadata(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.getMetadataItem(SOME_DATA_NAME)).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
-    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME)).returns();
+    request.setup(instance => instance.getMetadataItem(SOME_DATA_NAME_HASH)).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
+    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME_HASH)).returns();
     mockPolkadotIdentityLoc(repository, false);
 }

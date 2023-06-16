@@ -91,6 +91,7 @@ export class LocRequestAdapter {
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,
+                nameHash: item.nameHash,
                 value: item.value,
                 submitter: item.submitter,
                 fees: toFeesView(item.fees),

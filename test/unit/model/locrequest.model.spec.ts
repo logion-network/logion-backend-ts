@@ -13,15 +13,22 @@ import {
     LocType,
     LocRequestRepository,
     MetadataItemParams,
-    ItemStatus, FileParams
+    ItemStatus,
+    FileParams
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
 import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
-import { Seal, PersonalInfoSealService, PublicSeal, LATEST_SEAL_VERSION } from "../../../src/logion/services/seal.service.js";
+import {
+    Seal,
+    PersonalInfoSealService,
+    PublicSeal,
+    LATEST_SEAL_VERSION
+} from "../../../src/logion/services/seal.service.js";
 import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { sha256String, Hash } from "../../../src/logion/lib/crypto/hashing.js";
 
 const SUBMITTER: SupportedAccountId = {
     type: "Polkadot",
@@ -468,7 +475,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
             }
         ];
         whenAddingMetadata(items, false);
-        whenRemovingMetadataItem(remover, "name2")
+        whenRemovingMetadataItem(remover, sha256String(items[1].name))
 
         const newItems: MetadataItemParams[] = [
             {
@@ -477,9 +484,10 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
+        const nameHash1 = sha256String(items[0].name);
         thenExposesMetadata(newItems);
-        thenExposesMetadataItemByName("name1", newItems[0]);
-        thenHasMetadataItem("name1");
+        thenExposesMetadataItemByNameHash(nameHash1, { ...newItems[0], nameHash: nameHash1 });
+        thenHasMetadataItem(nameHash1);
         thenHasExpectedMetadataIndices();
     }
 
@@ -488,6 +496,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
     it("confirms metadata item", () => {
         givenRequestWithStatus('OPEN');
         const name = "target-1";
+        const nameHash = sha256String(name);
         whenAddingMetadata([
             {
                 name,
@@ -495,9 +504,9 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ], true)
-        whenConfirmingMetadataItem(name)
-        thenMetadataItemStatusIs(name, "PUBLISHED")
-        thenMetadataItemRequiresUpdate(name)
+        whenConfirmingMetadataItem(nameHash)
+        thenMetadataItemStatusIs(nameHash, "PUBLISHED")
+        thenMetadataItemRequiresUpdate(nameHash)
     })
 
     it("exposes draft, owner-submitted metadata to requester", () => {
@@ -901,17 +910,20 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
 
     it("sets metadata item timestamp", () => {
         givenRequestWithStatus("OPEN")
+        const dataName = "data-1";
+        const dataNameHash = sha256String(dataName);
         whenAddingMetadata([{
-            name: "data-1",
+            name: dataName,
             value: "value-1",
             submitter: SUBMITTER,
         }], true)
         const addedOn = moment();
-        whenSettingMetadataItemAddedOn("data-1", addedOn);
-        thenMetadataItemStatusIs("data-1", "PUBLISHED")
-        thenMetadataItemRequiresUpdate("data-1")
-        thenExposesMetadataItemByName("data-1", {
-            name: "data-1",
+        whenSettingMetadataItemAddedOn(dataNameHash, addedOn);
+        thenMetadataItemStatusIs(dataNameHash, "PUBLISHED")
+        thenMetadataItemRequiresUpdate(dataNameHash)
+        thenExposesMetadataItemByNameHash(dataNameHash, {
+            name: dataName,
+            nameHash: dataNameHash,
             value: "value-1",
             submitter: SUBMITTER,
             addedOn: addedOn
@@ -997,6 +1009,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, false);
         expect(request.getFiles(SUBMITTER).length).toBe(1);
         const itemName = "Some name";
+        const itemNameHash = sha256String(itemName);
         request.addMetadataItem({
             name: itemName,
             value: "Some value",
@@ -1008,19 +1021,19 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.submit();
         thenRequestStatusIs("REVIEW_PENDING");
         thenFileStatusIs(fileHash, "REVIEW_PENDING");
-        thenMetadataItemStatusIs(itemName, "REVIEW_PENDING");
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_PENDING");
 
         // LLO rejects
         request.reject("Because.", moment());
         thenRequestStatusIs("REVIEW_REJECTED");
         thenFileStatusIs(fileHash, "REVIEW_REJECTED");
-        thenMetadataItemStatusIs(itemName, "REVIEW_REJECTED");
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_REJECTED");
 
         // User reworks and submits again
         request.rework();
         thenRequestStatusIs("DRAFT");
         thenFileStatusIs(fileHash, "DRAFT");
-        thenMetadataItemStatusIs(itemName, "DRAFT");
+        thenMetadataItemStatusIs(itemNameHash, "DRAFT");
         request.submit();
 
         // LLO accepts
@@ -1028,8 +1041,8 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("REVIEW_ACCEPTED");
         request.acceptFile(fileHash);
         thenFileStatusIs(fileHash, "REVIEW_ACCEPTED");
-        request.acceptMetadataItem(itemName);
-        thenMetadataItemStatusIs(itemName, "REVIEW_ACCEPTED");
+        request.acceptMetadataItem(itemNameHash);
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
 
         // User reworks and submits again
         request.rework();
@@ -1038,7 +1051,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         // LLO accepts again
         request.accept(moment());
         request.acceptFile(fileHash);
-        request.acceptMetadataItem(itemName);
+        request.acceptMetadataItem(itemNameHash);
         thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User opens
@@ -1050,9 +1063,9 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.setFileAddedOn(fileHash, moment()); // Sync
         request.confirmFileAcknowledged(fileHash);
 
-        request.confirmMetadataItem(itemName);
-        request.setMetadataItemAddedOn(itemName, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(itemName);
+        request.confirmMetadataItem(itemNameHash);
+        request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
+        request.confirmMetadataItemAcknowledged(itemNameHash);
 
         // LLO adds other data
         request.addFile({
@@ -1077,14 +1090,15 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.setLinkAddedOn(target, moment()); // Sync
 
         const someOtherName = "Some other name";
+        const someOtherNameHash = sha256String(someOtherName);
         request.addMetadataItem({
             name: someOtherName,
             value: "Some other value",
             submitter: OWNER_ACCOUNT,
         }, true);
-        request.confirmMetadataItem(someOtherName);
-        request.setMetadataItemAddedOn(someOtherName, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(someOtherName);
+        request.confirmMetadataItem(someOtherNameHash);
+        request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
+        request.confirmMetadataItemAcknowledged(someOtherNameHash);
 
         // LLO closes
         request.preClose();
@@ -1252,12 +1266,13 @@ function thenExposesMetadata(expectedMetadata: Partial<MetadataItemDescription>[
     });
 }
 
-function thenExposesMetadataItemByName(name: string, expectedMetadataItem: Partial<MetadataItemDescription>) {
-    expectSameMetadataItems(request.getMetadataItem(name), expectedMetadataItem)
+function thenExposesMetadataItemByNameHash(nameHash: Hash, expectedMetadataItem: Partial<MetadataItemDescription>) {
+    expectSameMetadataItems(request.getMetadataItem(nameHash), expectedMetadataItem)
 }
 
 function expectSameMetadataItems(item1: MetadataItemDescription, item2: Partial<MetadataItemDescription>) {
     expect(item1.name).toEqual(item2.name!);
+    expect(item1.nameHash).toEqual(item2.nameHash!);
     expect(item1.value).toEqual(item2.value!);
     expect(item1.submitter).toEqual(item2.submitter!);
     if (item1.addedOn === undefined) {
@@ -1267,7 +1282,7 @@ function expectSameMetadataItems(item1: MetadataItemDescription, item2: Partial<
     }
 }
 
-function thenHasMetadataItem(name: string) {
+function thenHasMetadataItem(name: Hash) {
     expect(request.hasMetadataItem(name)).toBeTrue();
 }
 
@@ -1277,20 +1292,20 @@ function thenHasExpectedMetadataIndices() {
     }
 }
 
-function whenSettingMetadataItemAddedOn(name: string, addedOn:Moment) {
-    request.setMetadataItemAddedOn(name, addedOn);
+function whenSettingMetadataItemAddedOn(nameHash: Hash, addedOn:Moment) {
+    request.setMetadataItemAddedOn(nameHash, addedOn);
 }
 
-function whenConfirmingMetadataItem(name: string) {
-    request.confirmMetadataItem(name);
+function whenConfirmingMetadataItem(nameHash: Hash) {
+    request.confirmMetadataItem(nameHash);
 }
 
-function thenMetadataItemStatusIs(name: string, expectedStatus: ItemStatus) {
-    expect(request.metadataItem(name)?.status).toEqual(expectedStatus);
+function thenMetadataItemStatusIs(nameHash: Hash, expectedStatus: ItemStatus) {
+    expect(request.metadataItem(nameHash)?.status).toEqual(expectedStatus);
 }
 
-function thenMetadataItemRequiresUpdate(name: string) {
-    expect(request.metadataItem(name)?._toUpdate).toBeTrue();
+function thenMetadataItemRequiresUpdate(nameHash: Hash) {
+    expect(request.metadataItem(nameHash)?._toUpdate).toBeTrue();
 }
 
 function thenMetadataIsVisibleToRequester(name: string) {
@@ -1343,8 +1358,8 @@ function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
 }
 
-function whenRemovingMetadataItem(remover: SupportedAccountId, name: string) {
-    request.removeMetadataItem(remover, name);
+function whenRemovingMetadataItem(remover: SupportedAccountId, nameHash: Hash) {
+    request.removeMetadataItem(remover, nameHash);
 }
 
 function whenRemovingLink(remover: SupportedAccountId, target: string) {

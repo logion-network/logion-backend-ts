@@ -403,6 +403,8 @@ export interface components {
     LocMetadataItemView: {
       /** @description The item's name */
       name?: string;
+      /** @description The item's name hash */
+      nameHash: string;
       /** @description The item's value */
       value?: string;
       /**
@@ -592,6 +594,8 @@ export interface components {
       metadata?: ({
           /** @description The item's name */
           name?: string;
+          /** @description The item's name hash */
+          nameHash?: string;
           /** @description The item's value */
           value?: string;
           /**

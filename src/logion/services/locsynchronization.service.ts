@@ -136,11 +136,11 @@ export class LocSynchronizer {
     }
 
     private async updateMetadataItem(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const name = Adapters.asString(Adapters.asJsonObject(extrinsic.call.args['item']).name);
-        loc.setMetadataItemAddedOn(name, timestamp);
+        const nameHash = Adapters.asHexString(Adapters.asJsonObject(extrinsic.call.args['item']).name);
+        loc.setMetadataItemAddedOn(nameHash, timestamp);
         const inclusionFee = await extrinsic.partialFee();
         if(inclusionFee) {
-            loc.setMetadataItemFee(name, BigInt(inclusionFee));
+            loc.setMetadataItemFee(nameHash, BigInt(inclusionFee));
         } else {
             throw new Error("Could not get inclusion fee");
         }
@@ -338,7 +338,7 @@ export class LocSynchronizer {
 
     private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
-        const name = Adapters.asString(extrinsic.call.args['name']);
-        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(name, timestamp));
+        const nameHash = Adapters.asHexString(extrinsic.call.args['name']);
+        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, timestamp));
     }
 }
