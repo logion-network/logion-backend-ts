@@ -2210,19 +2210,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@polkadot/wasm-bridge@npm:7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-bridge@npm:7.1.1"
-  dependencies:
-    "@polkadot/wasm-util": 7.1.1
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-    "@polkadot/x-randomvalues": "*"
-  checksum: 7a394e9a41e9286ce41d233d54d69dc9585558c029b012f8d8a0528b3bb93bb480e18447576850026e4a3f22dc338b39796f5fa00720b2447b38ecaef8be5e02
-  languageName: node
-  linkType: hard
-
 "@polkadot/wasm-bridge@npm:7.2.1":
   version: 7.2.1
   resolution: "@polkadot/wasm-bridge@npm:7.2.1"
@@ -2236,17 +2223,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@polkadot/wasm-crypto-asmjs@npm:7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-crypto-asmjs@npm:7.1.1"
-  dependencies:
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-  checksum: f3bb12eb29495520c030ca9d59ef5bfcb425ae4ecf2e2a407379951688189533d75c444aaafaa4fb93b22bfe10c48141e1d4597581281adc8455903d17114013
-  languageName: node
-  linkType: hard
-
 "@polkadot/wasm-crypto-asmjs@npm:7.2.1":
   version: 7.2.1
   resolution: "@polkadot/wasm-crypto-asmjs@npm:7.2.1"
@@ -2255,22 +2231,6 @@ __metadata:
   peerDependencies:
     "@polkadot/util": "*"
   checksum: 9d7f2ac6f73cc2ed390941a35426763c73e6f20374eb11ed60b880a6f716c2773cb1fe1cddb9416ab669c75b25b7d99be25c8c91886bb676d6faf9b4658f8fd7
-  languageName: node
-  linkType: hard
-
-"@polkadot/wasm-crypto-init@npm:7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-crypto-init@npm:7.1.1"
-  dependencies:
-    "@polkadot/wasm-bridge": 7.1.1
-    "@polkadot/wasm-crypto-asmjs": 7.1.1
-    "@polkadot/wasm-crypto-wasm": 7.1.1
-    "@polkadot/wasm-util": 7.1.1
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-    "@polkadot/x-randomvalues": "*"
-  checksum: e0a375b4837c2a87e07df4ec8c99d0fc5c369c6bd1bcaf1e80f647921f7ae49d24c1638b41a81aa1b82064c0cfa033754eeb8cdc824f26731300a0bf2a912cfe
   languageName: node
   linkType: hard
 
@@ -2290,18 +2250,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@polkadot/wasm-crypto-wasm@npm:7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-crypto-wasm@npm:7.1.1"
-  dependencies:
-    "@polkadot/wasm-util": 7.1.1
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-  checksum: d4f4e384f06293722e878bee16a20079147dfa1e835bfaf9e9ddaa0675d280116a3132bb4318fd6841abe526d7b61bbe47c31a99a0c7f4df1b5a98a9ab7419d2
-  languageName: node
-  linkType: hard
-
 "@polkadot/wasm-crypto-wasm@npm:7.2.1":
   version: 7.2.1
   resolution: "@polkadot/wasm-crypto-wasm@npm:7.2.1"
@@ -2314,24 +2262,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@polkadot/wasm-crypto@npm:^7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-crypto@npm:7.1.1"
-  dependencies:
-    "@polkadot/wasm-bridge": 7.1.1
-    "@polkadot/wasm-crypto-asmjs": 7.1.1
-    "@polkadot/wasm-crypto-init": 7.1.1
-    "@polkadot/wasm-crypto-wasm": 7.1.1
-    "@polkadot/wasm-util": 7.1.1
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-    "@polkadot/x-randomvalues": "*"
-  checksum: 7dd4a1889bb5f6928a6459c44c7be882ecefdb14d214f6f9c47f5382e078e9061bcd1a2b5ea8a2c8ca9a4fe73314ef44e402d4878080aed0d49ab98c8500b2fb
-  languageName: node
-  linkType: hard
-
-"@polkadot/wasm-crypto@npm:^7.2.1":
+"@polkadot/wasm-crypto@npm:^7.1.1, @polkadot/wasm-crypto@npm:^7.2.1":
   version: 7.2.1
   resolution: "@polkadot/wasm-crypto@npm:7.2.1"
   dependencies:
@@ -2345,17 +2276,6 @@ __metadata:
     "@polkadot/util": "*"
     "@polkadot/x-randomvalues": "*"
   checksum: f42f2bc34cf76d1438893f72a233080196c9a95dd3c53444f582150c7f56b75c80b8b8b9b4a3d9015438a6f7438c6e40def46b1fe7ce3a367bcd280f2bf29c98
-  languageName: node
-  linkType: hard
-
-"@polkadot/wasm-util@npm:7.1.1":
-  version: 7.1.1
-  resolution: "@polkadot/wasm-util@npm:7.1.1"
-  dependencies:
-    tslib: ^2.5.0
-  peerDependencies:
-    "@polkadot/util": "*"
-  checksum: e7da5e0a580e36b5e1ad19b39c90478fd52559d4052db33370e4c72278c32a93683a9b7be3bb21fd9c8e97743381ff0e74eca66a624020bf5c6cf66853bcae3f
   languageName: node
   linkType: hard
 

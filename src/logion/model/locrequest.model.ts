@@ -26,7 +26,7 @@ import {
     polkadotAccount
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
-import { sha256String, Hash } from "../lib/crypto/hashing.js";
+import { sha256String, Hash, HashTransformer } from "../lib/crypto/hashing.js";
 
 const { logger } = Log;
 
@@ -516,7 +516,7 @@ export class LocRequestAggregateRoot {
 
     private toMetadataItemDescription(item: LocMetadataItem): MetadataItemDescription {
         return ({
-            nameHash: item.nameHash! as Hash,
+            nameHash: item.nameHash!,
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
@@ -1097,8 +1097,8 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column({ name: "index" })
     index?: number;
 
-    @PrimaryColumn({ name: "name_hash" })
-    nameHash?: string;
+    @PrimaryColumn({ name: "name_hash", type: "bytea", transformer: HashTransformer.instance })
+    nameHash?: Hash;
 
     @Column({ length: 255, nullable: true })
     name?: string;

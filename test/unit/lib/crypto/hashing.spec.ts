@@ -1,4 +1,4 @@
-import { sha256, sha256File } from '../../../../src/logion/lib/crypto/hashing.js';
+import { sha256, sha256File, HashTransformer, sha256String } from '../../../../src/logion/lib/crypto/hashing.js';
 
 describe('HashingTest', () => {
 
@@ -26,6 +26,14 @@ describe('HashingTest', () => {
     it("hashes binary file", async () => {
         const hash = await sha256File("test/unit/lib/crypto/assets.png");
         expect(hash).toBe("0x68a87ced4573656b101940c90ac3bdc24b651f688c06e71c70d37f43dfc5058c");
+    });
+
+    it("convert from/to Buffer", () => {
+        const transformer = HashTransformer.instance;
+        const hash = sha256String("abc123");
+        const buffer = transformer.to(hash);
+        expect(buffer.length).toEqual(32);
+        expect(transformer.from(buffer)).toEqual(hash);
     });
 });
 

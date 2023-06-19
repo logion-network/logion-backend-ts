@@ -124,6 +124,7 @@ describe('LocRequestRepository - read accesses', () => {
         const metadata = request!.getMetadataItems(request?.getOwner());
         expect(metadata.length).toBe(1);
         expect(metadata[0].name).toBe("a name");
+        expect(metadata[0].nameHash).toBe("0x36e96c62633613d6f8e98943830ed5c5f814c2bb9214d8bba577386096bc926a");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(request!.metadata![0].status).toBe("DRAFT");

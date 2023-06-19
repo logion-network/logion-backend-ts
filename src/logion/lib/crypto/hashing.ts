@@ -2,10 +2,27 @@ import crypto, { BinaryToTextEncoding } from 'crypto';
 import fs from 'fs';
 import Stream from 'stream';
 import { Hash } from "@logion/node-api";
+import { ValueTransformer } from "typeorm/decorator/options/ValueTransformer";
 
 const algorithm = "sha256";
 
 export { Hash };
+
+export class HashTransformer implements ValueTransformer {
+
+    public static readonly instance = new HashTransformer();
+
+    from(value: Buffer | undefined): Hash | undefined {
+        if (!value) {
+            return undefined;
+        }
+        return `0x${ value.toString('hex') }`;
+    }
+
+    to(value: Hash): Buffer {
+        return Buffer.from(value.substring(2), "hex");
+    }
+}
 
 export function sha256(attributes: any[]): string {
     return hash(algorithm, attributes);
