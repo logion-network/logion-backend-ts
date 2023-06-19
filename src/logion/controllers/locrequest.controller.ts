@@ -69,16 +69,22 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.addFile(spec);
     LocRequestController.downloadFile(spec);
     LocRequestController.deleteFile(spec);
+    LocRequestController.requestFileReview(spec);
+    LocRequestController.reviewFile(spec);
     LocRequestController.confirmFile(spec);
+    LocRequestController.confirmFileAcknowledged(spec);
     LocRequestController.openLoc(spec);
     LocRequestController.closeLoc(spec);
     LocRequestController.voidLoc(spec);
     LocRequestController.addLink(spec);
     LocRequestController.deleteLink(spec);
+    LocRequestController.requestMetadataReview(spec);
+    LocRequestController.reviewMetadata(spec);
     LocRequestController.confirmLink(spec);
     LocRequestController.addMetadata(spec);
     LocRequestController.deleteMetadata(spec);
     LocRequestController.confirmMetadata(spec);
+    LocRequestController.confirmMetadataAcknowledged(spec);
     LocRequestController.createSofRequest(spec);
     LocRequestController.submitLocRequest(spec);
     LocRequestController.cancelLocRequest(spec);
@@ -588,6 +594,17 @@ export class LocRequestController extends ApiController {
         }
     }
 
+    static requestFileReview(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/review-request"].post!;
+        operationObject.summary = "Requests a review of the given file";
+        operationObject.description = "The authenticated user must be contributor of the LOC.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to review"
+        });
+    }
+
     @HttpPost('/:requestId/files/:hash/review-request')
     @Async()
     @SendsResponse()
@@ -604,6 +621,21 @@ export class LocRequestController extends ApiController {
         this.notify("LegalOfficer", "review-requested", request.getDescription(), userIdentity);
 
         this.response.sendStatus(204);
+    }
+
+    static reviewFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/review"].post!;
+        operationObject.summary = "Reviews the given file";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "Accept/Reject with reason",
+            view: "ReviewItemView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to review"
+        });
     }
 
     @HttpPost('/:requestId/files/:hash/review')
@@ -652,6 +684,17 @@ export class LocRequestController extends ApiController {
             }
         });
         this.response.sendStatus(204);
+    }
+
+    static confirmFileAcknowledged(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/confirm-acknowledged"].put!;
+        operationObject.summary = "Confirms a file as acknowledged";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hash': "The hash of the file to download"
+        });
     }
 
     @HttpPut('/:requestId/files/:hash/confirm-acknowledged')
@@ -821,76 +864,102 @@ export class LocRequestController extends ApiController {
     }
 
     static deleteMetadata(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{hashName}"].delete!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}"].delete!;
         operationObject.summary = "Deletes a metadata item of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. The metadata item must not yet have been published in the blockchain.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'hashName': "The item's name hash"
+            'nameHash': "The item's name hash"
         });
     }
 
-    @HttpDelete('/:requestId/metadata/:hashName')
+    @HttpDelete('/:requestId/metadata/:nameHash')
     @Async()
-    async deleteMetadata(_body: any, requestId: string, hashName: Hash): Promise<void> {
+    async deleteMetadata(_body: any, requestId: string, nameHash: Hash): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.removeMetadataItem(contributor, hashName);
+            request.removeMetadataItem(contributor, nameHash);
         });
     }
 
-    @HttpPost('/:requestId/metadata/:hashName/review-request')
+    static requestMetadataReview(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/review-request"].post!;
+        operationObject.summary = "Requests a review of the given metadata item";
+        operationObject.description = "The authenticated user must be contributor of the LOC.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'nameHash': "The item's name hash"
+        });
+    }
+
+    @HttpPost('/:requestId/metadata/:nameHash/review-request')
     @Async()
     @SendsResponse()
-    async requestMetadataReview(_body: any, requestId: string, hashName: Hash) {
+    async requestMetadataReview(_body: any, requestId: string, nameHash: Hash) {
         await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
             await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.requestMetadataItemReview(hashName);
+            request.requestMetadataItemReview(nameHash);
         });
         this.response.sendStatus(204);
     }
 
-    @HttpPost('/:requestId/metadata/:hashName/review')
+    static reviewMetadata(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/review"].post!;
+        operationObject.summary = "Reviews the given file";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "Accept/Reject with reason",
+            view: "ReviewItemView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'nameHash': "The item's name hash"
+        });
+    }
+
+    @HttpPost('/:requestId/metadata/:nameHash/review')
     @Async()
     @SendsResponse()
-    async reviewMetadata(view: ReviewItemView, requestId: string, hashName: Hash) {
+    async reviewMetadata(view: ReviewItemView, requestId: string, nameHash: Hash) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
-                request.acceptMetadataItem(hashName);
+                request.acceptMetadataItem(nameHash);
             } else {
                 const reason = requireDefined(view.rejectReason, () => badRequest("Reason is required"));
-                request.rejectMetadataItem(hashName, reason);
+                request.rejectMetadataItem(nameHash, reason);
             }
         });
         this.response.sendStatus(204);
     }
 
     static confirmMetadata(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{hashName}/confirm"].put!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/confirm"].put!;
         operationObject.summary = "Confirms a metadata item of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a metadata item is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'hashName': "The item's name hash"
+            'nameHash': "The item's name hash"
         });
     }
 
-    @HttpPut('/:requestId/metadata/:hashName/confirm')
+    @HttpPut('/:requestId/metadata/:nameHash/confirm')
     @Async()
     @SendsResponse()
-    async confirmMetadata(_body: any, requestId: string, hashName: Hash) {
+    async confirmMetadata(_body: any, requestId: string, nameHash: Hash) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            const item = request.getMetadataItem(hashName);
+            const item = request.getMetadataItem(nameHash);
             if((item.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(item.submitter, contributor)) {
-                request.confirmMetadataItem(hashName);
+                request.confirmMetadataItem(nameHash);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -898,14 +967,25 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    @HttpPut('/:requestId/metadata/:hashName/confirm-acknowledged')
+    static confirmMetadataAcknowledged(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/confirm-acknowledged"].put!;
+        operationObject.summary = "Confirms a metadata item as acknowledged";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'nameHash': "The item's name hash"
+        });
+    }
+
+    @HttpPut('/:requestId/metadata/:nameHash/confirm-acknowledged')
     @Async()
     @SendsResponse()
-    async confirmMetadataAcknowledged(_body: any, requestId: string, hashName: Hash) {
+    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHash: Hash) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmMetadataItemAcknowledged(hashName)
+            request.confirmMetadataItemAcknowledged(nameHash)
         });
         this.response.sendStatus(204);
     }
