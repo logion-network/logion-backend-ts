@@ -26,6 +26,7 @@ import {
     polkadotAccount
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
+import { sha256String, Hash, HashTransformer } from "../lib/crypto/hashing.js";
 
 const { logger } = Log;
 
@@ -79,6 +80,7 @@ export interface MetadataItemParams {
 }
 
 export interface MetadataItemDescription extends MetadataItemParams, ItemLifecycle {
+    readonly nameHash: Hash;
 }
 
 export interface ItemLifecycle {
@@ -491,14 +493,16 @@ export class LocRequestAggregateRoot {
 
     addMetadataItem(itemDescription: MetadataItemParams, alreadyReviewed: boolean) {
         this.ensureEditable();
-        if (this.hasMetadataItem(itemDescription.name)) {
-            throw new Error("A metadata item with given name was already added to this LOC");
+        const nameHash = sha256String(itemDescription.name);
+        if (this.hasMetadataItem(nameHash)) {
+            throw new Error("A metadata item with given nameHash was already added to this LOC");
         }
         const item = new LocMetadataItem();
         item.request = this;
         item.requestId = this.id;
         item.index = this.metadata!.length;
         item.name = itemDescription.name;
+        item.nameHash = nameHash;
         item.value = itemDescription.value;
         item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
@@ -506,12 +510,13 @@ export class LocRequestAggregateRoot {
         this.metadata!.push(item);
     }
 
-    getMetadataItem(name: string): MetadataItemDescription {
-        return this.toMetadataItemDescription(this.metadataItem(name)!)
+    getMetadataItem(nameHash: Hash): MetadataItemDescription {
+        return this.toMetadataItemDescription(this.metadataItem(nameHash)!)
     }
 
     private toMetadataItemDescription(item: LocMetadataItem): MetadataItemDescription {
         return ({
+            nameHash: item.nameHash!,
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
@@ -524,19 +529,19 @@ export class LocRequestAggregateRoot {
         return orderAndMap(this.metadata?.filter(item => this.itemViewable(item, viewerAddress)), this.toMetadataItemDescription);
     }
 
-    setMetadataItemAddedOn(name: string, addedOn: Moment) {
-        const metadataItem = this.metadataItem(name)
+    setMetadataItemAddedOn(nameHash: Hash, addedOn: Moment) {
+        const metadataItem = this.metadataItem(nameHash)
         if (!metadataItem) {
-            logger.error(`MetadataItem with name ${ name } not found`);
+            logger.error(`MetadataItem with nameHash ${ nameHash } not found`);
             return;
         }
         metadataItem.lifecycle?.setAddedOn(addedOn);
         metadataItem._toUpdate = true;
     }
 
-    removeMetadataItem(remover: SupportedAccountId, name: string): void {
+    removeMetadataItem(remover: SupportedAccountId, nameHash: Hash): void {
         this.ensureEditable();
-        const removedItemIndex: number = this.metadata!.findIndex(link => link.name === name);
+        const removedItemIndex: number = this.metadata!.findIndex(link => link.nameHash === nameHash);
         if (removedItemIndex === -1) {
             throw new Error("No metadata item with given name");
         }
@@ -559,42 +564,42 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    requestMetadataItemReview(name: string) {
-        this.mutateMetadataItem(name, item => item.lifecycle!.requestReview());
+    requestMetadataItemReview(nameHash: Hash) {
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.requestReview());
     }
 
-    acceptMetadataItem(name: string) {
+    acceptMetadataItem(nameHash: Hash) {
         this.ensureAcceptedOrOpen();
-        this.mutateMetadataItem(name, item => item.lifecycle!.accept());
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.accept());
     }
 
-    rejectMetadataItem(name: string, reason: string) {
-        this.mutateMetadataItem(name, item => item.lifecycle!.reject(reason));
+    rejectMetadataItem(nameHash: Hash, reason: string) {
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmMetadataItem(name: string) {
-        this.mutateMetadataItem(name, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+    confirmMetadataItem(nameHash: Hash) {
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
-    confirmMetadataItemAcknowledged(name: string, acknowledgedOn?: Moment) {
-        this.mutateMetadataItem(name, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
+    confirmMetadataItemAcknowledged(nameHash: Hash, acknowledgedOn?: Moment) {
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
     }
 
-    private mutateMetadataItem(name: string, mutator: (item: LocMetadataItem) => void) {
+    private mutateMetadataItem(nameHash: Hash, mutator: (item: LocMetadataItem) => void) {
         const metadataItem = requireDefined(
-            this.metadataItem(name),
-            () => badRequest(`Metadata Item not found: ${ name }`)
+            this.metadataItem(nameHash),
+            () => badRequest(`Metadata Item not found: ${ nameHash }`)
         );
         mutator(metadataItem);
         metadataItem._toUpdate = true;
     }
 
-    hasMetadataItem(name: string): boolean {
-        return this.metadataItem(name) !== undefined;
+    hasMetadataItem(nameHash: Hash): boolean {
+        return this.metadataItem(nameHash) !== undefined;
     }
 
-    metadataItem(name: string): LocMetadataItem | undefined {
-        return this.metadata!.find(metadataItem => metadataItem.name === name)
+    metadataItem(nameHash: Hash): LocMetadataItem | undefined {
+        return this.metadata!.find(metadataItem => metadataItem.nameHash === nameHash)
     }
 
     setFileAddedOn(hash: string, addedOn: Moment) {
@@ -826,10 +831,10 @@ export class LocRequestAggregateRoot {
         file.setFees(fees, storageFeePaidBy);
     }
 
-    setMetadataItemFee(name: string, inclusionFee: bigint) {
-        const metadata = this.metadataItem(name);
+    setMetadataItemFee(nameHash: Hash, inclusionFee: bigint) {
+        const metadata = this.metadataItem(nameHash);
         if (!metadata) {
-            logger.error(`Data with name ${ name } not found`);
+            logger.error(`Data with nameHash ${ nameHash } not found`);
             return;
         }
         metadata.setFee(inclusionFee);
@@ -1092,7 +1097,10 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column({ name: "index" })
     index?: number;
 
-    @PrimaryColumn({ length: 255 })
+    @PrimaryColumn({ name: "name_hash", type: "bytea", transformer: HashTransformer.instance })
+    nameHash?: Hash;
+
+    @Column({ length: 255, nullable: true })
     name?: string;
 
     @Column({ name: "value", length: 255, nullable: true })

@@ -33,6 +33,7 @@ import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/d
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
 import { Fees } from "@logion/node-api";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { sha256String } from "../../../src/logion/lib/crypto/hashing.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -237,6 +238,7 @@ const testLink: LinkDescription = {
 
 const testMetadataItem: MetadataItemDescription = {
     name: "test-data",
+    nameHash: sha256String("test-data"),
     value: "test-data-value",
     submitter: SUBMITTER,
     fees: DATA_LINK_FEES,

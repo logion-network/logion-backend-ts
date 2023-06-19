@@ -19,6 +19,7 @@ import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissu
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 import { ALICE } from "../../helpers/addresses.js";
+import { sha256String, Hash } from "../../../src/logion/lib/crypto/hashing.js";
 
 describe("LocSynchronizer", () => {
 
@@ -60,7 +61,7 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addMetadata", {
             loc_id: locId,
             item: {
-                name: METADATA_ITEM_NAME,
+                name: METADATA_ITEM_NAME_HASH,
                 value: METADATA_ITEM_VALUE,
             }
         });
@@ -167,7 +168,7 @@ describe("LocSynchronizer", () => {
     it("confirms metadata acknowledged", async () => {
         givenLocExtrinsic("acknowledgeMetadata", {
             loc_id: locId,
-            name: METADATA_ITEM_NAME,
+            name: METADATA_ITEM_NAME_HASH,
         });
         givenLocRequest();
         givenLocRequestExpectsMetadataItemAcknowledged();
@@ -286,18 +287,19 @@ function thenLocIsSaved() {
 }
 
 function givenLocRequestExpectsMetadataItemUpdated() {
-    locRequest.setup(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME)).returns(undefined);
-    locRequest.setup(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME, 42n)).returns(undefined);
+    locRequest.setup(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME_HASH, 42n)).returns(undefined);
 }
 
-const IS_EXPECTED_NAME = It.Is<string>(name => name === METADATA_ITEM_NAME)
+const IS_EXPECTED_NAME_HASH = It.Is<Hash>(nameHash => nameHash === METADATA_ITEM_NAME_HASH)
 
 const METADATA_ITEM_NAME = "name";
+const METADATA_ITEM_NAME_HASH = sha256String(METADATA_ITEM_NAME);
 const METADATA_ITEM_VALUE = "value";
 
 function thenMetadataUpdated() {
-    locRequest.verify(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME, IS_BLOCK_TIME));
-    locRequest.verify(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME, 42n));
+    locRequest.verify(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME_HASH, 42n));
 }
 
 function givenLocRequestExpectsClose() {
@@ -349,11 +351,11 @@ function thenCollectionItemSaved() {
 }
 
 function givenLocRequestExpectsMetadataItemAcknowledged() {
-    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenMetadataAcknowledged() {
-    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsFileAcknowledged() {
