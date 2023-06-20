@@ -368,6 +368,7 @@ export class LocRequestController extends ApiController {
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
+                nameHash: item.nameHash,
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
                 submitter: item.submitter,
