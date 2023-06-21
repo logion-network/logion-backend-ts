@@ -447,7 +447,8 @@ function mockModel(
         termsAndConditions: [],
         token: {
             id: "some-id",
-            type: "owner"
+            type: "owner",
+            issuance: 1n
         }
     }
     const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();

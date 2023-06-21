@@ -235,6 +235,8 @@ export interface components {
       storage?: string;
       /** @description Legal fee (if applicable) */
       legal?: string;
+      /** @description Certificate fee (if applicable) */
+      certificate?: string;
       /** @description Total fee (inclusion + storage) */
       total?: string;
     };
@@ -284,7 +286,7 @@ export interface components {
        * @description The transaction's type 
        * @enum {string}
        */
-      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
+      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES";
     };
     /**
      * UserIdentityView 

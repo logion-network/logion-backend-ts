@@ -18,7 +18,7 @@ import {
     IdenfyVerificationSession,
     IdenfyVerificationStatus
 } from "../services/idenfy/idenfy.types.js";
-import { AMOUNT_PRECISION, EmbeddableFees } from "./fees.js";
+import { AMOUNT_PRECISION, EmbeddableStorageFees } from "./fees.js";
 import {
     SupportedAccountId,
     EmbeddableSupportedAccountId,
@@ -442,7 +442,7 @@ export class LocRequestAggregateRoot {
             submitter: file!.submitter!.toSupportedAccountId(),
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
-            fees: file.fees && file.fees.inclusionFee ? new Fees(BigInt(file.fees.inclusionFee), file.fees.storageFee ? BigInt(file.fees.storageFee) : undefined) : undefined,
+            fees: file.fees && file.fees.getDescription(),
             storageFeePaidBy: file.storageFeePaidBy,
             ...(file.lifecycle!.getDescription()),
         };
@@ -520,7 +520,7 @@ export class LocRequestAggregateRoot {
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
-            fees: item.inclusionFee ? new Fees(BigInt(item.inclusionFee)) : undefined,
+            fees: item.inclusionFee ? new Fees({ inclusionFee: BigInt(item.inclusionFee)}) : undefined,
             ...(item.lifecycle!.getDescription()),
         })
     }
@@ -654,7 +654,7 @@ export class LocRequestAggregateRoot {
             target: link.target!,
             nature: link.nature!,
             addedOn: link.addedOn ? moment(link.addedOn) : undefined,
-            fees: link.inclusionFee ? new Fees(BigInt(link.inclusionFee)) : undefined,
+            fees: link.inclusionFee ? new Fees({ inclusionFee: BigInt(link.inclusionFee)}) : undefined,
         }
     }
 
@@ -1001,8 +1001,8 @@ export class LocFile extends Child implements HasIndex, Submitted {
     })
     delivered?: LocFileDelivered[];
 
-    @Column(() => EmbeddableFees, { prefix: ""} )
-    fees?: EmbeddableFees;
+    @Column(() => EmbeddableStorageFees, { prefix: ""} )
+    fees?: EmbeddableStorageFees;
 
     @Column({ length: 255, name: "storage_fee_paid_by", nullable: true })
     storageFeePaidBy?: string;
@@ -1041,9 +1041,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
     }
 
     setFees(fees: Fees, storageFeePaidBy: string | undefined) {
-        this.fees = new EmbeddableFees();
-        this.fees.inclusionFee = fees.inclusionFee.toString();
-        this.fees.storageFee = fees.storageFee?.toString();
+        this.fees = EmbeddableStorageFees.allFees(fees);
         this.storageFeePaidBy = storageFeePaidBy;
         this._toUpdate = true;
     }

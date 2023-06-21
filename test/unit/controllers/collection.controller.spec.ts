@@ -719,6 +719,7 @@ function mockModel(
         token: {
             id: "some-token-id",
             type: "owner",
+            issuance: 1n,
         }
     }
     const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();

@@ -1,4 +1,4 @@
-import { ItemToken } from "@logion/node-api";
+import { ItemToken, ItemTokenWithoutIssuance } from "@logion/node-api";
 import { Mock } from "moq.ts";
 
 import { AlchemyChecker, AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
@@ -28,7 +28,7 @@ describe("OwnershipCheckService", () => {
     it("detects no singular_kusama ownership", () => testDetectsNoOwnership(singularKusamaItem));
 });
 
-async function testDetectsOwnership(token: ItemToken, owner: string, network?: Network) {
+async function testDetectsOwnership(token: ItemTokenWithoutIssuance, owner: string, network?: Network) {
     const alchemyService = mockAlchemyService(network);
     const singularService = mockSingularService();
     const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService);
@@ -85,7 +85,7 @@ const polkadotOwner = "GUo1ZJ9bBCmCt8GZMHRqys1ZdUBCpJKi7CgjH1RkRgVeJNF";
 
 const singularTokenId = "15057162-acba02847598b67746-DSTEST1-LUXEMBOURG_HOUSE-00000001";
 
-async function testDetectsNoOwnership(token: ItemToken, network?: Network) {
+async function testDetectsNoOwnership(token: ItemTokenWithoutIssuance, network?: Network) {
     const alchemyService = mockAlchemyService(network);
     const singularService = mockSingularService();
     const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService);
@@ -97,40 +97,47 @@ const anotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c";
 
 const ethereumErc721Item: ItemToken = {
     type: "ethereum_erc721",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
+    issuance: 1n,
 };
 
 const ethereumErc1155Item: ItemToken = {
     type: "ethereum_erc1155",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
+    issuance: 1n,
 };
 
 const goerliErc721Item: ItemToken = {
     type: "goerli_erc721",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
+    issuance: 1n,
 };
 
 const goerliErc1155Item: ItemToken = {
     type: "goerli_erc1155",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
+    issuance: 1n,
 };
 
-const ownerItem: ItemToken = {
+const ownerItem: ItemTokenWithoutIssuance = {
     type: "owner",
     id: `${owner}`
 };
 
 const singularKusamaItem: ItemToken = {
     type: "singular_kusama",
-    id: `${singularTokenId}`
+    id: `${singularTokenId}`,
+    issuance: 1n,
 };
 
 const ethereumErc20: ItemToken = {
     type: "ethereum_erc20",
-    id: `{"contract":"${contractHash}"}`
+    id: `{"contract":"${contractHash}"}`,
+    issuance: 100n,
 };
 
 const goerliErc20: ItemToken = {
     type: "goerli_erc20",
-    id: `{"contract":"${contractHash}"}`
+    id: `{"contract":"${contractHash}"}`,
+    issuance: 1n,
 };

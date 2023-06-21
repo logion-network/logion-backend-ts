@@ -20,6 +20,7 @@ type LocRequestView = components["schemas"]["LocRequestView"];
 type UserIdentityView = components["schemas"]["UserIdentityView"];
 type PostalAddressView = components["schemas"]["PostalAddressView"];
 type VerifiedIssuerIdentity = components["schemas"]["VerifiedIssuerIdentity"];
+type FeesView = components["schemas"]["FeesView"];
 
 @injectable()
 export class LocRequestAdapter {
@@ -204,12 +205,13 @@ export function toUserPostalAddressView(userPostalAddress: PostalAddress | undef
     }
 }
 
-export function toFeesView(fees?: Fees) {
+export function toFeesView(fees?: Fees): FeesView | undefined {
     if(fees) {
         return {
             inclusion: fees.inclusionFee.toString(),
             storage: fees.storageFee?.toString(),
             legal: fees.legalFee?.toString(),
+            certificate: fees.certificateFee?.toString(),
             total: fees.totalFee.toString(),
         };
     } else {

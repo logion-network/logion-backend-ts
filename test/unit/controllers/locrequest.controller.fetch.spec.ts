@@ -213,7 +213,7 @@ function mockModelForGetSingle(
 
 const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
-const FILE_FEES = new Fees(42n, 24n);
+const FILE_FEES = new Fees({ inclusionFee: 42n, storageFee: 24n });
 const testFile: FileDescription = {
     name: "test-file",
     nature: "file-nature",
@@ -229,7 +229,7 @@ const testFile: FileDescription = {
     status: "DRAFT",
 }
 
-const DATA_LINK_FEES = new Fees(42n);
+const DATA_LINK_FEES = new Fees({ inclusionFee: 42n });
 const testLink: LinkDescription = {
     target: "507a00a1-7387-44b8-ac4d-fa57ccbf6da5",
     nature: "link-nature",

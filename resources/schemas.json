@@ -419,6 +419,10 @@
                         "type": "string",
                         "description": "Legal fee (if applicable)"
                     },
+                    "certificate": {
+                        "type": "string",
+                        "description": "Certificate fee (if applicable)"
+                    },
                     "total": {
                         "type": "string",
                         "description": "Total fee (inclusion + storage)"
@@ -502,6 +506,7 @@
                             "VAULT_OUT",
                             "LEGAL_FEE",
                             "STORAGE_FEE",
+                            "CERTIFICATE_FEE",
                             "OTHER_FEES"
                         ]
                     }
