@@ -4,7 +4,15 @@ import { Adapters, TypesJsonCall } from "@logion/node-api";
 import { SignedBlockExtended, TxWithEvent } from '@polkadot/api-derive/type/types';
 import { ApiPromise } from '@polkadot/api';
 import { BN } from '@polkadot/util';
-import { ExtrinsicError, JsonEvent, JsonExtrinsic, LegalFee, StorageFee } from './types/responses/Extrinsic.js';
+import {
+    ExtrinsicError,
+    JsonEvent,
+    JsonExtrinsic,
+    LegalFee,
+    StorageFee,
+    AbstractFee,
+    CertificateFee
+} from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
 
@@ -39,10 +47,13 @@ export class ExtrinsicsBuilder {
                         data: event.data,
                     };
                     if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
-                        extrinsicBuilder.storageFee = this.getStorageFee(jsonEvent);
+                        extrinsicBuilder.storageFee = this.getFee(jsonEvent);
                     }
                     if(event.section === "logionLoc" && event.method === "LegalFeeWithdrawn") {
                         extrinsicBuilder.legalFee = this.getLegalFee(jsonEvent);
+                    }
+                    if(event.section === "logionLoc" && event.method === "CertificateFeeWithdrawn") {
+                        extrinsicBuilder.certificateFee = this.getFee(jsonEvent);
                     }
                     extrinsicBuilder.events.push(jsonEvent);
                 }
@@ -120,13 +131,13 @@ export class ExtrinsicsBuilder {
         return partialFee.toBigInt();
     }
 
-    private getStorageFee(event: JsonEvent): StorageFee | undefined {
+    private getFee<T extends AbstractFee> (event: JsonEvent): T | undefined {
         const withdrawnFrom = event.data[0].toString();
         const fee = event.data[1].toBigInt();
         return {
             withdrawnFrom,
             fee,
-        };
+        } as T;
     }
 
     private getLegalFee(event: JsonEvent): LegalFee | undefined {
@@ -168,6 +179,7 @@ export class ExtrinsicBuilder {
     public readonly partialFee: () => Promise<bigint>;
     public storageFee?: StorageFee;
     public legalFee?: LegalFee;
+    public certificateFee?: CertificateFee;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 
@@ -178,6 +190,7 @@ export class ExtrinsicBuilder {
             partialFee: () => this.partialFee().then(result => result ? result.toString() : undefined),
             storageFee: this.storageFee,
             legalFee: this.legalFee,
+            certificateFee: this.certificateFee,
             signer: this.signer ? this.signer.toString() : null,
             tip: this.tip !== null ? this.tip.toString() : null,
             error: this.error,

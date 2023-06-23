@@ -2,9 +2,9 @@ import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
 import { Fees } from '@logion/node-api';
-import { EmbeddableFees } from './fees.js';
+import { EmbeddableFees, NULL_FEES } from './fees.js';
 
-export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "OTHER_FEES";
+export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES";
 
 function asTransactionType(type?: string): TransactionType {
     if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT" || type === "STORAGE_FEE" || type === "OTHER_FEES") {
@@ -57,7 +57,7 @@ export class TransactionAggregateRoot {
             to: this.to || null,
             transferValue: BigInt(this.transferValue || "0"),
             tip: BigInt(this.tip || "0"),
-            fees: new Fees(BigInt(this.fees?.inclusionFee || "0"), this.fees?.storageFee ? BigInt(this.fees?.storageFee) : undefined),
+            fees: this.fees?.getDescription() || NULL_FEES,
             reserved: BigInt(this.reserved || "0"),
             pallet: this.pallet!,
             method: this.method!,
@@ -164,11 +164,11 @@ export class TransactionFactory {
         transaction.to = description.to;
         transaction.transferValue = description.transferValue.toString();
         transaction.tip = description.tip.toString();
-        transaction.fees = new EmbeddableFees();
-        transaction.fees.inclusionFee = description.fees.inclusionFee.toString();
-        if(description.fees.storageFee && !description.error) {
-            transaction.fees.storageFee = description.fees.storageFee.toString();
-        }
+
+        transaction.fees = !description.error ?
+            EmbeddableFees.allFees(description.fees) :
+            EmbeddableFees.onlyInclusion(description.fees);
+
         transaction.reserved = description.reserved.toString();
         transaction.pallet = description.pallet;
         transaction.method = description.method;

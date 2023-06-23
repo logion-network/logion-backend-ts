@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { ItemToken } from '@logion/node-api';
+import { ItemTokenWithoutIssuance } from '@logion/node-api';
 
 import { Network, AlchemyService, AlchemyChecker } from './alchemy.service.js';
 import { SingularService } from './singular.service.js';
@@ -13,7 +13,7 @@ export class OwnershipCheckService {
         private singularService: SingularService,
     ) {}
 
-    async isOwner(address: string, token: ItemToken): Promise<boolean> {
+    async isOwner(address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
         const normalizedAddress = address.toLowerCase();
         const tokenType = token.type;
         if(this.isAlchemyNetwork(tokenType)) {
@@ -53,7 +53,7 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, address: string, token: ItemToken): Promise<boolean> {
+    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
         const { contractHash, contractTokenId: tokenId } = this.parseErc721Or1155TokenId(token.id);
         const owners = await checker.getOwners(contractHash, tokenId);
         return owners.find(owner => owner.toLowerCase() === address) !== undefined;
@@ -75,7 +75,7 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc20(checker: AlchemyChecker, address: string, token: ItemToken): Promise<boolean> {
+    private async isOwnerOfErc20(checker: AlchemyChecker, address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
         const { contractHash } = this.parseErc20TokenId(token.id);
         const balances = await checker.getBalances(address, contractHash);
         const balance = balances.find(balance => balance.contractAddress === contractHash && !balance.error);

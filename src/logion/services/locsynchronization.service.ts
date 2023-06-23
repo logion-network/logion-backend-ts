@@ -152,7 +152,11 @@ export class LocSynchronizer {
         const inclusionFee = await extrinsic.partialFee();
         const storageFee = extrinsic.storageFee;
         if(inclusionFee) {
-            loc.setFileFees(hash, new Fees(BigInt(inclusionFee), storageFee?.fee), extrinsic.storageFee?.withdrawnFrom);
+            loc.setFileFees(
+                hash,
+                new Fees({ inclusionFee: BigInt(inclusionFee), storageFee: storageFee?.fee}),
+                extrinsic.storageFee?.withdrawnFrom
+            );
         } else {
             throw new Error("Could not get inclusion fee");
         }

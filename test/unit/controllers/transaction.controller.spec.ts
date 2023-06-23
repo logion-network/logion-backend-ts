@@ -25,43 +25,47 @@ describe('TransactionController', () => {
                 expect(response.body.transactions).toBeDefined();
                 expect(response.body.transactions.length).toBe(2);
 
-                expect(response.body.transactions[0].id).toBeDefined();
-                expect(response.body.transactions[0].from).toBe(ALICE);
-                expect(response.body.transactions[0].to).toBeUndefined();
-                expect(response.body.transactions[0].pallet).toBe("pallet");
-                expect(response.body.transactions[0].method).toBe("method");
-                expect(response.body.transactions[0].transferValue).toBe("1");
-                expect(response.body.transactions[0].tip).toBe("2");
-                expect(response.body.transactions[0].fees.inclusion).toBe("3");
-                expect(response.body.transactions[0].fees.total).toBe("3");
-                expect(response.body.transactions[0].reserved).toBe("4");
-                expect(response.body.transactions[0].total).toBe("10");
-                expect(response.body.transactions[0].successful).toBeTrue();
+                const transaction0 = response.body.transactions[0];
+                expect(transaction0.id).toBeDefined();
+                expect(transaction0.from).toBe(ALICE);
+                expect(transaction0.to).toBeUndefined();
+                expect(transaction0.pallet).toBe("pallet");
+                expect(transaction0.method).toBe("method");
+                expect(transaction0.transferValue).toBe("1");
+                expect(transaction0.tip).toBe("2");
+                expect(transaction0.fees.inclusion).toBe("3");
+                expect(transaction0.fees.storage).toBe("4");
+                expect(transaction0.fees.legal).toBe("5");
+                expect(transaction0.fees.certificate).toBe("6");
+                expect(transaction0.fees.total).toBe("18");
+                expect(transaction0.reserved).toBe("4");
+                expect(transaction0.total).toBe("25");
+                expect(transaction0.successful).toBeTrue();
 
-                expect(response.body.transactions[1].id).toBeDefined();
-                expect(response.body.transactions[1].from).toBe(ALICE);
-                expect(response.body.transactions[1].to).toBeUndefined();
-                expect(response.body.transactions[1].pallet).toBe("pallet");
-                expect(response.body.transactions[1].method).toBe("method");
-                expect(response.body.transactions[1].transferValue).toBe("1");
-                expect(response.body.transactions[1].tip).toBe("2");
-                expect(response.body.transactions[1].fees.inclusion).toBe("3");
-                expect(response.body.transactions[1].fees.total).toBe("3");
-                expect(response.body.transactions[1].reserved).toBe("4");
-                expect(response.body.transactions[1].total).toBe("9");
-                expect(response.body.transactions[1].successful).toBeFalse();
-                expect(response.body.transactions[1].error.section).toBe("aSection");
-                expect(response.body.transactions[1].error.name).toBe("aName");
-                expect(response.body.transactions[1].error.details).toBe("someDetails");
+                const transaction1 = response.body.transactions[1];
+                expect(transaction1.id).toBeDefined();
+                expect(transaction1.from).toBe(ALICE);
+                expect(transaction1.to).toBeUndefined();
+                expect(transaction1.pallet).toBe("pallet");
+                expect(transaction1.method).toBe("method");
+                expect(transaction1.transferValue).toBe("1");
+                expect(transaction1.tip).toBe("2");
+                expect(transaction1.fees.inclusion).toBe("3");
+                expect(transaction1.fees.total).toBe("3");
+                expect(transaction1.reserved).toBe("4");
+                expect(transaction1.total).toBe("9");
+                expect(transaction1.successful).toBeFalse();
+                expect(transaction1.error.section).toBe("aSection");
+                expect(transaction1.error.name).toBe("aName");
+                expect(transaction1.error.details).toBe("someDetails");
             });
     });
 });
 
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 
-function mockModelForFetch(container: Container): void {
-
-    const transactionDescription: TransactionDescription = {
+function transactionDescription(fees: Fees): TransactionDescription {
+    return {
         id: "9464ca21-d290-4515-ac4d-80c4fa3f6508",
         blockNumber: 42n,
         extrinsicIndex: 1,
@@ -72,16 +76,28 @@ function mockModelForFetch(container: Container): void {
         method: "method",
         transferValue: 1n,
         tip: 2n,
-        fees: new Fees(3n),
+        fees: fees,
         reserved: 4n,
         type: "EXTRINSIC"
     };
-    const successfulTransaction = new Mock<TransactionAggregateRoot>();
-    successfulTransaction.setup(instance => instance.getDescription()).returns(transactionDescription);
+}
 
+function mockModelForFetch(container: Container): void {
+
+    const successfulTransactionFees = new Fees({
+        inclusionFee: 3n,
+        storageFee: 4n,
+        legalFee: 5n,
+        certificateFee: 6n,
+    });
+
+    const successfulTransaction = new Mock<TransactionAggregateRoot>();
+    successfulTransaction.setup(instance => instance.getDescription()).returns(transactionDescription(successfulTransactionFees));
+
+    const failedTransactionFees = new Fees({ inclusionFee: 3n });
     const failedTransaction = new Mock<TransactionAggregateRoot>();
     failedTransaction.setup(instance => instance.getDescription()).returns({
-        ...transactionDescription,
+        ...transactionDescription(failedTransactionFees),
         id: "503649be-9743-4ba4-aeac-d806b81e6cd3",
         error: {
             section: "aSection",

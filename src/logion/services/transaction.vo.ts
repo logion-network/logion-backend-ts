@@ -1,6 +1,7 @@
 import { Moment } from "moment";
 import { Fees } from "@logion/node-api";
 import { TransactionType } from "../model/transaction.model";
+import { NULL_FEES } from "../model/fees.js";
 
 export class BlockWithTransactions {
 
@@ -62,7 +63,7 @@ export class Transaction {
         this.to = builder.to || null;
         this.transferValue = builder.transferValue || 0n;
         this.tip = builder.tip || 0n;
-        this.fees = builder.fees || new Fees(0n);
+        this.fees = builder.fees || NULL_FEES;
         this.reserved = builder.reserved || 0n;
         this.pallet = builder.pallet;
         this.method = builder.method;
