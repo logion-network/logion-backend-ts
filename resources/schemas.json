@@ -564,7 +564,8 @@
                 "enum": [
                     "Polkadot",
                     "Logion",
-                    "Ethereum"
+                    "Ethereum",
+                    "Bech32"
                 ]
             },
             "AddressType": {
@@ -572,7 +573,8 @@
                 "description": "The address type",
                 "enum": [
                     "Polkadot",
-                    "Ethereum"
+                    "Ethereum",
+                    "Bech32"
                 ]
             },
             "SupportedAccountId": {

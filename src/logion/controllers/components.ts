@@ -316,12 +316,12 @@ export interface components {
      * @description The Identity LOC's type 
      * @enum {string}
      */
-    IdentityLocType: "Polkadot" | "Logion" | "Ethereum";
+    IdentityLocType: "Polkadot" | "Logion" | "Ethereum" | "Bech32";
     /**
      * @description The address type 
      * @enum {string}
      */
-    AddressType: "Polkadot" | "Ethereum";
+    AddressType: "Polkadot" | "Ethereum" | "Bech32";
     SupportedAccountId: {
       /** @description The type of the address of the requester */
       type: components["schemas"]["AddressType"];
