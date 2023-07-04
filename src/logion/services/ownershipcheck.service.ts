@@ -4,6 +4,7 @@ import { ItemTokenWithoutIssuance } from '@logion/node-api';
 import { Network, AlchemyService, AlchemyChecker } from './alchemy.service.js';
 import { SingularService } from './singular.service.js';
 import { BigNumber } from 'alchemy-sdk';
+import { MultiversxService } from "./multiversx.service.js";
 
 @injectable()
 export class OwnershipCheckService {
@@ -11,6 +12,7 @@ export class OwnershipCheckService {
     constructor(
         private alchemyService: AlchemyService,
         private singularService: SingularService,
+        private multiversxService: MultiversxService,
     ) {}
 
     async isOwner(address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
@@ -24,12 +26,19 @@ export class OwnershipCheckService {
             } else if(tokenType.includes("erc20")) {
                 return this.isOwnerOfErc20(checker, normalizedAddress, token);
             } else {
-                throw new Error(`Unsupported Alchmey token ${tokenType}`);
+                throw new Error(`Unsupported Alchemy token ${tokenType}`);
             }
         } else if(tokenType === 'owner') {
             return normalizedAddress === token.id.toLowerCase();
         } else if(tokenType === 'singular_kusama') {
             return this.isOwnerOfSingularKusama(address, token.id);
+        } else if(tokenType.startsWith("multiversx")) {
+            const checker = this.multiversxService.getChecker(tokenType);
+            if (checker) {
+                return checker.isOwnerOf(normalizedAddress, token.id);
+            } else {
+                throw new Error(`Unsupported MultiversX token ${tokenType}`);
+            }
         } else {
             throw new Error(`Unsupported token type ${tokenType}`);
         }

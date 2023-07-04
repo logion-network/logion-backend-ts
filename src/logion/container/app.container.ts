@@ -59,6 +59,7 @@ import { TokensRecordFactory, TokensRecordRepository } from "../model/tokensreco
 import { LogionNodeTokensRecordService, TokensRecordService, TransactionalTokensRecordService } from "../services/tokensrecord.service.js";
 import { LocAuthorizationService } from "../services/locauthorization.service.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
+import { MultiversxService } from "../services/multiversx.service.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -95,6 +96,7 @@ container.bind(SettingRepository).toSelf();
 container.bind(AlchemyService).toSelf();
 container.bind(AlchemyFactory).toSelf();
 container.bind(OwnershipCheckService).toSelf();
+container.bind(MultiversxService).toSelf();
 container.bind(ExifService).toSelf();
 container.bind(RestrictedDeliveryService).toSelf();
 container.bind(PersonalInfoSealService).toSelf();
