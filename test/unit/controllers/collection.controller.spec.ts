@@ -81,23 +81,7 @@ describe("CollectionController", () => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
                 expect(response.body.itemId).toEqual(itemId)
                 expect(response.body.addedOn).toEqual(timestamp.toISOString())
-                expect(response.body.files[0]).toEqual(SOME_DATA_HASH)
-            })
-    })
-
-    it("gets a collection item existing on Chain only", async () => {
-
-        const app = setupApp(CollectionController, container => mockModelForGet(container, false));
-
-        await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/${ itemId }`)
-            .send()
-            .expect(200)
-            .then(response => {
-                expect(response.body.collectionLocId).toEqual(collectionLocId)
-                expect(response.body.itemId).toEqual(itemId)
-                expect(response.body.addedOn).toBeUndefined()
-                expect(response.body.files).toEqual([])
+                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH)
             })
     })
 
@@ -114,7 +98,7 @@ describe("CollectionController", () => {
             })
     })
 
-    it('adds file to collection item', async () => {
+    it('uploads collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             collectionItemAlreadyInDB: true,
             fileAlreadyInDB: false,
@@ -324,7 +308,11 @@ function testDownloadFiles(fileType: FileType) {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
+                if(fileType === "Collection") {
+                    expect(response.body.errorMessage).toBe("File does not exist");
+                } else {
+                    expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
+                }
             });
     })
 
@@ -347,7 +335,7 @@ function testDownloadFiles(fileType: FileType) {
                 if (fileType === "Item") {
                     expect(response.body.errorMessage).toBe("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e not found on-chain");
                 } else {
-                    expect(response.body.errorMessage).toBe("Trying to download a file that is not uploaded yet.");
+                    expect(response.body.errorMessage).toBe("File does not exist");
                 }
             });
     })
@@ -571,12 +559,14 @@ function mockModel(
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
     collectionItem.addedOn = timestamp.toDate();
-    if (fileAlreadyInDB && fileType === "Item") {
+    if (fileType === "Item") {
         const collectionItemFile = new CollectionItemFile()
         collectionItemFile.collectionLocId = collectionLocId;
         collectionItemFile.itemId = itemId;
         collectionItemFile.hash = SOME_DATA_HASH;
-        collectionItemFile.cid = CID;
+        if(fileAlreadyInDB) {
+            collectionItemFile.cid = CID;
+        }
         collectionItemFile.collectionItem = collectionItem;
         collectionItem.files = [ collectionItemFile ];
 
@@ -614,11 +604,6 @@ function mockModel(
         collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([]))
     }
-    collectionRepository.setup(instance => instance.createIfNotExist(
-        It.Is<string>(param => param === collectionLocId),
-        It.Is<string>(param => param === itemId),
-        It.IsAny<() => CollectionItemAggregateRoot>(),
-    )).returns(Promise.resolve(collectionItem));
     collectionRepository.setup(instance => instance.save(collectionItem)).returnsAsync();
     if(restrictedDelivery && fileType === "Item") {
         const delivered: CollectionItemFileDelivered = {

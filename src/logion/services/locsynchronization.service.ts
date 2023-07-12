@@ -190,21 +190,10 @@ export class LocSynchronizer {
         const itemId = Adapters.asHexString(extrinsic.call.args['item_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
-            logger.info("Adding Collection Item %s to LOC %s", itemId, collectionLocId);
-            let created = false;
-            await this.collectionService.createIfNotExist(collectionLocId, itemId, () => {
-                created = true;
-                return this.collectionFactory.newItem({
-                    collectionLocId,
-                    itemId,
-                    addedOn: timestamp
-                });
+            logger.info("Confirming Collection Item %s to LOC %s", itemId, collectionLocId);
+            await this.collectionService.update(collectionLocId, itemId, async item => {
+                item.confirm(timestamp);
             });
-            if(!created) {
-                await this.collectionService.update(collectionLocId, itemId, async item => {
-                    item.setAddedOn(timestamp);
-                });
-            }
         }
     }
 
@@ -316,21 +305,10 @@ export class LocSynchronizer {
         const recordId = Adapters.asHexString(extrinsic.call.args['record_id']);
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
-            logger.info("Adding Tokens Record %s to LOC %s", recordId, collectionLocId);
-            let created = false;
-            await this.tokensRecordService.createIfNotExist(collectionLocId, recordId, () => {
-                created = true;
-                return this.tokensRecordFactory.newTokensRecord({
-                    collectionLocId,
-                    recordId,
-                    addedOn: timestamp
-                });
+            logger.info("Confirming Tokens Record %s to LOC %s", recordId, collectionLocId);
+            await this.tokensRecordService.update(collectionLocId, recordId, async record => {
+                record.confirm(timestamp);
             });
-            if(!created) {
-                await this.tokensRecordService.update(collectionLocId, recordId, async record => {
-                    record.setAddedOn(timestamp);
-                });
-            }
         }
     }
 

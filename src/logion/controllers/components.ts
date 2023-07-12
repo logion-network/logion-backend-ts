@@ -683,6 +683,47 @@ export interface components {
       /** @description The voiding reason */
       reason?: string;
     };
+    CreateCollectionItemView: {
+      /**
+       * @description The id of the collection item 
+       * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
+       */
+      itemId?: string;
+      /** @description The description of the item */
+      description?: string;
+      /** @description The files */
+      files?: (components["schemas"]["CollectionItemFileView"])[];
+      /** @description The terms and conditions */
+      termsAndConditions?: (components["schemas"]["TermsAndConditionsElementView"])[];
+      token?: components["schemas"]["CollectionItemTokenView"];
+    };
+    CollectionItemFileView: {
+      hash?: components["schemas"]["HashView"];
+      /** @description The file name */
+      name?: string;
+      /** @description The content type */
+      contentType?: string;
+      /** @description True if the file was already uploaded, false otherwise */
+      uploaded?: boolean;
+    };
+    /**
+     * @description A hash 
+     * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
+     */
+    HashView: string;
+    TermsAndConditionsElementView: {
+      /** @description The type of terms and conditions */
+      type?: string;
+      /** @description The details associated with given terms and conditions */
+      details?: string;
+    };
+    /** @description The item's token */
+    CollectionItemTokenView: {
+      /** @description Token type */
+      type?: string;
+      /** @description Token ID */
+      id?: string;
+    };
     CollectionItemView: {
       /**
        * @description The id of the collection loc 
@@ -694,13 +735,18 @@ export interface components {
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       itemId?: string;
+      /** @description The description of the item */
+      description?: string;
       /**
        * Format: date-time 
        * @description The creation timestamp
        */
       addedOn?: string;
       /** @description The files present in DB */
-      files?: (string)[];
+      files?: (components["schemas"]["CollectionItemFileView"])[];
+      /** @description The terms and conditions */
+      termsAndConditions?: (components["schemas"]["TermsAndConditionsElementView"])[];
+      token?: components["schemas"]["CollectionItemTokenView"];
     };
     CollectionItemsView: {
       /** @description The items of a given collection */
@@ -890,6 +936,26 @@ export interface components {
       /** @description Tells if the issuer was selected for a given LOC (undefined if not relevant) */
       selected?: boolean;
     };
+    CreateTokensRecordView: {
+      /**
+       * @description The id of the tokens record 
+       * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
+       */
+      recordId?: string;
+      /** @description The description of the item */
+      description?: string;
+      /** @description The files */
+      files?: (components["schemas"]["TokensRecordFileView"])[];
+    };
+    TokensRecordFileView: {
+      hash?: components["schemas"]["HashView"];
+      /** @description The file name */
+      name?: string;
+      /** @description The content type */
+      contentType?: string;
+      /** @description True if the file was already uploaded, false otherwise */
+      uploaded?: boolean;
+    };
     TokensRecordView: {
       /**
        * @description The id of the collection loc 
@@ -901,13 +967,15 @@ export interface components {
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       recordId?: string;
+      /** @description The description of the item */
+      description?: string;
       /**
        * Format: date-time 
        * @description The creation timestamp
        */
       addedOn?: string;
       /** @description The files present in DB */
-      files?: (string)[];
+      files?: (components["schemas"]["TokensRecordFileView"])[];
     };
     TokensRecordsView: {
       /** @description The items of a given collection */

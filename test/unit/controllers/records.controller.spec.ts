@@ -72,7 +72,7 @@ describe("TokensRecordController", () => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
                 expect(response.body.recordId).toEqual(recordId)
                 expect(response.body.addedOn).toEqual(timestamp.toISOString())
-                expect(response.body.files[0]).toEqual(SOME_DATA_HASH)
+                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH)
             })
     })
 
@@ -105,7 +105,7 @@ describe("TokensRecordController", () => {
             })
     })
 
-    it('adds file to tokens record', async () => {
+    it('uploads file to tokens record', async () => {
         const app = setupApp(TokensRecordController, container => mockModel(container, {
             recordAlreadyInDB: true,
             fileAlreadyInDB: false,
@@ -357,18 +357,15 @@ function mockModel(
     tokensRecord.collectionLocId = collectionLocId;
     tokensRecord.recordId = recordId;
     tokensRecord.addedOn = timestamp.toDate();
+    const tokensRecordFile = new TokensRecordFile();
+    tokensRecordFile.collectionLocId = collectionLocId;
+    tokensRecordFile.recordId = recordId;
+    tokensRecordFile.hash = SOME_DATA_HASH;
+    tokensRecordFile.tokenRecord = tokensRecord;
+    tokensRecord.files = [ tokensRecordFile ];
     if (fileAlreadyInDB) {
-        const collectionItemFile = new TokensRecordFile();
-        collectionItemFile.collectionLocId = collectionLocId;
-        collectionItemFile.recordId = recordId;
-        collectionItemFile.hash = SOME_DATA_HASH;
-        collectionItemFile.cid = CID;
-        collectionItemFile.collectionItem = tokensRecord;
-        tokensRecord.files = [ collectionItemFile ];
-    } else {
-        tokensRecord.files = [];
+        tokensRecordFile.cid = CID;
     }
-    const collectionItemFile = new Mock<TokensRecordFile>()
     const tokensRecordRepository = new Mock<TokensRecordRepository>()
     const locRequestRepository = new Mock<LocRequestRepository>();
     if (recordAlreadyInDB) {
@@ -382,11 +379,6 @@ function mockModel(
         tokensRecordRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([]))
     }
-    tokensRecordRepository.setup(instance => instance.createIfNotExist(
-        It.Is<string>(param => param === collectionLocId),
-        It.Is<string>(param => param === recordId),
-        It.IsAny<() => TokensRecordAggregateRoot>(),
-    )).returns(Promise.resolve(tokensRecord));
     tokensRecordRepository.setup(instance => instance.save(tokensRecord)).returnsAsync();
 
     const delivered: TokensRecordFileDelivered = {
@@ -396,7 +388,7 @@ function mockModel(
         deliveredFileHash: DELIVERY_HASH,
         generatedOn: new Date(),
         owner: ITEM_TOKEN_OWNER,
-        tokensRecordFile: collectionItemFile.object(),
+        tokensRecordFile: tokensRecordFile,
     };
 
     tokensRecordRepository.setup(instance => instance.findLatestDelivery(

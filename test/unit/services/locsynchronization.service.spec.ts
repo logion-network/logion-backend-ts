@@ -228,10 +228,9 @@ function givenLocRequest() {
 
 function givenCollectionItem() {
     collectionItem = new Mock<CollectionItemAggregateRoot>();
-    collectionItem.setup(instance => instance.setAddedOn(It.IsAny())).returns();
+    collectionItem.setup(instance => instance.confirm(It.IsAny())).returns();
     collectionRepository.setup(instance => instance.findBy(locIdUuid, itemIdHex)).returns(Promise.resolve(collectionItem.object()));
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
-    collectionRepository.setup(instance => instance.createIfNotExist(locIdUuid, itemIdHex, It.IsAny())).returnsAsync(collectionItem.object());
 }
 
 function givenCollectionFactory() {

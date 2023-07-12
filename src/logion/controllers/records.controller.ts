@@ -1,6 +1,6 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, HttpPut, SendsResponse } from "dinoloop";
+import { Controller, ApiController, Async, HttpGet, HttpPost, HttpPut, SendsResponse , HttpDelete} from "dinoloop";
 import {
     TokensRecordRepository,
     TokensRecordFactory,
@@ -49,6 +49,7 @@ type FileUploadData = components["schemas"]["FileUploadData"];
 type CheckCollectionDeliveryRequest = components["schemas"]["CheckCollectionDeliveryRequest"];
 type CheckCollectionDeliveryResponse = components["schemas"]["CheckCollectionDeliveryResponse"];
 type CheckCollectionDeliveryWitheOriginalResponse = components["schemas"]["CheckCollectionDeliveryWitheOriginalResponse"];
+type CreateTokensRecordView = components["schemas"]["CreateTokensRecordView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Tokens Records';
@@ -60,7 +61,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
     TokensRecordController.getTokensRecords(spec)
     TokensRecordController.getTokensRecord(spec)
-    TokensRecordController.addFile(spec)
+    TokensRecordController.uploadFile(spec)
     TokensRecordController.downloadItemFile(spec)
     TokensRecordController.getAllItemDeliveries(spec)
     TokensRecordController.downloadFileSource(spec)
@@ -107,12 +108,18 @@ export class TokensRecordController extends ApiController {
     }
 
     private toView(record: TokensRecordDescription): TokensRecordView {
-        const { collectionLocId, recordId, addedOn, files } = record;
+        const { collectionLocId, recordId, description, addedOn, files } = record;
         return {
             collectionLocId,
             recordId,
+            description,
             addedOn: addedOn?.toISOString(),
-            files: files?.map(file => file.hash),
+            files: files?.map(file => ({
+                hash: file.hash,
+                name: file.name,
+                contentType: file.contentType,
+                uploaded: file.cid !== undefined,
+            })),
         }
     }
 
@@ -146,7 +153,47 @@ export class TokensRecordController extends ApiController {
         }
     }
 
-    static addFile(spec: OpenAPIV3.Document) {
+    @HttpPost('/:collectionLocId/record')
+    @Async()
+    async submitItemPublicData(body: CreateTokensRecordView, collectionLocId: string): Promise<void> {
+        const recordId = requireDefined(body.recordId);
+        const existingItem = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
+        if(existingItem) {
+            throw badRequest("Cannot replace existing item, you may try to cancel it first");
+        }
+
+        const description = requireDefined(body.description);
+        const record = this.tokensRecordFactory.newTokensRecord({
+            collectionLocId,
+            recordId,
+            description,
+            files: body.files?.map(file => ({
+                hash: requireDefined(file.hash),
+                name: requireDefined(file.name),
+                contentType: requireDefined(file.contentType),
+            })),
+        });
+
+        await this.tokensRecordService.addTokensRecord(record);
+    }
+
+    @HttpDelete('/:collectionLocId/record/:recordId')
+    @Async()
+    async cancelRecord(_body: any, collectionLocId: string, recordId: string): Promise<void> {
+        const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId });
+        if (publishedTokensRecord) {
+            throw badRequest("Tokens Record already published, cannot be cancelled");
+        }
+
+        const record = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
+        if(!record) {
+            throw badRequest(`Tokens Record ${ collectionLocId } ${ recordId } not found`);
+        }
+
+        await this.tokensRecordService.cancelTokensRecord(record);
+    }
+
+    static uploadFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/files"].post!;
         operationObject.summary = "Adds a file to a Collection Item";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
@@ -163,7 +210,7 @@ export class TokensRecordController extends ApiController {
 
     @HttpPost('/:collectionLocId/:recordId/files')
     @Async()
-    async addFile(body: FileUploadData, collectionLocId: string, recordId: string): Promise<void> {
+    async uploadFile(body: FileUploadData, collectionLocId: string, recordId: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
 
@@ -189,16 +236,21 @@ export class TokensRecordController extends ApiController {
             throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ publishedTokensRecordFile.name }`);
         }
 
-        const tokensRecord = await this.tokensRecordService.createIfNotExist(collectionLocId, recordId, () =>
-            this.tokensRecordFactory.newTokensRecord({ collectionLocId, recordId } )
-        )
-        if (tokensRecord.hasFile(hash)) {
-            throw badRequest("File is already uploaded")
+        const tokensRecord = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
+        if(!tokensRecord) {
+            throw badRequest(`Tokens Record ${ collectionLocId }/${ recordId } not found`);
         }
-        const cid = await this.fileStorageService.importFile(file.tempFilePath);
+        const recordFile = tokensRecord.file(hash);
+        if (!recordFile) {
+            throw badRequest("Unexpected file");
+        }
+        if (recordFile.cid) {
+            throw badRequest("File is already uploaded");
+        }
 
+        const cid = await this.fileStorageService.importFile(file.tempFilePath);
         await this.tokensRecordService.update(collectionLocId, recordId, async item => {
-            item.addFile({ hash, cid });
+            item.setFileCid({ hash, cid });
         });
     }
 
@@ -284,7 +336,11 @@ export class TokensRecordController extends ApiController {
             await this.tokensRecordRepository.findBy(collectionLocId, recordId),
             () => badRequest(`Tokens Record ${ collectionLocId }/${ recordId } not found in DB`));
         if (!tokensRecord.hasFile(hash)) {
-            throw badRequest("Trying to download a file that is not uploaded yet.")
+            throw badRequest("File does not exist");
+        }
+        const file = tokensRecord.getFile(hash);
+        if (!file.cid) {
+            throw badRequest("Trying to download a file that is not uploaded yet.");
         }
         return tokensRecord;
     }

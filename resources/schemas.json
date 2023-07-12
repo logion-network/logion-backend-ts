@@ -1197,6 +1197,89 @@
                 "title": "VoidLocView",
                 "description": "The parameters of LOC voiding"
             },
+            "CreateCollectionItemView": {
+                "type": "object",
+                "properties": {
+                    "itemId": {
+                        "type": "string",
+                        "description": "The id of the collection item",
+                        "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The description of the item"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files",
+                        "items": {
+                            "$ref": "#/components/schemas/CollectionItemFileView"
+                        }
+                    },
+                    "termsAndConditions": {
+                        "type": "array",
+                        "description": "The terms and conditions",
+                        "items": {
+                            "$ref": "#/components/schemas/TermsAndConditionsElementView"
+                        }
+                    },
+                    "token": {
+                        "$ref": "#/components/schemas/CollectionItemTokenView"
+                    }
+                }
+            },
+            "CollectionItemFileView": {
+                "type": "object",
+                "properties": {
+                    "hash": {
+                        "$ref": "#/components/schemas/HashView"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The file name"
+                    },
+                    "contentType": {
+                        "type": "string",
+                        "description": "The content type"
+                    },
+                    "uploaded": {
+                        "type": "boolean",
+                        "description": "True if the file was already uploaded, false otherwise"
+                    }
+                }
+            },
+            "HashView": {
+                "type": "string",
+                "description": "A hash",
+                "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
+            },
+            "TermsAndConditionsElementView": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "The type of terms and conditions"
+                    },
+                    "details": {
+                        "type": "string",
+                        "description": "The details associated with given terms and conditions"
+                    }
+                }
+            },
+            "CollectionItemTokenView": {
+                "type": "object",
+                "description": "The item's token",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Token type"
+                    },
+                    "id": {
+                        "type": "string",
+                        "description": "Token ID"
+                    }
+                }
+            },
             "CollectionItemView": {
                 "type": "object",
                 "properties": {
@@ -1210,6 +1293,10 @@
                         "description": "The id of the collection item",
                         "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
                     },
+                    "description": {
+                        "type": "string",
+                        "description": "The description of the item"
+                    },
                     "addedOn": {
                         "type": "string",
                         "format": "date-time",
@@ -1219,10 +1306,18 @@
                         "type": "array",
                         "description": "The files present in DB",
                         "items": {
-                            "type": "string",
-                            "description": "The hash of a file present in DB",
-                            "example": "0x6dec991b1b61b44550769ae3c4b7f54f7cd618391f32bab2bc4e3a96cbb2b198"
+                            "$ref": "#/components/schemas/CollectionItemFileView"
                         }
+                    },
+                    "termsAndConditions": {
+                        "type": "array",
+                        "description": "The terms and conditions",
+                        "items": {
+                            "$ref": "#/components/schemas/TermsAndConditionsElementView"
+                        }
+                    },
+                    "token": {
+                        "$ref": "#/components/schemas/CollectionItemTokenView"
                     }
                 }
             },
@@ -1557,6 +1652,47 @@
                     }
                 }
             },
+            "CreateTokensRecordView": {
+                "type": "object",
+                "properties": {
+                    "recordId": {
+                        "type": "string",
+                        "description": "The id of the tokens record",
+                        "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "The description of the item"
+                    },
+                    "files": {
+                        "type": "array",
+                        "description": "The files",
+                        "items": {
+                            "$ref": "#/components/schemas/TokensRecordFileView"
+                        }
+                    }
+                }
+            },
+            "TokensRecordFileView": {
+                "type": "object",
+                "properties": {
+                    "hash": {
+                        "$ref": "#/components/schemas/HashView"
+                    },
+                    "name": {
+                        "type": "string",
+                        "description": "The file name"
+                    },
+                    "contentType": {
+                        "type": "string",
+                        "description": "The content type"
+                    },
+                    "uploaded": {
+                        "type": "boolean",
+                        "description": "True if the file was already uploaded, false otherwise"
+                    }
+                }
+            },
             "TokensRecordView": {
                 "type": "object",
                 "properties": {
@@ -1570,6 +1706,10 @@
                         "description": "The id of the collection item",
                         "example": "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705"
                     },
+                    "description": {
+                        "type": "string",
+                        "description": "The description of the item"
+                    },
                     "addedOn": {
                         "type": "string",
                         "format": "date-time",
@@ -1579,9 +1719,7 @@
                         "type": "array",
                         "description": "The files present in DB",
                         "items": {
-                            "type": "string",
-                            "description": "The hash of a file present in DB",
-                            "example": "0x6dec991b1b61b44550769ae3c4b7f54f7cd618391f32bab2bc4e3a96cbb2b198"
+                            "$ref": "#/components/schemas/TokensRecordFileView"
                         }
                     }
                 }

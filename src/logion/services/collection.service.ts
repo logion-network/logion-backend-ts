@@ -41,8 +41,19 @@ export abstract class CollectionService {
         private collectionRepository: CollectionRepository,
     ) {}
 
-    async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
-        return await this.collectionRepository.createIfNotExist(collectionLocId, itemId, creator);
+    async addCollectionItem(item: CollectionItemAggregateRoot): Promise<void> {
+        const previousItem = await this.collectionRepository.findBy(
+            requireDefined(item.collectionLocId),
+            requireDefined(item.itemId),
+        );
+        if(previousItem) {
+            throw new Error("Cannot replace existing item");
+        }
+        await this.collectionRepository.save(item);
+    }
+
+    async cancelCollectionItem(item: CollectionItemAggregateRoot): Promise<void> {
+        await this.collectionRepository.delete(item);
     }
 
     async update(collectionLocId: string, itemId: string, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
@@ -63,8 +74,13 @@ export class TransactionalCollectionService extends CollectionService {
     }
 
     @DefaultTransactional()
-    async createIfNotExist(collectionLocId: string, itemId: string, creator: () => CollectionItemAggregateRoot): Promise<CollectionItemAggregateRoot> {
-        return super.createIfNotExist(collectionLocId, itemId, creator);
+    async addCollectionItem(item: CollectionItemAggregateRoot): Promise<void> {
+        await super.addCollectionItem(item);
+    }
+
+    @DefaultTransactional()
+    async cancelCollectionItem(item: CollectionItemAggregateRoot): Promise<void> {
+        await super.cancelCollectionItem(item);
     }
 
     @DefaultTransactional()
