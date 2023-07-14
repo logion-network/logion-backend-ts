@@ -8,22 +8,26 @@ import {
     JoinColumn,
     Index
 } from "typeorm";
+import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import moment, { Moment } from "moment";
 import { injectable } from "inversify";
 
-import { appDataSource } from "@logion/rest-api-core";
+import { appDataSource, requireDefined } from "@logion/rest-api-core";
 import { Child, saveChildren } from "./child.js";
 
 export interface TokensRecordDescription {
     readonly collectionLocId: string;
     readonly recordId: string;
+    readonly description?: string;
     readonly addedOn?: Moment;
     readonly files?: TokensRecordFileDescription[];
 }
 
 export interface TokensRecordFileDescription {
+    readonly name?: string;
+    readonly contentType?: string;
     readonly hash: string;
-    readonly cid: string;
+    readonly cid?: string;
 }
 
 @Entity("tokens_record")
@@ -33,27 +37,24 @@ export class TokensRecordAggregateRoot {
         return {
             collectionLocId: this.collectionLocId!,
             recordId: this.recordId!,
+            description: this.description,
             addedOn: moment(this.addedOn),
             files: this.files?.map(file => file.getDescription()) || []
         }
     }
 
-    addFile(fileDescription: TokensRecordFileDescription): TokensRecordFile {
-        const { hash, cid } = fileDescription
-        const file = new TokensRecordFile();
-        file.collectionLocId = this.collectionLocId;
-        file.recordId = this.recordId;
-        file.hash = hash;
-        file.cid = cid;
-        file.collectionItem = this;
-        file._toAdd = true;
-        this.files?.push(file);
-        return file
+    setFileCid(fileDescription: { hash: string, cid: string }) {
+        const { hash, cid } = fileDescription;
+        const file = this.file(hash);
+        if(!file) {
+            throw new Error(`No file with hash ${ hash }`);
+        }
+        file.setCid(cid);
     }
 
-    setAddedOn(addedOn: Moment) {
+    confirm(addedOn: Moment) {
         if(this.addedOn) {
-            throw new Error("Already set");
+            throw new Error("Already confirmed");
         }
         this.addedOn = addedOn.toDate();
     }
@@ -64,7 +65,7 @@ export class TokensRecordAggregateRoot {
     @PrimaryColumn({ name: "record_id" })
     recordId?: string;
 
-    @OneToMany(() => TokensRecordFile, file => file.collectionItem, {
+    @OneToMany(() => TokensRecordFile, file => file.tokenRecord, {
         eager: true,
         cascade: false,
         persistence: false
@@ -85,17 +86,42 @@ export class TokensRecordAggregateRoot {
     getFile(hash: string): TokensRecordFile {
         return this.file(hash)!;
     }
+
+    @Column({ length: 4096, name: "description", nullable: true })
+    description?: string;
 }
 
 @Entity("tokens_record_file")
 export class TokensRecordFile extends Child {
 
+    static from(description: TokensRecordFileDescription, root?: TokensRecordAggregateRoot): TokensRecordFile {
+        if(!description.name || !description.contentType) {
+            throw new Error("No name nor content type provided");
+        }
+        const file = new TokensRecordFile();
+        file.name = description.name;
+        file.contentType = description.contentType;
+        file.hash = description.hash;
+
+        if(root) {
+            file.collectionLocId = root.collectionLocId;
+            file.recordId = root.recordId;
+            file.tokenRecord = root;
+            file._toAdd = true;
+        }
+
+        return file;
+    }
+
     getDescription(): TokensRecordFileDescription {
         return {
             hash: this.hash!,
-            cid: this.cid!,
+            name: this.name,
+            contentType: this.contentType,
+            cid: this.cid || undefined,
         }
     }
+
     @PrimaryColumn({ type: "uuid", name: "collection_loc_id" })
     collectionLocId?: string;
 
@@ -105,15 +131,29 @@ export class TokensRecordFile extends Child {
     @PrimaryColumn({ name: "hash" })
     hash?: string;
 
-    @Column({ length: 255 })
-    cid?: string;
+    @Column({ length: 255, name: "name", nullable: true })
+    name?: string;
+
+    @Column({ length: 255, name: "content_type", nullable: true })
+    contentType?: string;
+
+    setCid(cid: string) {
+        if(this.cid) {
+            throw new Error("File has already a CID");
+        }
+        this.cid = cid;
+        this._toUpdate = true;
+    }
+
+    @Column("varchar", { length: 255, nullable: true })
+    cid?: string | null;
 
     @ManyToOne(() => TokensRecordAggregateRoot, request => request.files)
     @JoinColumn([
         { name: "collection_loc_id", referencedColumnName: "collectionLocId" },
         { name: "record_id", referencedColumnName: "recordId" },
     ])
-    collectionItem?: TokensRecordAggregateRoot;
+    tokenRecord?: TokensRecordAggregateRoot;
 
     addDeliveredFile(params: {
         deliveredFileHash: string,
@@ -199,10 +239,19 @@ export class TokensRecordRepository {
 
     private async saveFiles(root: TokensRecordAggregateRoot): Promise<void> {
         if(root.files) {
+            const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: TokensRecordFile) => E = (sql, _file) => sql
+                .where("collection_loc_id = :locId", { locId: root.collectionLocId })
+                .andWhere("record_id = :recordId", { recordId: root.recordId });
             await saveChildren({
                 children: root.files,
                 entityManager: this.repository.manager,
                 entityClass: TokensRecordFile,
+                whereExpression,
+                updateValuesExtractor: file => {
+                    const values = { ...file };
+                    delete values.delivered;
+                    return values;
+                }
             });
             for(const file of root.files) {
                 await this.saveDelivered(file);
@@ -216,20 +265,6 @@ export class TokensRecordRepository {
             entityManager: this.repository.manager,
             entityClass: TokensRecordFileDelivered,
         });
-    }
-
-    public async createIfNotExist(collectionLocId: string, recordId: string, creator: () => TokensRecordAggregateRoot): Promise<TokensRecordAggregateRoot> {
-        const existingTokensRecord = await this.repository.manager.findOneBy(TokensRecordAggregateRoot, {
-            collectionLocId,
-            recordId
-        });
-        if (existingTokensRecord) {
-            return existingTokensRecord;
-        } else {
-            const newTokensRecord = creator();
-            await this.repository.manager.insert(TokensRecordAggregateRoot, newTokensRecord);
-            return newTokensRecord;
-        }
     }
 
     public async findBy(collectionLocId: string, recordId: string): Promise<TokensRecordAggregateRoot | null> {
@@ -281,18 +316,31 @@ export class TokensRecordRepository {
         const { collectionLocId, recordId, deliveredFileHash } = query;
         return await this.deliveredRepository.findOneBy({ collectionLocId, recordId, deliveredFileHash });
     }
+
+    async delete(item: TokensRecordAggregateRoot): Promise<void> {
+        if(item.addedOn) {
+            throw new Error("Cannot delete already published item");
+        }
+        const criteria = {
+            collectionLocId: requireDefined(item.collectionLocId),
+            recordId: requireDefined(item.recordId),
+        };
+        await this.deliveredRepository.delete(criteria); // There should be none
+        await this.fileRepository.delete(criteria);
+        await this.repository.delete(criteria);
+    }
 }
 
 @injectable()
 export class TokensRecordFactory {
 
     newTokensRecord(params: TokensRecordDescription): TokensRecordAggregateRoot {
-        const { collectionLocId, recordId, addedOn } = params;
+        const { collectionLocId, recordId } = params;
         const item = new TokensRecordAggregateRoot()
         item.collectionLocId = collectionLocId;
         item.recordId = recordId;
-        item.addedOn = addedOn?.toDate();
-        item.files = [];
+        item.description = params.description;
+        item.files = params.files?.map(file => TokensRecordFile.from(file, item)) || [];
         return item;
     }
 }

@@ -12,11 +12,9 @@ describe("CollectionFactory", () => {
         const collectionItemAggregateRoot = new CollectionFactory().newItem({
             collectionLocId,
             itemId,
-            addedOn,
         });
         expect(collectionItemAggregateRoot.collectionLocId).toEqual(collectionLocId)
         expect(collectionItemAggregateRoot.itemId).toEqual(itemId)
-        expect(collectionItemAggregateRoot.addedOn).toEqual(addedOn.toDate())
         expect(collectionItemAggregateRoot.hasFile("unknown")).toBeFalse();
     })
 })

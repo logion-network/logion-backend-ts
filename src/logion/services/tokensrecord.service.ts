@@ -46,8 +46,19 @@ export abstract class TokensRecordService {
         private tokensRecordRepository: TokensRecordRepository,
     ) {}
 
-    async createIfNotExist(collectionLocId: string, recordId: string, creator: () => TokensRecordAggregateRoot): Promise<TokensRecordAggregateRoot> {
-        return await this.tokensRecordRepository.createIfNotExist(collectionLocId, recordId, creator);
+    async addTokensRecord(item: TokensRecordAggregateRoot): Promise<void> {
+        const previousItem = await this.tokensRecordRepository.findBy(
+            requireDefined(item.collectionLocId),
+            requireDefined(item.recordId),
+        );
+        if(previousItem) {
+            throw new Error("Cannot replace existing item");
+        }
+        await this.tokensRecordRepository.save(item);
+    }
+
+    async cancelTokensRecord(item: TokensRecordAggregateRoot): Promise<void> {
+        await this.tokensRecordRepository.delete(item);
     }
 
     async update(collectionLocId: string, recordId: string, mutator: (item: TokensRecordAggregateRoot) => Promise<void>): Promise<TokensRecordAggregateRoot> {
@@ -68,8 +79,13 @@ export class TransactionalTokensRecordService extends TokensRecordService {
     }
 
     @DefaultTransactional()
-    async createIfNotExist(collectionLocId: string, recordId: string, creator: () => TokensRecordAggregateRoot): Promise<TokensRecordAggregateRoot> {
-        return super.createIfNotExist(collectionLocId, recordId, creator);
+    async addTokensRecord(item: TokensRecordAggregateRoot): Promise<void> {
+        await super.addTokensRecord(item);
+    }
+
+    @DefaultTransactional()
+    async cancelTokensRecord(item: TokensRecordAggregateRoot): Promise<void> {
+        await super.cancelTokensRecord(item);
     }
 
     @DefaultTransactional()

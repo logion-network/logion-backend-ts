@@ -6,7 +6,7 @@ import { EncryptedFileWriter, EncryptedFileReader } from "../lib/crypto/Encrypte
 
 export interface FileId {
     oid?: number
-    cid?: string
+    cid?: string | null
 }
 
 @injectable()

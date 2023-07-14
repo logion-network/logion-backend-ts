@@ -1,6 +1,6 @@
 import { AuthenticatedUser } from "@logion/authenticator";
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, HttpPut } from "dinoloop";
+import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, HttpPut, HttpDelete } from "dinoloop";
 import {
     CollectionRepository,
     CollectionFactory,
@@ -58,6 +58,7 @@ type CollectionDeliveriesResponse = components["schemas"]["CollectionDeliveriesR
 type FileUploadData = components["schemas"]["FileUploadData"];
 type UpdateCollectionFile = components["schemas"]["UpdateCollectionFile"];
 type CheckCollectionDeliveryRequest = components["schemas"]["CheckCollectionDeliveryRequest"];
+type CreateCollectionItemView = components["schemas"]["CreateCollectionItemView"];
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Collections';
@@ -69,7 +70,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
     CollectionController.getCollectionItems(spec)
     CollectionController.getCollectionItem(spec)
-    CollectionController.addFile(spec)
+    CollectionController.uploadFile(spec)
     CollectionController.downloadItemFile(spec)
     CollectionController.downloadCollectionFile(spec)
     CollectionController.checkOwnership(spec)
@@ -126,12 +127,26 @@ export class CollectionController extends ApiController {
     }
 
     private toView(collectionItem: CollectionItemDescription): CollectionItemView {
-        const { collectionLocId, itemId, addedOn, files } = collectionItem;
+        const { collectionLocId, itemId, description, addedOn } = collectionItem;
         return {
             collectionLocId,
             itemId,
+            description,
             addedOn: addedOn?.toISOString(),
-            files: files?.map(file => file.hash)
+            files: collectionItem.files?.map(file => ({
+                hash: file.hash,
+                name: file.name,
+                contentType: file.contentType,
+                uploaded: file.cid !== undefined,
+            })),
+            termsAndConditions: collectionItem.termsAndConditions?.map(element => ({
+                type: element.type,
+                details: element.details,
+            })),
+            token: collectionItem.token ? ({
+                type: collectionItem.token.type,
+                id: collectionItem.token.id,
+            }): undefined,
         }
     }
 
@@ -149,25 +164,65 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/items/:itemId')
     @Async()
     async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
-        requireDefined(
-            await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId }),
-            () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`));
-
         const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
         if (collectionItem) {
-            return this.toView(collectionItem.getDescription())
+            return this.toView(collectionItem.getDescription());
         } else {
-            return this.toView({
-                collectionLocId,
-                itemId,
-                files: []
-            })
+            throw badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`);
         }
     }
 
-    static addFile(spec: OpenAPIV3.Document) {
+    @HttpPost('/:collectionLocId/items')
+    @Async()
+    async submitItemPublicData(body: CreateCollectionItemView, collectionLocId: string): Promise<void> {
+        const itemId = requireDefined(body.itemId);
+        const existingItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(existingItem) {
+            throw badRequest("Cannot replace existing item, you may try to cancel it first");
+        }
+
+        const description = requireDefined(body.description);
+        const item = this.collectionFactory.newItem({
+            collectionLocId,
+            itemId,
+            description,
+            files: body.files?.map(file => ({
+                hash: requireDefined(file.hash),
+                name: requireDefined(file.name),
+                contentType: requireDefined(file.contentType),
+            })),
+            termsAndConditions: body.termsAndConditions?.map(element => ({
+                type: requireDefined(element.type),
+                details: requireDefined(element.details),
+            })),
+            token: body.token ? ({
+                type: requireDefined(body.token.type),
+                id: requireDefined(body.token.id),
+            }): undefined,
+        });
+
+        await this.collectionService.addCollectionItem(item);
+    }
+
+    @HttpDelete('/:collectionLocId/items/:itemId')
+    @Async()
+    async cancelItem(_body: any, collectionLocId: string, itemId: string): Promise<void> {
+        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId });
+        if (publishedCollectionItem) {
+            throw badRequest("Collection Item already published, cannot be cancelled");
+        }
+
+        const item = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!item) {
+            throw badRequest(`Collection Item ${ collectionLocId } ${ itemId } not found`);
+        }
+
+        await this.collectionService.cancelCollectionItem(item);
+    }
+
+    static uploadFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files"].post!;
-        operationObject.summary = "Adds a file to a Collection Item";
+        operationObject.summary = "Uploads a Collection Item's file";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
         operationObject.requestBody = getRequestBody({
@@ -182,7 +237,7 @@ export class CollectionController extends ApiController {
 
     @HttpPost('/:collectionLocId/:itemId/files')
     @Async()
-    async addFile(body: FileUploadData, collectionLocId: string, itemId: string): Promise<void> {
+    async uploadFile(body: FileUploadData, collectionLocId: string, itemId: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.requesterAddress);
@@ -207,16 +262,21 @@ export class CollectionController extends ApiController {
             throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ publishedCollectionItemFile.name }`);
         }
 
-        const collectionItem = await this.collectionService.createIfNotExist(collectionLocId, itemId, () =>
-            this.collectionFactory.newItem({ collectionLocId, itemId } )
-        )
-        if (collectionItem.hasFile(hash)) {
-            throw badRequest("File is already uploaded")
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!collectionItem) {
+            throw badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`);
         }
-        const cid = await this.fileStorageService.importFile(file.tempFilePath);
+        const itemFile = collectionItem.file(hash);
+        if (!itemFile) {
+            throw badRequest("Unexpected file");
+        }
+        if (itemFile.cid) {
+            throw badRequest("File is already uploaded");
+        }
 
+        const cid = await this.fileStorageService.importFile(file.tempFilePath);
         await this.collectionService.update(collectionLocId, itemId, async item => {
-            item.addFile({ hash, cid });
+            item.setFileCid({ hash, cid });
         });
     }
 
@@ -304,6 +364,10 @@ export class CollectionController extends ApiController {
             await this.collectionRepository.findBy(collectionLocId, itemId),
             () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
         if (!collectionItem.hasFile(hash)) {
+            throw badRequest("File does not exist");
+        }
+        const file = collectionItem.getFile(hash);
+        if (!file.cid) {
             throw badRequest("Trying to download a file that is not uploaded yet.")
         }
         return collectionItem;
@@ -356,9 +420,12 @@ export class CollectionController extends ApiController {
     private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, hash: string, itemId: string): Promise<FileDescription> {
         const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
         if (!collection.hasFile(hash)) {
-            throw badRequest("Trying to download a file that is not uploaded yet.")
+            throw badRequest("File does not exist");
         }
         const file = collection.getFile(hash);
+        if (!file.cid) {
+            throw badRequest("Trying to download a file that is not uploaded yet.");
+        }
         const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
