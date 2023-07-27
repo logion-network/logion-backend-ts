@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { CollectionItem, TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile } from "@logion/node-api";
+import { TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile, hashString } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import moment from "moment";
 import request from "supertest";
@@ -10,7 +10,6 @@ import {
     LocRequestRepository,
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
-import { GetCollectionItemParams, LogionNodeCollectionService } from "../../../src/logion/services/collection.service.js";
 import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
@@ -25,6 +24,7 @@ import {
 } from "../../../src/logion/model/tokensrecord.model.js";
 import { GetTokensRecordFileParams, GetTokensRecordParams, LogionNodeTokensRecordService, NonTransactionalTokensRecordService, TokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
+import { CollectionItemAggregateRoot, CollectionItemDescription, CollectionRepository } from "../../../src/logion/model/collection.model.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
@@ -192,7 +192,7 @@ describe("TokensRecordController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Tokens Record File not found on chain");
+                expect(response.body.errorMessage).toBe("Tokens Record File not found");
             });
     })
 
@@ -361,6 +361,8 @@ function mockModel(
     tokensRecordFile.collectionLocId = collectionLocId;
     tokensRecordFile.recordId = recordId;
     tokensRecordFile.hash = SOME_DATA_HASH;
+    tokensRecordFile.name = FILE_NAME;
+    tokensRecordFile.contentType = CONTENT_TYPE;
     tokensRecordFile.tokenRecord = tokensRecord;
     tokensRecord.files = [ tokensRecordFile ];
     if (fileAlreadyInDB) {
@@ -431,33 +433,32 @@ function mockModel(
         .returns(Promise.resolve())
     container.bind(FileStorageService).toConstantValue(fileStorageService.object())
 
-    const publishedCollectionItem: CollectionItem = {
-        id: recordId,
+    const publishedCollectionItem = new Mock<CollectionItemAggregateRoot>();
+    const itemDescripiton: CollectionItemDescription = {
+        collectionLocId,
+        itemId,
         description: "Item Description",
         files: [],
-        restrictedDelivery: false,
         termsAndConditions: [],
         token: {
             id: "some-id",
-            type: "owner",
-            issuance: 1n
+            type: "owner"
         }
     }
-    const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();
-    logionNodeCollectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
-        param => param.collectionLocId === collectionLocId && param.itemId === itemId)
-    ))
-        .returns(Promise.resolve(publishedCollectionItem));
-    container.bind(LogionNodeCollectionService).toConstantValue(logionNodeCollectionService.object());
+    publishedCollectionItem.setup(instance => instance.getDescription()).returns(itemDescripiton);
+    const collectionRepository = new Mock<CollectionRepository>();
+    collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+        .returns(Promise.resolve(publishedCollectionItem.object()));
+    container.bind(CollectionRepository).toConstantValue(collectionRepository.object());
 
     const publishedTokensRecordFile: ChainTokensRecordFile = {
         hash: SOME_DATA_HASH,
-        name: FILE_NAME,
-        contentType: CONTENT_TYPE,
+        name: hashString(FILE_NAME),
+        contentType: hashString(CONTENT_TYPE),
         size: SOME_DATA.length.toString(),
     };
     const publishedTokensRecord: ChainTokensRecord = {
-        description: "Item Description",
+        description: hashString("Item Description"),
         files: [],
         submitter: recordSubmitter,
     }

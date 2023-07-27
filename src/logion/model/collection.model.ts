@@ -388,7 +388,9 @@ export class CollectionRepository {
     }
 
     public async findAllBy(collectionLocId: string): Promise<CollectionItemAggregateRoot[]> {
-        const builder = this.repository.createQueryBuilder("item");
+        const builder = this.repository.createQueryBuilder("item")
+            .leftJoinAndSelect("item.files", "file")
+            .leftJoinAndSelect("item.termsAndConditions", "tc");
         builder.where("item.collection_loc_id = :collectionLocId", { collectionLocId });
         builder.orderBy("item.added_on", "DESC");
         return builder.getMany();

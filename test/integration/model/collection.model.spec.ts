@@ -71,7 +71,7 @@ describe("CollectionRepository", () => {
         expect(collectionItem?.files).toEqual([])
     })
 
-    it("finds a Collection Item with 2 files, one being delivered", async () => {
+    it("finds a Collection Item with 2 files, one being delivered and some T&Cs", async () => {
         const collectionLocId = "296d3d8f-057f-445c-b4c8-59aa7d2d21de";
         const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
         const collectionItem = await repository.findBy(
@@ -96,6 +96,13 @@ describe("CollectionRepository", () => {
         const delivered2 = deliveredList.find(delivered => delivered.deliveredFileHash === "0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
         expect(delivered2?.generatedOn).toBeDefined()
         expect(delivered2?.owner).toBe("0x900edc98db53508e6742723988B872dd08cd09c3")
+
+        expect(collectionItem?.termsAndConditions?.length).toBe(1);
+        if(collectionItem?.termsAndConditions) {
+            expect(collectionItem?.termsAndConditions[0].index).toBe(0);
+            expect(collectionItem?.termsAndConditions[0].type).toBe("CC4.0");
+            expect(collectionItem?.termsAndConditions[0].details).toBe("BY");
+        }
     })
 
     it("sets a file's CID", async () => {

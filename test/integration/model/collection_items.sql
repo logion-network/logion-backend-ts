@@ -20,6 +20,10 @@ VALUES ('296d3d8f-057f-445c-b4c8-59aa7d2d21de', '0x1307990e6ba5ca145eb35e99182a9
 INSERT INTO collection_item_file(collection_loc_id, item_id, hash, cid)
 VALUES ('296d3d8f-057f-445c-b4c8-59aa7d2d21de', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', '0x8bd8548beac4ce719151dc2ae893f8edc658a566e5ff654104783e14fb44012e', 78910);
 
+-- Terms and conditions
+INSERT INTO collection_item_tc_element(collection_loc_id, item_id, element_index, type, details)
+VALUES ('296d3d8f-057f-445c-b4c8-59aa7d2d21de', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', 0, 'CC4.0', 'BY');
+
 INSERT INTO collection_item(collection_loc_id, item_id, added_on)
 VALUES ('296d3d8f-057f-445c-b4c8-59aa7d2d21de', '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2', '2022-02-17T18:28:42.000000');
 

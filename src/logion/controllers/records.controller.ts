@@ -6,7 +6,8 @@ import {
     TokensRecordFactory,
     TokensRecordDescription,
     TokensRecordAggregateRoot,
-    TokensRecordFileDelivered
+    TokensRecordFileDelivered,
+    TokensRecordFileDescription
 } from "../model/tokensrecord.model.js";
 import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
@@ -31,15 +32,14 @@ import {
     getDefaultResponsesNoContent,
     getDefaultResponses,
 } from "@logion/rest-api-core";
-import { TypesTokensRecordFile } from "@logion/node-api";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service.js";
 import { downloadAndClean } from "../lib/http.js";
 import { GetTokensRecordFileParams, LogionNodeTokensRecordService, TokensRecordService } from "../services/tokensrecord.service.js";
-import { LogionNodeCollectionService } from "../services/collection.service.js";
 import { LocAuthorizationService } from "../services/locauthorization.service.js";
+import { CollectionRepository } from "../model/collection.model.js";
 
 type TokensRecordView = components["schemas"]["TokensRecordView"];
 type TokensRecordsView = components["schemas"]["TokensRecordsView"];
@@ -81,7 +81,7 @@ export class TokensRecordController extends ApiController {
         private ownershipCheckService: OwnershipCheckService,
         private restrictedDeliveryService: RestrictedDeliveryService,
         private tokensRecordService: TokensRecordService,
-        private logionNodeCollectionService: LogionNodeCollectionService,
+        private collectionRepository: CollectionRepository,
         private locAuthorizationService: LocAuthorizationService,
     ) {
         super();
@@ -224,16 +224,16 @@ export class TokensRecordController extends ApiController {
         const hash = requireDefined(body.hash, () => badRequest("No hash found for upload file"));
         const file = await getUploadedFile(this.request, hash);
 
-        const publishedTokensRecordFile = await this.getTokensRecordFile({
+        const tokensRecordFile = await this.getTokensRecordFile({
             collectionLocId,
             recordId,
             hash
         });
-        if (file.size.toString() !== publishedTokensRecordFile.size) {
-            throw badRequest(`Invalid size. Actually uploaded ${ file.size } bytes while expecting ${ publishedTokensRecordFile.size } bytes`);
+        if (file.size.toString() !== tokensRecordFile.size) {
+            throw badRequest(`Invalid size. Actually uploaded ${ file.size } bytes while expecting ${ tokensRecordFile.size } bytes`);
         }
-        if (file.name !== publishedTokensRecordFile.name) {
-            throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ publishedTokensRecordFile.name }`);
+        if (file.name !== tokensRecordFile.name) {
+            throw badRequest(`Invalid name. Actually uploaded ${ file.name } while expecting ${ tokensRecordFile.name }`);
         }
 
         const tokensRecord = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
@@ -254,12 +254,20 @@ export class TokensRecordController extends ApiController {
         });
     }
 
-    private async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TypesTokensRecordFile> {
-        const publishedTokensRecordFile = await this.logionNodeTokensRecordService.getTokensRecordFile(params);
-        if (publishedTokensRecordFile) {
-            return publishedTokensRecordFile;
+    private async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TokensRecordFileDescription & { size: string }> {
+        const dbTokensRecord = await this.tokensRecordRepository.findBy(params.collectionLocId, params.recordId);
+        if(!dbTokensRecord) {
+            throw badRequest("Tokens Record not found");
+        }
+        const dbFile = dbTokensRecord.files?.find(file => file.hash === params.hash);
+        const chainFile = await this.logionNodeTokensRecordService.getTokensRecordFile(params);
+        if (dbFile && chainFile) {
+            return {
+                ...dbFile.getDescription(),
+                size: chainFile.size,
+            };
         } else {
-            throw badRequest("Tokens Record File not found on chain");
+            throw badRequest("Tokens Record File not found");
         }
     }
 
@@ -282,11 +290,14 @@ export class TokensRecordController extends ApiController {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionItem = await this.checkCanDownloadTokensRecordFile(authenticated, collectionLocId, recordId, hash, itemId);
 
-        const publishedTokensRecordFile = await this.getTokensRecordFile({
+        const tokensRecordFile = await this.getTokensRecordFile({
             collectionLocId,
             recordId,
             hash
         });
+        if(!tokensRecordFile.name || !tokensRecordFile.contentType) {
+            throw badRequest("File has been forgotten");
+        }
 
         const file = collectionItem.getFile(hash);
         const tempFilePath = TokensRecordController.tempFilePath({ collectionLocId, recordId, hash });
@@ -311,20 +322,21 @@ export class TokensRecordController extends ApiController {
         downloadAndClean({
             response: this.response,
             path: tempFilePath,
-            name: publishedTokensRecordFile.name,
-            contentType: publishedTokensRecordFile.contentType,
+            name: tokensRecordFile.name,
+            contentType: tokensRecordFile.contentType,
         });
     }
 
     private async checkCanDownloadTokensRecordFile(authenticated: AuthenticatedUser, collectionLocId: string, recordId: string, hash: string, itemId: string): Promise<TokensRecordAggregateRoot> {
-        const item = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
-            collectionLocId,
-            itemId
-        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        const item = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!item) {
+            throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
+        }
+        const token = item.getDescription().token;
 
         const tokensRecord = await this.getTokensRecordWithFile(collectionLocId, recordId, hash);
 
-        if(!item.token || ! await this.ownershipCheckService.isOwner(authenticated.address, item.token)) {
+        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of related item's underlying token`);
         } else {
             return tokensRecord;
@@ -425,11 +437,14 @@ export class TokensRecordController extends ApiController {
             () => badRequest("Collection LOC not found"));
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
-        const publishedTokensRecordFile = await this.getTokensRecordFile({
+        const tokensRecordFile = await this.getTokensRecordFile({
             collectionLocId,
             recordId,
             hash
         });
+        if(!tokensRecordFile.name || !tokensRecordFile.contentType) {
+            throw badRequest("File has been forgotten");
+        }
 
         const tokensRecord = await this.getTokensRecordWithFile(collectionLocId, recordId, hash);
         const file = tokensRecord.getFile(hash);
@@ -439,8 +454,8 @@ export class TokensRecordController extends ApiController {
         downloadAndClean({
             response: this.response,
             path: tempFilePath,
-            name: publishedTokensRecordFile.name,
-            contentType: publishedTokensRecordFile.contentType,
+            name: tokensRecordFile.name,
+            contentType: tokensRecordFile.contentType,
         });
     }
 
