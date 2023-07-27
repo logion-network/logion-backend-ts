@@ -1,10 +1,10 @@
-import { ItemToken, ItemTokenWithoutIssuance } from "@logion/node-api";
 import { Mock } from "moq.ts";
 
 import { AlchemyChecker, AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { SingularService } from "../../../src/logion/services/singular.service.js";
 import { MultiversxService, MultiversxTokenType, MultiversxChecker } from "../../../src/logion/services/multiversx.service.js";
+import { CollectionItemTokenDescription } from "src/logion/model/collection.model.js";
 
 describe("OwnershipCheckService", () => {
     it("detects ethereum_erc721 ownership", () => testDetectsOwnership(ethereumErc721Item, owner, { network: Network.ETH_MAINNET }));
@@ -40,7 +40,7 @@ describe("OwnershipCheckService", () => {
 
 type TestConfig = { network?: Network; tokenType?: MultiversxTokenType };
 
-async function testDetectsOwnership(token: ItemTokenWithoutIssuance, owner: string, config?: TestConfig) {
+async function testDetectsOwnership(token: CollectionItemTokenDescription, owner: string, config?: TestConfig) {
     const alchemyService = mockAlchemyService(config?.network);
     const singularService = mockSingularService();
     const multiversxService = mockMultiversxService(config?.tokenType);
@@ -110,7 +110,7 @@ const multiversxTokenId = "LRCOLL001-e42371-01";
 
 const multiversxOwner = "erd1urwqlj8rp3xlpqvu7stcsjsxyhs3skgy0exvly3hr7g92yjeey3sqpvkyx";
 
-async function testDetectsNoOwnership(token: ItemTokenWithoutIssuance, config?: TestConfig) {
+async function testDetectsNoOwnership(token: CollectionItemTokenDescription, config?: TestConfig) {
     const alchemyService = mockAlchemyService(config?.network);
     const singularService = mockSingularService();
     const multiversxService = mockMultiversxService(config?.tokenType);
@@ -121,64 +121,57 @@ async function testDetectsNoOwnership(token: ItemTokenWithoutIssuance, config?: 
 
 const anotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c";
 
-const ethereumErc721Item: ItemToken = {
+const ethereumErc721Item: CollectionItemTokenDescription = {
     type: "ethereum_erc721",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
-    issuance: 1n,
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
 };
 
-const ethereumErc1155Item: ItemToken = {
+const ethereumErc1155Item: CollectionItemTokenDescription = {
     type: "ethereum_erc1155",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
-    issuance: 1n,
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
 };
 
-const goerliErc721Item: ItemToken = {
+const goerliErc721Item: CollectionItemTokenDescription = {
     type: "goerli_erc721",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
-    issuance: 1n,
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
 };
 
-const goerliErc1155Item: ItemToken = {
+const goerliErc1155Item: CollectionItemTokenDescription = {
     type: "goerli_erc1155",
-    id: `{"contract":"${contractHash}","id":"${tokenId}"}`,
-    issuance: 1n,
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
 };
 
-const ownerItem: ItemTokenWithoutIssuance = {
+const ownerItem: CollectionItemTokenDescription = {
     type: "owner",
     id: `${owner}`
 };
 
-const singularKusamaItem: ItemToken = {
+const singularKusamaItem: CollectionItemTokenDescription = {
     type: "singular_kusama",
-    id: `${singularTokenId}`,
-    issuance: 1n,
+    id: `${singularTokenId}`
 };
 
-const ethereumErc20: ItemToken = {
+const ethereumErc20: CollectionItemTokenDescription = {
     type: "ethereum_erc20",
-    id: `{"contract":"${contractHash}"}`,
-    issuance: 100n,
+    id: `{"contract":"${contractHash}"}`
 };
 
-const goerliErc20: ItemToken = {
+const goerliErc20: CollectionItemTokenDescription = {
     type: "goerli_erc20",
-    id: `{"contract":"${contractHash}"}`,
-    issuance: 1n,
+    id: `{"contract":"${contractHash}"}`
 };
 
-const multiversxDevnet: ItemTokenWithoutIssuance = {
+const multiversxDevnet: CollectionItemTokenDescription = {
     type: "multiversx_devnet_esdt",
     id: `${ multiversxTokenId }`
 }
 
-const multiversxTestnet: ItemTokenWithoutIssuance = {
+const multiversxTestnet: CollectionItemTokenDescription = {
     type: "multiversx_testnet_esdt",
     id: `${ multiversxTokenId }`
 }
 
-const multiversxMainnet: ItemTokenWithoutIssuance = {
+const multiversxMainnet: CollectionItemTokenDescription = {
     type: "multiversx_esdt",
     id: `${ multiversxTokenId }`
 }

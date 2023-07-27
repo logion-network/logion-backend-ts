@@ -1,10 +1,10 @@
 import { injectable } from 'inversify';
-import { ItemTokenWithoutIssuance } from '@logion/node-api';
 
 import { Network, AlchemyService, AlchemyChecker } from './alchemy.service.js';
 import { SingularService } from './singular.service.js';
 import { BigNumber } from 'alchemy-sdk';
 import { MultiversxService } from "./multiversx.service.js";
+import { CollectionItemTokenDescription } from '../model/collection.model.js';
 
 @injectable()
 export class OwnershipCheckService {
@@ -15,16 +15,19 @@ export class OwnershipCheckService {
         private multiversxService: MultiversxService,
     ) {}
 
-    async isOwner(address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
+    async isOwner(address: string, token: CollectionItemTokenDescription): Promise<boolean> {
         const normalizedAddress = address.toLowerCase();
         const tokenType = token.type;
-        if(this.isAlchemyNetwork(tokenType)) {
+        const tokenId = token.id;
+        if(!tokenId || !tokenType) {
+            return false;
+        } else if(this.isAlchemyNetwork(tokenType)) {
             const network = this.getNetwork(tokenType);
             const checker = this.alchemyService.getChecker(network);
             if(tokenType.includes("erc721") || tokenType.includes("erc1155")) {
-                return this.isOwnerOfErc721OrErc1155(checker, normalizedAddress, token);
+                return this.isOwnerOfErc721OrErc1155(checker, normalizedAddress, tokenId);
             } else if(tokenType.includes("erc20")) {
-                return this.isOwnerOfErc20(checker, normalizedAddress, token);
+                return this.isOwnerOfErc20(checker, normalizedAddress, tokenId);
             } else {
                 throw new Error(`Unsupported Alchemy token ${tokenType}`);
             }
@@ -62,8 +65,8 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
-        const { contractHash, contractTokenId: tokenId } = this.parseErc721Or1155TokenId(token.id);
+    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, address: string, itemTokenId: string): Promise<boolean> {
+        const { contractHash, contractTokenId: tokenId } = this.parseErc721Or1155TokenId(itemTokenId);
         const owners = await checker.getOwners(contractHash, tokenId);
         return owners.find(owner => owner.toLowerCase() === address) !== undefined;
     }
@@ -84,8 +87,8 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc20(checker: AlchemyChecker, address: string, token: ItemTokenWithoutIssuance): Promise<boolean> {
-        const { contractHash } = this.parseErc20TokenId(token.id);
+    private async isOwnerOfErc20(checker: AlchemyChecker, address: string, itemTokenId: string): Promise<boolean> {
+        const { contractHash } = this.parseErc20TokenId(itemTokenId);
         const balances = await checker.getBalances(address, contractHash);
         const balance = balances.find(balance => balance.contractAddress === contractHash && !balance.error);
         return balance !== undefined && balance.tokenBalance !== null && !BigNumber.from(balance.tokenBalance).isZero();

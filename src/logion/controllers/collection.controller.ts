@@ -6,7 +6,9 @@ import {
     CollectionFactory,
     CollectionItemDescription,
     CollectionItemAggregateRoot,
-    CollectionItemFileDelivered
+    CollectionItemFileDelivered,
+    CollectionItemTokenDescription,
+    CollectionItemFileDescription
 } from "../model/collection.model.js";
 import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
@@ -39,7 +41,6 @@ import {
     GetCollectionItemFileParams,
     LogionNodeCollectionService
 } from "../services/collection.service.js";
-import { CollectionItem, ItemFile } from "@logion/node-api";
 import os from "os";
 import path from "path";
 import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
@@ -280,12 +281,17 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<ItemFile> {
-        const publishedCollectionItemFile = await this.logionNodeCollectionService.getCollectionItemFile(params);
-        if (publishedCollectionItemFile) {
-            return publishedCollectionItemFile;
+    private async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<CollectionItemFileDescription & { size: bigint }> {
+        const dbItem = await this.collectionRepository.findBy(params.collectionLocId, params.itemId);
+        const dbFile = dbItem?.getDescription().files?.find(file => file.hash === params.hash);
+        const chainFile = await this.logionNodeCollectionService.getCollectionItemFile(params);
+        if (chainFile && dbFile) {
+            return {
+                ...dbFile,
+                size: chainFile.size,
+            };
         } else {
-            throw badRequest("Collection Item File not found on chain");
+            throw badRequest("Collection Item File not found");
         }
     }
 
@@ -313,6 +319,9 @@ export class CollectionController extends ApiController {
             itemId,
             hash
         });
+        if(!publishedCollectionItemFile.name || !publishedCollectionItemFile.contentType) {
+            throw badRequest("File has been forgotten");
+        }
 
         const file = collectionItem.getFile(hash);
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
@@ -349,10 +358,10 @@ export class CollectionController extends ApiController {
         }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
 
         const collectionItem = await this.getCollectionItemWithFile(collectionLocId, itemId, hash);
-
+        const token = collectionItem.getDescription().token;
         if(!publishedCollectionItem.restrictedDelivery) {
             throw forbidden("No delivery allowed for this item's files");
-        } else if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
+        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return collectionItem;
@@ -426,13 +435,14 @@ export class CollectionController extends ApiController {
         if (!file.cid) {
             throw badRequest("Trying to download a file that is not uploaded yet.");
         }
-        const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
-            collectionLocId,
-            itemId
-        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!collectionItem) {
+            throw badRequest("Collection item not found");
+        }
+        const token = collectionItem.getDescription().token;
         if(!file.restrictedDelivery) {
             throw forbidden("No delivery allowed for this collection's files");
-        } else if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
+        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return file;
@@ -459,11 +469,12 @@ export class CollectionController extends ApiController {
     @Async()
     async checkOwnership(_body: any, collectionLocId: string, itemId: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
-            collectionLocId,
-            itemId
-        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
-        if(!publishedCollectionItem.token || ! await this.ownershipCheckService.isOwner(authenticated.address, publishedCollectionItem.token)) {
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!collectionItem) {
+            throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
+        }
+        const token = collectionItem.getDescription().token;
+        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         }
     }
@@ -511,19 +522,23 @@ export class CollectionController extends ApiController {
 
     private async getItemDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
         const { collectionLocId, itemId, fileHash, limitPerFile } = query;
-        const item = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
-            collectionLocId,
-            itemId
-        }), () => badRequest(`Collection item ${ collectionLocId } not found on-chain`));
+        const item = await this.collectionRepository.findBy(collectionLocId, itemId);
+        if(!item) {
+            throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
+        }
+        const token = item.getDescription().token;
+        if(!token) {
+            throw badRequest(`Collection item cannot be delivered`);
+        }
         const delivered = await this.collectionRepository.findLatestDeliveries({ collectionLocId, itemId, fileHash });
-        if(!delivered) {
+        if(!delivered || !item.token) {
             throw badRequest("Original file not found or it was never delivered yet");
         } else {
-            return this.mapCollectionItemFilesDelivered(item, delivered, limitPerFile);
+            return this.mapCollectionItemFilesDelivered(token, delivered, limitPerFile);
         }
     }
 
-    private async mapCollectionItemFilesDelivered(item: CollectionItem, delivered: Record<string, CollectionItemFileDelivered[]>, limitPerFile?: number): Promise<ItemDeliveriesResponse> {
+    private async mapCollectionItemFilesDelivered(token: CollectionItemTokenDescription, delivered: Record<string, CollectionItemFileDelivered[]>, limitPerFile?: number): Promise<ItemDeliveriesResponse> {
         const owners = new Set<string>();
         for(const fileHash of Object.keys(delivered)) {
             const owner = delivered[fileHash][0].owner; // Only check latest owners
@@ -534,7 +549,7 @@ export class CollectionController extends ApiController {
 
         const ownershipMap: Record<string, boolean> = {};
         for(const owner of owners.values()) {
-            ownershipMap[owner] = item.token !== undefined && await this.ownershipCheckService.isOwner(owner, item.token);
+            ownershipMap[owner] = token !== undefined && await this.ownershipCheckService.isOwner(owner, token);
         }
 
         const view: ItemDeliveriesResponse = {};
@@ -702,6 +717,9 @@ export class CollectionController extends ApiController {
             itemId,
             hash
         });
+        if(!publishedCollectionItemFile.name || !publishedCollectionItemFile.contentType) {
+            throw badRequest("File has been forgotten");
+        }
 
         const collectionItem = await this.getCollectionItemWithFile(collectionLocId, itemId, hash);
         const file = collectionItem.getFile(hash);

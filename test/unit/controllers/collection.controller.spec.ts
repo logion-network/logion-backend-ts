@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { CollectionItem, ItemFile } from "@logion/node-api";
+import { CollectionItem, ItemFile, hashString } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import { CollectionController } from "../../../src/logion/controllers/collection.controller.js";
 import {
@@ -9,7 +9,8 @@ import {
     CollectionItemAggregateRoot,
     CollectionFactory,
     CollectionItemFile,
-    CollectionItemFileDelivered
+    CollectionItemFileDelivered,
+    CollectionItemToken
 } from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 import request from "supertest";
@@ -100,10 +101,9 @@ describe("CollectionController", () => {
 
     it('uploads collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: true,
+            fileAlreadyUploaded: false,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -117,10 +117,9 @@ describe("CollectionController", () => {
 
     it('fails to add file to collection item if wrong hash', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -138,10 +137,9 @@ describe("CollectionController", () => {
 
     it('fails to add file to collection item if already in DB', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -159,10 +157,9 @@ describe("CollectionController", () => {
 
     it('fails to add file to a non-existing collection item', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: false,
+            fileAlreadyUploaded: false,
             collectionItemPublished: false,
-            filePublished: false,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -180,10 +177,9 @@ describe("CollectionController", () => {
 
     it('fails to add file to a non-existing collection item file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: false,
+            fileAlreadyUploaded: false,
             collectionItemPublished: true,
-            filePublished: false,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -195,16 +191,15 @@ describe("CollectionController", () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Collection Item File not found on chain");
+                expect(response.body.errorMessage).toBe("Collection Item File not found");
             });
     })
 
     it('fails to add file if name does not match', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: true,
+            fileAlreadyUploaded: false,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: false,
             fileType: "Item",
         }));
@@ -221,9 +216,7 @@ describe("CollectionController", () => {
     })
 
     const ownershipCheckParams = {
-        collectionItemAlreadyInDB: true,
-        fileAlreadyInDB: false,
-        filePublished: false,
+        fileAlreadyUploaded: false,
         restrictedDelivery: true,
         fileType: "Item" as FileType,
     };
@@ -231,6 +224,7 @@ describe("CollectionController", () => {
     it('checks ownership', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             ...ownershipCheckParams,
+            hasFile: true,
             collectionItemPublished: true,
             isOwner: true,
         }));
@@ -242,6 +236,7 @@ describe("CollectionController", () => {
     it('fails to check ownership when not owner', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             ...ownershipCheckParams,
+            hasFile: true,
             collectionItemPublished: true,
             isOwner: false
         }));
@@ -253,6 +248,7 @@ describe("CollectionController", () => {
     it('fails to check ownership when item not published', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
             ...ownershipCheckParams,
+            hasFile: false,
             collectionItemPublished: false,
             isOwner: false
         }));
@@ -274,10 +270,9 @@ function testDownloadFiles(fileType: FileType) {
 
     it('fails to download existing file given its hash if no restricted delivery', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: false,
             fileType,
         }));
@@ -294,10 +289,9 @@ function testDownloadFiles(fileType: FileType) {
 
     it('fails to download non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: false,
+            fileAlreadyUploaded: false,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             fileType,
         }));
@@ -318,10 +312,9 @@ function testDownloadFiles(fileType: FileType) {
 
     it('fails to download from a non-existing file', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: false,
+            hasFile: false,
+            fileAlreadyUploaded: false,
             collectionItemPublished: false,
-            filePublished: false,
             restrictedDelivery: false,
             fileType,
         }));
@@ -342,10 +335,9 @@ function testDownloadFiles(fileType: FileType) {
 
     it('downloads existing file given its hash and is owner', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
             fileType,
@@ -368,10 +360,9 @@ function testDownloadFiles(fileType: FileType) {
 
     it('fails to download existing file given its hash and is not owner', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             isOwner: false,
             fileType,
@@ -394,10 +385,9 @@ describe("CollectionController - item files - ", () => {
 
     it('retrieves latest deliveries info', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
             fileType: "Item",
@@ -411,10 +401,9 @@ describe("CollectionController - item files - ", () => {
 
     it('retrieves deliveries info', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
             fileType: "Item",
@@ -429,10 +418,9 @@ describe("CollectionController - item files - ", () => {
     it('downloads existing file source given its hash and is owner', async () => {
         const mock = mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, collectionLocOwner));
         const app = setupApp(CollectionController, container => mockModel(container, {
-            collectionItemAlreadyInDB: true,
-            fileAlreadyInDB: true,
+            hasFile: true,
+            fileAlreadyUploaded: true,
             collectionItemPublished: true,
-            filePublished: true,
             restrictedDelivery: true,
             isOwner: true,
             fileType: "Item",
@@ -459,10 +447,9 @@ describe("CollectionController - collection files - ", () => {
     testDownloadFiles("Collection");
 
     const mockParams = {
-        collectionItemAlreadyInDB: true,
-        fileAlreadyInDB: true,
+        fileAlreadyUploaded: true,
+        hasFile: true,
         collectionItemPublished: true,
-        filePublished: true,
         restrictedDelivery: true,
         isOwner: true,
         fileType: "Collection" as FileType,
@@ -537,45 +524,57 @@ describe("CollectionController - collection files - ", () => {
     }
 })
 
-function mockModelForGet(container: Container, collectionItemAlreadyInDB: boolean): void {
-    return mockModel(container, { collectionItemAlreadyInDB, fileAlreadyInDB: true, collectionItemPublished: true, filePublished: true, restrictedDelivery: false, fileType: "Item"})
+function mockModelForGet(container: Container, collectionItemPublished: boolean): void {
+    return mockModel(container, {
+        collectionItemPublished,
+        hasFile: true,
+        fileAlreadyUploaded: true,
+        restrictedDelivery: false,
+        fileType: "Item"
+    });
 }
 
 function mockModel(
     container: Container,
     params: {
-        collectionItemAlreadyInDB: boolean,
-        fileAlreadyInDB: boolean,
+        fileAlreadyUploaded: boolean,
         collectionItemPublished: boolean,
-        filePublished: boolean,
+        hasFile: boolean,
         restrictedDelivery: boolean,
         isOwner?: boolean,
         fileType: FileType,
     }): void {
-    const { collectionItemAlreadyInDB, fileAlreadyInDB, collectionItemPublished, filePublished, restrictedDelivery, isOwner, fileType } = params;
-    const collectionItem = new CollectionItemAggregateRoot()
+    const { hasFile, fileAlreadyUploaded, collectionItemPublished, restrictedDelivery, isOwner, fileType } = params;
+    const collectionItem = new CollectionItemAggregateRoot();
     const collectionLoc = new LocRequestAggregateRoot();
     collectionLoc.id = collectionLocId;
     collectionItem.collectionLocId = collectionLocId;
     collectionItem.itemId = itemId;
     collectionItem.addedOn = timestamp.toDate();
+    collectionItem.token = new CollectionItemToken();
+    collectionItem.token.id = TOKEN_ID;
+    collectionItem.token.type = TOKEN_TYPE;
     if (fileType === "Item") {
         const collectionItemFile = new CollectionItemFile()
         collectionItemFile.collectionLocId = collectionLocId;
         collectionItemFile.itemId = itemId;
         collectionItemFile.hash = SOME_DATA_HASH;
-        if(fileAlreadyInDB) {
+        collectionItemFile.name = FILE_NAME;
+        collectionItemFile.contentType = CONTENT_TYPE;
+        if(hasFile && fileAlreadyUploaded) {
             collectionItemFile.cid = CID;
         }
         collectionItemFile.collectionItem = collectionItem;
         collectionItem.files = [ collectionItemFile ];
 
         collectionLoc.files = [];
-    } else if (fileAlreadyInDB && fileType === "Collection") {
+    } else if (hasFile && fileType === "Collection") {
         const collectionFile = new LocFile();
         collectionFile.lifecycle = EmbeddableLifecycle.from(true);
         collectionFile.hash = SOME_DATA_HASH;
-        collectionFile.cid = CID;
+        if(fileAlreadyUploaded) {
+            collectionFile.cid = CID;
+        }
         collectionFile.request = collectionLoc;
         collectionFile.requestId = collectionLocId;
         collectionFile.submitter = EmbeddableSupportedAccountId.from(polkadotAccount(collectionRequester));
@@ -593,7 +592,7 @@ function mockModel(
     const collectionItemFile = new Mock<CollectionItemFile>()
     const collectionRepository = new Mock<CollectionRepository>()
     const locRequestRepository = new Mock<LocRequestRepository>();
-    if (collectionItemAlreadyInDB) {
+    if (collectionItemPublished) {
         collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
             .returns(Promise.resolve(collectionItem))
         collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
@@ -690,20 +689,20 @@ function mockModel(
 
     const publishedCollectionItemFile: ItemFile = {
         hash: SOME_DATA_HASH,
-        name: FILE_NAME,
-        contentType: CONTENT_TYPE,
+        name: hashString(FILE_NAME),
+        contentType: hashString(CONTENT_TYPE),
         size: BigInt(SOME_DATA.length)
     }
 
     const publishedCollectionItem: CollectionItem = {
         id: itemId,
-        description: "Item Description",
+        description: hashString("Item Description"),
         files: [ publishedCollectionItemFile ],
         restrictedDelivery,
         termsAndConditions: [],
         token: {
-            id: "some-token-id",
-            type: "owner",
+            id: hashString(TOKEN_ID),
+            type: hashString(TOKEN_TYPE),
             issuance: 1n,
         }
     }
@@ -715,7 +714,7 @@ function mockModel(
     logionNodeCollectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
         param => param.collectionLocId === collectionLocId && param.itemId === itemId && param.hash === SOME_DATA_HASH)
     ))
-        .returns(Promise.resolve(filePublished ? publishedCollectionItemFile : undefined));
+        .returns(Promise.resolve(hasFile ? publishedCollectionItemFile : undefined));
     container.bind(LogionNodeCollectionService).toConstantValue(logionNodeCollectionService.object());
 
     const ownershipCheckService = new Mock<OwnershipCheckService>();
@@ -732,6 +731,9 @@ function mockModel(
 
     container.bind(LocRequestService).toConstantValue(new NonTransactionalLocRequestService(locRequestRepository.object()));
 }
+
+const TOKEN_ID = "some-token-id";
+const TOKEN_TYPE = "owner";
 
 function expectDeliveryInfo(responseBody: any) {
     expect(responseBody.copyHash).toBe(DELIVERY_HASH);
