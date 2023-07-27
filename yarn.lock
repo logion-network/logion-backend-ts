@@ -3411,6 +3411,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bson@npm:^4.7.2":
+  version: 4.7.2
+  resolution: "bson@npm:4.7.2"
+  dependencies:
+    buffer: ^5.6.0
+  checksum: f357d12c5679c8eb029a62e410ad40fb862b7b91f0fc12a3399fb3668e14aecaa63205ffeeee48735a01d393171743607dcd527eb8c058b6f2bd294079ee4125
+  languageName: node
+  linkType: hard
+
 "buffer-from@npm:^1.0.0":
   version: 1.1.2
   resolution: "buffer-from@npm:1.1.2"
@@ -5781,10 +5790,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kareem@npm:2.5.0":
-  version: 2.5.0
-  resolution: "kareem@npm:2.5.0"
-  checksum: 292e80b32fb44e1801c5eb25b150e4b42e6ddf8a9c38ac67f99d4e7164dc7d9e874ea9b6ffaa42d6c3e76c8dd28ae5723643f3b5c8cb5c481af07118ce1475e3
+"kareem@npm:2.5.1":
+  version: 2.5.1
+  resolution: "kareem@npm:2.5.1"
+  checksum: b019a960a7b9e44b6ef224ef85e7583d4e969619f53319e571677fbed7e57e01ee8774589726b29741e42790996567d878003c18e674296742dc343bfbf3efb9
   languageName: node
   linkType: hard
 
@@ -6269,12 +6278,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"mongodb@npm:4.12.1":
-  version: 4.12.1
-  resolution: "mongodb@npm:4.12.1"
+"mongodb@npm:4.16.0":
+  version: 4.16.0
+  resolution: "mongodb@npm:4.16.0"
   dependencies:
     "@aws-sdk/credential-providers": ^3.186.0
-    bson: ^4.7.0
+    bson: ^4.7.2
     mongodb-connection-string-url: ^2.5.4
     saslprep: ^1.0.3
     socks: ^2.7.1
@@ -6283,7 +6292,7 @@ __metadata:
       optional: true
     saslprep:
       optional: true
-  checksum: 84590484b2c93bce849ec1e334b064e983444ed73942061c91e09556348c80db9d4a40544b927cd795bdfbfc51d1b713a7df5ced4ecf13cd00fab5e3c3e32ada
+  checksum: f0b1347739cc362b82b3aabc7e7d4d74bc7a344ed1bbafd6f92681bcab440f6cc618ffa0438d41d2789cb34818f3b09d4c78f517b42160ebae55bf2c96f13953
   languageName: node
   linkType: hard
 
@@ -6295,17 +6304,17 @@ __metadata:
   linkType: hard
 
 "mongoose@npm:^6.8.0":
-  version: 6.8.0
-  resolution: "mongoose@npm:6.8.0"
+  version: 6.11.4
+  resolution: "mongoose@npm:6.11.4"
   dependencies:
-    bson: ^4.7.0
-    kareem: 2.5.0
-    mongodb: 4.12.1
+    bson: ^4.7.2
+    kareem: 2.5.1
+    mongodb: 4.16.0
     mpath: 0.9.0
     mquery: 4.0.3
     ms: 2.1.3
     sift: 16.0.1
-  checksum: 565fbf795cfe9b753fc4cf7787c2d3804cefb3a203705b25d41f7c67d628f96dfc644560a69d97ec0546a279339a703de72d011f5ac82b1369ba73972d5b581f
+  checksum: f062aa9b368921256e1a22410f532323c57d48959a88d0bd1b8f948e6048399d17aa391638073a1254c8937312e18a9637ea676b9fd92e0c5ae6588f5dbd589e
   languageName: node
   linkType: hard
 
@@ -7248,8 +7257,8 @@ __metadata:
   linkType: hard
 
 "protobufjs@npm:^7.0.0":
-  version: 7.1.2
-  resolution: "protobufjs@npm:7.1.2"
+  version: 7.2.4
+  resolution: "protobufjs@npm:7.2.4"
   dependencies:
     "@protobufjs/aspromise": ^1.1.2
     "@protobufjs/base64": ^1.1.2
@@ -7263,7 +7272,7 @@ __metadata:
     "@protobufjs/utf8": ^1.1.0
     "@types/node": ">=13.7.0"
     long: ^5.0.0
-  checksum: ae41669b1b0372fb1d49f506f2d1f2b0fb3dc3cece85987b17bcb544e4cef7c8d27f480486cdec324146ad0a5d22a327166a7ea864a9b3e49cc3c92a5d3f6500
+  checksum: a952cdf2a5e5250c16ae651b570849b6f5b20a5475c3eef63ffb290ad239aa2916adfc1cc676f7fc93c69f48113df268761c0c246f7f023118c85bdd1a170044
   languageName: node
   linkType: hard
 
@@ -7721,31 +7730,31 @@ __metadata:
   linkType: hard
 
 "semver@npm:^5.4.1":
-  version: 5.7.1
-  resolution: "semver@npm:5.7.1"
+  version: 5.7.2
+  resolution: "semver@npm:5.7.2"
   bin:
-    semver: ./bin/semver
-  checksum: 57fd0acfd0bac382ee87cd52cd0aaa5af086a7dc8d60379dfe65fea491fb2489b6016400813930ecd61fd0952dae75c115287a1b16c234b1550887117744dfaf
+    semver: bin/semver
+  checksum: fb4ab5e0dd1c22ce0c937ea390b4a822147a9c53dbd2a9a0132f12fe382902beef4fbf12cf51bb955248d8d15874ce8cd89532569756384f994309825f10b686
   languageName: node
   linkType: hard
 
 "semver@npm:^6.0.0, semver@npm:^6.3.0":
-  version: 6.3.0
-  resolution: "semver@npm:6.3.0"
+  version: 6.3.1
+  resolution: "semver@npm:6.3.1"
   bin:
-    semver: ./bin/semver.js
-  checksum: 1b26ecf6db9e8292dd90df4e781d91875c0dcc1b1909e70f5d12959a23c7eebb8f01ea581c00783bbee72ceeaad9505797c381756326073850dc36ed284b21b9
+    semver: bin/semver.js
+  checksum: ae47d06de28836adb9d3e25f22a92943477371292d9b665fb023fae278d345d508ca1958232af086d85e0155aee22e313e100971898bbb8d5d89b8b1d4054ca2
   languageName: node
   linkType: hard
 
 "semver@npm:^7.3.5, semver@npm:^7.3.8":
-  version: 7.3.8
-  resolution: "semver@npm:7.3.8"
+  version: 7.5.4
+  resolution: "semver@npm:7.5.4"
   dependencies:
     lru-cache: ^6.0.0
   bin:
     semver: bin/semver.js
-  checksum: ba9c7cbbf2b7884696523450a61fee1a09930d888b7a8d7579025ad93d459b2d1949ee5bbfeb188b2be5f4ac163544c5e98491ad6152df34154feebc2cc337c1
+  checksum: 12d8ad952fa353b0995bf180cdac205a4068b759a140e5d3c608317098b3575ac2f1e09182206bf2eb26120e1c0ed8fb92c48c592f6099680de56bb071423ca3
   languageName: node
   linkType: hard
 
