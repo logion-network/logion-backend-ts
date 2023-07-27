@@ -272,7 +272,8 @@ export class TokensRecordRepository {
     }
 
     public async findAllBy(collectionLocId: string): Promise<TokensRecordAggregateRoot[]> {
-        const builder = this.repository.createQueryBuilder("record");
+        const builder = this.repository.createQueryBuilder("record")
+            .leftJoinAndSelect("record.files", "file");
         builder.where("record.collection_loc_id = :collectionLocId", { collectionLocId });
         builder.orderBy("record.added_on", "DESC");
         return builder.getMany();
