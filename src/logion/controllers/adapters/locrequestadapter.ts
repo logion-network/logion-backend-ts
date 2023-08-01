@@ -7,7 +7,7 @@ import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
-import { Fees } from "@logion/node-api";
+import { Fees, Hash } from "@logion/node-api";
 import { SupportedAccountId } from "../../model/supportedaccountid.model.js";
 
 export type UserPrivateData = {
@@ -80,7 +80,7 @@ export class LocRequestAdapter {
             closedOn: request.closedOn || undefined,
             files: request.getFiles(viewer).map(file => ({
                 name: file.name,
-                hash: file.hash,
+                hash: file.hash.toHex(),
                 nature: file.nature,
                 submitter: file.submitter,
                 restrictedDelivery: file.restrictedDelivery,
@@ -92,7 +92,7 @@ export class LocRequestAdapter {
             })),
             metadata: request.getMetadataItems(viewer).map(item => ({
                 name: item.name,
-                nameHash: item.nameHash,
+                nameHash: item.nameHash.toHex(),
                 value: item.value,
                 submitter: item.submitter,
                 fees: toFeesView(item.fees),
@@ -104,7 +104,7 @@ export class LocRequestAdapter {
                 addedOn: link.addedOn?.toISOString() || undefined,
                 fees: toFeesView(link.fees),
             })),
-            seal: locDescription.seal?.hash,
+            seal: locDescription.seal?.hash ? locDescription.seal.hash.toHex() : undefined,
             company: locDescription.company,
             iDenfy,
             voteId: vote?.voteId,

@@ -1,4 +1,5 @@
 import { Log, requireDefined } from "@logion/rest-api-core";
+import { Hash } from "@logion/node-api";
 import { AxiosError, AxiosInstance } from "axios";
 import { injectable } from "inversify";
 import { DateTime } from "luxon";
@@ -27,12 +28,11 @@ export interface IdenfyVerificationCreation {
 }
 
 export interface IdenfyVerificationRedirect {
-
     url: string;
 }
 
 interface IPFSFile {
-    hash: string;
+    hash: Hash;
     cid: string;
     size: number;
 }

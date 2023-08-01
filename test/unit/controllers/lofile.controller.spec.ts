@@ -15,6 +15,7 @@ import { LoFileService, NonTransactionalLoFileService } from "../../../src/logio
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp.js";
+import { Hash } from "@logion/node-api";
 
 const existingFile: LoFileDescription = {
     id: 'file1',
@@ -79,9 +80,10 @@ describe("LoFileController", () => {
         const mock = mockAuthenticationForUserOrLegalOfficer(true);
         const app = setupApp(LoFileController, mockModel, mock);
 
+        const wrongHash = Hash.of("wrong-hash").toHex();
         await request(app)
             .put(`/api/lo-file/${ ALICE }/${ existingFile.id }`)
-            .field({ "hash": "wrong-hash" })
+            .field({ "hash": wrongHash })
             .attach('file', buffer, { filename: "file-name", contentType: 'text/plain' })
             .expect(400);
 

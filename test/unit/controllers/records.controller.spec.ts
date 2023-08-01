@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile, hashString } from "@logion/node-api";
+import { TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile, Hash } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import moment from "moment";
 import request from "supertest";
@@ -25,23 +25,24 @@ import {
 import { GetTokensRecordFileParams, GetTokensRecordParams, LogionNodeTokensRecordService, NonTransactionalTokensRecordService, TokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { CollectionItemAggregateRoot, CollectionItemDescription, CollectionRepository } from "../../../src/logion/model/collection.model.js";
+import { ItIsHash } from "../../helpers/Mock.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
 const collectionRequester = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
-const itemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
+const itemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const timestamp = moment();
 
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
 
-const recordId = "0x59772b9c70d6cc244274937445f7c5b56ec6fe0a11292c4ed68848655515a1e6";
+const recordId = Hash.fromHex("0x59772b9c70d6cc244274937445f7c5b56ec6fe0a11292c4ed68848655515a1e6");
 const recordSubmitter = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
 const SOME_DATA = 'some data';
-const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
+const SOME_DATA_HASH = Hash.fromHex('0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee');
 const FILE_NAME = "'a-file.pdf'";
 const CID = "cid-784512";
 const CONTENT_TYPE = "text/plain";
-const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
+const DELIVERY_HASH = Hash.fromHex('0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2');
 
 const { setupApp, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
@@ -65,14 +66,14 @@ describe("TokensRecordController", () => {
         const app = setupApp(TokensRecordController, container => mockModelForGet(container, true));
 
         await request(app)
-            .get(`/api/records/${ collectionLocId }/record/${ recordId }`)
+            .get(`/api/records/${ collectionLocId }/record/${ recordId.toHex() }`)
             .send()
             .expect(200)
             .then(response => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
-                expect(response.body.recordId).toEqual(recordId)
+                expect(response.body.recordId).toEqual(recordId.toHex())
                 expect(response.body.addedOn).toEqual(timestamp.toISOString())
-                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH)
+                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH.toHex())
             })
     })
 
@@ -81,12 +82,12 @@ describe("TokensRecordController", () => {
         const app = setupApp(TokensRecordController, container => mockModelForGet(container, false));
 
         await request(app)
-            .get(`/api/records/${ collectionLocId }/record/${ recordId }`)
+            .get(`/api/records/${ collectionLocId }/record/${ recordId.toHex() }`)
             .send()
             .expect(200)
             .then(response => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
-                expect(response.body.recordId).toEqual(recordId)
+                expect(response.body.recordId).toEqual(recordId.toHex())
                 expect(response.body.addedOn).toBeUndefined()
                 expect(response.body.files).toEqual([])
             })
@@ -96,12 +97,13 @@ describe("TokensRecordController", () => {
 
         const app = setupApp(TokensRecordController, container => mockModelForGet(container, false));
 
+        const nonExistant = Hash.of("non-existent");
         await request(app)
-            .get(`/api/records/${ collectionLocId }/record/0x12345`)
+            .get(`/api/records/${ collectionLocId }/record/${ nonExistant.toHex() }`)
             .send()
             .expect(400)
             .then(response => {
-                expect(response.body.errorMessage).toEqual("Tokens Record d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
+                expect(response.body.errorMessage).toEqual(`Tokens Record d61e2e12-6c06-4425-aeee-2a0e969ac14e/${ nonExistant } not found`)
             })
     })
 
@@ -114,8 +116,8 @@ describe("TokensRecordController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(200);
     })
@@ -128,14 +130,15 @@ describe("TokensRecordController", () => {
             filePublished: true,
         }));
         const buffer = Buffer.from(SOME_DATA);
+        const wrongHash = Hash.of("wrong-hash").toHex();
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: "wrong-hash" })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: wrongHash })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Received hash wrong-hash does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+                expect(response.body.errorMessage).toBe(`Received hash ${ wrongHash } does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee`);
             });
     })
 
@@ -148,8 +151,8 @@ describe("TokensRecordController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -167,8 +170,8 @@ describe("TokensRecordController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -186,8 +189,8 @@ describe("TokensRecordController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -205,8 +208,8 @@ describe("TokensRecordController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/records/${ collectionLocId }/${ recordId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: "WrongName.pdf" })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -215,7 +218,7 @@ describe("TokensRecordController", () => {
             });
     });
 
-    const downloadUrl = `/api/records/${ collectionLocId }/${ recordId }/files/${ SOME_DATA_HASH }/${ itemId }`;
+    const downloadUrl = `/api/records/${ collectionLocId }/${ recordId.toHex() }/files/${ SOME_DATA_HASH.toHex() }/${ itemId.toHex() }`;
 
     it('fails to download non-existing file', async () => {
         const app = setupApp(TokensRecordController, container => mockModel(container, {
@@ -305,10 +308,10 @@ describe("TokensRecordController", () => {
             isOwner: true,
         }));
         await request(app)
-            .get(`/api/records/${ collectionLocId }/${ recordId }/deliveries`)
+            .get(`/api/records/${ collectionLocId }/${ recordId.toHex() }/deliveries`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
-            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH.toHex()][0]));
     })
 
     it('downloads existing file source given its hash and is owner', async () => {
@@ -323,7 +326,7 @@ describe("TokensRecordController", () => {
         const filePath = TokensRecordController.tempFilePath({ collectionLocId, recordId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/records/${ collectionLocId }/${ recordId }/files-sources/${ SOME_DATA_HASH }`)
+            .get(`/api/records/${ collectionLocId }/${ recordId.toHex() }/files-sources/${ SOME_DATA_HASH.toHex() }`)
             .expect(200, SOME_DATA)
             .expect('Content-Type', /text\/plain/);
         let fileReallyExists = true;
@@ -355,12 +358,12 @@ function mockModel(
     const collectionLoc = new LocRequestAggregateRoot();
     collectionLoc.id = collectionLocId;
     tokensRecord.collectionLocId = collectionLocId;
-    tokensRecord.recordId = recordId;
+    tokensRecord.recordId = recordId.toHex();
     tokensRecord.addedOn = timestamp.toDate();
     const tokensRecordFile = new TokensRecordFile();
     tokensRecordFile.collectionLocId = collectionLocId;
-    tokensRecordFile.recordId = recordId;
-    tokensRecordFile.hash = SOME_DATA_HASH;
+    tokensRecordFile.recordId = recordId.toHex();
+    tokensRecordFile.hash = SOME_DATA_HASH.toHex();
     tokensRecordFile.name = FILE_NAME;
     tokensRecordFile.contentType = CONTENT_TYPE;
     tokensRecordFile.tokenRecord = tokensRecord;
@@ -371,12 +374,12 @@ function mockModel(
     const tokensRecordRepository = new Mock<TokensRecordRepository>()
     const locRequestRepository = new Mock<LocRequestRepository>();
     if (recordAlreadyInDB) {
-        tokensRecordRepository.setup(instance => instance.findBy(collectionLocId, recordId))
+        tokensRecordRepository.setup(instance => instance.findBy(collectionLocId, ItIsHash(recordId)))
             .returns(Promise.resolve(tokensRecord))
         tokensRecordRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([ tokensRecord ]))
     } else {
-        tokensRecordRepository.setup(instance => instance.findBy(collectionLocId, recordId))
+        tokensRecordRepository.setup(instance => instance.findBy(collectionLocId, ItIsHash(recordId)))
             .returns(Promise.resolve(null))
         tokensRecordRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([]))
@@ -385,29 +388,29 @@ function mockModel(
 
     const delivered: TokensRecordFileDelivered = {
         collectionLocId,
-        recordId,
-        hash: SOME_DATA_HASH,
-        deliveredFileHash: DELIVERY_HASH,
+        recordId: recordId.toHex(),
+        hash: SOME_DATA_HASH.toHex(),
+        deliveredFileHash: DELIVERY_HASH.toHex(),
         generatedOn: new Date(),
         owner: ITEM_TOKEN_OWNER,
         tokensRecordFile: tokensRecordFile,
     };
 
     tokensRecordRepository.setup(instance => instance.findLatestDelivery(
-        It.Is<{ collectionLocId: string, recordId: string, fileHash: string }>(query =>
+        It.Is<{ collectionLocId: string, recordId: Hash, fileHash: Hash }>(query =>
             query.collectionLocId === collectionLocId
-            && query.recordId === recordId
-            && query.fileHash === SOME_DATA_HASH
+            && query.recordId.equalTo(recordId)
+            && query.fileHash.equalTo(SOME_DATA_HASH)
         ))
     ).returnsAsync(delivered);
 
     tokensRecordRepository.setup(instance => instance.findLatestDeliveries(
-        It.Is<{ collectionLocId: string, recordId: string }>(query =>
+        It.Is<{ collectionLocId: string, recordId: Hash }>(query =>
             query.collectionLocId === collectionLocId
-            && query.recordId === recordId
+            && query.recordId.equalTo(recordId)
         ))
     ).returnsAsync({
-        [ SOME_DATA_HASH ]: [ delivered ]
+        [ SOME_DATA_HASH.toHex() ]: [ delivered ]
     });
 
     container.bind(TokensRecordRepository).toConstantValue(tokensRecordRepository.object())
@@ -447,18 +450,18 @@ function mockModel(
     }
     publishedCollectionItem.setup(instance => instance.getDescription()).returns(itemDescripiton);
     const collectionRepository = new Mock<CollectionRepository>();
-    collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+    collectionRepository.setup(instance => instance.findBy(collectionLocId, ItIsHash(itemId)))
         .returns(Promise.resolve(publishedCollectionItem.object()));
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object());
 
     const publishedTokensRecordFile: ChainTokensRecordFile = {
         hash: SOME_DATA_HASH,
-        name: hashString(FILE_NAME),
-        contentType: hashString(CONTENT_TYPE),
+        name: Hash.of(FILE_NAME),
+        contentType: Hash.of(CONTENT_TYPE),
         size: SOME_DATA.length.toString(),
     };
     const publishedTokensRecord: ChainTokensRecord = {
-        description: hashString("Item Description"),
+        description: Hash.of("Item Description"),
         files: [],
         submitter: recordSubmitter,
     }
@@ -467,11 +470,11 @@ function mockModel(
     }
     const logionNodeTokensRecordService = new Mock<LogionNodeTokensRecordService>();
     logionNodeTokensRecordService.setup(instance => instance.getTokensRecord(It.Is<GetTokensRecordParams>(
-        param => param.collectionLocId === collectionLocId && param.recordId === recordId)
+        param => param.collectionLocId === collectionLocId && param.recordId.equalTo(recordId))
     ))
         .returns(Promise.resolve(recordPublished ? publishedTokensRecord : undefined));
         logionNodeTokensRecordService.setup(instance => instance.getTokensRecordFile(It.Is<GetTokensRecordFileParams>(
-        param => param.collectionLocId === collectionLocId && param.recordId === recordId && param.hash === SOME_DATA_HASH)
+        param => param.collectionLocId === collectionLocId && param.recordId.equalTo(recordId) && param.hash.equalTo(SOME_DATA_HASH))
     ))
         .returns(Promise.resolve(filePublished ? publishedTokensRecordFile : undefined));
     container.bind(LogionNodeTokensRecordService).toConstantValue(logionNodeTokensRecordService.object());
@@ -493,7 +496,7 @@ function mockModel(
 }
 
 function expectDeliveryInfo(responseBody: any) {
-    expect(responseBody.copyHash).toBe(DELIVERY_HASH);
+    expect(responseBody.copyHash).toBe(DELIVERY_HASH.toHex());
     expect(responseBody.generatedOn).toBeDefined();
     expect(responseBody.owner).toBe(ITEM_TOKEN_OWNER);
 }

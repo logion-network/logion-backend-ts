@@ -19,7 +19,8 @@ import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissu
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 import { ALICE } from "../../helpers/addresses.js";
-import { sha256String, Hash } from "../../../src/logion/lib/crypto/hashing.js";
+import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
+import { ItIsHash } from "../../helpers/Mock.js";
 
 describe("LocSynchronizer", () => {
 
@@ -61,7 +62,7 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addMetadata", {
             loc_id: locId,
             item: {
-                name: METADATA_ITEM_NAME_HASH,
+                name: METADATA_ITEM_NAME_HASH.toHex(),
                 value: METADATA_ITEM_VALUE,
             }
         });
@@ -100,7 +101,7 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addFile", {
             loc_id: locId,
             file: {
-                hash: FILE_HASH,
+                hash: FILE_HASH.toHex(),
             }
         });
         givenLocRequest();
@@ -129,7 +130,7 @@ describe("LocSynchronizer", () => {
     });
 
     it("adds Collection Item", async () => {
-        givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId, item_id: itemId});
+        givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId, item_id: itemId.toHex()});
         givenLocRequest();
         givenCollectionItem();
         givenCollectionFactory();
@@ -138,7 +139,7 @@ describe("LocSynchronizer", () => {
     });
 
     it("adds Collection Item with terms and conditions", async () => {
-        givenLocExtrinsic("addCollectionItemWithTermsAndConditions", { collection_loc_id: locId, item_id: itemId });
+        givenLocExtrinsic("addCollectionItemWithTermsAndConditions", { collection_loc_id: locId, item_id: itemId.toHex() });
         givenLocRequest();
         givenCollectionItem();
         givenCollectionFactory();
@@ -168,7 +169,7 @@ describe("LocSynchronizer", () => {
     it("confirms metadata acknowledged", async () => {
         givenLocExtrinsic("acknowledgeMetadata", {
             loc_id: locId,
-            name: METADATA_ITEM_NAME_HASH,
+            name: METADATA_ITEM_NAME_HASH.toHex(),
         });
         givenLocRequest();
         givenLocRequestExpectsMetadataItemAcknowledged();
@@ -180,7 +181,7 @@ describe("LocSynchronizer", () => {
     it("confirms file acknowledged", async () => {
         givenLocExtrinsic("acknowledgeFile", {
             loc_id: locId,
-            hash: FILE_HASH,
+            hash: FILE_HASH.toHex(),
         });
         givenLocRequest();
         givenLocRequestExpectsFileAcknowledged();
@@ -194,7 +195,7 @@ const locDecimalUuid = "130084474896785895402627605545662412605";
 const locId = locDecimalUuid;
 const locIdUuid = UUID.fromDecimalStringOrThrow(locDecimalUuid).toString();
 const itemIdHex = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
-const itemId = itemIdHex;
+const itemId = Hash.fromHex(itemIdHex);
 const blockTimestamp = moment();
 let locRequestRepository: Mock<LocRequestRepository>;
 let collectionFactory: Mock<CollectionFactory>;
@@ -229,14 +230,14 @@ function givenLocRequest() {
 function givenCollectionItem() {
     collectionItem = new Mock<CollectionItemAggregateRoot>();
     collectionItem.setup(instance => instance.confirm(It.IsAny())).returns();
-    collectionRepository.setup(instance => instance.findBy(locIdUuid, itemIdHex)).returns(Promise.resolve(collectionItem.object()));
+    collectionRepository.setup(instance => instance.findBy(locIdUuid, ItIsHash(itemId))).returns(Promise.resolve(collectionItem.object()));
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
 }
 
 function givenCollectionFactory() {
     collectionFactory.setup(instance => instance.newItem(It.Is<CollectionItemDescription>(params =>
         params.collectionLocId === locIdUuid &&
-        params.itemId === itemIdHex &&
+        params.itemId.equalTo(itemId) &&
         params.addedOn !== undefined
     ))).returns(collectionItem.object())
 }
@@ -290,11 +291,10 @@ function givenLocRequestExpectsMetadataItemUpdated() {
     locRequest.setup(instance => instance.setMetadataItemFee(IS_EXPECTED_NAME_HASH, 42n)).returns(undefined);
 }
 
-const IS_EXPECTED_NAME_HASH = It.Is<Hash>(nameHash => nameHash === METADATA_ITEM_NAME_HASH)
-
 const METADATA_ITEM_NAME = "name";
-const METADATA_ITEM_NAME_HASH = sha256String(METADATA_ITEM_NAME);
+const METADATA_ITEM_NAME_HASH = Hash.of(METADATA_ITEM_NAME);
 const METADATA_ITEM_VALUE = "value";
+const IS_EXPECTED_NAME_HASH = ItIsHash(METADATA_ITEM_NAME_HASH);
 
 function thenMetadataUpdated() {
     locRequest.verify(instance => instance.setMetadataItemAddedOn(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME));
@@ -325,16 +325,16 @@ function thenLinkUpdated() {
 }
 
 function givenLocRequestExpectsFileUpdated() {
-    locRequest.setup(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME)).returns(undefined);
-    locRequest.setup(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE)).returns(undefined);
+    locRequest.setup(instance => instance.setFileAddedOn(ItIsHash(FILE_HASH), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE)).returns(undefined);
 }
 
-const FILE_HASH = "0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7";
+const FILE_HASH = Hash.fromHex("0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7");
 const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee === 42n && fees.storageFee === 24n);
 
 function thenFileUpdated() {
-    locRequest.verify(instance => instance.setFileAddedOn(FILE_HASH, IS_BLOCK_TIME));
-    locRequest.verify(instance => instance.setFileFees(FILE_HASH, IS_EXPECTED_FEES, ALICE));
+    locRequest.verify(instance => instance.setFileAddedOn(ItIsHash(FILE_HASH), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE));
 }
 
 function givenLocRequestExpectsVoid() {
@@ -358,9 +358,9 @@ function thenMetadataAcknowledged() {
 }
 
 function givenLocRequestExpectsFileAcknowledged() {
-    locRequest.setup(instance => instance.confirmFileAcknowledged(FILE_HASH, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenFileAcknowledged() {
-    locRequest.verify(instance => instance.confirmFileAcknowledged(FILE_HASH, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), IS_BLOCK_TIME));
 }

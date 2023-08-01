@@ -14,10 +14,11 @@ import { injectable } from "inversify";
 
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
 import { Child, saveChildren } from "./child.js";
+import { Hash } from "@logion/node-api";
 
 export interface TokensRecordDescription {
     readonly collectionLocId: string;
-    readonly recordId: string;
+    readonly recordId: Hash;
     readonly description?: string;
     readonly addedOn?: Moment;
     readonly files?: TokensRecordFileDescription[];
@@ -26,7 +27,7 @@ export interface TokensRecordDescription {
 export interface TokensRecordFileDescription {
     readonly name?: string;
     readonly contentType?: string;
-    readonly hash: string;
+    readonly hash: Hash;
     readonly cid?: string;
 }
 
@@ -36,14 +37,14 @@ export class TokensRecordAggregateRoot {
     getDescription(): TokensRecordDescription {
         return {
             collectionLocId: this.collectionLocId!,
-            recordId: this.recordId!,
+            recordId: Hash.fromHex(this.recordId!),
             description: this.description,
             addedOn: moment(this.addedOn),
             files: this.files?.map(file => file.getDescription()) || []
         }
     }
 
-    setFileCid(fileDescription: { hash: string, cid: string }) {
+    setFileCid(fileDescription: { hash: Hash, cid: string }) {
         const { hash, cid } = fileDescription;
         const file = this.file(hash);
         if(!file) {
@@ -75,15 +76,15 @@ export class TokensRecordAggregateRoot {
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
     addedOn?: Date;
 
-    hasFile(hash: string): boolean {
+    hasFile(hash: Hash): boolean {
         return this.file(hash) !== undefined;
     }
 
-    file(hash: string): TokensRecordFile | undefined {
-        return this.files!.find(file => file.hash === hash)
+    file(hash: Hash): TokensRecordFile | undefined {
+        return this.files!.find(file => file.hash === hash.toHex());
     }
 
-    getFile(hash: string): TokensRecordFile {
+    getFile(hash: Hash): TokensRecordFile {
         return this.file(hash)!;
     }
 
@@ -101,7 +102,7 @@ export class TokensRecordFile extends Child {
         const file = new TokensRecordFile();
         file.name = description.name;
         file.contentType = description.contentType;
-        file.hash = description.hash;
+        file.hash = description.hash.toHex();
 
         if(root) {
             file.collectionLocId = root.collectionLocId;
@@ -115,7 +116,7 @@ export class TokensRecordFile extends Child {
 
     getDescription(): TokensRecordFileDescription {
         return {
-            hash: this.hash!,
+            hash: Hash.fromHex(this.hash!),
             name: this.name,
             contentType: this.contentType,
             cid: this.cid || undefined,
@@ -156,7 +157,7 @@ export class TokensRecordFile extends Child {
     tokenRecord?: TokensRecordAggregateRoot;
 
     addDeliveredFile(params: {
-        deliveredFileHash: string,
+        deliveredFileHash: Hash,
         generatedOn: Moment,
         owner: string,
     }): TokensRecordFileDelivered {
@@ -167,7 +168,7 @@ export class TokensRecordFile extends Child {
         deliveredFile.recordId = this.recordId;
         deliveredFile.hash = this.hash;
 
-        deliveredFile.deliveredFileHash = deliveredFileHash;
+        deliveredFile.deliveredFileHash = deliveredFileHash.toHex();
         deliveredFile.generatedOn = generatedOn.toDate();
         deliveredFile.owner = owner;
 
@@ -267,8 +268,8 @@ export class TokensRecordRepository {
         });
     }
 
-    public async findBy(collectionLocId: string, recordId: string): Promise<TokensRecordAggregateRoot | null> {
-        return this.repository.findOneBy({ collectionLocId, recordId })
+    public async findBy(collectionLocId: string, recordId: Hash): Promise<TokensRecordAggregateRoot | null> {
+        return this.repository.findOneBy({ collectionLocId, recordId: recordId.toHex() });
     }
 
     public async findAllBy(collectionLocId: string): Promise<TokensRecordAggregateRoot[]> {
@@ -279,10 +280,10 @@ export class TokensRecordRepository {
         return builder.getMany();
     }
 
-    public async findLatestDelivery(query: { collectionLocId: string, recordId: string, fileHash: string }): Promise<TokensRecordFileDelivered | undefined> {
+    public async findLatestDelivery(query: { collectionLocId: string, recordId: Hash, fileHash: Hash }): Promise<TokensRecordFileDelivered | undefined> {
         const { collectionLocId, recordId, fileHash } = query;
         const deliveries = await this.findLatestDeliveries({ collectionLocId, recordId, fileHash, limit: 1 });
-        const deliveriesList = deliveries[fileHash];
+        const deliveriesList = deliveries[fileHash.toHex()];
         if(deliveriesList) {
             return deliveriesList[0];
         } else {
@@ -290,13 +291,13 @@ export class TokensRecordRepository {
         }
     }
 
-    public async findLatestDeliveries(query: { collectionLocId: string, recordId: string, fileHash?: string, limit?: number }): Promise<Record<string, TokensRecordFileDelivered[]>> {
+    public async findLatestDeliveries(query: { collectionLocId: string, recordId: Hash, fileHash?: Hash, limit?: number }): Promise<Record<string, TokensRecordFileDelivered[]>> {
         const { collectionLocId, recordId, fileHash, limit } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
-        builder.andWhere("delivery.record_id = :recordId", { recordId });
+        builder.andWhere("delivery.record_id = :recordId", { recordId: recordId.toHex() });
         if(fileHash) {
-            builder.andWhere("delivery.hash = :fileHash", { fileHash });
+            builder.andWhere("delivery.hash = :fileHash", { fileHash: fileHash.toHex() });
         }
         builder.orderBy("delivery.generated_on", "DESC");
         if(limit) {
@@ -313,9 +314,13 @@ export class TokensRecordRepository {
         return deliveries;
     }
 
-    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, recordId: string, deliveredFileHash: string }): Promise<TokensRecordFileDelivered | null> {
+    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, recordId: Hash, deliveredFileHash: Hash }): Promise<TokensRecordFileDelivered | null> {
         const { collectionLocId, recordId, deliveredFileHash } = query;
-        return await this.deliveredRepository.findOneBy({ collectionLocId, recordId, deliveredFileHash });
+        return await this.deliveredRepository.findOneBy({
+            collectionLocId,
+            recordId: recordId.toHex(),
+            deliveredFileHash: deliveredFileHash.toHex(),
+        });
     }
 
     async delete(item: TokensRecordAggregateRoot): Promise<void> {
@@ -339,7 +344,7 @@ export class TokensRecordFactory {
         const { collectionLocId, recordId } = params;
         const item = new TokensRecordAggregateRoot()
         item.collectionLocId = collectionLocId;
-        item.recordId = recordId;
+        item.recordId = recordId.toHex();
         item.description = params.description;
         item.files = params.files?.map(file => TokensRecordFile.from(file, item)) || [];
         return item;

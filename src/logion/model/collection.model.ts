@@ -15,10 +15,12 @@ import { injectable } from "inversify";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
 import { Child, saveChildren, saveIndexedChildren } from "./child.js";
 import { HasIndex } from "../lib/db/collections.js";
+import { Hash } from "@logion/node-api";
+import { HexString } from "@polkadot/util/types";
 
 export interface CollectionItemDescription {
     readonly collectionLocId: string
-    readonly itemId: string
+    readonly itemId: Hash
     readonly addedOn?: Moment
     readonly files?: CollectionItemFileDescription[]
     readonly description?: string
@@ -29,7 +31,7 @@ export interface CollectionItemDescription {
 export interface CollectionItemFileDescription {
     readonly name?: string;
     readonly contentType?: string;
-    readonly hash: string;
+    readonly hash: Hash;
     readonly cid?: string;
 }
 
@@ -78,7 +80,7 @@ export class CollectionItemAggregateRoot {
     getDescription(): CollectionItemDescription {
         return {
             collectionLocId: this.collectionLocId!,
-            itemId: this.itemId!,
+            itemId: Hash.fromHex(this.itemId!),
             addedOn: this.addedOn ? moment(this.addedOn) : undefined,
             description: this.description,
             token: this.token ? this.token.getDescription() : undefined,
@@ -87,7 +89,7 @@ export class CollectionItemAggregateRoot {
         }
     }
 
-    setFileCid(fileDescription: { hash: string, cid: string }) {
+    setFileCid(fileDescription: { hash: Hash, cid: string }) {
         const { hash, cid } = fileDescription;
         const file = this.file(hash);
         if(!file) {
@@ -125,15 +127,15 @@ export class CollectionItemAggregateRoot {
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
     addedOn?: Date;
 
-    hasFile(hash: string): boolean {
+    hasFile(hash: Hash): boolean {
         return this.file(hash) !== undefined;
     }
 
-    file(hash: string): CollectionItemFile | undefined {
-        return this.files!.find(file => file.hash === hash)
+    file(hash: Hash): CollectionItemFile | undefined {
+        return this.files!.find(file => file.hash === hash.toHex());
     }
 
-    getFile(hash: string): CollectionItemFile {
+    getFile(hash: Hash): CollectionItemFile {
         return this.file(hash)!;
     }
 
@@ -155,7 +157,7 @@ export class CollectionItemFile extends Child {
         const file = new CollectionItemFile();
         file.name = description.name;
         file.contentType = description.contentType;
-        file.hash = description.hash;
+        file.hash = description.hash.toHex();
 
         if(root) {
             file.collectionLocId = root.collectionLocId;
@@ -169,7 +171,7 @@ export class CollectionItemFile extends Child {
 
     getDescription(): CollectionItemFileDescription {
         return {
-            hash: this.hash!,
+            hash: Hash.fromHex(this.hash as HexString),
             name: this.name,
             contentType: this.contentType,
             cid: this.cid || undefined,
@@ -210,7 +212,7 @@ export class CollectionItemFile extends Child {
     collectionItem?: CollectionItemAggregateRoot;
 
     addDeliveredFile(params: {
-        deliveredFileHash: string,
+        deliveredFileHash: Hash,
         generatedOn: Moment,
         owner: string,
     }): CollectionItemFileDelivered {
@@ -221,7 +223,7 @@ export class CollectionItemFile extends Child {
         deliveredFile.itemId = this.itemId;
         deliveredFile.hash = this.hash;
 
-        deliveredFile.deliveredFileHash = deliveredFileHash;
+        deliveredFile.deliveredFileHash = deliveredFileHash.toHex();
         deliveredFile.generatedOn = generatedOn.toDate();
         deliveredFile.owner = owner;
 
@@ -383,8 +385,8 @@ export class CollectionRepository {
         }
     }
 
-    public async findBy(collectionLocId: string, itemId: string): Promise<CollectionItemAggregateRoot | null> {
-        return this.repository.findOneBy({ collectionLocId, itemId })
+    public async findBy(collectionLocId: string, itemId: Hash): Promise<CollectionItemAggregateRoot | null> {
+        return this.repository.findOneBy({ collectionLocId, itemId: itemId.toHex() });
     }
 
     public async findAllBy(collectionLocId: string): Promise<CollectionItemAggregateRoot[]> {
@@ -396,10 +398,10 @@ export class CollectionRepository {
         return builder.getMany();
     }
 
-    public async findLatestDelivery(query: { collectionLocId: string, itemId: string, fileHash: string }): Promise<CollectionItemFileDelivered | undefined> {
+    public async findLatestDelivery(query: { collectionLocId: string, itemId: Hash, fileHash: Hash }): Promise<CollectionItemFileDelivered | undefined> {
         const { collectionLocId, itemId, fileHash } = query;
         const deliveries = await this.findLatestDeliveries({ collectionLocId, itemId, fileHash, limit: 1 });
-        const deliveriesList = deliveries[fileHash];
+        const deliveriesList = deliveries[fileHash.toHex()];
         if(deliveriesList) {
             return deliveriesList[0];
         } else {
@@ -407,13 +409,13 @@ export class CollectionRepository {
         }
     }
 
-    public async findLatestDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limit?: number }): Promise<Record<string, CollectionItemFileDelivered[]>> {
+    public async findLatestDeliveries(query: { collectionLocId: string, itemId: Hash, fileHash?: Hash, limit?: number }): Promise<Record<string, CollectionItemFileDelivered[]>> {
         const { collectionLocId, itemId, fileHash, limit } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
-        builder.andWhere("delivery.item_id = :itemId", { itemId });
+        builder.andWhere("delivery.item_id = :itemId", { itemId: itemId.toHex() });
         if(fileHash) {
-            builder.andWhere("delivery.hash = :fileHash", { fileHash });
+            builder.andWhere("delivery.hash = :fileHash", { fileHash: fileHash.toHex() });
         }
         builder.orderBy("delivery.generated_on", "DESC");
         if(limit) {
@@ -452,7 +454,7 @@ export class CollectionFactory {
         const { collectionLocId, itemId } = params;
         const item = new CollectionItemAggregateRoot()
         item.collectionLocId = collectionLocId;
-        item.itemId = itemId;
+        item.itemId = itemId.toHex();
         item.description = params.description;
         item.token = CollectionItemToken.from(params.token);
         item.files = params.files?.map(file => CollectionItemFile.from(file, item)) || [];

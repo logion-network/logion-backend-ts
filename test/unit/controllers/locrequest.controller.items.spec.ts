@@ -1,4 +1,5 @@
 import { TestApp } from "@logion/rest-api-core";
+import { Hash } from "@logion/node-api";
 import { Express } from 'express';
 import { writeFile } from 'fs/promises';
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
@@ -31,7 +32,7 @@ import {
     SupportedAccountId,
     accountEquals
 } from "../../../src/logion/model/supportedaccountid.model.js";
-import { sha256String } from "../../../src/logion/lib/crypto/hashing.js";
+import { ItIsHash } from "../../helpers/Mock.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -58,11 +59,12 @@ describe('LocRequestController - Items -', () => {
         mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
         const buffer = Buffer.from(SOME_DATA);
+        const wrongHash = Hash.of("wrong-hash").toHex();
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/files`)
             .field({
                 nature: "some nature",
-                hash: "wrong-hash"
+                hash: wrongHash
             })
             .attach('file', buffer, {
                 filename: FILE_NAME,
@@ -71,7 +73,7 @@ describe('LocRequestController - Items -', () => {
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Received hash wrong-hash does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+                expect(response.body.errorMessage).toBe(`Received hash ${ wrongHash } does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee`);
             });
     })
 
@@ -140,7 +142,7 @@ describe('LocRequestController - Items -', () => {
     it('confirms a file', async () => {
         const app = setupApp(LocRequestController, mockModelForConfirmFile)
         await request(app)
-            .put(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}/confirm`)
+            .put(`/api/loc-request/${REQUEST_ID}/files/${ SOME_DATA_HASH.toHex() }/confirm`)
             .expect(204);
     });
 
@@ -189,7 +191,7 @@ describe('LocRequestController - Items -', () => {
     it('confirms a metadata item', async () => {
         const app = setupApp(LocRequestController, (container) => mockModelForConfirmMetadata(container))
         await request(app)
-            .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH }/confirm`)
+            .put(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH.toHex() }/confirm`)
             .expect(204);
     });
 
@@ -227,14 +229,14 @@ describe('LocRequestController - Items -', () => {
 });
 
 const SOME_DATA = 'some data';
-const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
+const SOME_DATA_HASH = Hash.fromHex('0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee');
 const FILE_NAME = "'a-file.pdf'";
 
 function mockModelForAddFile(container: Container, request: Mock<LocRequestAggregateRoot>, issuerMode: SetupIssuerMode): void {
     const { fileStorageService, loc } = buildMocksForUpdate(container, { request });
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.hasFile(SOME_DATA_HASH)).returns(false);
+    request.setup(instance => instance.hasFile(ItIsHash(SOME_DATA_HASH))).returns(false);
     request.setup(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>())).returns();
 
     setupSelectedIssuer(loc, issuerMode);
@@ -265,7 +267,7 @@ async function testAddFileForbidden(app: Express) {
     const buffer = Buffer.from(SOME_DATA);
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/files`)
-        .field({ nature: "some nature", hash: SOME_DATA_HASH })
+        .field({ nature: "some nature", hash: SOME_DATA_HASH.toHex() })
         .attach('file', buffer, {
             filename: FILE_NAME,
             contentType: 'text/plain',
@@ -281,12 +283,12 @@ function mockModelForDownloadFile(container: Container, issuerMode: SetupIssuerM
     mockRequester(request, REQUESTER);
 
     const hash = SOME_DATA_HASH;
-    request.setup(instance => instance.getFile(hash)).returns({
+    request.setup(instance => instance.getFile(ItIsHash(hash))).returns({
         ...SOME_FILE,
         submitter: issuerMode !== "NOT_ISSUER" ? ISSUER : REQUESTER,
     });
 
-    const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash;
+    const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash.toHex();
     fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
         .returns(Promise.resolve());
 
@@ -308,10 +310,10 @@ const SOME_FILE: FileDescription = {
 };
 
 async function testDownloadSuccess(app: Express) {
-    const filePath = "/tmp/download-" + REQUEST_ID + "-" + SOME_DATA_HASH;
+    const filePath = "/tmp/download-" + REQUEST_ID + "-" + SOME_DATA_HASH.toHex();
     await writeFile(filePath, SOME_DATA);
     await request(app)
-        .get(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH }`)
+        .get(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH.toHex() }`)
         .expect(200, SOME_DATA)
         .expect('Content-Type', /text\/plain/);
     await expectFileExists(filePath);
@@ -332,7 +334,7 @@ async function expectFileExists(filePath: string) {
 
 async function testDownloadForbidden(app: Express) {
     await request(app)
-        .get(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH }`)
+        .get(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH.toHex() }`)
         .expect(403);
 }
 
@@ -362,17 +364,17 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
 
 async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, issuerMode: SetupIssuerMode) {
     await request(app)
-        .delete(`/api/loc-request/${REQUEST_ID}/files/${SOME_DATA_HASH}`)
+        .delete(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH.toHex() }`)
         .expect(200);
     if(issuerMode !== 'NOT_ISSUER') {
         locRequest.verify(instance => instance.removeFile(
             It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)),
-            SOME_DATA_HASH
+            ItIsHash(SOME_DATA_HASH)
         ));
     } else {
         locRequest.verify(instance => instance.removeFile(
             It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
-            SOME_DATA_HASH
+            ItIsHash(SOME_DATA_HASH)
         ));
     }
 }
@@ -380,22 +382,22 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
 function mockModelForConfirmFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.getFile(SOME_DATA_HASH)).returns({ submitter: { type: "Polkadot", address: ALICE } } as FileDescription);
-    request.setup(instance => instance.confirmFile(SOME_DATA_HASH)).returns();
+    request.setup(instance => instance.getFile(ItIsHash(SOME_DATA_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as FileDescription);
+    request.setup(instance => instance.confirmFile(ItIsHash(SOME_DATA_HASH))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
 
 const SOME_DATA_NAME = "data name with exotic char !é\"/&'"
-const SOME_DATA_NAME_HASH = sha256String("data name with exotic char !é\"/&'");
+const SOME_DATA_NAME_HASH = Hash.of("data name with exotic char !é\"/&'");
 const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
     mockRequester(request, REQUESTER);
-    request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, SOME_DATA_NAME_HASH))
+    request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, ItIsHash(SOME_DATA_NAME_HASH)))
         .returns()
-    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME_HASH))
+    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH)))
         .returns()
     request.setup(instance => instance.addMetadataItem({
         name: SOME_DATA_NAME,
@@ -424,12 +426,12 @@ async function testAddMetadataForbidden(app: Express) {
 
 async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, isVerifiedIssuer: boolean) {
     await request(app)
-        .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH }`)
+        .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH.toHex() }`)
         .expect(200);
     if(isVerifiedIssuer) {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), SOME_DATA_NAME_HASH));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), ItIsHash(SOME_DATA_NAME_HASH)));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), SOME_DATA_NAME_HASH));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), ItIsHash(SOME_DATA_NAME_HASH)));
     }
 }
 
@@ -442,7 +444,7 @@ function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
         .returns()
     request.setup(instance => instance.confirmLink(SOME_LINK_TARGET))
         .returns()
-    request.setup(instance => instance.addLink({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE}))
+    request.setup(instance => instance.addLink({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE }))
         .returns()
     return request;
 }
@@ -467,7 +469,7 @@ function mockModelForAddLink(container: Container, request: Mock<LocRequestAggre
 function mockModelForConfirmMetadata(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
-    request.setup(instance => instance.getMetadataItem(SOME_DATA_NAME_HASH)).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
-    request.setup(instance => instance.confirmMetadataItem(SOME_DATA_NAME_HASH)).returns();
+    request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
+    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }

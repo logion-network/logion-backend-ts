@@ -16,20 +16,16 @@ export class HashTransformer implements ValueTransformer {
         if (!value) {
             return undefined;
         }
-        return `0x${ value.toString('hex') }`;
+        return new Hash(value);
     }
 
     to(value: Hash): Buffer {
-        return Buffer.from(value.substring(2), "hex");
+        return Buffer.from(value.bytes);
     }
 }
 
 export function sha256(attributes: any[]): string {
     return hash(algorithm, attributes);
-}
-
-export function sha256String(message: string): Hash {
-    return `0x${ hash(algorithm, [ message ], "hex") }`;
 }
 
 function hash(algorithm: string, attributes: any[], encoding: BinaryToTextEncoding = "base64"): string {
@@ -48,7 +44,7 @@ export function sha256File(fileName: string): Promise<Hash> {
     }
     const promise = new Promise<Hash>((success, error) => {
         stream.on('end', function () {
-            success(`0x${ hash.digest('hex') }`);
+            success(Hash.fromHex(`0x${ hash.digest('hex') }`));
         });
         stream.on('error', error);
     });

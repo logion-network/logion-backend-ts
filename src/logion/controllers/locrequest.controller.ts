@@ -359,7 +359,7 @@ export class LocRequestController extends ApiController {
             createdOn: locDescription.createdOn || undefined,
             closedOn: request.closedOn || undefined,
             files: request.getFiles().map(file => ({
-                hash: file.hash,
+                hash: file.hash.toHex(),
                 nature: file.nature,
                 addedOn: file.addedOn?.toISOString() || undefined,
                 submitter: file.submitter,
@@ -368,7 +368,7 @@ export class LocRequestController extends ApiController {
             })),
             metadata: request.getMetadataItems().map(item => ({
                 name: item.name,
-                nameHash: item.nameHash,
+                nameHash: item.nameHash.toHex(),
                 value: item.value,
                 addedOn: item.addedOn?.toISOString() || undefined,
                 submitter: item.submitter,
@@ -508,7 +508,7 @@ export class LocRequestController extends ApiController {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
 
-        const hash = requireDefined(addFileView.hash, () => badRequest("No hash found for upload file"));
+        const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
         if(request.hasFile(hash)) {
             throw new Error("File already present");
         }
@@ -553,7 +553,7 @@ export class LocRequestController extends ApiController {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const { contributor, voter } = await this.ensureContributorOrVoter(request);
 
-        const file = request.getFile(hash);
+        const file = request.getFile(Hash.fromHex(hash));
         if (
             !accountEquals(contributor, request.getOwner()) &&
             !accountEquals(contributor, request.getRequester()) &&
@@ -588,7 +588,7 @@ export class LocRequestController extends ApiController {
         let file: FileDescription | undefined;
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            file = request.removeFile(contributor, hash);
+            file = request.removeFile(contributor, Hash.fromHex(hash));
         });
         if(file) {
             await this.fileStorageService.deleteFile(file);
@@ -615,7 +615,7 @@ export class LocRequestController extends ApiController {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
             await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.requestFileReview(hash);
+            request.requestFileReview(Hash.fromHex(hash));
         });
 
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
@@ -625,7 +625,7 @@ export class LocRequestController extends ApiController {
     }
 
     static reviewFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/review"].post!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/review"].post!;
         operationObject.summary = "Reviews the given file";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.requestBody = getRequestBody({
@@ -635,15 +635,16 @@ export class LocRequestController extends ApiController {
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'hash': "The hash of the file to review"
+            'hashHex': "The hash of the file to review"
         });
     }
 
-    @HttpPost('/:requestId/files/:hash/review')
+    @HttpPost('/:requestId/files/:hashHex/review')
     @Async()
     @SendsResponse()
-    async reviewFile(view: ReviewItemView, requestId: string, hash: string) {
+    async reviewFile(view: ReviewItemView, requestId: string, hashHex: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const hash = Hash.fromHex(hashHex);
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
@@ -661,20 +662,21 @@ export class LocRequestController extends ApiController {
     }
 
     static confirmFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/confirm"].put!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/confirm"].put!;
         operationObject.summary = "Confirms a file of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a file is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'hash': "The hash of the file to download"
+            'hashHex': "The hash of the file to download"
         });
     }
 
-    @HttpPut('/:requestId/files/:hash/confirm')
+    @HttpPut('/:requestId/files/:hashHex/confirm')
     @Async()
     @SendsResponse()
-    async confirmFile(_body: any, requestId: string, hash: string) {
+    async confirmFile(_body: any, requestId: string, hashHex: string) {
+        const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const file = request.getFile(hash);
@@ -705,7 +707,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmFileAcknowledged(hash)
+            request.confirmFileAcknowledged(Hash.fromHex(hash));
         });
         this.response.sendStatus(204);
     }
@@ -877,10 +879,10 @@ export class LocRequestController extends ApiController {
 
     @HttpDelete('/:requestId/metadata/:nameHash')
     @Async()
-    async deleteMetadata(_body: any, requestId: string, nameHash: Hash): Promise<void> {
+    async deleteMetadata(_body: any, requestId: string, nameHash: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.removeMetadataItem(contributor, nameHash);
+            request.removeMetadataItem(contributor, Hash.fromHex(nameHash));
         });
     }
 
@@ -898,19 +900,19 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/metadata/:nameHash/review-request')
     @Async()
     @SendsResponse()
-    async requestMetadataReview(_body: any, requestId: string, nameHash: Hash) {
+    async requestMetadataReview(_body: any, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
             await this.locAuthorizationService.ensureContributor(this.request, request);
-            request.requestMetadataItemReview(nameHash);
+            request.requestMetadataItemReview(Hash.fromHex(nameHash));
         });
         this.response.sendStatus(204);
     }
 
     static reviewMetadata(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/review"].post!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/review"].post!;
         operationObject.summary = "Reviews the given file";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.requestBody = getRequestBody({
@@ -927,15 +929,16 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/metadata/:nameHash/review')
     @Async()
     @SendsResponse()
-    async reviewMetadata(view: ReviewItemView, requestId: string, nameHash: Hash) {
+    async reviewMetadata(view: ReviewItemView, requestId: string, nameHash: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const hash = Hash.fromHex(nameHash);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
-                request.acceptMetadataItem(nameHash);
+                request.acceptMetadataItem(hash);
             } else {
                 const reason = requireDefined(view.rejectReason, () => badRequest("Reason is required"));
-                request.rejectMetadataItem(nameHash, reason);
+                request.rejectMetadataItem(hash, reason);
             }
         });
         this.response.sendStatus(204);
@@ -955,12 +958,13 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/metadata/:nameHash/confirm')
     @Async()
     @SendsResponse()
-    async confirmMetadata(_body: any, requestId: string, nameHash: Hash) {
+    async confirmMetadata(_body: any, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            const item = request.getMetadataItem(nameHash);
+            const hash = Hash.fromHex(nameHash);
+            const item = request.getMetadataItem(hash);
             if((item.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(item.submitter, contributor)) {
-                request.confirmMetadataItem(nameHash);
+                request.confirmMetadataItem(hash);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -982,11 +986,11 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/metadata/:nameHash/confirm-acknowledged')
     @Async()
     @SendsResponse()
-    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHash: Hash) {
+    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHash: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmMetadataItemAcknowledged(nameHash)
+            request.confirmMetadataItemAcknowledged(Hash.fromHex(nameHash));
         });
         this.response.sendStatus(204);
     }
@@ -1014,8 +1018,8 @@ export class LocRequestController extends ApiController {
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
         let linkNature = `Original LOC`;
         if (loc.locType === 'Collection') {
-            const itemId = requireDefined(createSofRequestView.itemId,
-                () => badRequest("Missing itemId"));
+            const itemId = Hash.fromHex(requireDefined(createSofRequestView.itemId,
+                () => badRequest("Missing itemId")));
             requireDefined(await this.collectionRepository.findBy(locId, itemId),
                 () => badRequest("Item not found"));
             description = `${ description } - ${ itemId }`

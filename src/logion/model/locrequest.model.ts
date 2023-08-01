@@ -26,7 +26,7 @@ import {
     polkadotAccount
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
-import { sha256String, Hash, HashTransformer } from "../lib/crypto/hashing.js";
+import { Hash, HashTransformer } from "../lib/crypto/hashing.js";
 
 const { logger } = Log;
 
@@ -57,7 +57,7 @@ export interface LocRequestDecision {
 
 export interface FileParams {
     readonly name: string;
-    readonly hash: string;
+    readonly hash: Hash;
     readonly oid?: number;
     readonly cid?: string;
     readonly contentType: string;
@@ -211,7 +211,7 @@ class EmbeddableSeal {
             return undefined;
         }
         const result = new EmbeddableSeal();
-        result.hash = seal.hash;
+        result.hash = seal.hash.toHex();
         result.salt = seal.salt;
         result.version = seal.version;
         return result;
@@ -222,7 +222,7 @@ function toPublicSeal(embedded: EmbeddableSeal | undefined): PublicSeal | undefi
     return embedded && embedded.hash && embedded.version !== undefined && embedded.version !== null
         ?
         {
-            hash: embedded.hash,
+            hash: Hash.fromHex(embedded.hash),
             version: embedded.version
         }
         : undefined;
@@ -351,7 +351,7 @@ export class LocRequestAggregateRoot {
         file.requestId = this.id;
         file.index = this.files!.length;
         file.name = fileDescription.name;
-        file.hash! = fileDescription.hash;
+        file.hash! = fileDescription.hash.toHex();
         file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
         file.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
@@ -369,11 +369,11 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    requestFileReview(hash: string) {
+    requestFileReview(hash: Hash) {
         this.mutateFile(hash, item => item.lifecycle!.requestReview());
     }
 
-    acceptFile(hash: string) {
+    acceptFile(hash: Hash) {
         this.ensureAcceptedOrOpen();
         this.mutateFile(hash, item => item.lifecycle!.accept());
     }
@@ -384,11 +384,11 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    rejectFile(hash: string, reason: string) {
+    rejectFile(hash: Hash, reason: string) {
         this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmFile(hash: string) {
+    confirmFile(hash: Hash) {
         this.mutateFile(hash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
@@ -396,11 +396,11 @@ export class LocRequestAggregateRoot {
         return accountEquals(account, { address: this.ownerAddress, type: "Polkadot" });
     }
 
-    confirmFileAcknowledged(hash: string, acknowledgedOn?: Moment) {
+    confirmFileAcknowledged(hash: Hash, acknowledgedOn?: Moment) {
         this.mutateFile(hash, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
     }
 
-    private mutateFile(hash: string, mutator: (item: LocFile) => void) {
+    private mutateFile(hash: Hash, mutator: (item: LocFile) => void) {
         const file = this.getFileOrThrow(hash);
         mutator(file);
         file._toUpdate = true;
@@ -411,23 +411,23 @@ export class LocRequestAggregateRoot {
         this.files?.forEach(item => item.status = statusTo);
     }
     
-    private getFileOrThrow(hash: string) {
+    private getFileOrThrow(hash: Hash) {
         const file = this.file(hash);
         if(!file) {
-            throw new Error(`No file with hash ${hash}`);
+            throw new Error(`No file with hash ${hash.toHex()}`);
         }
         return file;
     }
 
-    private file(hash: string): LocFile | undefined {
-        return this.files?.find(file => file.hash === hash);
+    private file(hash: Hash): LocFile | undefined {
+        return this.files?.find(file => file.hash === hash.toHex());
     }
 
-    hasFile(hash: string): boolean {
+    hasFile(hash: Hash): boolean {
         return this.file(hash) !== undefined;
     }
 
-    getFile(hash: string): FileDescription {
+    getFile(hash: Hash): FileDescription {
         return this.toFileDescription(this.getFileOrThrow(hash));
     }
 
@@ -435,7 +435,7 @@ export class LocRequestAggregateRoot {
         return {
             name: file!.name!,
             contentType: file!.contentType!,
-            hash: file!.hash!,
+            hash: Hash.fromHex(file!.hash!),
             oid: file!.oid,
             cid: file!.cid,
             nature: file!.nature!,
@@ -493,7 +493,7 @@ export class LocRequestAggregateRoot {
 
     addMetadataItem(itemDescription: MetadataItemParams, alreadyReviewed: boolean) {
         this.ensureEditable();
-        const nameHash = sha256String(itemDescription.name);
+        const nameHash = Hash.of(itemDescription.name);
         if (this.hasMetadataItem(nameHash)) {
             throw new Error("A metadata item with given nameHash was already added to this LOC");
         }
@@ -541,7 +541,7 @@ export class LocRequestAggregateRoot {
 
     removeMetadataItem(remover: SupportedAccountId, nameHash: Hash): void {
         this.ensureEditable();
-        const removedItemIndex: number = this.metadata!.findIndex(link => link.nameHash === nameHash);
+        const removedItemIndex: number = this.metadata!.findIndex(link => link.nameHash?.equalTo(nameHash));
         if (removedItemIndex === -1) {
             throw new Error("No metadata item with given name");
         }
@@ -599,10 +599,10 @@ export class LocRequestAggregateRoot {
     }
 
     metadataItem(nameHash: Hash): LocMetadataItem | undefined {
-        return this.metadata!.find(metadataItem => metadataItem.nameHash === nameHash)
+        return this.metadata!.find(metadataItem => metadataItem.nameHash?.equalTo(nameHash))
     }
 
-    setFileAddedOn(hash: string, addedOn: Moment) {
+    setFileAddedOn(hash: Hash, addedOn: Moment) {
         const file = this.file(hash);
         if (!file) {
             logger.error(`File with hash ${ hash } not found`);
@@ -612,9 +612,9 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    removeFile(removerAddress: SupportedAccountId, hash: string): FileDescription {
+    removeFile(removerAddress: SupportedAccountId, hash: Hash): FileDescription {
         this.ensureEditable();
-        const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash);
+        const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash.toHex());
         if (removedFileIndex === -1) {
             throw new Error("No file with given hash");
         }
@@ -794,8 +794,8 @@ export class LocRequestAggregateRoot {
     }
 
     addDeliveredFile(params: {
-        hash: string,
-        deliveredFileHash: string,
+        hash: Hash,
+        deliveredFileHash: Hash,
         generatedOn: Moment,
         owner: string,
     }): void {
@@ -815,7 +815,7 @@ export class LocRequestAggregateRoot {
     }
 
     setFileRestrictedDelivery(params: {
-        hash: string,
+        hash: Hash,
         restrictedDelivery: boolean,
     }): void {
         if(this.locType !== 'Collection') {
@@ -826,7 +826,7 @@ export class LocRequestAggregateRoot {
         file.setRestrictedDelivery(restrictedDelivery);
     }
 
-    setFileFees(hash: string, fees: Fees, storageFeePaidBy: string | undefined) {
+    setFileFees(hash: Hash, fees: Fees, storageFeePaidBy: string | undefined) {
         const file = this.getFileOrThrow(hash);
         file.setFees(fees, storageFeePaidBy);
     }
@@ -1020,7 +1020,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
     }
 
     addDeliveredFile(params: {
-        deliveredFileHash: string,
+        deliveredFileHash: Hash,
         generatedOn: Moment,
         owner: string,
     }): LocFileDelivered {
@@ -1030,7 +1030,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
         deliveredFile.requestId = this.requestId;
         deliveredFile.hash = this.hash;
 
-        deliveredFile.deliveredFileHash = deliveredFileHash;
+        deliveredFile.deliveredFileHash = deliveredFileHash.toHex();
         deliveredFile.generatedOn = generatedOn.toDate();
         deliveredFile.owner = owner;
 
@@ -1348,12 +1348,12 @@ export class LocRequestRepository {
         await this.repository.manager.delete(LocRequestAggregateRoot, request.id);
     }
 
-    public async findAllDeliveries(query: { collectionLocId: string, hash?: string }): Promise<Record<string, LocFileDelivered[]>> {
+    public async findAllDeliveries(query: { collectionLocId: string, hash?: Hash }): Promise<Record<string, LocFileDelivered[]>> {
         const { collectionLocId, hash } = query;
         let builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.request_id = :collectionLocId", { collectionLocId });
         if (hash) {
-            builder.andWhere("delivery.hash = :hash", { hash });
+            builder.andWhere("delivery.hash = :hash", { hash: hash.toHex() });
         }
         builder.orderBy("delivery.generated_on", "DESC");
         const deliveriesList = await builder.getMany();
@@ -1367,10 +1367,10 @@ export class LocRequestRepository {
         return deliveries;
     }
 
-    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, deliveredFileHash: string }): Promise<LocFileDelivered | null> {
+    public async findDeliveryByDeliveredFileHash(query: { collectionLocId: string, deliveredFileHash: Hash }): Promise<LocFileDelivered | null> {
         const requestId = query.collectionLocId;
         const { deliveredFileHash } = query;
-        return await this.deliveredRepository.findOneBy({ requestId, deliveredFileHash })
+        return await this.deliveredRepository.findOneBy({ requestId, deliveredFileHash: deliveredFileHash.toHex() })
     }
 }
 

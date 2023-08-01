@@ -5,11 +5,11 @@ import { CollectionItemAggregateRoot, CollectionRepository } from "../model/coll
 
 export interface GetCollectionItemParams {
     collectionLocId: string,
-    itemId: string,
+    itemId: Hash,
 }
 
 export interface GetCollectionItemFileParams extends GetCollectionItemParams {
-    hash: string
+    hash: Hash;
 }
 
 @injectable()
@@ -24,14 +24,14 @@ export class LogionNodeCollectionService {
         const api = await this.polkadotService.readyApi();
         return await api.queries.getCollectionItem(
             new UUID(collectionLocId),
-            itemId as Hash,
+            itemId,
         );
     }
 
     async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<ItemFile | undefined> {
         const { hash } = params;
         const collectionItem = await this.getCollectionItem(params);
-        return collectionItem?.files.find(itemFile => itemFile.hash === hash);
+        return collectionItem?.files.find(itemFile => itemFile.hash.equalTo(hash));
     }
 }
 
@@ -44,7 +44,7 @@ export abstract class CollectionService {
     async addCollectionItem(item: CollectionItemAggregateRoot): Promise<void> {
         const previousItem = await this.collectionRepository.findBy(
             requireDefined(item.collectionLocId),
-            requireDefined(item.itemId),
+            Hash.fromHex(requireDefined(item.itemId)),
         );
         if(previousItem) {
             throw new Error("Cannot replace existing item");
@@ -56,7 +56,7 @@ export abstract class CollectionService {
         await this.collectionRepository.delete(item);
     }
 
-    async update(collectionLocId: string, itemId: string, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
+    async update(collectionLocId: string, itemId: Hash, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
         const item = requireDefined(await this.collectionRepository.findBy(collectionLocId, itemId));
         await mutator(item);
         await this.collectionRepository.save(item);
@@ -84,7 +84,7 @@ export class TransactionalCollectionService extends CollectionService {
     }
 
     @DefaultTransactional()
-    async update(collectionLocId: string, itemId: string, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
+    async update(collectionLocId: string, itemId: Hash, mutator: (item: CollectionItemAggregateRoot) => Promise<void>): Promise<CollectionItemAggregateRoot> {
         return super.update(collectionLocId, itemId, mutator);
     }
 }

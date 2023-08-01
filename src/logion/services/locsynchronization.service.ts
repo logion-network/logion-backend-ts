@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { UUID, Adapters, Fees } from "@logion/node-api";
+import { UUID, Adapters, Fees, Hash } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
@@ -136,7 +136,7 @@ export class LocSynchronizer {
     }
 
     private async updateMetadataItem(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const nameHash = Adapters.asHexString(Adapters.asJsonObject(extrinsic.call.args['item']).name);
+        const nameHash = Hash.fromHex(Adapters.asHexString(Adapters.asJsonObject(extrinsic.call.args['item']).name));
         loc.setMetadataItemAddedOn(nameHash, timestamp);
         const inclusionFee = await extrinsic.partialFee();
         if(inclusionFee) {
@@ -162,12 +162,12 @@ export class LocSynchronizer {
         }
     }
 
-    private getFileHash(extrinsic: JsonExtrinsic): string {
+    private getFileHash(extrinsic: JsonExtrinsic): Hash {
         const file = Adapters.asJsonObject(extrinsic.call.args['file']);
         if("hash_" in file && Adapters.isHexString(file.hash_)) {
-            return Adapters.asHexString(file.hash_);
+            return Hash.fromHex(Adapters.asHexString(file.hash_));
         } else if("hash" in file && Adapters.isHexString(file.hash)) {
-            return Adapters.asHexString(file.hash);
+            return Hash.fromHex(Adapters.asHexString(file.hash));
         } else {
             throw new Error("File has no hash");
         }
@@ -187,7 +187,7 @@ export class LocSynchronizer {
 
     private async addCollectionItem(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const collectionLocId = extractUuid('collection_loc_id', extrinsic.call.args);
-        const itemId = Adapters.asHexString(extrinsic.call.args['item_id']);
+        const itemId = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['item_id']));
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Confirming Collection Item %s to LOC %s", itemId, collectionLocId);
@@ -302,7 +302,7 @@ export class LocSynchronizer {
     }
 
     private async addTokensRecord(collectionLocId: string, timestamp: Moment, extrinsic: JsonExtrinsic) {
-        const recordId = Adapters.asHexString(extrinsic.call.args['record_id']);
+        const recordId = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['record_id']));
         const loc = await this.locRequestRepository.findById(collectionLocId);
         if (loc !== null) {
             logger.info("Confirming Tokens Record %s to LOC %s", recordId, collectionLocId);
@@ -314,13 +314,13 @@ export class LocSynchronizer {
 
     private async confirmAcknowledgedFile(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
-        const hash = Adapters.asHexString(extrinsic.call.args['hash']);
+        const hash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['hash']));
         await this.mutateLoc(locId, async loc => loc.confirmFileAcknowledged(hash, timestamp));
     }
 
     private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
-        const nameHash = Adapters.asHexString(extrinsic.call.args['name']);
+        const nameHash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['name']));
         await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, timestamp));
     }
 }

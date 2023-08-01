@@ -1,4 +1,6 @@
 import { AuthenticatedUser } from "@logion/authenticator";
+import { Hash } from "@logion/node-api";
+import { HexString } from "@polkadot/util/types";
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, HttpPut, HttpDelete } from "dinoloop";
 import {
@@ -131,11 +133,11 @@ export class CollectionController extends ApiController {
         const { collectionLocId, itemId, description, addedOn } = collectionItem;
         return {
             collectionLocId,
-            itemId,
+            itemId: itemId.toHex(),
             description,
             addedOn: addedOn?.toISOString(),
             files: collectionItem.files?.map(file => ({
-                hash: file.hash,
+                hash: file.hash.toHex(),
                 name: file.name,
                 contentType: file.contentType,
                 uploaded: file.cid !== undefined,
@@ -165,7 +167,7 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/items/:itemId')
     @Async()
     async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
-        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, Hash.fromHex(itemId));
         if (collectionItem) {
             return this.toView(collectionItem.getDescription());
         } else {
@@ -176,7 +178,7 @@ export class CollectionController extends ApiController {
     @HttpPost('/:collectionLocId/items')
     @Async()
     async submitItemPublicData(body: CreateCollectionItemView, collectionLocId: string): Promise<void> {
-        const itemId = requireDefined(body.itemId);
+        const itemId = Hash.fromHex(requireDefined(body.itemId));
         const existingItem = await this.collectionRepository.findBy(collectionLocId, itemId);
         if(existingItem) {
             throw badRequest("Cannot replace existing item, you may try to cancel it first");
@@ -188,7 +190,7 @@ export class CollectionController extends ApiController {
             itemId,
             description,
             files: body.files?.map(file => ({
-                hash: requireDefined(file.hash),
+                hash: Hash.fromHex(requireDefined(file.hash)),
                 name: requireDefined(file.name),
                 contentType: requireDefined(file.contentType),
             })),
@@ -208,12 +210,15 @@ export class CollectionController extends ApiController {
     @HttpDelete('/:collectionLocId/items/:itemId')
     @Async()
     async cancelItem(_body: any, collectionLocId: string, itemId: string): Promise<void> {
-        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId });
+        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({
+            collectionLocId,
+            itemId: Hash.fromHex(itemId as HexString),
+        });
         if (publishedCollectionItem) {
             throw badRequest("Collection Item already published, cannot be cancelled");
         }
 
-        const item = await this.collectionRepository.findBy(collectionLocId, itemId);
+        const item = await this.collectionRepository.findBy(collectionLocId, Hash.fromHex(itemId));
         if(!item) {
             throw badRequest(`Collection Item ${ collectionLocId } ${ itemId } not found`);
         }
@@ -222,7 +227,7 @@ export class CollectionController extends ApiController {
     }
 
     static uploadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files"].post!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemIdHex}/files"].post!;
         operationObject.summary = "Uploads a Collection Item's file";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -232,23 +237,27 @@ export class CollectionController extends ApiController {
         });
         setPathParameters(operationObject, {
                 'collectionLocId': "The ID of the Collection LOC",
-                'itemId': "The ID of the Collection Item",
+                'itemIdHex': "The ID of the Collection Item",
             });
     }
 
-    @HttpPost('/:collectionLocId/:itemId/files')
+    @HttpPost('/:collectionLocId/:itemIdHex/files')
     @Async()
-    async uploadFile(body: FileUploadData, collectionLocId: string, itemId: string): Promise<void> {
+    async uploadFile(body: FileUploadData, collectionLocId: string, itemIdHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.requesterAddress);
 
-        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({ collectionLocId, itemId })
+        const itemId = Hash.fromHex(itemIdHex);
+        const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({
+            collectionLocId,
+            itemId,
+        });
         if (!publishedCollectionItem) {
             throw badRequest("Collection Item not found on chain")
         }
 
-        const hash = requireDefined(body.hash, () => badRequest("No hash found for upload file"));
+        const hash = Hash.fromHex(requireDefined(body.hash, () => badRequest("No hash found for upload file")));
         const file = await getUploadedFile(this.request, hash);
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
@@ -265,7 +274,7 @@ export class CollectionController extends ApiController {
 
         const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
         if(!collectionItem) {
-            throw badRequest(`Collection item ${ collectionLocId }/${ itemId } not found`);
+            throw badRequest(`Collection item ${ collectionLocId }/${ itemId.toHex() } not found`);
         }
         const itemFile = collectionItem.file(hash);
         if (!itemFile) {
@@ -283,7 +292,7 @@ export class CollectionController extends ApiController {
 
     private async getCollectionItemFile(params: GetCollectionItemFileParams): Promise<CollectionItemFileDescription & { size: bigint }> {
         const dbItem = await this.collectionRepository.findBy(params.collectionLocId, params.itemId);
-        const dbFile = dbItem?.getDescription().files?.find(file => file.hash === params.hash);
+        const dbFile = dbItem?.getDescription().files?.find(file => file.hash.equalTo(params.hash));
         const chainFile = await this.logionNodeCollectionService.getCollectionItemFile(params);
         if (chainFile && dbFile) {
             return {
@@ -296,22 +305,24 @@ export class CollectionController extends ApiController {
     }
 
     static downloadItemFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}"].get!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemIdHex}/files/{hashHex}"].get!;
         operationObject.summary = "Downloads a copy of a file of the Collection Item";
         operationObject.description = "The authenticated user must be the owner of the underlying token";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'itemId': "The ID of the Collection Item",
-            'hash': "The hash of the file",
+            'itemIdHex': "The ID of the Collection Item",
+            'hashHex': "The hash of the file",
         });
     }
 
-    @HttpGet('/:collectionLocId/:itemId/files/:hash')
+    @HttpGet('/:collectionLocId/:itemIdHex/files/:hashHex')
     @Async()
     @SendsResponse()
-    async downloadItemFile(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+    async downloadItemFile(_body: any, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const itemId = Hash.fromHex(itemIdHex);
+        const hash = Hash.fromHex(hashHex);
         const collectionItem = await this.checkCanDownloadItemFile(authenticated, collectionLocId, itemId, hash);
 
         const publishedCollectionItemFile = await this.getCollectionItemFile({
@@ -351,7 +362,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownloadItemFile(authenticated: AuthenticatedUser, collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
+    private async checkCanDownloadItemFile(authenticated: AuthenticatedUser, collectionLocId: string, itemId: Hash, hash: Hash): Promise<CollectionItemAggregateRoot> {
         const publishedCollectionItem = requireDefined(await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId
@@ -368,10 +379,10 @@ export class CollectionController extends ApiController {
         }
     }
 
-    private async getCollectionItemWithFile(collectionLocId: string, itemId: string, hash: string): Promise<CollectionItemAggregateRoot> {
+    private async getCollectionItemWithFile(collectionLocId: string, itemId: Hash, hash: Hash): Promise<CollectionItemAggregateRoot> {
         const collectionItem = requireDefined(
             await this.collectionRepository.findBy(collectionLocId, itemId),
-            () => badRequest(`Collection item ${ collectionLocId }/${ itemId } not found in DB`));
+            () => badRequest(`Collection item ${ collectionLocId }/${ itemId.toHex() } not found in DB`));
         if (!collectionItem.hasFile(hash)) {
             throw badRequest("File does not exist");
         }
@@ -383,24 +394,30 @@ export class CollectionController extends ApiController {
     }
 
     static downloadCollectionFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hash}/{itemId}"].get!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/files/{hashHex}/{itemIdHex}"].get!;
         operationObject.summary = "Downloads a copy of a file of the Collection LOC";
         operationObject.description = "The authenticated user must be owner of the collection item";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'hash': "The hash of the file to download",
-            'itemId': "The ID of the collection item, used to validate that user is entitled to download file",
+            'hashHex': "The hash of the file to download",
+            'itemIdHex': "The ID of the collection item, used to validate that user is entitled to download file",
         });
     }
 
-    @HttpGet('/:collectionLocId/files/:hash/:itemId')
+    @HttpGet('/:collectionLocId/files/:hashHex/:itemIdHex')
     @Async()
     @SendsResponse()
-    async downloadCollectionFile(_body: any, collectionLocId: string, hash: string, itemId: string): Promise<void> {
+    async downloadCollectionFile(_body: any, collectionLocId: string, hashHex: string, itemIdHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
+        const hash = Hash.fromHex(hashHex);
+        const itemId = Hash.fromHex(itemIdHex);
         const file = await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
-        const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
+        const tempFilePath = CollectionController.tempFilePath({
+            collectionLocId,
+            itemId,
+            hash,
+        });
         await this.fileStorageService.exportFile(file, tempFilePath);
 
         const generatedOn = moment();
@@ -426,7 +443,7 @@ export class CollectionController extends ApiController {
         });
     }
 
-    private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, hash: string, itemId: string): Promise<FileDescription> {
+    private async checkCanDownloadCollectionFile(authenticated: AuthenticatedUser, collectionLocId: string, hash: Hash, itemId: Hash): Promise<FileDescription> {
         const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
         if (!collection.hasFile(hash)) {
             throw badRequest("File does not exist");
@@ -449,7 +466,7 @@ export class CollectionController extends ApiController {
         }
     }
 
-    static tempFilePath(params: { collectionLocId: string, itemId: string, hash: string } ) {
+    static tempFilePath(params: { collectionLocId: string, itemId: Hash, hash: Hash } ) {
         const { collectionLocId, itemId, hash } = params
         return path.join(os.tmpdir(), `download-${ collectionLocId }-${ itemId }-${ hash }`)
     }
@@ -469,7 +486,7 @@ export class CollectionController extends ApiController {
     @Async()
     async checkOwnership(_body: any, collectionLocId: string, itemId: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
-        const collectionItem = await this.collectionRepository.findBy(collectionLocId, itemId);
+        const collectionItem = await this.collectionRepository.findBy(collectionLocId, Hash.fromHex(itemId));
         if(!collectionItem) {
             throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
         }
@@ -497,7 +514,7 @@ export class CollectionController extends ApiController {
         await this.locRequestService.update(collectionLocId, async collection => {
             authenticated.require(user => user.is(collection.ownerAddress));
             collection.setFileRestrictedDelivery({
-                hash,
+                hash: Hash.fromHex(hash),
                 restrictedDelivery: body.restrictedDelivery || false
             });
         });
@@ -517,10 +534,14 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemId/latest-deliveries')
     @Async()
     async getLatestItemDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
-        return this.getItemDeliveries({ collectionLocId, itemId, limitPerFile: 1 });
+        return this.getItemDeliveries({
+            collectionLocId,
+            itemId: Hash.fromHex(itemId),
+            limitPerFile: 1,
+        });
     }
 
-    private async getItemDeliveries(query: { collectionLocId: string, itemId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
+    private async getItemDeliveries(query: { collectionLocId: string, itemId: Hash, fileHash?: Hash, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
         const { collectionLocId, itemId, fileHash, limitPerFile } = query;
         const item = await this.collectionRepository.findBy(collectionLocId, itemId);
         if(!item) {
@@ -586,7 +607,10 @@ export class CollectionController extends ApiController {
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
 
-        return this.getItemDeliveries({ collectionLocId, itemId });
+        return this.getItemDeliveries({
+            collectionLocId,
+            itemId: Hash.fromHex(itemId),
+        });
     }
 
     static getAllCollectionFileDeliveries(spec: OpenAPIV3.Document) {
@@ -607,11 +631,11 @@ export class CollectionController extends ApiController {
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
 
-        const deliveries = await this._getAllCollectionFileDeliveries({ collectionLoc, hash });
+        const deliveries = await this._getAllCollectionFileDeliveries({ collectionLoc, hash: Hash.fromHex(hash) });
         return { deliveries };
     }
 
-    private async _getAllCollectionFileDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: string }): Promise<CheckCollectionDeliveryResponse[]> {
+    private async _getAllCollectionFileDeliveries(query: { collectionLoc: LocRequestAggregateRoot, hash: Hash }): Promise<CheckCollectionDeliveryResponse[]> {
         const { collectionLoc, hash } = query;
         if (!collectionLoc.hasFile(hash)) {
             throw badRequest("File not found")
@@ -620,7 +644,7 @@ export class CollectionController extends ApiController {
             collectionLocId: collectionLoc.id!,
             hash
         });
-        return delivered[hash].map(this.mapToResponse);
+        return delivered[hash.toHex()].map(this.mapToResponse);
     }
 
     static checkOneCollectionFileDelivery(spec: OpenAPIV3.Document) {
@@ -639,7 +663,7 @@ export class CollectionController extends ApiController {
     @HttpPut('/:collectionLocId/file-deliveries')
     @Async()
     async checkOneCollectionFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string): Promise<CheckCollectionDeliveryWitheOriginalResponse> {
-        const deliveredFileHash = requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash"))
+        const deliveredFileHash = Hash.fromHex(requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash")));
         const delivery = await this.locRequestRepository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash })
         if (delivery === null) {
             throw badRequest("Provided copyHash is not from a delivered copy of a file from the collection")
@@ -689,21 +713,21 @@ export class CollectionController extends ApiController {
     }
 
     static downloadFileSource(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemId}/files/{hash}/source"].get!;
+        const operationObject = spec.paths["/api/collection/{collectionLocId}/{itemIdHex}/files/{hashHex}/source"].get!;
         operationObject.summary = "Downloads the source of a file of the Collection Item";
         operationObject.description = "The authenticated user must be the owner or the requester of the LOC";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'itemId': "The ID of the Collection Item",
-            'hash': "The hash of the file",
+            'itemIdHex': "The ID of the Collection Item",
+            'hashHex': "The hash of the file",
         });
     }
 
-    @HttpGet('/:collectionLocId/:itemId/files/:hash/source')
+    @HttpGet('/:collectionLocId/:itemIdHex/files/:hashHex/source')
     @Async()
     @SendsResponse()
-    async downloadFileSource(_body: any, collectionLocId: string, itemId: string, hash: string): Promise<void> {
+    async downloadFileSource(_body: any, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
@@ -712,6 +736,8 @@ export class CollectionController extends ApiController {
             requireDefined(collectionLoc.requesterAddress)
         ]));
 
+        const itemId = Hash.fromHex(itemIdHex);
+        const hash = Hash.fromHex(hashHex);
         const publishedCollectionItemFile = await this.getCollectionItemFile({
             collectionLocId,
             itemId,
