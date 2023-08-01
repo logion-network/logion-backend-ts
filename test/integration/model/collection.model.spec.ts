@@ -8,6 +8,7 @@ import {
 } from "../../../src/logion/model/collection.model.js";
 import moment from "moment";
 import { CollectionService, TransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
+import { Hash } from "@logion/node-api";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -59,34 +60,34 @@ describe("CollectionRepository", () => {
 
     it("finds a Collection Item with no files", async () => {
         const collectionLocId = "2035224b-ef77-4a69-aac4-e74bd030675d";
-        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        const itemId = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
         const collectionItem = await repository.findBy(
             collectionLocId,
             itemId
         );
         expect(collectionItem).toBeDefined()
         expect(collectionItem?.collectionLocId).toEqual(collectionLocId)
-        expect(collectionItem?.itemId).toEqual(itemId)
+        expect(collectionItem?.itemId).toEqual(itemId.toHex())
         expect(collectionItem?.addedOn?.toISOString()).toEqual("2022-02-16T17:28:42.000Z")
         expect(collectionItem?.files).toEqual([])
     })
 
     it("finds a Collection Item with 2 files, one being delivered and some T&Cs", async () => {
         const collectionLocId = "296d3d8f-057f-445c-b4c8-59aa7d2d21de";
-        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
+        const itemId = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
         const collectionItem = await repository.findBy(
             collectionLocId,
             itemId
         );
         expect(collectionItem).toBeDefined()
         expect(collectionItem?.collectionLocId).toEqual(collectionLocId)
-        expect(collectionItem?.itemId).toEqual(itemId)
+        expect(collectionItem?.itemId).toEqual(itemId.toHex())
         expect(collectionItem?.addedOn?.toISOString()).toEqual("2022-02-16T17:28:42.000Z")
         expect(collectionItem?.files?.length).toEqual(2)
         expect(collectionItem?.files?.map(file => file.cid)).toContain("123456")
         expect(collectionItem?.files?.map(file => file.cid)).toContain("78910")
 
-        const deliveredList = collectionItem?.getFile("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83").delivered!;
+        const deliveredList = collectionItem?.getFile(Hash.fromHex("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83")).delivered!;
         expect(deliveredList.length).toBe(2)
         
         const delivered1 = deliveredList.find(delivered => delivered.deliveredFileHash === "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
@@ -108,8 +109,8 @@ describe("CollectionRepository", () => {
     it("sets a file's CID", async () => {
         // Given
         const collectionLocId = "c38e5ab8-785f-4e26-91bd-f9cdef82f601";
-        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        const hash = "0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83";
+        const itemId = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+        const hash = Hash.fromHex("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83");
         const cid = "147852";
 
         await service.update(collectionLocId, itemId, async item => {
@@ -119,8 +120,8 @@ describe("CollectionRepository", () => {
         await checkNumOfRows(`SELECT *
                               FROM collection_item_file
                               WHERE collection_loc_id = '${ collectionLocId }'
-                                AND item_id = '${ itemId }'
-                                AND hash = '${ hash }'
+                                AND item_id = '${ itemId.toHex() }'
+                                AND hash = '${ hash.toHex() }'
                                 AND cid = '${ cid }'`, 1)
     })
 
@@ -132,15 +133,15 @@ describe("CollectionRepository", () => {
 
         await repository.save(collectionItem);
 
-        const updated = await repository.findBy(collectionItem.collectionLocId, collectionItem.itemId);
+        const updated = await repository.findBy(collectionItem.collectionLocId, Hash.fromHex(collectionItem.itemId));
         expect(updated?.files?.length).toEqual(2)
     })
 
     it("Adds delivery to file", async () => {
         const collectionLocId = '52d29fe9-983f-44d2-9e23-c8cb542981a3';
-        const itemId = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-        const hash = "0x8bd8548beac4ce719151dc2ae893f8edc658a566e5ff654104783e14fb44012e";
-        const deliveredFileHash = "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7";
+        const itemId = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+        const hash = Hash.fromHex("0x8bd8548beac4ce719151dc2ae893f8edc658a566e5ff654104783e14fb44012e");
+        const deliveredFileHash = Hash.fromHex("0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
         const generatedOn = moment();
         const owner = "0x900edc98db53508e6742723988B872dd08cd09c2";
         await service.update(collectionLocId, itemId, async item => {
@@ -156,8 +157,8 @@ describe("CollectionRepository", () => {
     it("finds latest delivery", async () => {
         const delivered = await repository.findLatestDelivery({
             collectionLocId: "296d3d8f-057f-445c-b4c8-59aa7d2d21de",
-            itemId: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
-            fileHash: "0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83",
+            itemId: Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"),
+            fileHash: Hash.fromHex("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83"),
         });
         expect(delivered?.deliveredFileHash).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
     })
@@ -165,7 +166,7 @@ describe("CollectionRepository", () => {
     it("finds latest deliveries", async () => {
         const delivered = await repository.findLatestDeliveries({
             collectionLocId: "296d3d8f-057f-445c-b4c8-59aa7d2d21de",
-            itemId: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+            itemId: Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"),
         });
         expect("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83" in delivered).toBe(true);
         const fileDeliveries = delivered["0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83"];

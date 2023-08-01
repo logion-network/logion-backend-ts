@@ -1,4 +1,5 @@
 import { AuthenticatedUser } from "@logion/authenticator";
+import { Hash } from "@logion/node-api";
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, HttpPut, SendsResponse , HttpDelete} from "dinoloop";
 import {
@@ -111,11 +112,11 @@ export class TokensRecordController extends ApiController {
         const { collectionLocId, recordId, description, addedOn, files } = record;
         return {
             collectionLocId,
-            recordId,
+            recordId: recordId.toHex(),
             description,
             addedOn: addedOn?.toISOString(),
             files: files?.map(file => ({
-                hash: file.hash,
+                hash: file.hash.toHex(),
                 name: file.name,
                 contentType: file.contentType,
                 uploaded: file.cid !== undefined,
@@ -124,19 +125,20 @@ export class TokensRecordController extends ApiController {
     }
 
     static getTokensRecord(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/record/{recordId}"].get!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/record/{recordIdHex}"].get!;
         operationObject.summary = "Gets the info of a published Collection Item";
         operationObject.description = "No authentication required.";
         operationObject.responses = getPublicResponses("TokensRecordView");
         setPathParameters(operationObject, {
             'collectionLocId': "The id of the collection loc",
-            'recordId': "The id of the collection item"
+            'recordIdHex': "The id of the collection item"
         });
     }
 
-    @HttpGet('/:collectionLocId/record/:recordId')
+    @HttpGet('/:collectionLocId/record/:recordIdHex')
     @Async()
-    async getTokensRecord(_body: any, collectionLocId: string, recordId: string): Promise<TokensRecordView> {
+    async getTokensRecord(_body: any, collectionLocId: string, recordIdHex: string): Promise<TokensRecordView> {
+        const recordId = Hash.fromHex(recordIdHex);
         requireDefined(
             await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId }),
             () => badRequest(`Tokens Record ${ collectionLocId }/${ recordId } not found`));
@@ -156,7 +158,7 @@ export class TokensRecordController extends ApiController {
     @HttpPost('/:collectionLocId/record')
     @Async()
     async submitItemPublicData(body: CreateTokensRecordView, collectionLocId: string): Promise<void> {
-        const recordId = requireDefined(body.recordId);
+        const recordId = Hash.fromHex(requireDefined(body.recordId));
         const existingItem = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
         if(existingItem) {
             throw badRequest("Cannot replace existing item, you may try to cancel it first");
@@ -168,7 +170,7 @@ export class TokensRecordController extends ApiController {
             recordId,
             description,
             files: body.files?.map(file => ({
-                hash: requireDefined(file.hash),
+                hash: Hash.fromHex(requireDefined(file.hash)),
                 name: requireDefined(file.name),
                 contentType: requireDefined(file.contentType),
             })),
@@ -177,9 +179,10 @@ export class TokensRecordController extends ApiController {
         await this.tokensRecordService.addTokensRecord(record);
     }
 
-    @HttpDelete('/:collectionLocId/record/:recordId')
+    @HttpDelete('/:collectionLocId/record/:recordIdHex')
     @Async()
-    async cancelRecord(_body: any, collectionLocId: string, recordId: string): Promise<void> {
+    async cancelRecord(_body: any, collectionLocId: string, recordIdHex: string): Promise<void> {
+        const recordId = Hash.fromHex(recordIdHex);
         const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId });
         if (publishedTokensRecord) {
             throw badRequest("Tokens Record already published, cannot be cancelled");
@@ -187,14 +190,14 @@ export class TokensRecordController extends ApiController {
 
         const record = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
         if(!record) {
-            throw badRequest(`Tokens Record ${ collectionLocId } ${ recordId } not found`);
+            throw badRequest(`Tokens Record ${ collectionLocId } ${ recordId.toHex() } not found`);
         }
 
         await this.tokensRecordService.cancelTokensRecord(record);
     }
 
     static uploadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/files"].post!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordIdHex}/files"].post!;
         operationObject.summary = "Adds a file to a Collection Item";
         operationObject.description = "The authenticated user must be the requester of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -204,24 +207,28 @@ export class TokensRecordController extends ApiController {
         });
         setPathParameters(operationObject, {
                 'collectionLocId': "The ID of the Collection LOC",
-                'recordId': "The ID of the Collection Item",
+                'recordIdHex': "The ID of the Collection Item",
             });
     }
 
-    @HttpPost('/:collectionLocId/:recordId/files')
+    @HttpPost('/:collectionLocId/:recordIdHex/files')
     @Async()
-    async uploadFile(body: FileUploadData, collectionLocId: string, recordId: string): Promise<void> {
+    async uploadFile(body: FileUploadData, collectionLocId: string, recordIdHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
 
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
-        const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId })
+        const recordId = Hash.fromHex(recordIdHex);
+        const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({
+            collectionLocId,
+            recordId
+        });
         if (!publishedTokensRecord) {
             throw badRequest("Tokens Record not found on chain")
         }
 
-        const hash = requireDefined(body.hash, () => badRequest("No hash found for upload file"));
+        const hash = Hash.fromHex(requireDefined(body.hash, () => badRequest("No hash found for upload file")));
         const file = await getUploadedFile(this.request, hash);
 
         const tokensRecordFile = await this.getTokensRecordFile({
@@ -238,7 +245,7 @@ export class TokensRecordController extends ApiController {
 
         const tokensRecord = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
         if(!tokensRecord) {
-            throw badRequest(`Tokens Record ${ collectionLocId }/${ recordId } not found`);
+            throw badRequest(`Tokens Record ${ collectionLocId }/${ recordId.toHex() } not found`);
         }
         const recordFile = tokensRecord.file(hash);
         if (!recordFile) {
@@ -259,7 +266,7 @@ export class TokensRecordController extends ApiController {
         if(!dbTokensRecord) {
             throw badRequest("Tokens Record not found");
         }
-        const dbFile = dbTokensRecord.files?.find(file => file.hash === params.hash);
+        const dbFile = dbTokensRecord.files?.find(file => file.hash === params.hash.toHex());
         const chainFile = await this.logionNodeTokensRecordService.getTokensRecordFile(params);
         if (dbFile && chainFile) {
             return {
@@ -272,21 +279,25 @@ export class TokensRecordController extends ApiController {
     }
 
     static downloadItemFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/files/{hash}/{itemId}"].get!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordIdHex}/files/{hashHex}/{itemIdHex}"].get!;
         operationObject.summary = "Downloads a copy of a file of the Collection Item";
         operationObject.description = "The authenticated user must be the owner of the underlying token";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'recordId': "The ID of the Collection Item",
-            'hash': "The hash of the file",
+            'recordIdHex': "The ID of the Tokens Record",
+            'hashHex': "The hash of the file",
+            'itemIdHex': "The ID of the Collection Item",
         });
     }
 
-    @HttpGet('/:collectionLocId/:recordId/files/:hash/:itemId')
+    @HttpGet('/:collectionLocId/:recordIdHex/files/:hashHex/:itemIdHex')
     @Async()
     @SendsResponse()
-    async downloadItemFile(_body: any, collectionLocId: string, recordId: string, hash: string, itemId: string): Promise<void> {
+    async downloadItemFile(_body: any, collectionLocId: string, recordIdHex: string, hashHex: string, itemIdHex: string): Promise<void> {
+        const recordId = Hash.fromHex(recordIdHex);
+        const hash = Hash.fromHex(hashHex);
+        const itemId = Hash.fromHex(itemIdHex);
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionItem = await this.checkCanDownloadTokensRecordFile(authenticated, collectionLocId, recordId, hash, itemId);
 
@@ -327,7 +338,7 @@ export class TokensRecordController extends ApiController {
         });
     }
 
-    private async checkCanDownloadTokensRecordFile(authenticated: AuthenticatedUser, collectionLocId: string, recordId: string, hash: string, itemId: string): Promise<TokensRecordAggregateRoot> {
+    private async checkCanDownloadTokensRecordFile(authenticated: AuthenticatedUser, collectionLocId: string, recordId: Hash, hash: Hash, itemId: Hash): Promise<TokensRecordAggregateRoot> {
         const item = await this.collectionRepository.findBy(collectionLocId, itemId);
         if(!item) {
             throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
@@ -343,10 +354,10 @@ export class TokensRecordController extends ApiController {
         }
     }
 
-    private async getTokensRecordWithFile(collectionLocId: string, recordId: string, hash: string): Promise<TokensRecordAggregateRoot> {
+    private async getTokensRecordWithFile(collectionLocId: string, recordId: Hash, hash: Hash): Promise<TokensRecordAggregateRoot> {
         const tokensRecord = requireDefined(
             await this.tokensRecordRepository.findBy(collectionLocId, recordId),
-            () => badRequest(`Tokens Record ${ collectionLocId }/${ recordId } not found in DB`));
+            () => badRequest(`Tokens Record ${ collectionLocId }/${ recordId.toHex() } not found in DB`));
         if (!tokensRecord.hasFile(hash)) {
             throw badRequest("File does not exist");
         }
@@ -357,12 +368,12 @@ export class TokensRecordController extends ApiController {
         return tokensRecord;
     }
 
-    static tempFilePath(params: { collectionLocId: string, recordId: string, hash: string } ) {
-        const { collectionLocId, recordId, hash } = params
-        return path.join(os.tmpdir(), `download-${ collectionLocId }-${ recordId }-${ hash }`)
+    static tempFilePath(params: { collectionLocId: string, recordId: Hash, hash: Hash } ) {
+        const { collectionLocId, recordId, hash } = params;
+        return path.join(os.tmpdir(), `download-${ collectionLocId }-${ recordId.toHex() }-${ hash.toHex() }`);
     }
 
-    private async getItemDeliveries(query: { collectionLocId: string, recordId: string, fileHash?: string, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
+    private async getItemDeliveries(query: { collectionLocId: string, recordId: Hash, fileHash?: Hash, limitPerFile?: number }): Promise<ItemDeliveriesResponse> {
         const { collectionLocId, recordId, fileHash, limitPerFile } = query;
         const delivered = await this.tokensRecordRepository.findLatestDeliveries({ collectionLocId, recordId, fileHash });
         if(!delivered) {
@@ -397,46 +408,49 @@ export class TokensRecordController extends ApiController {
     }
 
     static getAllItemDeliveries(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/deliveries"].get!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordIdHex}/deliveries"].get!;
         operationObject.summary = "Provides information about all delivered copies of a collection file";
         operationObject.description = "Only collection LOC owner is authorized";
         operationObject.responses = getDefaultResponses("ItemDeliveriesResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'recordId': "The ID of the Collection Item",
+            'recordIdHex': "The ID of the Collection Item",
         });
     }
 
-    @HttpGet('/:collectionLocId/:recordId/deliveries')
+    @HttpGet('/:collectionLocId/:recordIdHex/deliveries')
     @Async()
-    async getAllItemDeliveries(_body: any, collectionLocId: string, recordId: string): Promise<ItemDeliveriesResponse> {
+    async getAllItemDeliveries(_body: any, collectionLocId: string, recordIdHex: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
+        const recordId = Hash.fromHex(recordIdHex);
         return this.getItemDeliveries({ collectionLocId, recordId });
     }
 
     static downloadFileSource(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/files-sources/{hash}"].get!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordIdHex}/files-sources/{hashHex}"].get!;
         operationObject.summary = "Downloads the source of a file of the Collection Item";
         operationObject.description = "The authenticated user must be the owner or the requester of the LOC";
         operationObject.responses = getDefaultResponsesWithAnyBody();
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'recordId': "The ID of the Collection Item",
-            'hash': "The hash of the file",
+            'recordIdHex': "The ID of the Collection Item",
+            'hashHex': "The hash of the file",
         });
     }
 
-    @HttpGet('/:collectionLocId/:recordId/files-sources/:hash')
+    @HttpGet('/:collectionLocId/:recordIdHex/files-sources/:hashHex')
     @Async()
     @SendsResponse()
-    async downloadFileSource(_body: any, collectionLocId: string, recordId: string, hash: string): Promise<void> {
+    async downloadFileSource(_body: any, collectionLocId: string, recordIdHex: string, hashHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
 
+        const recordId = Hash.fromHex(recordIdHex);
+        const hash = Hash.fromHex(hashHex);
         const tokensRecordFile = await this.getTokensRecordFile({
             collectionLocId,
             recordId,
@@ -460,7 +474,7 @@ export class TokensRecordController extends ApiController {
     }
 
     static checkOneFileDelivery(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordId}/deliveries/check"].put!;
+        const operationObject = spec.paths["/api/records/{collectionLocId}/{recordIdHex}/deliveries/check"].put!;
         operationObject.summary = "Provides information about one delivered collection file copy";
         operationObject.description = "This is a public resource";
         operationObject.requestBody = getRequestBody({
@@ -469,15 +483,20 @@ export class TokensRecordController extends ApiController {
         operationObject.responses = getPublicResponses("CheckCollectionDeliveryWitheOriginalResponse");
         setPathParameters(operationObject, {
             'collectionLocId': "The ID of the Collection LOC",
-            'recordId': "The ID of the record",
+            'recordIdHex': "The ID of the record",
         });
     }
 
-    @HttpPut('/:collectionLocId/:recordId/deliveries/check')
+    @HttpPut('/:collectionLocId/:recordIdHex/deliveries/check')
     @Async()
-    async checkOneFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string, recordId: string): Promise<CheckCollectionDeliveryWitheOriginalResponse> {
-        const deliveredFileHash = requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash"))
-        const delivery = await this.tokensRecordRepository.findDeliveryByDeliveredFileHash({ collectionLocId, recordId, deliveredFileHash });
+    async checkOneFileDelivery(body: CheckCollectionDeliveryRequest, collectionLocId: string, recordIdHex: string): Promise<CheckCollectionDeliveryWitheOriginalResponse> {
+        const deliveredFileHash = Hash.fromHex(requireDefined(body.copyHash, () => badRequest("Missing attribute copyHash")));
+        const recordId = Hash.fromHex(recordIdHex);
+        const delivery = await this.tokensRecordRepository.findDeliveryByDeliveredFileHash({
+            collectionLocId,
+            recordId,
+            deliveredFileHash
+        });
         if (delivery === null) {
             throw badRequest("Provided copyHash is not from a delivered copy of a file from the record");
         }

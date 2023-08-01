@@ -3,12 +3,13 @@ import { writeFile } from "fs/promises";
 import os from "os";
 import path from "path";
 import { getUploadedFile } from "../../../src/logion/controllers/fileupload.js";
+import { Hash } from "@logion/node-api";
 
 describe("getUploadedFile", () => {
 
     it("properly handles latin1-encoded file names", async () => {
         await withUploadedContent("data");
-        const receivedHash = "0x3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7";
+        const receivedHash = Hash.fromHex("0x3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7");
         const fileName = "éééé.txt";
 
         const request = mockRequest({
@@ -21,7 +22,7 @@ describe("getUploadedFile", () => {
 
     it("rejects when received hash does not match local hash", async () => {
         await withUploadedContent("data");
-        const receivedHash = "0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2";
+        const receivedHash = Hash.fromHex("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
 
         const request = mockRequest({
             fileName: "some-file.txt",
@@ -32,7 +33,7 @@ describe("getUploadedFile", () => {
 
     it("rejects when upload truncated", async () => {
         await withUploadedContent("dat");
-        const receivedHash = "0x3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7";
+        const receivedHash = Hash.fromHex("0x3a6eb0790f39ac87c94f3856b2dd2c5d110e6811602261a9a923d3bb23adc8b7");
 
         const request = mockRequest({
             fileName: "some-file.txt",

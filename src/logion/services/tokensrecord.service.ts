@@ -1,15 +1,16 @@
 import { injectable } from "inversify";
 import { DefaultTransactional, PolkadotService, requireDefined } from "@logion/rest-api-core";
-import { UUID, TypesTokensRecord, Adapters, TypesTokensRecordFile } from "@logion/node-api";
+import { UUID, TypesTokensRecord, Adapters, TypesTokensRecordFile, Hash } from "@logion/node-api";
 import { TokensRecordAggregateRoot, TokensRecordRepository } from "../model/tokensrecord.model.js";
+import { HexString } from "@polkadot/util/types";
 
 export interface GetTokensRecordParams {
     collectionLocId: string,
-    recordId: string,
+    recordId: Hash,
 }
 
 export interface GetTokensRecordFileParams extends GetTokensRecordParams {
-    hash: string
+    hash: Hash;
 }
 
 @injectable()
@@ -24,7 +25,7 @@ export class LogionNodeTokensRecordService {
         const api = await this.polkadotService.readyApi();
         const substrateObject = await api.polkadot.query.logionLoc.tokensRecordsMap(
             api.adapters.toNonCompactLocId(new UUID(collectionLocId)),
-            recordId
+            api.adapters.toH256(recordId),
         );
         if(substrateObject.isSome) {
             return Adapters.toTokensRecord(substrateObject.unwrap());
@@ -36,7 +37,7 @@ export class LogionNodeTokensRecordService {
     async getTokensRecordFile(params: GetTokensRecordFileParams): Promise<TypesTokensRecordFile | undefined> {
         const { hash } = params;
         const record = await this.getTokensRecord(params);
-        return record?.files.find(itemFile => itemFile.hash === hash);
+        return record?.files.find(itemFile => itemFile.hash.equalTo(hash));
     }
 }
 
@@ -49,7 +50,7 @@ export abstract class TokensRecordService {
     async addTokensRecord(item: TokensRecordAggregateRoot): Promise<void> {
         const previousItem = await this.tokensRecordRepository.findBy(
             requireDefined(item.collectionLocId),
-            requireDefined(item.recordId),
+            requireDefined(Hash.fromHex(item.recordId as HexString)),
         );
         if(previousItem) {
             throw new Error("Cannot replace existing item");
@@ -61,7 +62,7 @@ export abstract class TokensRecordService {
         await this.tokensRecordRepository.delete(item);
     }
 
-    async update(collectionLocId: string, recordId: string, mutator: (item: TokensRecordAggregateRoot) => Promise<void>): Promise<TokensRecordAggregateRoot> {
+    async update(collectionLocId: string, recordId: Hash, mutator: (item: TokensRecordAggregateRoot) => Promise<void>): Promise<TokensRecordAggregateRoot> {
         const item = requireDefined(await this.tokensRecordRepository.findBy(collectionLocId, recordId));
         await mutator(item);
         await this.tokensRecordRepository.save(item);
@@ -89,7 +90,7 @@ export class TransactionalTokensRecordService extends TokensRecordService {
     }
 
     @DefaultTransactional()
-    async update(collectionLocId: string, recordId: string, mutator: (item: TokensRecordAggregateRoot) => Promise<void>): Promise<TokensRecordAggregateRoot> {
+    async update(collectionLocId: string, recordId: Hash, mutator: (item: TokensRecordAggregateRoot) => Promise<void>): Promise<TokensRecordAggregateRoot> {
         return super.update(collectionLocId, recordId, mutator);
     }
 }

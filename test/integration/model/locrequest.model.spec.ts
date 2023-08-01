@@ -14,17 +14,16 @@ import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
 import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
-import { UUID } from "@logion/node-api";
+import { Hash, UUID } from "@logion/node-api";
 
 const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
+const hash = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+const anotherHash = Hash.fromHex("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
+const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";
 
 describe('LocRequestRepository - read accesses', () => {
-
-    const hash = "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee";
-    const anotherHash = "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e";
-    const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";
 
     beforeAll(async () => {
         await connect(ENTITIES);
@@ -114,7 +113,7 @@ describe('LocRequestRepository - read accesses', () => {
         expect(request!.hasFile(hash)).toBe(true);
         const file = request!.getFile(hash);
         expect(file.name).toBe("a file");
-        expect(file.hash).toBe(hash);
+        expect(file.hash).toEqual(hash);
         expect(file.oid).toBe(123456);
         expect(file.addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(file.nature).toBe("some nature");
@@ -124,7 +123,7 @@ describe('LocRequestRepository - read accesses', () => {
         const metadata = request!.getMetadataItems(request?.getOwner());
         expect(metadata.length).toBe(1);
         expect(metadata[0].name).toBe("a name");
-        expect(metadata[0].nameHash).toBe("0x36e96c62633613d6f8e98943830ed5c5f814c2bb9214d8bba577386096bc926a");
+        expect(metadata[0].nameHash.toHex()).toBe("0x36e96c62633613d6f8e98943830ed5c5f814c2bb9214d8bba577386096bc926a");
         expect(metadata[0].value).toBe("a value");
         expect(metadata[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(request!.metadata![0].status).toBe("DRAFT");
@@ -203,7 +202,7 @@ describe('LocRequestRepository - read accesses', () => {
             hash,
         })
         checkDelivery(delivered);
-        expect(delivered[anotherHash]).toBeUndefined();
+        expect(delivered[anotherHash.toHex()]).toBeUndefined();
     })
 
     it("finds all deliveries", async () => {
@@ -211,21 +210,21 @@ describe('LocRequestRepository - read accesses', () => {
             collectionLocId: collectionLocId,
         })
         checkDelivery(delivered);
-        expect(delivered[anotherHash].length).toEqual(1);
-        expect(delivered[anotherHash][0].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
-        expect(delivered[anotherHash][0].deliveredFileHash).toEqual("0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a");
+        expect(delivered[anotherHash.toHex()].length).toEqual(1);
+        expect(delivered[anotherHash.toHex()][0].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+        expect(delivered[anotherHash.toHex()][0].deliveredFileHash).toEqual("0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a");
     })
 
     it("finds one delivery by copy hash", async () => {
-        const deliveredFileHash = "0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a";
+        const deliveredFileHash = Hash.fromHex("0xdbfaa07666457afd3cdc6fb2726a94cde7a0f613a0f354e695b315372a098e8a");
         const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash})
         expect(delivered?.owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
         expect(delivered?.hash).toEqual("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
-        expect(delivered?.deliveredFileHash).toEqual(deliveredFileHash);
+        expect(delivered?.deliveredFileHash).toEqual(deliveredFileHash.toHex());
     })
 
     it("finds no delivery with unknown copy hash", async () => {
-        const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash: "0xb8af3be22a2395a9961cfe43cdbc7e731f334c8272a9903db29d4ff584b3934a"})
+        const delivered = await repository.findDeliveryByDeliveredFileHash({ collectionLocId, deliveredFileHash: Hash.fromHex("0xb8af3be22a2395a9961cfe43cdbc7e731f334c8272a9903db29d4ff584b3934a")})
         expect(delivered).toBeNull();
     })
 
@@ -239,13 +238,13 @@ describe('LocRequestRepository - read accesses', () => {
     })
 
     function checkDelivery(delivered: Record<string, LocFileDelivered[]>) {
-        expect(delivered[hash].length).toEqual(3);
-        expect(delivered[hash][0].owner).toEqual("5Eewz58eEPS81847EezkiFENE3kG8fxrx1BdRWyFJAudPC6m");
-        expect(delivered[hash][0].deliveredFileHash).toEqual("0xc14d46b478dcb21833b90dc9880aa3a7507b01aa5d033c64051df999f3c3bba0");
-        expect(delivered[hash][1].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
-        expect(delivered[hash][1].deliveredFileHash).toEqual("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
-        expect(delivered[hash][2].owner).toEqual("5H9ZP7zyJtmay2Vcstf7SzK8LD1PGe5PJ8q7xakqp4zXFEwz");
-        expect(delivered[hash][2].deliveredFileHash).toEqual("0x38df2378ed26e20124d8c38a945af1b4a058656aab3b3b1f71a9d8a629cc0d81");
+        expect(delivered[hash.toHex()].length).toEqual(3);
+        expect(delivered[hash.toHex()][0].owner).toEqual("5Eewz58eEPS81847EezkiFENE3kG8fxrx1BdRWyFJAudPC6m");
+        expect(delivered[hash.toHex()][0].deliveredFileHash).toEqual("0xc14d46b478dcb21833b90dc9880aa3a7507b01aa5d033c64051df999f3c3bba0");
+        expect(delivered[hash.toHex()][1].owner).toEqual("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+        expect(delivered[hash.toHex()][1].deliveredFileHash).toEqual("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
+        expect(delivered[hash.toHex()][2].owner).toEqual("5H9ZP7zyJtmay2Vcstf7SzK8LD1PGe5PJ8q7xakqp4zXFEwz");
+        expect(delivered[hash.toHex()][2].deliveredFileHash).toEqual("0x38df2378ed26e20124d8c38a945af1b4a058656aab3b3b1f71a9d8a629cc0d81");
     }
 })
 
@@ -316,7 +315,7 @@ describe('LocRequestRepository.save()', () => {
         await service.addNewRequest(locRequest);
         await service.update(id, async request => {
             request.setFileRestrictedDelivery({
-                hash: "hash",
+                hash,
                 restrictedDelivery: true,
             });
         });
@@ -381,7 +380,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.files = []
     locRequest.addFile({
         name: "fileName",
-        hash: "hash",
+        hash,
         oid: 123,
         contentType: "content/type",
         nature: "nature1",

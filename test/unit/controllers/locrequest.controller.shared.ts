@@ -30,7 +30,7 @@ import { LocRequestService, NonTransactionalLocRequestService } from "../../../s
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
-import { LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType } from "@logion/node-api";
+import { Hash, LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType } from "@logion/node-api";
 import { VerifiedIssuerSelectionRepository } from "../../../src/logion/model/verifiedissuerselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
@@ -108,7 +108,7 @@ export function testDataWithType(locType: LocType, draft?: boolean): Partial<Loc
 }
 
 export const SEAL: Seal = {
-    hash: "0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e",
+    hash: Hash.fromHex("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e"),
     salt: "4bdc2a75-5363-4bc0-a71c-41a5781df07c",
     version: 0,
 }

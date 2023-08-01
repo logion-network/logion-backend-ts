@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { CollectionItem, ItemFile, hashString } from "@logion/node-api";
+import { CollectionItem, Hash, ItemFile } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import { CollectionController } from "../../../src/logion/controllers/collection.controller.js";
 import {
@@ -37,21 +37,22 @@ import {
     NonTransactionalLocRequestService
 } from "../../../src/logion/services/locrequest.service.js";
 import { polkadotAccount, EmbeddableSupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { ItIsHash } from "../../helpers/Mock.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE;
 const collectionRequester = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
-const itemId = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705";
+const itemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const timestamp = moment();
 
 const SOME_DATA = 'some data';
-const SOME_DATA_HASH = '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee';
+const SOME_DATA_HASH = Hash.fromHex('0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee');
 const FILE_NAME = "'a-file.pdf'";
 const CID = "cid-784512";
 const CONTENT_TYPE = "text/plain";
 
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
-const DELIVERY_HASH = '0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2';
+const DELIVERY_HASH = Hash.fromHex('0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2');
 
 const { setupApp, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
@@ -75,14 +76,14 @@ describe("CollectionController", () => {
         const app = setupApp(CollectionController, container => mockModelForGet(container, true));
 
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/${ itemId }`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId.toHex() }`)
             .send()
             .expect(200)
             .then(response => {
                 expect(response.body.collectionLocId).toEqual(collectionLocId)
-                expect(response.body.itemId).toEqual(itemId)
+                expect(response.body.itemId).toEqual(itemId.toHex())
                 expect(response.body.addedOn).toEqual(timestamp.toISOString())
-                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH)
+                expect(response.body.files[0].hash).toEqual(SOME_DATA_HASH.toHex())
             })
     })
 
@@ -90,12 +91,13 @@ describe("CollectionController", () => {
 
         const app = setupApp(CollectionController, container => mockModelForGet(container, false));
 
+        const unknownItem = Hash.of("unknown item").toHex();
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/0x12345`)
+            .get(`/api/collection/${ collectionLocId }/items/${ unknownItem }`)
             .send()
             .expect(400)
             .then(response => {
-                expect(response.body.errorMessage).toEqual("Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/0x12345 not found")
+                expect(response.body.errorMessage).toEqual(`Collection item d61e2e12-6c06-4425-aeee-2a0e969ac14e/${ unknownItem } not found`)
             })
     })
 
@@ -109,8 +111,8 @@ describe("CollectionController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(200);
     })
@@ -124,14 +126,15 @@ describe("CollectionController", () => {
             fileType: "Item",
         }));
         const buffer = Buffer.from(SOME_DATA);
+        const wrongHash = Hash.of("wrong-hash").toHex();
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: "wrong-hash" })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: wrongHash })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("Received hash wrong-hash does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+                expect(response.body.errorMessage).toBe(`Received hash ${ wrongHash } does not match 0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee`);
             });
     })
 
@@ -145,8 +148,8 @@ describe("CollectionController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -165,8 +168,8 @@ describe("CollectionController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -185,8 +188,8 @@ describe("CollectionController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: FILE_NAME })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -205,8 +208,8 @@ describe("CollectionController", () => {
         }));
         const buffer = Buffer.from(SOME_DATA);
         await request(app)
-            .post(`/api/collection/${ collectionLocId }/${ itemId }/files`)
-            .field({ hash: SOME_DATA_HASH })
+            .post(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files`)
+            .field({ hash: SOME_DATA_HASH.toHex() })
             .attach('file', buffer, { filename: "WrongName.pdf" })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -229,7 +232,7 @@ describe("CollectionController", () => {
             isOwner: true,
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId.toHex() }/check`)
             .expect(200);
     })
 
@@ -241,7 +244,7 @@ describe("CollectionController", () => {
             isOwner: false
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId.toHex() }/check`)
             .expect(403);
     })
 
@@ -253,7 +256,7 @@ describe("CollectionController", () => {
             isOwner: false
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/items/${ itemId }/check`)
+            .get(`/api/collection/${ collectionLocId }/items/${ itemId.toHex() }/check`)
             .expect(400);
     })
 
@@ -265,8 +268,8 @@ function testDownloadFiles(fileType: FileType) {
 
     const url =
         fileType === "Item" ?
-            `/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }` :
-            `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }/${ itemId }`;
+            `/api/collection/${ collectionLocId }/${ itemId.toHex() }/files/${ SOME_DATA_HASH.toHex() }` :
+            `/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH.toHex() }/${ itemId.toHex() }`;
 
     it('fails to download existing file given its hash if no restricted delivery', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, {
@@ -276,7 +279,7 @@ function testDownloadFiles(fileType: FileType) {
             restrictedDelivery: false,
             fileType,
         }));
-        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
+        const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH });
         await writeFile(filePath, SOME_DATA);
         await request(app)
             .get(url)
@@ -393,10 +396,10 @@ describe("CollectionController - item files - ", () => {
             fileType: "Item",
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/latest-deliveries`)
+            .get(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/latest-deliveries`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
-            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH.toHex()][0]));
     })
 
     it('retrieves deliveries info', async () => {
@@ -409,10 +412,10 @@ describe("CollectionController - item files - ", () => {
             fileType: "Item",
         }));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/all-deliveries`)
+            .get(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/all-deliveries`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
-            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH][0]));
+            .then(response => expectDeliveryInfo(response.body[SOME_DATA_HASH.toHex()][0]));
     })
 
     it('downloads existing file source given its hash and is owner', async () => {
@@ -428,7 +431,7 @@ describe("CollectionController - item files - ", () => {
         const filePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash: SOME_DATA_HASH});
         await writeFile(filePath, SOME_DATA);
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/${ itemId }/files/${ SOME_DATA_HASH }/source`)
+            .get(`/api/collection/${ collectionLocId }/${ itemId.toHex() }/files/${ SOME_DATA_HASH.toHex() }/source`)
             .expect(200, SOME_DATA)
             .expect('Content-Type', /text\/plain/);
         let fileReallyExists = true;
@@ -458,7 +461,7 @@ describe("CollectionController - collection files - ", () => {
     it('updates restricted delivery flag', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, mockParams));
         await request(app)
-            .put(`/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH }`)
+            .put(`/api/collection/${ collectionLocId }/files/${ SOME_DATA_HASH.toHex() }`)
             .send({ restrictedDelivery: true })
             .expect(200)
     })
@@ -466,7 +469,7 @@ describe("CollectionController - collection files - ", () => {
     it('retrieves deliveries info', async () => {
         const app = setupApp(CollectionController, container => mockModel(container, mockParams));
         await request(app)
-            .get(`/api/collection/${ collectionLocId }/file-deliveries/${ SOME_DATA_HASH }`)
+            .get(`/api/collection/${ collectionLocId }/file-deliveries/${ SOME_DATA_HASH.toHex() }`)
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -482,7 +485,7 @@ describe("CollectionController - collection files - ", () => {
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                const delivery = response.body[SOME_DATA_HASH][0];
+                const delivery = response.body[SOME_DATA_HASH.toHex()][0];
                 checkDelivery(delivery);
             });
     })
@@ -492,7 +495,7 @@ describe("CollectionController - collection files - ", () => {
         await request(app)
             .put(`/api/collection/${ collectionLocId }/file-deliveries`)
             .send({
-                copyHash: DELIVERY_HASH
+                copyHash: DELIVERY_HASH.toHex()
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -507,7 +510,7 @@ describe("CollectionController - collection files - ", () => {
         await request(app)
             .put(`/api/collection/${ collectionLocId }/file-deliveries`)
             .send({
-                copyHash: "0x11223344"
+                copyHash: Hash.of("wrong hash").toHex()
             })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -516,11 +519,11 @@ describe("CollectionController - collection files - ", () => {
             });
     })
 
-    function checkDelivery(delivery: any, originalFileHash?: string) {
-        expect(delivery.copyHash).toBe(DELIVERY_HASH);
+    function checkDelivery(delivery: any, originalFileHash?: Hash) {
+        expect(delivery.copyHash).toBe(DELIVERY_HASH.toHex());
         expect(delivery.generatedOn).toBeDefined();
         expect(delivery.owner).toBe(ITEM_TOKEN_OWNER);
-        expect(delivery.originalFileHash).toBe(originalFileHash);
+        expect(delivery.originalFileHash).toBe(originalFileHash?.toHex());
     }
 })
 
@@ -549,7 +552,7 @@ function mockModel(
     const collectionLoc = new LocRequestAggregateRoot();
     collectionLoc.id = collectionLocId;
     collectionItem.collectionLocId = collectionLocId;
-    collectionItem.itemId = itemId;
+    collectionItem.itemId = itemId.toHex();
     collectionItem.addedOn = timestamp.toDate();
     collectionItem.token = new CollectionItemToken();
     collectionItem.token.id = TOKEN_ID;
@@ -557,8 +560,8 @@ function mockModel(
     if (fileType === "Item") {
         const collectionItemFile = new CollectionItemFile()
         collectionItemFile.collectionLocId = collectionLocId;
-        collectionItemFile.itemId = itemId;
-        collectionItemFile.hash = SOME_DATA_HASH;
+        collectionItemFile.itemId = itemId.toHex();
+        collectionItemFile.hash = SOME_DATA_HASH.toHex();
         collectionItemFile.name = FILE_NAME;
         collectionItemFile.contentType = CONTENT_TYPE;
         if(hasFile && fileAlreadyUploaded) {
@@ -571,7 +574,7 @@ function mockModel(
     } else if (hasFile && fileType === "Collection") {
         const collectionFile = new LocFile();
         collectionFile.lifecycle = EmbeddableLifecycle.from(true);
-        collectionFile.hash = SOME_DATA_HASH;
+        collectionFile.hash = SOME_DATA_HASH.toHex();
         if(fileAlreadyUploaded) {
             collectionFile.cid = CID;
         }
@@ -593,12 +596,12 @@ function mockModel(
     const collectionRepository = new Mock<CollectionRepository>()
     const locRequestRepository = new Mock<LocRequestRepository>();
     if (collectionItemPublished) {
-        collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+        collectionRepository.setup(instance => instance.findBy(collectionLocId, ItIsHash(itemId)))
             .returns(Promise.resolve(collectionItem))
         collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([ collectionItem ]))
     } else {
-        collectionRepository.setup(instance => instance.findBy(collectionLocId, itemId))
+        collectionRepository.setup(instance => instance.findBy(collectionLocId, ItIsHash(itemId)))
             .returns(Promise.resolve(null))
         collectionRepository.setup(instance => instance.findAllBy(collectionLocId))
             .returns(Promise.resolve([]))
@@ -607,44 +610,44 @@ function mockModel(
     if(restrictedDelivery && fileType === "Item") {
         const delivered: CollectionItemFileDelivered = {
             collectionLocId,
-            itemId,
-            hash: SOME_DATA_HASH,
-            deliveredFileHash: DELIVERY_HASH,
+            itemId: itemId.toHex(),
+            hash: SOME_DATA_HASH.toHex(),
+            deliveredFileHash: DELIVERY_HASH.toHex(),
             generatedOn: new Date(),
             owner: ITEM_TOKEN_OWNER,
             collectionItemFile: collectionItemFile.object(),
         };
 
         collectionRepository.setup(instance => instance.findLatestDelivery(
-            It.Is<{ collectionLocId: string, itemId: string, fileHash: string }>(query =>
+            It.Is<{ collectionLocId: string, itemId: Hash, fileHash: Hash }>(query =>
                 query.collectionLocId === collectionLocId
-                && query.itemId === itemId
-                && query.fileHash === SOME_DATA_HASH
+                && query.itemId.equalTo(itemId)
+                && query.fileHash.equalTo(SOME_DATA_HASH)
             ))
         ).returnsAsync(delivered);
 
         collectionRepository.setup(instance => instance.findLatestDeliveries(
-            It.Is<{ collectionLocId: string, itemId: string }>(query =>
+            It.Is<{ collectionLocId: string, itemId: Hash }>(query =>
                 query.collectionLocId === collectionLocId
-                && query.itemId === itemId
+                && query.itemId.equalTo(itemId)
             ))
         ).returnsAsync({
-            [ SOME_DATA_HASH ]: [ delivered ]
+            [ SOME_DATA_HASH.toHex() ]: [ delivered ]
         });
     } else if (restrictedDelivery && fileType === "Collection") {
         const fileDelivered: LocFileDelivered[] = [ {
             requestId: collectionLocId,
-            hash: SOME_DATA_HASH,
-            deliveredFileHash: DELIVERY_HASH,
+            hash: SOME_DATA_HASH.toHex(),
+            deliveredFileHash: DELIVERY_HASH.toHex(),
             generatedOn: new Date(),
             owner: ITEM_TOKEN_OWNER,
         } ]
         const delivered: Record<string, LocFileDelivered[]> = {};
-        delivered[SOME_DATA_HASH] = fileDelivered;
+        delivered[SOME_DATA_HASH.toHex()] = fileDelivered;
         locRequestRepository.setup(instance => instance.findAllDeliveries(
-            It.Is<{ collectionLocId: string, hash: string }>(query =>
+            It.Is<{ collectionLocId: string, hash: Hash }>(query =>
                 query.collectionLocId === collectionLocId &&
-                query.hash === SOME_DATA_HASH ))
+                query.hash.equalTo(SOME_DATA_HASH) ))
         ).returnsAsync(delivered);
         locRequestRepository.setup(instance => instance.findAllDeliveries(
             It.Is<{ collectionLocId: string, hash: string }>(query =>
@@ -652,15 +655,15 @@ function mockModel(
                 query.hash === undefined ))
         ).returnsAsync(delivered);
         locRequestRepository.setup(instance => instance.findDeliveryByDeliveredFileHash(
-            It.Is<{ collectionLocId: string, deliveredFileHash: string }>(query =>
+            It.Is<{ collectionLocId: string, deliveredFileHash: Hash }>(query =>
                 query.collectionLocId === collectionLocId &&
-                query.deliveredFileHash === DELIVERY_HASH
+                query.deliveredFileHash.equalTo(DELIVERY_HASH)
             ))
         ).returnsAsync(fileDelivered[0]);
         locRequestRepository.setup(instance => instance.findDeliveryByDeliveredFileHash(
-            It.Is<{ collectionLocId: string, deliveredFileHash: string }>(query =>
+            It.Is<{ collectionLocId: string, deliveredFileHash: Hash }>(query =>
                 query.collectionLocId !== collectionLocId ||
-                query.deliveredFileHash !== DELIVERY_HASH
+                !query.deliveredFileHash.equalTo(DELIVERY_HASH)
             ))
         ).returnsAsync(null);
     }
@@ -689,30 +692,30 @@ function mockModel(
 
     const publishedCollectionItemFile: ItemFile = {
         hash: SOME_DATA_HASH,
-        name: hashString(FILE_NAME),
-        contentType: hashString(CONTENT_TYPE),
+        name: Hash.of(FILE_NAME),
+        contentType: Hash.of(CONTENT_TYPE),
         size: BigInt(SOME_DATA.length)
     }
 
     const publishedCollectionItem: CollectionItem = {
         id: itemId,
-        description: hashString("Item Description"),
+        description: Hash.of("Item Description"),
         files: [ publishedCollectionItemFile ],
         restrictedDelivery,
         termsAndConditions: [],
         token: {
-            id: hashString(TOKEN_ID),
-            type: hashString(TOKEN_TYPE),
+            id: Hash.of(TOKEN_ID),
+            type: Hash.of(TOKEN_TYPE),
             issuance: 1n,
         }
     }
     const logionNodeCollectionService = new Mock<LogionNodeCollectionService>();
     logionNodeCollectionService.setup(instance => instance.getCollectionItem(It.Is<GetCollectionItemParams>(
-        param => param.collectionLocId === collectionLocId && param.itemId === itemId)
+        param => param.collectionLocId === collectionLocId && param.itemId.equalTo(itemId))
     ))
         .returns(Promise.resolve(collectionItemPublished ? publishedCollectionItem : undefined));
     logionNodeCollectionService.setup(instance => instance.getCollectionItemFile(It.Is<GetCollectionItemFileParams>(
-        param => param.collectionLocId === collectionLocId && param.itemId === itemId && param.hash === SOME_DATA_HASH)
+        param => param.collectionLocId === collectionLocId && param.itemId.equalTo(itemId) && param.hash.equalTo(SOME_DATA_HASH))
     ))
         .returns(Promise.resolve(hasFile ? publishedCollectionItemFile : undefined));
     container.bind(LogionNodeCollectionService).toConstantValue(logionNodeCollectionService.object());
@@ -736,7 +739,7 @@ const TOKEN_ID = "some-token-id";
 const TOKEN_TYPE = "owner";
 
 function expectDeliveryInfo(responseBody: any) {
-    expect(responseBody.copyHash).toBe(DELIVERY_HASH);
+    expect(responseBody.copyHash).toBe(DELIVERY_HASH.toHex());
     expect(responseBody.generatedOn).toBeDefined();
     expect(responseBody.owner).toBe(ITEM_TOKEN_OWNER);
     expect(responseBody.belongsToCurrentOwner).toBe(true);

@@ -2,6 +2,7 @@ import { LATEST_SEAL_VERSION, PersonalInfoSealService } from "../../../src/logio
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { PostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
+import { Hash } from "@logion/node-api";
 
 describe("PersonalInfoSealService", () => {
 
@@ -33,8 +34,8 @@ describe("PersonalInfoSealService", () => {
     const version = LATEST_SEAL_VERSION;
 
     const expectedHashesPerVersion = [
-        "0x90e6d447523780d1a048194b939fa95587e52c01b82bf5683b3801729e300c36",
-        "0xa22772e11382ecc1cdcc6d776b0e6a8ed210aa0e19e6d2b83dce67c3868468e9",
+        Hash.fromHex("0x90e6d447523780d1a048194b939fa95587e52c01b82bf5683b3801729e300c36"),
+        Hash.fromHex("0xa22772e11382ecc1cdcc6d776b0e6a8ed210aa0e19e6d2b83dce67c3868468e9"),
     ];
 
     it("seals with salt", () => {
@@ -55,7 +56,7 @@ describe("PersonalInfoSealService", () => {
     })
 
     it("fails to verify wrong hash", () => {
-        const wrongHash = "0xab60bc976540a41f830c29c64db4c8442f20724437a078d309f42a958b29af07";
+        const wrongHash = Hash.fromHex("0xab60bc976540a41f830c29c64db4c8442f20724437a078d309f42a958b29af07");
         expect(sealService.verify(
             personalInfo,
             { hash: wrongHash, salt, version })
@@ -85,7 +86,7 @@ describe("PersonalInfoSealService", () => {
                 version,
                 salt,
             );
-            expect(seal.hash).toBe(expectedHashesPerVersion[version]);
+            expect(seal.hash).toEqual(expectedHashesPerVersion[version]);
             expect(sealService.verify(personalInfo, seal)).toBeTrue();
         }
     })

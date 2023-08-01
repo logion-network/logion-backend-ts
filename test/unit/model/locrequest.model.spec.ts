@@ -28,7 +28,7 @@ import {
 import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
-import { sha256String, Hash } from "../../../src/logion/lib/crypto/hashing.js";
+import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 
 const SUBMITTER: SupportedAccountId = {
     type: "Polkadot",
@@ -36,7 +36,7 @@ const SUBMITTER: SupportedAccountId = {
 };
 
 const PUBLIC_SEAL: PublicSeal = {
-    hash: "0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a",
+    hash: Hash.fromHex("0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a"),
     version: 0,
 }
 
@@ -475,7 +475,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
             }
         ];
         whenAddingMetadata(items, false);
-        whenRemovingMetadataItem(remover, sha256String(items[1].name))
+        whenRemovingMetadataItem(remover, Hash.of(items[1].name))
 
         const newItems: MetadataItemParams[] = [
             {
@@ -484,7 +484,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        const nameHash1 = sha256String(items[0].name);
+        const nameHash1 = Hash.of(items[0].name);
         thenExposesMetadata(newItems);
         thenExposesMetadataItemByNameHash(nameHash1, { ...newItems[0], nameHash: nameHash1 });
         thenHasMetadataItem(nameHash1);
@@ -496,7 +496,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
     it("confirms metadata item", () => {
         givenRequestWithStatus('OPEN');
         const name = "target-1";
-        const nameHash = sha256String(name);
+        const nameHash = Hash.of(name);
         whenAddingMetadata([
             {
                 name,
@@ -620,7 +620,7 @@ describe("LocRequestAggregateRoot (files)", () => {
         givenRequestWithStatus('OPEN');
         const files: FileParams[] = [
             {
-                hash: "hash1",
+                hash: hash1,
                 name: "name1",
                 contentType: "text/plain",
                 cid: "cid-1234",
@@ -630,7 +630,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             },
             {
-                hash: "hash2",
+                hash: hash2,
                 name: "name2",
                 contentType: "text/plain",
                 cid: "cid-4567",
@@ -642,17 +642,17 @@ describe("LocRequestAggregateRoot (files)", () => {
         ];
         whenAddingFiles(files, false);
         thenExposesFiles(files);
-        thenExposesFileByHash("hash1", files[0]);
-        thenExposesFileByHash("hash2", files[1]);
-        thenHasFile("hash1");
-        thenHasFile("hash2");
+        thenExposesFileByHash(hash1, files[0]);
+        thenExposesFileByHash(hash2, files[1]);
+        thenHasFile(hash1);
+        thenHasFile(hash2);
     });
 
     it("does not accept several files with same hash", () => {
         givenRequestWithStatus('OPEN');
         const files: FileParams[] = [
             {
-                hash: "hash1",
+                hash: hash1,
                 name: "name1",
                 contentType: "text/plain",
                 oid: 1234,
@@ -662,7 +662,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             },
             {
-                hash: "hash1",
+                hash: hash1,
                 name: "name2",
                 contentType: "text/plain",
                 oid: 4567,
@@ -681,7 +681,7 @@ describe("LocRequestAggregateRoot (files)", () => {
         givenRequestWithStatus('OPEN');
         const files: FileParams[] = [
             {
-                hash: "hash1",
+                hash: hash1,
                 name: "name1",
                 contentType: "text/plain",
                 cid: "cid-1234",
@@ -691,7 +691,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             },
             {
-                hash: "hash2",
+                hash: hash2,
                 name: "name2",
                 contentType: "text/plain",
                 cid: "cid-4567",
@@ -702,12 +702,12 @@ describe("LocRequestAggregateRoot (files)", () => {
             }
         ];
         whenAddingFiles(files, false);
-        whenRemovingFile(remover, "hash1");
+        whenRemovingFile(remover, hash1);
         thenReturnedRemovedFile(files[0]);
 
         const newFiles: FileParams[] = [
             {
-                hash: "hash2",
+                hash: hash2,
                 name: "name2",
                 contentType: "text/plain",
                 cid: "cid-4567",
@@ -718,8 +718,8 @@ describe("LocRequestAggregateRoot (files)", () => {
             }
         ];
         thenExposesFiles(newFiles);
-        thenExposesFileByHash("hash2", newFiles[0]);
-        thenHasFile("hash2");
+        thenExposesFileByHash(hash2, newFiles[0]);
+        thenHasFile(hash2);
         thenHasExpectedFileIndices();
     }
 
@@ -727,7 +727,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("confirms file", () => {
         givenRequestWithStatus('OPEN');
-        const hash = "hash-1";
+        const hash = Hash.of("hash-1");
         whenAddingFiles([
             {
                 hash,
@@ -747,7 +747,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("exposes draft, owner-submitted file to requester", () => {
         givenRequestWithStatus('OPEN');
-        const hash = "hash-3";
+        const hash = Hash.of("hash-3");
         whenAddingFiles([
             {
                 hash,
@@ -764,10 +764,10 @@ describe("LocRequestAggregateRoot (files)", () => {
     })
 
     it("accepts delivered files with restricted delivery", () => {
-        const hash = "hash-1";
+        const hash = Hash.of("hash-1");
         givenClosedCollectionLocWithFile(hash);
 
-        const deliveredFileHash = "hash-2";
+        const deliveredFileHash = Hash.of("hash-2");
         request.addDeliveredFile({
             hash,
             deliveredFileHash,
@@ -775,13 +775,13 @@ describe("LocRequestAggregateRoot (files)", () => {
             owner: OWNER,
         });
 
-        const file = request.files?.find(file => file.hash === hash);
+        const file = request.files?.find(file => file.hash === hash.toHex());
         expect(file?.delivered?.length).toBe(1);
-        expect(file?.delivered![0].hash).toBe(hash);
+        expect(file?.delivered![0].hash).toBe(hash.toHex());
         expect(file?.delivered![0].requestId).toBe(request.id);
         expect(file?.delivered![0].file).toBe(file);
 
-        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash);
+        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash.toHex());
         expect(file?.delivered![0].owner).toBe(OWNER);
         expect(file?.delivered![0].generatedOn).toBeDefined();
 
@@ -789,10 +789,10 @@ describe("LocRequestAggregateRoot (files)", () => {
     })
 
     it("accepts delivered files with restricted delivery", () => {
-        const hash = "hash-1";
+        const hash = Hash.of("hash-1");
         givenClosedCollectionLocWithFile(hash);
 
-        const deliveredFileHash = "hash-2";
+        const deliveredFileHash = Hash.of("hash-2");
         request.addDeliveredFile({
             hash,
             deliveredFileHash,
@@ -800,13 +800,13 @@ describe("LocRequestAggregateRoot (files)", () => {
             owner: OWNER,
         });
 
-        const file = request.files?.find(file => file.hash === hash);
+        const file = request.files?.find(file => file.hash === hash.toHex());
         expect(file?.delivered?.length).toBe(1);
-        expect(file?.delivered![0].hash).toBe(hash);
+        expect(file?.delivered![0].hash).toBe(hash.toHex());
         expect(file?.delivered![0].requestId).toBe(request.id);
         expect(file?.delivered![0].file).toBe(file);
 
-        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash);
+        expect(file?.delivered![0].deliveredFileHash).toBe(deliveredFileHash.toHex());
         expect(file?.delivered![0].owner).toBe(OWNER);
         expect(file?.delivered![0].generatedOn).toBeDefined();
 
@@ -818,8 +818,8 @@ describe("LocRequestAggregateRoot (files)", () => {
         request.locType = "Transaction";
 
         expect(() => request.addDeliveredFile({
-            hash: "hash-1",
-            deliveredFileHash: "hash-2",
+            hash: Hash.of("hash-1"),
+            deliveredFileHash: Hash.of("hash-2"),
             generatedOn: moment(),
             owner: OWNER,
         })).toThrowError("Restricted delivery is only available with Collection LOCs");
@@ -830,8 +830,8 @@ describe("LocRequestAggregateRoot (files)", () => {
         request.locType = "Collection";
 
         expect(() => request.addDeliveredFile({
-            hash: "hash-1",
-            deliveredFileHash: "hash-2",
+            hash: Hash.of("hash-1"),
+            deliveredFileHash: Hash.of("hash-2"),
             generatedOn: moment(),
             owner: OWNER,
         })).toThrowError("Restricted delivery is only possible with closed Collection LOCs");
@@ -841,19 +841,20 @@ describe("LocRequestAggregateRoot (files)", () => {
         givenRequestWithStatus('CLOSED');
         request.locType = "Collection";
 
+        const hash = Hash.of("hash-1");
         expect(() => request.addDeliveredFile({
-            hash: "hash-1",
-            deliveredFileHash: "hash-2",
+            hash,
+            deliveredFileHash: Hash.of("hash-2"),
             generatedOn: moment(),
             owner: OWNER,
-        })).toThrowError("No file with hash hash-1");
+        })).toThrowError(`No file with hash ${ hash.toHex() }`);
     })
 
     it("updates file", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Collection";
         const file: FileParams = {
-            hash: "hash1",
+            hash: hash1,
             name: "name1",
             contentType: "text/plain",
             cid: "cid-1234",
@@ -863,17 +864,17 @@ describe("LocRequestAggregateRoot (files)", () => {
             size: 123,
         };
         whenAddingFiles([ file ], false);
-        whenUpdatingFile("hash1", false);
-        thenExposesFileByHash("hash1", { ...file, restrictedDelivery: false });
-        whenUpdatingFile("hash1", true);
-        thenExposesFileByHash("hash1", { ...file, restrictedDelivery: true });
+        whenUpdatingFile(hash1, false);
+        thenExposesFileByHash(hash1, { ...file, restrictedDelivery: false });
+        whenUpdatingFile(hash1, true);
+        thenExposesFileByHash(hash1, { ...file, restrictedDelivery: true });
     });
 
     it("fails to update file for Identity LOC", () => {
         givenRequestWithStatus('OPEN');
         request.locType = "Identity";
         const file: FileParams = {
-            hash: "hash1",
+            hash: hash1,
             name: "name1",
             contentType: "text/plain",
             cid: "cid-1234",
@@ -884,13 +885,15 @@ describe("LocRequestAggregateRoot (files)", () => {
         };
         whenAddingFiles([ file ], false);
         expect(() => {
-            whenUpdatingFile("hash1", true);
+            whenUpdatingFile(hash1, true);
         }).toThrowError("Can change restricted delivery of file only on Collection LOC.");
     });
+});
 
-})
+const hash1 = Hash.of("hash1");
+const hash2 = Hash.of("hash2");
 
-function givenClosedCollectionLocWithFile(hash: string) {
+function givenClosedCollectionLocWithFile(hash: Hash) {
     givenRequestWithStatus('OPEN');
     request.locType = "Collection";
     request.addFile({
@@ -911,7 +914,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
     it("sets metadata item timestamp", () => {
         givenRequestWithStatus("OPEN")
         const dataName = "data-1";
-        const dataNameHash = sha256String(dataName);
+        const dataNameHash = Hash.of(dataName);
         whenAddingMetadata([{
             name: dataName,
             value: "value-1",
@@ -951,7 +954,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         givenRequestWithStatus("OPEN")
         const files: FileParams[] = [
             {
-                hash: "hash1",
+                hash: hash1,
                 name: "name1",
                 contentType: "text/plain",
                 cid: "cid-1234",
@@ -961,7 +964,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 size: 123,
             },
             {
-                hash: "hash2",
+                hash: hash2,
                 name: "name2",
                 contentType: "text/plain",
                 cid: "cid-4567",
@@ -973,11 +976,11 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         ];
         whenAddingFiles(files, true);
         const addedOn = moment();
-        whenSettingFileAddedOn("hash1", addedOn);
-        thenFileStatusIs("hash1", "PUBLISHED")
-        thenFileRequiresUpdate("hash1")
-        thenExposesFileByHash("hash1", {
-            hash: "hash1",
+        whenSettingFileAddedOn(hash1, addedOn);
+        thenFileStatusIs(hash1, "PUBLISHED")
+        thenFileRequiresUpdate(hash1)
+        thenExposesFileByHash(hash1, {
+            hash: hash1,
             name: "name1",
             contentType: "text/plain",
             cid: "cid-1234",
@@ -996,7 +999,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         // User creates a draft
         givenRequestWithStatus("DRAFT");
 
-        const fileHash = "hash1";
+        const fileHash = Hash.of("hash1");
         request.addFile({
             hash: fileHash,
             name: "name1",
@@ -1009,7 +1012,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, false);
         expect(request.getFiles(SUBMITTER).length).toBe(1);
         const itemName = "Some name";
-        const itemNameHash = sha256String(itemName);
+        const itemNameHash = Hash.of(itemName);
         request.addMetadataItem({
             name: itemName,
             value: "Some value",
@@ -1069,7 +1072,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
 
         // LLO adds other data
         request.addFile({
-            hash: "hash2",
+            hash: hash2,
             name: "name2",
             contentType: "text/plain",
             oid: 1235,
@@ -1078,8 +1081,8 @@ describe("LocRequestAggregateRoot (processes)", () => {
             restrictedDelivery: false,
             size: 123,
         }, true);
-        request.confirmFile("hash2");
-        request.setFileAddedOn("hash2", moment()); // Sync
+        request.confirmFile(hash2);
+        request.setFileAddedOn(hash2, moment()); // Sync
 
         const target = new UUID().toString();
         request.addLink({
@@ -1090,7 +1093,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.setLinkAddedOn(target, moment()); // Sync
 
         const someOtherName = "Some other name";
-        const someOtherNameHash = sha256String(someOtherName);
+        const someOtherNameHash = Hash.of(someOtherName);
         request.addMetadataItem({
             name: someOtherName,
             value: "Some other value",
@@ -1148,7 +1151,7 @@ function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
 }
 
 function thenRequestSealIs(expectedSeal: Seal) {
-    expect(request.seal?.hash).toEqual(expectedSeal.hash);
+    expect(request.seal?.hash).toEqual(expectedSeal.hash.toHex());
     expect(request.seal?.salt).toEqual(expectedSeal.salt);
 }
 
@@ -1217,7 +1220,7 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription, e
     expect(request.decisionOn).toBeUndefined();
 }
 
-function whenUpdatingFile(hash: string, restrictedDelivery: boolean) {
+function whenUpdatingFile(hash: Hash, restrictedDelivery: boolean) {
     request.setFileRestrictedDelivery({ hash, restrictedDelivery });
 }
 
@@ -1241,11 +1244,11 @@ function expectSameFiles(f1: FileDescription, f2: Partial<FileDescription>) {
     expect(f1.restrictedDelivery).toEqual(f2.restrictedDelivery!);
 }
 
-function thenExposesFileByHash(hash: string, expectedFile: Partial<FileDescription>) {
+function thenExposesFileByHash(hash: Hash, expectedFile: Partial<FileDescription>) {
     expectSameFiles(request.getFile(hash), expectedFile);
 }
 
-function thenHasFile(hash: string) {
+function thenHasFile(hash: Hash) {
     expect(request.hasFile(hash)).toBe(true);
 }
 
@@ -1313,23 +1316,23 @@ function thenMetadataIsVisibleToRequester(name: string) {
     expect(request.getMetadataItems(SUBMITTER)[0].name).toEqual(name);
 }
 
-function whenSettingFileAddedOn(hash: string, addedOn:Moment) {
+function whenSettingFileAddedOn(hash: Hash, addedOn:Moment) {
     request.setFileAddedOn(hash, addedOn);
 }
 
-function whenConfirmingFile(hash: string) {
+function whenConfirmingFile(hash: Hash) {
     request.confirmFile(hash);
 }
 
-function thenFileStatusIs(hash: string, status: ItemStatus) {
-    expect(request.files?.find(file => file.hash === hash)?.status).toEqual(status)
+function thenFileStatusIs(hash: Hash, status: ItemStatus) {
+    expect(request.files?.find(file => file.hash === hash.toHex())?.status).toEqual(status)
 }
 
-function thenFileRequiresUpdate(hash: string) {
-    expect(request.files?.find(file => file.hash === hash)?._toUpdate).toBeTrue();
+function thenFileRequiresUpdate(hash: Hash) {
+    expect(request.files?.find(file => file.hash === hash.toHex())?._toUpdate).toBeTrue();
 }
 
-function thenFileIsVisibleToRequester(hash: string) {
+function thenFileIsVisibleToRequester(hash: Hash) {
     expect(request.getFiles(SUBMITTER).length).toEqual(1);
     expect(request.getFiles(SUBMITTER)[0].hash).toEqual(hash);
 }
@@ -1366,7 +1369,7 @@ function whenRemovingLink(remover: SupportedAccountId, target: string) {
     request.removeLink(remover, target);
 }
 
-function whenRemovingFile(remover: SupportedAccountId, hash: string) {
+function whenRemovingFile(remover: SupportedAccountId, hash: Hash) {
     removedFile = request.removeFile(remover, hash);
 }
 

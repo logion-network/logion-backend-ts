@@ -19,6 +19,7 @@ import { getUploadedFile } from "./fileupload.js";
 import { downloadAndClean } from "../lib/http.js";
 import { components } from "./components.js";
 import { LoFileService } from "../services/lofile.service.js";
+import { Hash } from "@logion/node-api";
 
 type FileUploadData = components["schemas"]["FileUploadData"];
 
@@ -70,7 +71,7 @@ export class LoFileController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         authenticatedUser.require(user => user.is(legalOfficerAddress));
 
-        const file = await getUploadedFile(this.request, requireDefined(body.hash, () => badRequest("No hash found for upload file")));
+        const file = await getUploadedFile(this.request, Hash.fromHex(requireDefined(body.hash, () => badRequest("No hash found for upload file"))));
         const existingLoFile = await this.loFileRepository.findById({ id, legalOfficerAddress } );
         if (existingLoFile) {
             const oidToRemove = existingLoFile.oid;

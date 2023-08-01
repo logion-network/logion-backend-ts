@@ -1,6 +1,5 @@
-import { TestDb } from "@logion/rest-api-core";
+import { Log, TestDb } from "@logion/rest-api-core";
 import { MigrationInterface, QueryRunner } from "typeorm";
-import { Log } from "@logion/rest-api-core";
 
 const { logger } = Log;
 const { connect, disconnect, queryRunner, allMigrations } = TestDb;
@@ -8,6 +7,7 @@ const { connect, disconnect, queryRunner, allMigrations } = TestDb;
 describe('Migration', () => {
 
     const NUM_OF_TABLES = 22;
+    jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 
     beforeEach(async () => {
         await connect([ "src/logion/model/*.model.ts" ], [ "src/logion/migration/*.ts" ], false);
@@ -17,12 +17,12 @@ describe('Migration', () => {
         await disconnect();
     });
 
-    async function testMigrationUp(migration: MigrationInterface, runner:QueryRunner) {
+    async function testMigrationUp(migration: MigrationInterface, runner: QueryRunner) {
         logger.info("Migrating UP %s ", migration.name)
         await migration.up(runner)
     }
 
-    async function runAllMigrations(runner:QueryRunner) {
+    async function runAllMigrations(runner: QueryRunner) {
         for (const migration of allMigrations()) {
             await testMigrationUp(migration, runner);
         }
@@ -31,18 +31,18 @@ describe('Migration', () => {
     it("executes all up()", async () => {
 
         // Given
-        const runner = queryRunner()
-        const tablesBefore = await runner.getTables()
+        const runner = queryRunner();
+        const tablesBefore = await runner.getTables();
 
         // When
         await runAllMigrations(runner)
 
         // Then
         const tablesAfter = await runner.getTables();
-        expect(tablesAfter.length - tablesBefore.length).toBe(NUM_OF_TABLES)
+        expect(tablesAfter.length - tablesBefore.length).toBe(NUM_OF_TABLES);
     })
 
-    async function testMigrationDown(migration: MigrationInterface, runner:QueryRunner) {
+    async function testMigrationDown(migration: MigrationInterface, runner: QueryRunner) {
         logger.info("Migrating DOWN %s ", migration.name)
         await migration.down(runner)
     }

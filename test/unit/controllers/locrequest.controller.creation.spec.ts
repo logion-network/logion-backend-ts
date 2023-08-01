@@ -166,7 +166,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
                 expect(response.body.status).toBe("REVIEW_PENDING");
                 expect(response.body.locType).toBe(locType);
                 checkPrivateData(response, expectedUserPrivateData);
-                expect(response.body.seal).toEqual(SEAL.hash)
+                expect(response.body.seal).toEqual(SEAL.hash.toHex())
             } else {
                 expect(response.body.errorMessage).toEqual(expectedErrorMessage);
             }

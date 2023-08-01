@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { sha256String } from "../lib/crypto/hashing.js";
+import { Hash } from "@logion/node-api";
 import { v4 as uuid } from "uuid";
 import { UserIdentity } from "../model/useridentity.js";
 import { PostalAddress } from "../model/postaladdress.js";
@@ -8,7 +8,7 @@ import { PersonalInfo } from "../model/personalinfo.model.js";
 const SEPARATOR: string = "-";
 
 export interface PublicSeal {
-    hash: string;
+    hash: Hash;
     version: number;
 }
 
@@ -29,7 +29,7 @@ abstract class SealService<T> {
     }
 
     protected _seal(values: string[], salt: string, version: number): Seal {
-        const hash = sha256String(this.serialize(values, salt))
+        const hash = Hash.of(this.serialize(values, salt));
         return {
             hash,
             salt,
@@ -43,7 +43,7 @@ abstract class SealService<T> {
 
     protected _verify(sealable: string[], seal: Seal): boolean {
         const { hash } = this._seal(sealable, seal.salt, seal.version)
-        return hash === seal.hash;
+        return hash.equalTo(seal.hash);
     }
 
     private serialize(values: string [], salt: string): string {

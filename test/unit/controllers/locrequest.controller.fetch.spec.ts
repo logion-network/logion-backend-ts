@@ -31,9 +31,8 @@ import {
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
-import { Fees } from "@logion/node-api";
+import { Fees, Hash } from "@logion/node-api";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
-import { sha256String } from "../../../src/logion/lib/crypto/hashing.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -218,7 +217,7 @@ const testFile: FileDescription = {
     name: "test-file",
     nature: "file-nature",
     contentType: "application/pdf",
-    hash: "0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9",
+    hash: Hash.fromHex("0x9383cd5dfeb5870027088289c665c3bae2d339281840473f35311954e984dea9"),
     oid: 123,
     submitter: SUBMITTER,
     addedOn: moment("2022-08-31T15:53:12.741Z"),
@@ -238,7 +237,7 @@ const testLink: LinkDescription = {
 
 const testMetadataItem: MetadataItemDescription = {
     name: "test-data",
-    nameHash: sha256String("test-data"),
+    nameHash: Hash.of("test-data"),
     value: "test-data-value",
     submitter: SUBMITTER,
     fees: DATA_LINK_FEES,
@@ -256,7 +255,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             const file = response.body.files[0]
             expect(file.name).toBe(testFile.name)
             expect(file.nature).toBe(testFile.nature)
-            expect(file.hash).toBe(testFile.hash)
+            expect(file.hash).toBe(testFile.hash.toHex())
             expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
             expect(file.submitter).toEqual(SUBMITTER)
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
