@@ -158,6 +158,10 @@ export class LocRequestController extends ApiController {
                 throw badRequest("" + e);
             }
         }
+        const valueFee = createLocRequestView.valueFee ? BigInt(createLocRequestView.valueFee) : undefined;
+        if (!valueFee && locType === "Collection") {
+            throw badRequest("Value fee must be set for collection LOCs");
+        }
         const description: LocRequestDescription = {
             requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
@@ -170,6 +174,7 @@ export class LocRequestController extends ApiController {
             company: createLocRequestView.company,
             template: createLocRequestView.template,
             sponsorshipId,
+            valueFee,
         }
         if (locType === "Identity") {
             if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {

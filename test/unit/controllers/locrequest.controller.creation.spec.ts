@@ -155,9 +155,13 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
         mock
     )
     const expectedUserPrivateData = userIdentities["EmbeddedInLoc"];
+    const data = testDataWithUserIdentityWithType(locType);
     await request(app)
         .post('/api/loc-request')
-        .send(testDataWithUserIdentityWithType(locType))
+        .send({
+            ...data,
+            valueFee: data.valueFee?.toString(),
+        })
         .expect(expectedStatus)
         .expect('Content-Type', /application\/json/)
         .then(response => {
@@ -182,9 +186,13 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
         mock,
     )
     const expectedUserPrivateData = userIdentities["Polkadot"];
+    const data = testDataWithType(locType);
     await request(app)
         .post('/api/loc-request')
-        .send(testDataWithType(locType))
+        .send({
+            ...data,
+            valueFee: data.valueFee?.toString(),
+        })
         .expect(200)
         .expect('Content-Type', /application\/json/)
         .then(response => {

@@ -4,7 +4,7 @@ import { appDataSource } from "@logion/rest-api-core";
 import { Fees } from '@logion/node-api';
 import { EmbeddableFees, NULL_FEES } from './fees.js';
 
-export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES";
+export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE";
 
 function asTransactionType(type?: string): TransactionType {
     if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT" || type === "STORAGE_FEE" || type === "OTHER_FEES") {

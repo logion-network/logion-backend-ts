@@ -3,7 +3,7 @@ import { Log } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { VoteFactory } from "../model/vote.model.js";
 import { VoteService } from "./vote.service.js";
-import { JsonExtrinsic, toString, extractUuid, findEventData } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, toString, extractUuid, findEventsData } from "./types/responses/Extrinsic.js";
 import { Adapters } from "@logion/node-api";
 
 const { logger } = Log;
@@ -46,7 +46,7 @@ export class VoteSynchronizer {
     }
 
     private extractVoteId(extrinsic: JsonExtrinsic): string {
-        const data = findEventData(extrinsic, { pallet: "vote", method: "VoteCreated" });
+        const data = findEventsData(extrinsic, { pallet: "vote", method: "VoteCreated" })[0];
         if (data === undefined || data.length < 1) {
             throw Error("Failed to find voteId in event");
         } else {
@@ -55,7 +55,7 @@ export class VoteSynchronizer {
     }
 
     private async updateVote(extrinsic: JsonExtrinsic) {
-        const data = findEventData(extrinsic, { pallet: "vote", method: "VoteUpdated" });
+        const data = findEventsData(extrinsic, { pallet: "vote", method: "VoteUpdated" })[0];
         if (data === undefined || data.length < 4) {
             throw new Error("Failed to extract VoteUpdated event data");
         } else {

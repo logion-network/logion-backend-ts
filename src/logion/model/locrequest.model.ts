@@ -48,6 +48,7 @@ export interface LocRequestDescription {
     readonly company?: string;
     readonly template?: string;
     readonly sponsorshipId?: UUID;
+    readonly valueFee?: bigint;
 }
 
 export interface LocRequestDecision {
@@ -322,7 +323,8 @@ export class LocRequestAggregateRoot {
             company: this.company!,
             template: this.template,
             sponsorshipId: this.sponsorshipId ? new UUID(this.sponsorshipId) : undefined,
-        }
+            valueFee: this.valueFee ? BigInt(this.valueFee) : undefined,
+        };
     }
 
     getRequester(): SupportedAccountId | undefined {
@@ -948,6 +950,9 @@ export class LocRequestAggregateRoot {
     @Column({ type: "uuid", name: "sponsorship_id", nullable: true, unique: true })
     sponsorshipId?: string;
 
+    @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
+    valueFee?: string;
+
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
     _metadataToDelete: LocMetadataItem[] = [];
@@ -1466,6 +1471,10 @@ export class LocRequestFactory {
         request.links = [];
         request.template = description.template;
         request.sponsorshipId = description.sponsorshipId?.toString();
+        if(request.locType === "Collection") {
+            const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
+            request.valueFee = valueFee.toString();
+        }
         return request;
     }
 

@@ -104,6 +104,7 @@ export function testDataWithType(locType: LocType, draft?: boolean): Partial<Loc
         description: "I want to open a case",
         locType,
         draft,
+        valueFee: locType === "Collection" ? 100n : undefined,
     }
 }
 

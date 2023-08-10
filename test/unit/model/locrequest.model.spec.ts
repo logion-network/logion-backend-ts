@@ -239,6 +239,7 @@ describe("LocRequestFactory", () => {
             company: undefined,
             template: "some-template",
             sponsorshipId: new UUID(),
+            valueFee: locType === "Collection" ? 100n : undefined,
         };
     }
 });

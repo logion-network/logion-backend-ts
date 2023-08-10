@@ -55,6 +55,9 @@ export class ExtrinsicsBuilder {
                     if(event.section === "logionLoc" && event.method === "CertificateFeeWithdrawn") {
                         extrinsicBuilder.certificateFee = this.getFee(jsonEvent);
                     }
+                    if(event.section === "logionLoc" && event.method === "ValueFeeWithdrawn") {
+                        extrinsicBuilder.valueFee = this.getFee(jsonEvent);
+                    }
                     extrinsicBuilder.events.push(jsonEvent);
                 }
             }
@@ -180,6 +183,7 @@ export class ExtrinsicBuilder {
     public storageFee?: StorageFee;
     public legalFee?: LegalFee;
     public certificateFee?: CertificateFee;
+    public valueFee?: CertificateFee;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 
@@ -191,6 +195,7 @@ export class ExtrinsicBuilder {
             storageFee: this.storageFee,
             legalFee: this.legalFee,
             certificateFee: this.certificateFee,
+            valueFee: this.valueFee,
             signer: this.signer ? this.signer.toString() : null,
             tip: this.tip !== null ? this.tip.toString() : null,
             error: this.error,
