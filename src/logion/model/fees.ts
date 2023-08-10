@@ -14,10 +14,9 @@ export class EmbeddableStorageFees {
 
     getDescription(): Fees {
         return new Fees({
-                inclusionFee: toBigInt(this.inclusionFee) || 0n,
-                storageFee: toBigInt(this.storageFee),
-            }
-        )
+            inclusionFee: toBigInt(this.inclusionFee) || 0n,
+            storageFee: toBigInt(this.storageFee),
+        });
     }
 
     static allFees(fees: Fees): EmbeddableStorageFees {
@@ -42,14 +41,17 @@ export class EmbeddableFees extends EmbeddableStorageFees {
     @Column("numeric", { name: "certificate_fee", precision: AMOUNT_PRECISION, nullable: true })
     certificateFee?: string;
 
+    @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
+    valueFee?: string;
+
     getDescription(): Fees {
         return new Fees({
-                inclusionFee: toBigInt(this.inclusionFee) || 0n,
-                storageFee: toBigInt(this.storageFee),
-                legalFee: toBigInt(this.legalFee),
-                certificateFee: toBigInt(this.certificateFee),
-            }
-        )
+            inclusionFee: toBigInt(this.inclusionFee) || 0n,
+            storageFee: toBigInt(this.storageFee),
+            legalFee: toBigInt(this.legalFee),
+            certificateFee: toBigInt(this.certificateFee),
+            valueFee: toBigInt(this.valueFee),
+        });
     }
 
     static allFees(fees: Fees): EmbeddableFees {
@@ -58,6 +60,7 @@ export class EmbeddableFees extends EmbeddableStorageFees {
         entity.storageFee = fees.storageFee?.toString();
         entity.legalFee = fees.legalFee?.toString();
         entity.certificateFee = fees.certificateFee?.toString();
+        entity.valueFee = fees.valueFee?.toString();
         return entity;
     }
 }
@@ -65,4 +68,3 @@ export class EmbeddableFees extends EmbeddableStorageFees {
 function toBigInt(fee?: string): bigint | undefined {
     return fee ? BigInt(fee) : undefined
 }
-

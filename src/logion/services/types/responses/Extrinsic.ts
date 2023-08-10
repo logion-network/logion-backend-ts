@@ -15,6 +15,9 @@ export interface LegalFee extends AbstractFee {
 export interface CertificateFee extends AbstractFee {
 }
 
+export interface ValueFee extends AbstractFee {
+}
+
 export interface JsonExtrinsic {
     call: TypesJsonCall;
     signer: string | null;
@@ -23,6 +26,7 @@ export interface JsonExtrinsic {
     storageFee?: StorageFee;
     legalFee?: LegalFee;
     certificateFee?: CertificateFee;
+    valueFee?: ValueFee;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }
@@ -63,16 +67,7 @@ export function extractUuid(argKey: string, args: TypesJsonObject): string {
     return UUID.fromDecimalStringOrThrow(Adapters.asBigInt(args[argKey]).toString()).toString();
 }
 
-export function findEventData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }): any[] | undefined {
-    const event = extrinsic.events
-        .find(event => {
-            return event.section === method.pallet && event.method === method.method;
-
-        });
-    if (event === undefined) {
-        return undefined;
-    } else {
-        return event.data;
-    }
+export function findEventsData(extrinsic: JsonExtrinsic, method: { pallet: string, method: string }) {
+    const events = extrinsic.events.filter(event => event.section === method.pallet && event.method === method.method);
+    return events.map(event => event.data);
 }
-

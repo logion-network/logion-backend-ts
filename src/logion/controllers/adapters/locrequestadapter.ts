@@ -7,7 +7,7 @@ import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
-import { Fees, Hash } from "@logion/node-api";
+import { Fees } from "@logion/node-api";
 import { SupportedAccountId } from "../../model/supportedaccountid.model.js";
 
 export type UserPrivateData = {
@@ -111,6 +111,7 @@ export class LocRequestAdapter {
             selectedIssuers,
             template: locDescription.template,
             sponsorshipId: locDescription.sponsorshipId?.toString(),
+            valueFee: locDescription.valueFee?.toString(),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

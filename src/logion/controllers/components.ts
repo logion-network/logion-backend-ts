@@ -286,7 +286,7 @@ export interface components {
        * @description The transaction's type 
        * @enum {string}
        */
-      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES";
+      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE";
     };
     /**
      * UserIdentityView 
@@ -358,6 +358,8 @@ export interface components {
       template?: string;
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
+      /** @description The value fee associated with this collection LOC */
+      valueFee?: string;
     };
     /**
      * @description The request's status 
@@ -531,6 +533,8 @@ export interface components {
       template?: string;
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
+      /** @description The value fee associated with this collection LOC */
+      valueFee?: string;
     };
     /**
      * LocPublicView 

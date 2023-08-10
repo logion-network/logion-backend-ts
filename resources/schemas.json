@@ -507,7 +507,9 @@
                             "LEGAL_FEE",
                             "STORAGE_FEE",
                             "CERTIFICATE_FEE",
-                            "OTHER_FEES"
+                            "OTHER_FEES",
+                            "VALUE_FEE",
+                            "RESERVE"
                         ]
                     }
                 },
@@ -641,6 +643,10 @@
                     "sponsorshipId": {
                         "type": "string",
                         "description": "The ID of the sponsorship to use"
+                    },
+                    "valueFee": {
+                        "type": "string",
+                        "description": "The value fee associated with this collection LOC"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -935,6 +941,10 @@
                     "sponsorshipId": {
                         "type": "string",
                         "description": "The ID of the sponsorship to use"
+                    },
+                    "valueFee": {
+                        "type": "string",
+                        "description": "The value fee associated with this collection LOC"
                     }
                 },
                 "title": "LocRequestView",
