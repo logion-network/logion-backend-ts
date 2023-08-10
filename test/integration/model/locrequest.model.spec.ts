@@ -381,7 +381,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.addFile({
         name: "fileName",
         hash,
-        oid: 123,
+        cid: "123",
         contentType: "content/type",
         nature: "nature1",
         submitter: SUBMITTER,

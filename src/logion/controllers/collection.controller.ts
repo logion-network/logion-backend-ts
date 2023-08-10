@@ -413,6 +413,9 @@ export class CollectionController extends ApiController {
         const hash = Hash.fromHex(hashHex);
         const itemId = Hash.fromHex(itemIdHex);
         const file = await this.checkCanDownloadCollectionFile(authenticated, collectionLocId, hash, itemId);
+        if(!file.contentType) {
+            throw badRequest("File has been forgotten");
+        }
         const tempFilePath = CollectionController.tempFilePath({
             collectionLocId,
             itemId,
