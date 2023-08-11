@@ -56,32 +56,43 @@ export interface LocRequestDecision {
     readonly rejectReason?: string;
 }
 
-export interface FileParams {
+interface FileDescriptionMandatoryFields {
     readonly name: string;
     readonly hash: Hash;
-    readonly oid?: number;
-    readonly cid?: string;
-    readonly contentType: string;
-    readonly nature: string;
     readonly submitter: SupportedAccountId;
     readonly restrictedDelivery: boolean;
     readonly size: number;
+}
+
+export interface FileParams extends FileDescriptionMandatoryFields {
+    readonly cid: string;
+    readonly contentType: string;
+    readonly nature: string;
+}
+
+export interface FileDescription extends FileDescriptionMandatoryFields, ItemLifecycle {
+    readonly oid?: number;
+    readonly cid?: string;
+    readonly contentType?: string;
+    readonly nature?: string;
     readonly fees?: Fees;
     readonly storageFeePaidBy?: string;
 }
 
-export interface FileDescription extends FileParams, ItemLifecycle {
+interface MetadataItemDescriptionMandatoryFields {
+    readonly submitter: SupportedAccountId;
 }
 
-export interface MetadataItemParams {
+export interface MetadataItemParams extends MetadataItemDescriptionMandatoryFields {
     readonly name: string;
     readonly value: string;
-    readonly submitter: SupportedAccountId;
-    readonly fees?: Fees;
 }
 
-export interface MetadataItemDescription extends MetadataItemParams, ItemLifecycle {
+export interface MetadataItemDescription extends MetadataItemDescriptionMandatoryFields, ItemLifecycle {
+    readonly name?: string;
     readonly nameHash: Hash;
+    readonly value?: string;
+    readonly fees?: Fees;
 }
 
 export interface ItemLifecycle {
@@ -980,7 +991,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255, nullable: true })
     cid?: string;
 
-    @Column({ length: 255, name: "content_type" })
+    @Column({ length: 255, name: "content_type", nullable: true })
     contentType?: string;
 
     @Column({ length: 255, nullable: true })
@@ -1106,10 +1117,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column({ length: 255, nullable: true })
     name?: string;
 
-    @Column({ name: "value", length: 255, nullable: true })
-    deprecated_value?: string;
-
-    @Column("text", { name: "value_text", default: "" })
+    @Column("text", { name: "value", default: "", nullable: true })
     value?: string;
 
     @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })

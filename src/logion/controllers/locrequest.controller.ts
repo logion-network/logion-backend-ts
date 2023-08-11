@@ -559,6 +559,9 @@ export class LocRequestController extends ApiController {
         const { contributor, voter } = await this.ensureContributorOrVoter(request);
 
         const file = request.getFile(Hash.fromHex(hash));
+        if(!file.contentType) {
+            throw badRequest("File has been forgotten");
+        }
         if (
             !accountEquals(contributor, request.getOwner()) &&
             !accountEquals(contributor, request.getRequester()) &&
