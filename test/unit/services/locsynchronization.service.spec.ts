@@ -21,6 +21,7 @@ import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion
 import { ALICE } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { ItIsHash } from "../../helpers/Mock.js";
+import { SupportedAccountId } from "src/logion/model/supportedaccountid.model.js";
 
 describe("LocSynchronizer", () => {
 
@@ -350,17 +351,22 @@ function thenCollectionItemSaved() {
 }
 
 function givenLocRequestExpectsMetadataItemAcknowledged() {
-    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenMetadataAcknowledged() {
-    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsFileAcknowledged() {
-    locRequest.setup(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
 
+function ItIsAccount(account: string) {
+    return It.Is<SupportedAccountId>(given => given.address === account && given.type === "Polkadot");
+}
+
+
 function thenFileAcknowledged() {
-    locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));
 }

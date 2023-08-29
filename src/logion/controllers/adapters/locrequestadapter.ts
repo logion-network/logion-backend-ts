@@ -226,6 +226,7 @@ export function toLifecycleView(item: ItemLifecycle) {
         rejectReason: item.rejectReason,
         reviewedOn: item.reviewedOn?.toISOString(),
         addedOn: item.addedOn?.toISOString(),
-        acknowledgedOn: item.acknowledgedOn?.toISOString(),
+        acknowledgedByOwnerOn: item.acknowledgedByOwnerOn?.toISOString(),
+        acknowledgedByVerifiedIssuerOn: item.acknowledgedByVerifiedIssuerOn?.toISOString(),
     }
 }
