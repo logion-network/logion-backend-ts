@@ -698,24 +698,28 @@ export class LocRequestController extends ApiController {
     }
 
     static confirmFileAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hash}/confirm-acknowledged"].put!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/confirm-acknowledged"].put!;
         operationObject.summary = "Confirms a file as acknowledged";
-        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.description = "The authenticated user must be the owner or the submitter";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'hash': "The hash of the file to download"
+            'hashHex': "The hash of the file to download"
         });
     }
 
-    @HttpPut('/:requestId/files/:hash/confirm-acknowledged')
+    @HttpPut('/:requestId/files/:hashHex/confirm-acknowledged')
     @Async()
     @SendsResponse()
-    async confirmFileAcknowledged(_body: any, requestId: string, hash: string) {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+    async confirmFileAcknowledged(_body: any, requestId: string, hashHex: string) {
+        const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmFileAcknowledged(Hash.fromHex(hash));
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canConfirmFileAcknowledged(hash, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.confirmFileAcknowledged(hash, contributor);
+            }
         });
         this.response.sendStatus(204);
     }
@@ -981,24 +985,28 @@ export class LocRequestController extends ApiController {
     }
 
     static confirmMetadataAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/confirm-acknowledged"].put!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHashHex}/confirm-acknowledged"].put!;
         operationObject.summary = "Confirms a metadata item as acknowledged";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'nameHash': "The item's name hash"
+            'nameHashHex': "The item's name hash"
         });
     }
 
-    @HttpPut('/:requestId/metadata/:nameHash/confirm-acknowledged')
+    @HttpPut('/:requestId/metadata/:nameHashHex/confirm-acknowledged')
     @Async()
     @SendsResponse()
-    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHash: string) {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHashHex: string) {
+        const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmMetadataItemAcknowledged(Hash.fromHex(nameHash));
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canConfirmMetadataItemAcknowledged(nameHash, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.confirmMetadataItemAcknowledged(nameHash, contributor);
+            }
         });
         this.response.sendStatus(204);
     }

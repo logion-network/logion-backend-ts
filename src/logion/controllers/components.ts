@@ -402,7 +402,12 @@ export interface components {
        * Format: date-time 
        * @description The date-time of acknowledge (chain time)
        */
-      acknowledgedOn?: string;
+      acknowledgedByOwnerOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge by verified issuer (chain time)
+       */
+      acknowledgedByVerifiedIssuerOn?: string;
     };
     LocMetadataItemView: {
       /** @description The item's name */
@@ -430,9 +435,14 @@ export interface components {
       reviewedOn?: string;
       /**
        * Format: date-time 
-       * @description The date-time of acknowledge (chain time)
+       * @description The date-time of acknowledge by owner (chain time)
        */
-      acknowledgedOn?: string;
+      acknowledgedByOwnerOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge by verified issuer (chain time)
+       */
+      acknowledgedByVerifiedIssuerOn?: string;
     };
     /**
      * LocRequestView 

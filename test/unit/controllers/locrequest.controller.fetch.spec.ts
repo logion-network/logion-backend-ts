@@ -225,7 +225,9 @@ const testFile: FileDescription = {
     size: 123,
     fees: FILE_FEES,
     storageFeePaidBy: testData.requesterAddress?.address,
-    status: "DRAFT",
+    status: "ACKNOWLEDGED",
+    acknowledgedByOwnerOn: moment(),
+    acknowledgedByVerifiedIssuerOn: moment(),
 }
 
 const DATA_LINK_FEES = new Fees({ inclusionFee: 42n });
@@ -241,7 +243,9 @@ const testMetadataItem: MetadataItemDescription = {
     value: "test-data-value",
     submitter: SUBMITTER,
     fees: DATA_LINK_FEES,
-    status: "DRAFT",
+    status: "ACKNOWLEDGED",
+    acknowledgedByOwnerOn: moment(),
+    acknowledgedByVerifiedIssuerOn: moment(),
 }
 
 async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData) {
@@ -261,6 +265,9 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
             expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
             expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
+            expect(file.status).toBe(testFile.status)
+            expect(file.acknowledgedByOwnerOn).toBeDefined()
+            expect(file.acknowledgedByVerifiedIssuerOn).toBeDefined()
             const link = response.body.links[0]
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)
@@ -273,6 +280,8 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(metadataItem.submitter).toEqual(SUBMITTER)
             expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             expect(metadataItem.status).toBe(testMetadataItem.status)
+            expect(metadataItem.acknowledgedByOwnerOn).toBeDefined()
+            expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeDefined()
             checkPrivateData(response, expectedUserPrivateData);
         });
 }

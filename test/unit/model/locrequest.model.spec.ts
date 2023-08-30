@@ -35,6 +35,11 @@ const SUBMITTER: SupportedAccountId = {
     address: "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw"
 };
 
+const VERIFIED_ISSUER: SupportedAccountId = {
+    type: "Polkadot",
+    address: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"
+};
+
 const PUBLIC_SEAL: PublicSeal = {
     hash: Hash.fromHex("0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a"),
     version: 0,
@@ -410,6 +415,99 @@ describe("LocRequestAggregateRoot", () => {
         const rawJson = idenfyCallbackPayload("APPROVED");
         const payload = JSON.parse(rawJson);
         expect(() => request.updateIdenfyVerification(payload, rawJson)).toThrowError("iDenfy verification was not initiated");
+    });
+
+    it("confirms metadata acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: SUBMITTER,
+            value: "value",
+        }, false);
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash);
+
+        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (owner and verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, false);
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash);
+
+        request.confirmMetadataItemAcknowledged(nameHash, VERIFIED_ISSUER, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms file acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: SUBMITTER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, false);
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.confirmFile(hash);
+
+        request.confirmFileAcknowledged(hash, OWNER_ACCOUNT, moment());
+
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms file acknowledgment (owner and verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: SUBMITTER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, false);
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.confirmFile(hash);
+
+        request.confirmFileAcknowledged(hash, VERIFIED_ISSUER, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.confirmFileAcknowledged(hash, OWNER_ACCOUNT, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
     });
 });
 
@@ -1065,11 +1163,11 @@ describe("LocRequestAggregateRoot (processes)", () => {
         // User publishes items
         request.confirmFile(fileHash);
         request.setFileAddedOn(fileHash, moment()); // Sync
-        request.confirmFileAcknowledged(fileHash);
+        request.confirmFileAcknowledged(fileHash, SUBMITTER);
 
         request.confirmMetadataItem(itemNameHash);
         request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(itemNameHash);
+        request.confirmMetadataItemAcknowledged(itemNameHash, SUBMITTER);
 
         // LLO adds other data
         request.addFile({
@@ -1102,7 +1200,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, true);
         request.confirmMetadataItem(someOtherNameHash);
         request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(someOtherNameHash);
+        request.confirmMetadataItemAcknowledged(someOtherNameHash, SUBMITTER);
 
         // LLO closes
         request.preClose();

@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees, UUID } from "@logion/node-api";
+import { AnyAccountId, Fees, UUID } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -100,7 +100,8 @@ export interface ItemLifecycle {
     readonly rejectReason?: string;
     readonly reviewedOn?: Moment;
     readonly addedOn?: Moment;
-    readonly acknowledgedOn?: Moment;
+    readonly acknowledgedByOwnerOn?: Moment;
+    readonly acknowledgedByVerifiedIssuerOn?: Moment;
 }
 
 export interface LinkDescription {
@@ -129,8 +130,11 @@ export class EmbeddableLifecycle {
     @Column("timestamp without time zone", { name: "added_on", nullable: true })
     addedOn?: Date;
 
-    @Column("timestamp without time zone", { name: "acknowledged_on", nullable: true })
-    acknowledgedOn?: Date;
+    @Column("timestamp without time zone", { name: "acknowledged_by_owner_on", nullable: true })
+    acknowledgedByOwnerOn?: Date;
+
+    @Column("timestamp without time zone", { name: "acknowledged_by_verified_issuer_on", nullable: true })
+    acknowledgedByVerifiedIssuerOn?: Date;
 
     requestReview() {
         if (this.status !== "DRAFT") {
@@ -164,12 +168,21 @@ export class EmbeddableLifecycle {
         this.status = acknowledgedOrPublished;
     }
 
-    confirmAcknowledged(acknowledgedOn?: Moment) {
+    confirmAcknowledged(byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
         if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
         }
-        this.status = "ACKNOWLEDGED";
-        this.acknowledgedOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
+        if(byVerifiedIssuer) {
+            this.acknowledgedByVerifiedIssuerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
+        } else {
+            this.acknowledgedByOwnerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
+        }
+        if(
+            (this.acknowledgedByOwnerOn && this.acknowledgedByVerifiedIssuerOn)
+            || (!byVerifiedIssuer && this.acknowledgedByOwnerOn)
+        ) {
+            this.status = "ACKNOWLEDGED";
+        }
     }
 
     setAddedOn(addedOn: Moment) {
@@ -188,14 +201,15 @@ export class EmbeddableLifecycle {
             rejectReason: this.status === "REVIEW_REJECTED" ? this.rejectReason! : undefined,
             reviewedOn: this.reviewedOn ? moment(this.reviewedOn) : undefined,
             addedOn: this.addedOn ? moment(this.addedOn) : undefined,
-            acknowledgedOn: this.acknowledgedOn ? moment(this.acknowledgedOn) : undefined,
+            acknowledgedByOwnerOn: this.acknowledgedByOwnerOn ? moment(this.acknowledgedByOwnerOn) : undefined,
+            acknowledgedByVerifiedIssuerOn: this.acknowledgedByVerifiedIssuerOn ? moment(this.acknowledgedByVerifiedIssuerOn) : undefined,
         }
     }
 
     static from(alreadyReviewed: boolean) {
         const lifecycle = new EmbeddableLifecycle();
         lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
-        lifecycle.acknowledgedOn = alreadyReviewed ? moment().toDate() : undefined;
+        lifecycle.acknowledgedByOwnerOn = alreadyReviewed ? moment().toDate() : undefined;
         return lifecycle;
     }
 }
@@ -406,11 +420,36 @@ export class LocRequestAggregateRoot {
     }
 
     isOwner(account?: SupportedAccountId) {
-        return accountEquals(account, { address: this.ownerAddress, type: "Polkadot" });
+        return accountEquals(account, this.getOwner());
     }
 
-    confirmFileAcknowledged(hash: Hash, acknowledgedOn?: Moment) {
-        this.mutateFile(hash, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
+    canConfirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId): boolean {
+        const file = this.getFileOrThrow(hash);
+        return this.canConfirmAcknowledged(file, contributor);
+    }
+
+    private canConfirmAcknowledged(submitted: Submitted, contributor: SupportedAccountId): boolean {
+        const submitter = submitted.submitter?.toSupportedAccountId();
+        const owner = this.getOwner();
+        const expectVerifiedIssuer = !accountEquals(submitter, owner)
+            && !accountEquals(submitter, this.getRequester());
+        if(expectVerifiedIssuer) {
+            return accountEquals(contributor, submitter);
+        } else {
+            return accountEquals(contributor, owner);
+        }
+    }
+
+    confirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        const file = this.getFileOrThrow(hash);
+        const isVerifiedIssuer = !this.isOwner(contributor)
+            && !this.isRequester(contributor);
+        file.lifecycle!.confirmAcknowledged(isVerifiedIssuer, acknowledgedOn);
+        file._toUpdate = true;
+    }
+
+    isRequester(account?: SupportedAccountId) {
+        return accountEquals(account, this.getRequester());
     }
 
     private mutateFile(hash: Hash, mutator: (item: LocFile) => void) {
@@ -424,7 +463,7 @@ export class LocRequestAggregateRoot {
         this.files?.forEach(item => item.status = statusTo);
     }
     
-    private getFileOrThrow(hash: Hash) {
+    getFileOrThrow(hash: Hash) {
         const file = this.file(hash);
         if(!file) {
             throw new Error(`No file with hash ${hash.toHex()}`);
@@ -594,15 +633,28 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
-    confirmMetadataItemAcknowledged(nameHash: Hash, acknowledgedOn?: Moment) {
-        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirmAcknowledged(acknowledgedOn));
+    canConfirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId): boolean {
+        const metadata = this.getMetadataOrThrow(nameHash);
+        return this.canConfirmAcknowledged(metadata, contributor);
     }
 
-    private mutateMetadataItem(nameHash: Hash, mutator: (item: LocMetadataItem) => void) {
-        const metadataItem = requireDefined(
+    getMetadataOrThrow(nameHash: Hash) {
+        return requireDefined(
             this.metadataItem(nameHash),
             () => badRequest(`Metadata Item not found: ${ nameHash }`)
         );
+    }
+
+    confirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        const metadata = this.getMetadataOrThrow(nameHash);
+        const isVerifiedIssuer = !this.isOwner(contributor)
+            && !this.isRequester(contributor);
+        metadata.lifecycle!.confirmAcknowledged(isVerifiedIssuer, acknowledgedOn);
+        metadata._toUpdate = true;
+    }
+
+    private mutateMetadataItem(nameHash: Hash, mutator: (item: LocMetadataItem) => void) {
+        const metadataItem = this.getMetadataOrThrow(nameHash);
         mutator(metadataItem);
         metadataItem._toUpdate = true;
     }

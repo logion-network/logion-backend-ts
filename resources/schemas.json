@@ -720,10 +720,15 @@
                         "format": "date-time",
                         "description": "The date-time of review"
                     },
-                    "acknowledgedOn": {
+                    "acknowledgedByOwnerOn": {
                         "type": "string",
                         "format": "date-time",
                         "description": "The date-time of acknowledge (chain time)"
+                    },
+                    "acknowledgedByVerifiedIssuerOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge by verified issuer (chain time)"
                     }
                 },
                 "required": [
@@ -770,10 +775,15 @@
                         "format": "date-time",
                         "description": "The date-time of review"
                     },
-                    "acknowledgedOn": {
+                    "acknowledgedByOwnerOn": {
                         "type": "string",
                         "format": "date-time",
-                        "description": "The date-time of acknowledge (chain time)"
+                        "description": "The date-time of acknowledge by owner (chain time)"
+                    },
+                    "acknowledgedByVerifiedIssuerOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge by verified issuer (chain time)"
                     }
                 },
                 "required": [

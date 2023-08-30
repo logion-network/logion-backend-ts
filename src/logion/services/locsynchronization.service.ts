@@ -14,6 +14,7 @@ import { DirectoryService } from './directory.service.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
 import { TokensRecordFactory } from '../model/tokensrecord.model.js';
+import { polkadotAccount } from '../model/supportedaccountid.model.js';
 
 const { logger } = Log;
 
@@ -315,12 +316,14 @@ export class LocSynchronizer {
     private async confirmAcknowledgedFile(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const hash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['hash']));
-        await this.mutateLoc(locId, async loc => loc.confirmFileAcknowledged(hash, timestamp));
+        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        await this.mutateLoc(locId, async loc => loc.confirmFileAcknowledged(hash, contributor, timestamp));
     }
 
     private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const nameHash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['name']));
-        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, timestamp));
+        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, contributor, timestamp));
     }
 }
