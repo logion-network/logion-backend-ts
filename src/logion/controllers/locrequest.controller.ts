@@ -687,8 +687,7 @@ export class LocRequestController extends ApiController {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            const file = request.getFile(hash);
-            if((file.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(file.submitter, contributor)) {
+            if(request.canConfirmFile(hash, contributor)) {
                 request.confirmFile(hash);
             } else {
                 throw unauthorized("Contributor cannot confirm");
@@ -974,8 +973,7 @@ export class LocRequestController extends ApiController {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const hash = Hash.fromHex(nameHash);
-            const item = request.getMetadataItem(hash);
-            if((item.submitter.type !== "Polkadot" && request.isOwner(contributor)) || accountEquals(item.submitter, contributor)) {
+            if(request.canConfirmMetadataItem(hash, contributor)) {
                 request.confirmMetadataItem(hash);
             } else {
                 throw unauthorized("Contributor cannot confirm");

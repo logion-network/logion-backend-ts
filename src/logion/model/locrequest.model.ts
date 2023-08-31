@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { AnyAccountId, Fees, UUID } from "@logion/node-api";
+import { Fees, UUID } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -429,15 +429,14 @@ export class LocRequestAggregateRoot {
     }
 
     private canConfirmAcknowledged(submitted: Submitted, contributor: SupportedAccountId): boolean {
-        const submitter = submitted.submitter?.toSupportedAccountId();
         const owner = this.getOwner();
+        if (accountEquals(contributor, owner)) {
+            return true;
+        }
+        const submitter = submitted.submitter?.toSupportedAccountId();
         const expectVerifiedIssuer = !accountEquals(submitter, owner)
             && !accountEquals(submitter, this.getRequester());
-        if(expectVerifiedIssuer) {
-            return accountEquals(contributor, submitter);
-        } else {
-            return accountEquals(contributor, owner);
-        }
+        return expectVerifiedIssuer && accountEquals(contributor, submitter);
     }
 
     confirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
@@ -449,6 +448,26 @@ export class LocRequestAggregateRoot {
             && !this.isRequester(submitter);
         file.lifecycle!.confirmAcknowledged(expectedVerifiedIssuer, isVerifiedIssuer, acknowledgedOn);
         file._toUpdate = true;
+    }
+
+    canConfirmFile(hash: Hash, contributor: SupportedAccountId): boolean {
+        const file = this.getFileOrThrow(hash);
+        return this.canConfirm(file, contributor);
+    }
+
+    private canConfirm(submitted: Submitted, contributor: SupportedAccountId): boolean {
+        const submitter = submitted.submitter?.toSupportedAccountId();
+        const owner = this.getOwner();
+        if (submitter?.type !== "Polkadot" && accountEquals(owner, contributor)) {
+            return true;
+        }
+        const expectVerifiedIssuer = !accountEquals(submitter, owner)
+            && !accountEquals(submitter, this.getRequester());
+        if(expectVerifiedIssuer) {
+            return accountEquals(contributor, this.getRequester());
+        } else {
+            return accountEquals(contributor, owner);
+        }
     }
 
     isRequester(account?: SupportedAccountId) {
@@ -644,6 +663,11 @@ export class LocRequestAggregateRoot {
     canConfirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId): boolean {
         const metadata = this.getMetadataOrThrow(nameHash);
         return this.canConfirmAcknowledged(metadata, contributor);
+    }
+
+    canConfirmMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
+        const metadata = this.getMetadataOrThrow(nameHash);
+        return this.canConfirm(metadata, contributor);
     }
 
     getMetadataOrThrow(nameHash: Hash) {
