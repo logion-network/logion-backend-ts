@@ -436,7 +436,31 @@ describe("LocRequestAggregateRoot", () => {
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
     });
 
-    it("confirms metadata acknowledgment (owner and verified issuer)", () => {
+    it("confirms metadata acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, false);
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash);
+
+        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.confirmMetadataItemAcknowledged(nameHash, VERIFIED_ISSUER, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (verified issuer then owner)", () => {
         givenRequestWithStatus('OPEN');
         const name = "name";
         const nameHash = Hash.of(name);
@@ -455,6 +479,7 @@ describe("LocRequestAggregateRoot", () => {
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
 
         request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
     });
@@ -618,6 +643,33 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: OWNER_ACCOUNT,
             }
         ], false)
+        thenMetadataIsVisibleToRequester(name);
+    })
+
+    it("exposes reviewed, VI-submitted metadata to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "target-3";
+        whenAddingMetadata([
+            {
+                name,
+                value: "value-1",
+                submitter: SUBMITTER,
+            }
+        ], true)
+        thenMetadataIsVisibleToRequester(name);
+    })
+
+    it("exposes published, VI-submitted metadata to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "target-3";
+        whenAddingMetadata([
+            {
+                name,
+                value: "value-1",
+                submitter: SUBMITTER,
+            }
+        ], true)
+        request.confirmMetadataItem(Hash.of(name));
         thenMetadataIsVisibleToRequester(name);
     })
 })
@@ -859,6 +911,43 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ], true);
+        thenFileIsVisibleToRequester(hash)
+    })
+
+    it("exposes reviewed, VI-submitted file to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("hash-3");
+        whenAddingFiles([
+            {
+                hash,
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: VERIFIED_ISSUER,
+                restrictedDelivery: false,
+                size: 123,
+            }
+        ], true);
+        thenFileIsVisibleToRequester(hash)
+    })
+
+    it("exposes published, VI-submitted file to requester", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("hash-3");
+        whenAddingFiles([
+            {
+                hash,
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: VERIFIED_ISSUER,
+                restrictedDelivery: false,
+                size: 123,
+            }
+        ], true);
+        request.confirmFile(hash);
         thenFileIsVisibleToRequester(hash)
     })
 
