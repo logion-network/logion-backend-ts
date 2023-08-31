@@ -168,7 +168,7 @@ export class EmbeddableLifecycle {
         this.status = acknowledgedOrPublished;
     }
 
-    confirmAcknowledged(byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
+    confirmAcknowledged(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
         if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
         }
@@ -179,7 +179,7 @@ export class EmbeddableLifecycle {
         }
         if(
             (this.acknowledgedByOwnerOn && this.acknowledgedByVerifiedIssuerOn)
-            || (!byVerifiedIssuer && this.acknowledgedByOwnerOn)
+            || (!expectVerifiedIssuer && this.acknowledgedByOwnerOn)
         ) {
             this.status = "ACKNOWLEDGED";
         }
@@ -444,7 +444,10 @@ export class LocRequestAggregateRoot {
         const file = this.getFileOrThrow(hash);
         const isVerifiedIssuer = !this.isOwner(contributor)
             && !this.isRequester(contributor);
-        file.lifecycle!.confirmAcknowledged(isVerifiedIssuer, acknowledgedOn);
+        const submitter = file.submitter?.toSupportedAccountId();
+        const expectedVerifiedIssuer = !this.isOwner(submitter)
+            && !this.isRequester(submitter);
+        file.lifecycle!.confirmAcknowledged(expectedVerifiedIssuer, isVerifiedIssuer, acknowledgedOn);
         file._toUpdate = true;
     }
 
@@ -504,7 +507,12 @@ export class LocRequestAggregateRoot {
         return item.status === 'ACKNOWLEDGED' ||
             accountEquals(viewerAddress, this.getOwner()) ||
             accountEquals(viewerAddress, item.submitter) ||
-            (accountEquals(viewerAddress, this.getRequester()) && accountEquals(item.submitter, this.getOwner()))
+            (accountEquals(viewerAddress, this.getRequester()) && this.notAcknowledgedItemViewableByRequester(item));
+    }
+
+    private notAcknowledgedItemViewableByRequester(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }) {
+        return accountEquals(item.submitter, this.getOwner())
+            || (item.status === "REVIEW_ACCEPTED" || item.status === "PUBLISHED"); // submitted by verified issuer
     }
 
     getFiles(viewerAddress?: SupportedAccountId): FileDescription[] {
@@ -649,7 +657,10 @@ export class LocRequestAggregateRoot {
         const metadata = this.getMetadataOrThrow(nameHash);
         const isVerifiedIssuer = !this.isOwner(contributor)
             && !this.isRequester(contributor);
-        metadata.lifecycle!.confirmAcknowledged(isVerifiedIssuer, acknowledgedOn);
+        const submitter = metadata.submitter?.toSupportedAccountId();
+        const expectedVerifiedIssuer = !this.isOwner(submitter)
+            && !this.isRequester(submitter);
+        metadata.lifecycle!.confirmAcknowledged(expectedVerifiedIssuer, isVerifiedIssuer, acknowledgedOn);
         metadata._toUpdate = true;
     }
 
