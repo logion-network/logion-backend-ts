@@ -133,8 +133,14 @@ export class EmbeddableLifecycle {
     @Column("timestamp without time zone", { name: "acknowledged_by_owner_on", nullable: true })
     acknowledgedByOwnerOn?: Date;
 
+    @Column("boolean", { name: "acknowledged_by_owner", default: false })
+    acknowledgedByOwner?: boolean;
+
     @Column("timestamp without time zone", { name: "acknowledged_by_verified_issuer_on", nullable: true })
     acknowledgedByVerifiedIssuerOn?: Date;
+
+    @Column("boolean", { name: "acknowledged_by_verified_issuer", default: false })
+    acknowledgedByVerifiedIssuer?: boolean;
 
     requestReview() {
         if (this.status !== "DRAFT") {
@@ -173,13 +179,15 @@ export class EmbeddableLifecycle {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
         }
         if(byVerifiedIssuer) {
+            this.acknowledgedByVerifiedIssuer = true;
             this.acknowledgedByVerifiedIssuerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
         } else {
+            this.acknowledgedByOwner = true;
             this.acknowledgedByOwnerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
         }
         if(
-            (this.acknowledgedByOwnerOn && this.acknowledgedByVerifiedIssuerOn)
-            || (!expectVerifiedIssuer && this.acknowledgedByOwnerOn)
+            (this.acknowledgedByOwner && this.acknowledgedByVerifiedIssuer)
+            || (!expectVerifiedIssuer && this.acknowledgedByOwner)
         ) {
             this.status = "ACKNOWLEDGED";
         }
@@ -209,10 +217,13 @@ export class EmbeddableLifecycle {
     static from(alreadyReviewed: boolean) {
         const lifecycle = new EmbeddableLifecycle();
         lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
+        lifecycle.acknowledgedByOwner = alreadyReviewed;
         lifecycle.acknowledgedByOwnerOn = alreadyReviewed ? moment().toDate() : undefined;
+        lifecycle.acknowledgedByVerifiedIssuer = false;
         return lifecycle;
     }
 }
+
 class EmbeddableVoidInfo {
 
     @Column("text", { name: "void_reason", nullable: true })
