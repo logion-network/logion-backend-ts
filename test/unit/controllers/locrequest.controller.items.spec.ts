@@ -383,6 +383,7 @@ function mockModelForConfirmFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getFile(ItIsHash(SOME_DATA_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as FileDescription);
+    request.setup(instance => instance.canConfirmFile(ItIsHash(SOME_DATA_HASH), It.IsAny<SupportedAccountId>())).returns(true);
     request.setup(instance => instance.confirmFile(ItIsHash(SOME_DATA_HASH))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -470,6 +471,7 @@ function mockModelForConfirmMetadata(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
+    request.setup(instance => instance.canConfirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<SupportedAccountId>())).returns(true);
     request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
