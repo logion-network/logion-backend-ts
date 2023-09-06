@@ -1,6 +1,7 @@
 import { options } from "@astar-network/astar-api";
 import { ApiPromise } from "@polkadot/api";
 import { WsProvider } from "@polkadot/rpc-provider";
+import { encodeAddress } from '@polkadot/util-crypto';
 import { injectable } from 'inversify';
 import { Abi, ContractPromise } from '@polkadot/api-contract';
 import PSP34 from "./psp34.js";
@@ -53,7 +54,7 @@ export class AstarClient {
                 const result = this.contract.abi.registry.createTypeUnsafe(typeName, [okResult.data]) as any;
                 if(result.isOk) {
                     const account = result.asOk;
-                    return account.toString();
+                    return encodeAddress(account.toString(), 42);
                 } else {
                     throw new Error(result.asErr.toString());
                 }

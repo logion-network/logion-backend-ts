@@ -2,6 +2,7 @@ import { ApiPromise } from "@polkadot/api";
 import type { Registry } from '@polkadot/types/types';
 import type { ContractExecResultResult } from '@polkadot/types/interfaces';
 import type { ContractExecResultOk } from '@polkadot/types/interfaces/contracts';
+import { encodeAddress } from '@polkadot/util-crypto';
 import { It, Mock } from "moq.ts";
 
 import { AstarNetwork, AstarService, AstarTokenId } from "../../../../src/logion/services/ownership/astar.service.js";
@@ -36,7 +37,7 @@ async function testWithEndpoint(network: AstarNetwork, endpoint: string) {
     const service = buildAstar(endpoint, expectedContractAddress);
     const client = await service.getClient(network, "psp34", expectedContractAddress);
     const owner = await client.getOwnerOf(expectedTokenId);
-    expect(owner).toBe(expectedOwner);
+    expect(owner).toBe(expectedOwnerSubstrate);
 }
 
 function buildAstar(expectedEndpoint: string, expectedContractId: string): AstarService {
@@ -69,7 +70,7 @@ function buildAstar(expectedEndpoint: string, expectedContractId: string): Astar
     contractMock.setup(instance => instance.abi.registry.createTypeUnsafe).returns(() => ({
         isOk: true,
         asOk: {
-            toString: () => expectedOwner,
+            toString: () => expectedOwnerAstar,
         }
     }) as any);
 
@@ -92,4 +93,5 @@ const shibuyaEndpoint = "wss://rpc.shibuya.astar.network"
 
 const expectedContractAddress = "XyNVZ92vFrYf4rCj8EoAXMRWRG7okRy7gxhn167HaYQZqTc";
 const expectedTokenId: AstarTokenId = { U32: 1 };
-const expectedOwner = "ajYMsCKsEAhEvHpeA4XqsfiA9v1CdzZPrCfS6pEfeGHW9j8";
+const expectedOwnerAstar = "ajYMsCKsEAhEvHpeA4XqsfiA9v1CdzZPrCfS6pEfeGHW9j8";
+const expectedOwnerSubstrate = encodeAddress(expectedOwnerAstar, 42);
