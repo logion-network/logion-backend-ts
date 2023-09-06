@@ -28,12 +28,12 @@ import { SettingFactory, SettingRepository } from '../model/setting.model.js';
 import { SettingController } from '../controllers/setting.controller.js';
 import { CollectionService, LogionNodeCollectionService, TransactionalCollectionService } from "../services/collection.service.js";
 import { OwnershipCheckService } from '../services/ownershipcheck.service.js';
-import { AlchemyFactory, AlchemyService } from '../services/alchemy.service.js';
+import { AlchemyFactory, AlchemyService } from '../services/ownership/alchemy.service.js';
 import { RestrictedDeliveryService } from '../services/restricteddelivery.service.js';
 import { ExifService } from '../services/exif.service.js';
 import { PersonalInfoSealService } from "../services/seal.service.js";
 import { BackendHealthService } from "../services/health.service.js";
-import { SingularService } from "../services/singular.service.js";
+import { SingularService } from "../services/ownership/singular.service.js";
 import { PrometheusService } from "../services/prometheus.service.js";
 import { VerifiedIssuerController } from "../controllers/verifiedissuer.controller.js";
 import { VerifiedIssuerSelectionFactory, VerifiedIssuerSelectionRepository } from "../model/verifiedissuerselection.model.js";
@@ -59,7 +59,8 @@ import { TokensRecordFactory, TokensRecordRepository } from "../model/tokensreco
 import { LogionNodeTokensRecordService, TokensRecordService, TransactionalTokensRecordService } from "../services/tokensrecord.service.js";
 import { LocAuthorizationService } from "../services/locauthorization.service.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
-import { MultiversxService } from "../services/multiversx.service.js";
+import { MultiversxService } from "../services/ownership/multiversx.service.js";
+import { AstarService, ConnectedAstarService } from "../services/ownership/astar.service.js";
 
 let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -145,6 +146,7 @@ container.bind(TokensRecordService).toService(TransactionalTokensRecordService);
 container.bind(TransactionalTokensRecordService).toSelf();
 container.bind(LocAuthorizationService).toSelf();
 container.bind(SponsorshipService).toSelf();
+container.bind(AstarService).toService(ConnectedAstarService);
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();

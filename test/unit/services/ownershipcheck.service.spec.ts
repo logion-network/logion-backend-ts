@@ -1,10 +1,11 @@
 import { Mock } from "moq.ts";
 
-import { AlchemyChecker, AlchemyService, Network } from "../../../src/logion/services/alchemy.service.js";
+import { AlchemyChecker, AlchemyService, Network } from "../../../src/logion/services/ownership/alchemy.service.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
-import { SingularService } from "../../../src/logion/services/singular.service.js";
-import { MultiversxService, MultiversxTokenType, MultiversxChecker } from "../../../src/logion/services/multiversx.service.js";
+import { SingularService } from "../../../src/logion/services/ownership/singular.service.js";
+import { MultiversxService, MultiversxTokenType, MultiversxChecker } from "../../../src/logion/services/ownership/multiversx.service.js";
 import { CollectionItemTokenDescription } from "src/logion/model/collection.model.js";
+import { AstarClient, AstarNetwork, AstarService, AstarTokenId, AstarTokenType } from "src/logion/services/ownership/astar.service.js";
 
 describe("OwnershipCheckService", () => {
     it("detects ethereum_erc721 ownership", () => testDetectsOwnership(ethereumErc721Item, owner, { network: Network.ETH_MAINNET }));
@@ -36,15 +37,29 @@ describe("OwnershipCheckService", () => {
 
     it("detects multiversx Mainnet ownership", () => testDetectsOwnership(multiversxMainnet, multiversxOwner, { tokenType: "multiversx_esdt" }));
     it("detects no multiversx Mainnet ownership", () => testDetectsNoOwnership(multiversxMainnet, { tokenType: "multiversx_esdt" }));
+
+    it("detects astar ownership", () => testDetectsOwnership(astar, astarOwner, { astarNetwork: "astar", ...astarTestConfig }));
+    it("detects no astar ownership", () => testDetectsNoOwnership(astar, { astarNetwork: "astar", ...astarTestConfig }));
+    it("detects shiden ownership", () => testDetectsOwnership(shiden, astarOwner, { astarNetwork: "shiden", ...astarTestConfig }));
+    it("detects no shiden ownership", () => testDetectsNoOwnership(shiden, { astarNetwork: "shiden", ...astarTestConfig }));
+    it("detects shibuya ownership", () => testDetectsOwnership(shibuya, astarOwner, { astarNetwork: "shibuya", ...astarTestConfig }));
+    it("detects no shibuya ownership", () => testDetectsNoOwnership(shibuya, { astarNetwork: "shibuya", ...astarTestConfig }));
 });
 
-type TestConfig = { network?: Network; tokenType?: MultiversxTokenType };
+type TestConfig = {
+    network?: Network;
+    tokenType?: MultiversxTokenType;
+    astarNetwork?: AstarNetwork;
+    astarTokenType?: AstarTokenType;
+    astarContractId?: string;
+};
 
 async function testDetectsOwnership(token: CollectionItemTokenDescription, owner: string, config?: TestConfig) {
     const alchemyService = mockAlchemyService(config?.network);
     const singularService = mockSingularService();
     const multiversxService = mockMultiversxService(config?.tokenType);
-    const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService, multiversxService);
+    const astarService = mockAstarService(config?.astarNetwork, config?.astarTokenType, config?.astarContractId);
+    const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService, multiversxService, astarService);
     const result = await ownershipCheckService.isOwner(owner, token);
     expect(result).toBe(true);
 }
@@ -96,6 +111,21 @@ function mockMultiversxService(type: MultiversxTokenType | undefined): Multivers
     return service.object();
 }
 
+function mockAstarService(expectedNetwork: AstarNetwork | undefined, expectedTokenType: AstarTokenType | undefined, expectedContractId: string | undefined): AstarService {
+    const client = new Mock<AstarClient>();
+    client.setup(instance => instance.getOwnerOf).returns((tokenId: AstarTokenId) => tokenId.U32 === astarTokenId.U32 ? Promise.resolve(astarOwner) : Promise.resolve(undefined));
+    client.setup(instance => instance.disconnect()).returns(Promise.resolve());
+    const service = new Mock<AstarService>();
+    service.setup(instance => instance.getClient).returns((network: AstarNetwork, tokenType: AstarTokenType, contractId: string) => {
+        if(tokenType === expectedTokenType && network === expectedNetwork && contractId === expectedContractId) {
+            return Promise.resolve(client.object());
+        } else {
+            throw new Error();
+        }
+    });
+    return service.object();
+}
+
 const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
 
 const contractHash = "0x765df6da33c1ec1f83be42db171d7ee334a46df5";
@@ -110,11 +140,20 @@ const multiversxTokenId = "LRCOLL001-e42371-01";
 
 const multiversxOwner = "erd1urwqlj8rp3xlpqvu7stcsjsxyhs3skgy0exvly3hr7g92yjeey3sqpvkyx";
 
+const astarTokenId = { U32: 42 };
+
+const astarOwner = "ajYMsCKsEAhEvHpeA4XqsfiA9v1CdzZPrCfS6pEfeGHW9j8";
+
+const astarContractId = "XyNVZ92vFrYf4rCj8EoAXMRWRG7okRy7gxhn167HaYQZqTc";
+
+const astarTestConfig = { astarTokenType: "psp34" as AstarTokenType, astarContractId };
+
 async function testDetectsNoOwnership(token: CollectionItemTokenDescription, config?: TestConfig) {
     const alchemyService = mockAlchemyService(config?.network);
     const singularService = mockSingularService();
     const multiversxService = mockMultiversxService(config?.tokenType);
-    const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService, multiversxService);
+    const astarService = mockAstarService(config?.astarNetwork, config?.astarTokenType, config?.astarContractId);
+    const ownershipCheckService = new OwnershipCheckService(alchemyService, singularService, multiversxService, astarService);
     const result = await ownershipCheckService.isOwner(anotherOwner, token);
     expect(result).toBe(false);
 }
@@ -174,4 +213,19 @@ const multiversxTestnet: CollectionItemTokenDescription = {
 const multiversxMainnet: CollectionItemTokenDescription = {
     type: "multiversx_esdt",
     id: `${ multiversxTokenId }`
+}
+
+const astar: CollectionItemTokenDescription = {
+    type: "astar_psp34",
+    id: JSON.stringify({ contract: astarContractId, id: astarTokenId }),
+}
+
+const shiden: CollectionItemTokenDescription = {
+    type: "astar_shiden_psp34",
+    id: JSON.stringify({ contract: astarContractId, id: astarTokenId }),
+}
+
+const shibuya: CollectionItemTokenDescription = {
+    type: "astar_shibuya_psp34",
+    id: JSON.stringify({ contract: astarContractId, id: astarTokenId }),
 }

@@ -1,10 +1,11 @@
 import { injectable } from 'inversify';
 
-import { Network, AlchemyService, AlchemyChecker } from './alchemy.service.js';
-import { SingularService } from './singular.service.js';
+import { Network, AlchemyService, AlchemyChecker } from './ownership/alchemy.service.js';
+import { SingularService } from './ownership/singular.service.js';
 import { BigNumber } from 'alchemy-sdk';
-import { MultiversxService } from "./multiversx.service.js";
+import { MultiversxService } from "./ownership/multiversx.service.js";
 import { CollectionItemTokenDescription } from '../model/collection.model.js';
+import { AstarNetwork, AstarService, AstarTokenId, AstarTokenType } from './ownership/astar.service.js';
 
 @injectable()
 export class OwnershipCheckService {
@@ -13,6 +14,7 @@ export class OwnershipCheckService {
         private alchemyService: AlchemyService,
         private singularService: SingularService,
         private multiversxService: MultiversxService,
+        private astarService: AstarService,
     ) {}
 
     async isOwner(address: string, token: CollectionItemTokenDescription): Promise<boolean> {
@@ -42,6 +44,14 @@ export class OwnershipCheckService {
             } else {
                 throw new Error(`Unsupported MultiversX token ${tokenType}`);
             }
+        } else if(tokenType.startsWith("astar")) {
+            const network = this.getAstarNetwork(tokenType);
+            const contractTokenType = this.getAstarTokenType(tokenType);
+            const { contractHash, contractTokenId } = this.parseAstarTokenId(tokenId);
+            const client = await this.astarService.getClient(network, contractTokenType, contractHash);
+            const owner = await client.getOwnerOf(contractTokenId);
+            await client.disconnect();
+            return owner === address;
         } else {
             throw new Error(`Unsupported token type ${tokenType}`);
         }
@@ -112,5 +122,41 @@ export class OwnershipCheckService {
     private async isOwnerOfSingularKusama(address: string, tokenId: string): Promise<boolean> {
         const owners = await this.singularService.getOwners(tokenId);
         return owners.find(owner => owner === address) !== undefined;
+    }
+
+    private getAstarNetwork(tokenType: string): AstarNetwork {
+        if(tokenType.startsWith("astar_shiden_")) {
+            return "shiden";
+        } else if(tokenType.startsWith("astar_shibuya_")) {
+            return "shibuya";
+        } else if(tokenType.startsWith("astar_")) {
+            return "astar";
+        } else {
+            throw new Error(`Could not get Astar network from token type ${tokenType}`);
+        }
+    }
+
+    private parseAstarTokenId(tokenId: string): { contractHash: string, contractTokenId: AstarTokenId } {
+        let tokenIdObject;
+        try {
+            tokenIdObject = JSON.parse(tokenId);
+        } catch(e) {
+            throw new Error("Token ID is not a valid JSON");
+        }
+        const contractHash = tokenIdObject.contract;
+        const contractTokenId = tokenIdObject.id;
+        if(typeof contractHash !== "string" || typeof contractTokenId !== "object") {
+            throw new Error("Token ID has wrong schema");
+        } else {
+            return { contractHash, contractTokenId };
+        }
+    }
+
+    private getAstarTokenType(tokenType: string): AstarTokenType {
+        if(tokenType.includes("psp34")) {
+            return "psp34";
+        } else {
+            throw new Error(`Could not get Astar token type from ${tokenType}`);
+        }
     }
 }
