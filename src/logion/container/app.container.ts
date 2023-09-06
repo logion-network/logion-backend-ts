@@ -146,6 +146,7 @@ container.bind(TokensRecordService).toService(TransactionalTokensRecordService);
 container.bind(TransactionalTokensRecordService).toSelf();
 container.bind(LocAuthorizationService).toSelf();
 container.bind(SponsorshipService).toSelf();
+container.bind(ConnectedAstarService).toSelf();
 container.bind(AstarService).toService(ConnectedAstarService);
 
 // Controllers are stateful so they must not be injected with singleton scope
