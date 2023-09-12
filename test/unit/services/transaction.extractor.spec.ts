@@ -167,7 +167,7 @@ describe("TransactionExtractor", () => {
             blockNumber: 10534n,
             fee: 125000149n,
             tip: 0n,
-            transferValue: 540000000000000000n,
+            transferValue: 0n,
             from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
             error: {
@@ -189,6 +189,20 @@ describe("TransactionExtractor", () => {
             transferValue: 200000000000000000n,
             from: "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+        });
+        await expectTransaction(params);
+    });
+
+    it('finds balances.transferKeepAll transactions', async () => {
+        const params = balancesParams({
+            fileName: "transfer/block-transferAll.json",
+            method: "transferAll",
+            blockNumber: 8556893n,
+            fee: 2894701420000000n,
+            tip: 0n,
+            transferValue: 2894701420000000n,
+            from: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            to: "5GFFWfShvZBJ25XyfcT8jXzR3nPsar76iusyYEBZAdFD3ySn",
         });
         await expectTransaction(params);
     });

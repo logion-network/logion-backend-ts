@@ -57,7 +57,7 @@ export class TransactionExtractor {
         let to: string | undefined = undefined;
 
         if(type ===  ExtrinsicType.TRANSFER) {
-            transferValue = this.transferValue(extrinsic.call)
+            transferValue = this.transferValue(extrinsic)
             to = this.to(extrinsic.call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_RECOVERED) {
             const account = this.extrinsicDataExtractor.getAccount(extrinsic);
@@ -65,14 +65,14 @@ export class TransactionExtractor {
                 from = account
             }
             const call = this.extrinsicDataExtractor.getCall(extrinsic)
-            transferValue = this.transferValue(call)
+            transferValue = this.transferValue(extrinsic)
             to = this.to(call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
             const otherSignatories = Adapters.asArray(extrinsic.call.args['other_signatories']).map(signatory => Adapters.asString(signatory));
             const vaultAddress = Vault.getVaultAddress(signer, otherSignatories);
 
             const call = this.extrinsicDataExtractor.getCall(extrinsic);
-            const vaultTransferValue = this.transferValue(call);
+            const vaultTransferValue = this.transferValue(extrinsic);
             const vaultTransferTo = this.to(call);
 
             transactions.push(new Transaction({
@@ -233,8 +233,13 @@ export class TransactionExtractor {
         return this.extrinsicDataExtractor.getDest(extrinsicOrCall);
     }
 
-    private transferValue(extrinsicOrCall: { args: TypesJsonObject }): bigint {
-        return this.extrinsicDataExtractor.getValue(extrinsicOrCall);
+    private transferValue(extrinsic: JsonExtrinsic): bigint {
+        const params = findEventsData(extrinsic, { pallet: "balances", method: "Transfer" })[0];
+        if (params && params.length > 2) {
+            return BigInt(params[2].toString());
+        } else {
+            return 0n;
+        }
     }
 
     private error(extrinsic: JsonExtrinsic): TransactionError | undefined {

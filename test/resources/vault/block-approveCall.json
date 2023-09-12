@@ -64,6 +64,17 @@
                 "paysFee": "Yes"
               }
             ]
+          },
+          {
+            "method": {
+              "pallet": "balances",
+              "method": "Transfer"
+            },
+            "data": [
+              "5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy",
+              "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+              "200000000000000000"
+            ]
           }
         ],
         "success": true,
@@ -71,4 +82,3 @@
       }
     ]
   }
-  
