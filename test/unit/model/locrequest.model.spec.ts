@@ -245,6 +245,7 @@ describe("LocRequestFactory", () => {
             template: "some-template",
             sponsorshipId: new UUID(),
             valueFee: locType === "Collection" ? 100n : undefined,
+            legalFee: 2000n,
         };
     }
 });

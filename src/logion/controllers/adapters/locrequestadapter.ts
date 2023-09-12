@@ -112,6 +112,7 @@ export class LocRequestAdapter {
             template: locDescription.template,
             sponsorshipId: locDescription.sponsorshipId?.toString(),
             valueFee: locDescription.valueFee?.toString(),
+            legalFee: locDescription.legalFee?.toString(),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

@@ -162,6 +162,7 @@ export class LocRequestController extends ApiController {
         if (!valueFee && locType === "Collection") {
             throw badRequest("Value fee must be set for collection LOCs");
         }
+        const legalFee = createLocRequestView.legalFee ? BigInt(createLocRequestView.legalFee) : undefined;
         const description: LocRequestDescription = {
             requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
@@ -175,6 +176,7 @@ export class LocRequestController extends ApiController {
             template: createLocRequestView.template,
             sponsorshipId,
             valueFee,
+            legalFee,
         }
         if (locType === "Identity") {
             if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {
@@ -1040,6 +1042,7 @@ export class LocRequestController extends ApiController {
             linkNature = `${ linkNature } - Collection Item: ${ itemId }`
         }
 
+        const legalFee = createSofRequestView.legalFee ? BigInt(createSofRequestView.legalFee) : undefined;
         const requestDescription: LocRequestDescription = {
             requesterAddress: {
                 address: contributor.address,
@@ -1051,6 +1054,7 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity: undefined,
             userPostalAddress: undefined,
+            legalFee,
         }
         let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),

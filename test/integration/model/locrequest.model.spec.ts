@@ -370,6 +370,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()
     locRequest.status = status
+    locRequest.legalFee = "42"
 
     locRequest.links = []
     locRequest.addLink({

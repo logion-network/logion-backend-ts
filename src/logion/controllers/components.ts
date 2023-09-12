@@ -360,6 +360,8 @@ export interface components {
       sponsorshipId?: string;
       /** @description The value fee associated with this collection LOC */
       valueFee?: string;
+      /** @description The legal fee associated with this LOC */
+      legalFee?: string;
     };
     /**
      * @description The request's status 
@@ -545,6 +547,8 @@ export interface components {
       sponsorshipId?: string;
       /** @description The value fee associated with this collection LOC */
       valueFee?: string;
+      /** @description The legal fee associated with this LOC */
+      legalFee?: string;
     };
     /**
      * LocPublicView 
@@ -884,6 +888,8 @@ export interface components {
        * @example 0xecdc3920d5cb4d6721f65c6c36f35996faf34eccf8f7948d69004483fddf19e6
        */
       itemId?: string;
+      /** @description The legal fee associated with this LOC */
+      legalFee?: string;
     };
     FileUploadData: {
       hash?: string;

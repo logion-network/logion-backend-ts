@@ -33,7 +33,8 @@ describe('LocRequestController - SoF -', () => {
         await request(app)
             .post(`/api/loc-request/sof`)
             .send({
-                locId: LOC_ID.toString()
+                locId: LOC_ID.toString(),
+                legalFee: "2000",
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -57,6 +58,7 @@ describe('LocRequestController - SoF -', () => {
             .send({
                 locId: LOC_ID.toString(),
                 itemId: itemId.toHex(),
+                legalFee: "2000",
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
