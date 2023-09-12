@@ -647,6 +647,10 @@
                     "valueFee": {
                         "type": "string",
                         "description": "The value fee associated with this collection LOC"
+                    },
+                    "legalFee": {
+                        "type": "string",
+                        "description": "The legal fee associated with this LOC"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -955,6 +959,10 @@
                     "valueFee": {
                         "type": "string",
                         "description": "The value fee associated with this collection LOC"
+                    },
+                    "legalFee": {
+                        "type": "string",
+                        "description": "The legal fee associated with this LOC"
                     }
                 },
                 "title": "LocRequestView",
@@ -1531,6 +1539,10 @@
                         "type": "string",
                         "description": "The ID of the collection item, if the LOC is a collection",
                         "example": "0xecdc3920d5cb4d6721f65c6c36f35996faf34eccf8f7948d69004483fddf19e6"
+                    },
+                    "legalFee": {
+                        "type": "string",
+                        "description": "The legal fee associated with this LOC"
                     }
                 },
                 "title": "CreateSofRequestView",

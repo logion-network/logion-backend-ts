@@ -75,10 +75,14 @@ describe('LocRequestController - Creation -', () => {
             LocRequestController,
             container => mockModelForCreation(container, "Transaction", undefined, true),
             mock,
-        )
+        );
+        const data = testDataWithType("Transaction", true);
         await request(app)
             .post('/api/loc-request')
-            .send(testDataWithType("Transaction", true))
+            .send({
+                ...data,
+                legalFee: data.legalFee?.toString(),
+            })
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -96,7 +100,10 @@ describe('LocRequestController - Creation -', () => {
         const expectedUserPrivateData = userIdentities["Logion"];
         await request(app)
             .post('/api/loc-request')
-            .send(testDataWithLogionIdentity)
+            .send({
+                ...testDataWithLogionIdentity,
+                legalFee: testDataWithLogionIdentity.legalFee?.toString(),
+            })
             .expect(200)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -115,9 +122,13 @@ describe('LocRequestController - Creation -', () => {
             container => mockModelForCreation(container, "Transaction"),
             mockAuthenticationFailureWithInvalidSignature(),
         );
+        const data = testDataWithType("Transaction");
         await request(app)
             .post('/api/loc-request')
-            .send(testDataWithType("Transaction"))
+            .send({
+                ...data,
+                legalFee: data.legalFee?.toString(),
+            })
             .expect(401)
             .expect('Content-Type', /application\/json/)
             .then(response => {
@@ -132,12 +143,14 @@ describe('LocRequestController - Creation -', () => {
             LocRequestController,
             container => mockModelForCreation(container, "Identity"),
             mock,
-        )
+        );
+        const data = testDataWithType("Identity");
         await request(app)
             .post('/api/loc-request')
             .send({
+                ...data,
                 sponsorshipId: EXISTING_SPONSORSHIP_ID.toString(),
-                ...testDataWithType("Identity")
+                legalFee: data.legalFee?.toString(),
             })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -161,6 +174,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
         .send({
             ...data,
             valueFee: data.valueFee?.toString(),
+            legalFee: data.legalFee?.toString(),
         })
         .expect(expectedStatus)
         .expect('Content-Type', /application\/json/)
@@ -192,6 +206,7 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
         .send({
             ...data,
             valueFee: data.valueFee?.toString(),
+            legalFee: data.legalFee?.toString(),
         })
         .expect(200)
         .expect('Content-Type', /application\/json/)
