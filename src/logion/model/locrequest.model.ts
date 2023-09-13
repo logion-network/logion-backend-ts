@@ -361,7 +361,7 @@ export class LocRequestAggregateRoot {
             template: this.template,
             sponsorshipId: this.sponsorshipId ? new UUID(this.sponsorshipId) : undefined,
             valueFee: this.valueFee ? BigInt(this.valueFee) : undefined,
-            legalFee: this.legalFee ? BigInt(this.legalFee) : 0n,
+            legalFee: this.legalFee ? BigInt(this.legalFee) : undefined,
         };
     }
 
@@ -1590,8 +1590,11 @@ export class LocRequestFactory {
         request.template = description.template;
         request.sponsorshipId = description.sponsorshipId?.toString();
         if(request.locType === "Collection") {
-            const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
-            request.valueFee = valueFee.toString();
+            // TODO: fix requireDefined and replace below by -> const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
+            if(description.valueFee === undefined) {
+                throw new Error("Collection LOC must have a value fee");
+            }
+            request.valueFee = description.valueFee.toString();
         }
         request.legalFee = description.legalFee?.toString();
         return request;
