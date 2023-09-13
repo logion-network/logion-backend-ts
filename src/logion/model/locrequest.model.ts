@@ -428,7 +428,10 @@ export class LocRequestAggregateRoot {
         this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmFile(hash: Hash) {
+    confirmFile(hash: Hash, contributor: SupportedAccountId) {
+        if(!this.canConfirmFile(hash, contributor)) {
+            throw new Error("Contributor cannot confirm");
+        }
         this.mutateFile(hash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
@@ -474,10 +477,11 @@ export class LocRequestAggregateRoot {
         if (submitter?.type !== "Polkadot" && accountEquals(owner, contributor)) {
             return true;
         }
+        const requester = this.getRequester();
         const expectVerifiedIssuer = !accountEquals(submitter, owner)
-            && !accountEquals(submitter, this.getRequester());
-        if(expectVerifiedIssuer) {
-            return accountEquals(contributor, this.getRequester());
+            && !accountEquals(submitter, requester);
+        if(expectVerifiedIssuer || accountEquals(submitter, requester)) {
+            return accountEquals(contributor, requester);
         } else {
             return accountEquals(contributor, owner);
         }
@@ -669,7 +673,10 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmMetadataItem(nameHash: Hash) {
+    confirmMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+        if(!this.canConfirmMetadataItem(nameHash, contributor)) {
+            throw new Error("Contributor cannot confirm");
+        }
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 

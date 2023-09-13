@@ -32,7 +32,7 @@ import {
     SupportedAccountId,
     accountEquals
 } from "../../../src/logion/model/supportedaccountid.model.js";
-import { ItIsHash } from "../../helpers/Mock.js";
+import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -384,7 +384,7 @@ function mockModelForConfirmFile(container: Container) {
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getFile(ItIsHash(SOME_DATA_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as FileDescription);
     request.setup(instance => instance.canConfirmFile(ItIsHash(SOME_DATA_HASH), It.IsAny<SupportedAccountId>())).returns(true);
-    request.setup(instance => instance.confirmFile(ItIsHash(SOME_DATA_HASH))).returns();
+    request.setup(instance => instance.confirmFile(ItIsHash(SOME_DATA_HASH), ItIsAccount(ALICE))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
 
@@ -398,7 +398,7 @@ function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     mockRequester(request, REQUESTER);
     request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, ItIsHash(SOME_DATA_NAME_HASH)))
         .returns()
-    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH)))
+    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(REQUESTER.address)))
         .returns()
     request.setup(instance => instance.addMetadataItem({
         name: SOME_DATA_NAME,
@@ -472,6 +472,6 @@ function mockModelForConfirmMetadata(container: Container) {
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
     request.setup(instance => instance.canConfirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<SupportedAccountId>())).returns(true);
-    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns();
+    request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(ALICE))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
