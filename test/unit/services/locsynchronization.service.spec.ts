@@ -20,7 +20,7 @@ import { NonTransactionalTokensRecordService } from "../../../src/logion/service
 import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 import { ALICE } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
-import { ItIsHash } from "../../helpers/Mock.js";
+import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
 import { SupportedAccountId } from "src/logion/model/supportedaccountid.model.js";
 
 describe("LocSynchronizer", () => {
@@ -361,11 +361,6 @@ function thenMetadataAcknowledged() {
 function givenLocRequestExpectsFileAcknowledged() {
     locRequest.setup(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
-
-function ItIsAccount(account: string) {
-    return It.Is<SupportedAccountId>(given => given.address === account && given.type === "Polkadot");
-}
-
 
 function thenFileAcknowledged() {
     locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));

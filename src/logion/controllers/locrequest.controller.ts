@@ -690,7 +690,7 @@ export class LocRequestController extends ApiController {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             if(request.canConfirmFile(hash, contributor)) {
-                request.confirmFile(hash);
+                request.confirmFile(hash, contributor);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -976,7 +976,7 @@ export class LocRequestController extends ApiController {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const hash = Hash.fromHex(nameHash);
             if(request.canConfirmMetadataItem(hash, contributor)) {
-                request.confirmMetadataItem(hash);
+                request.confirmMetadataItem(hash, contributor);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }

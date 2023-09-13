@@ -429,7 +429,7 @@ describe("LocRequestAggregateRoot", () => {
         }, false);
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash, SUBMITTER);
 
         request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
@@ -448,7 +448,7 @@ describe("LocRequestAggregateRoot", () => {
         }, false);
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash, SUBMITTER);
 
         request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
@@ -472,7 +472,7 @@ describe("LocRequestAggregateRoot", () => {
         }, false);
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash);
+        request.confirmMetadataItem(nameHash, SUBMITTER);
 
         request.confirmMetadataItemAcknowledged(nameHash, VERIFIED_ISSUER, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
@@ -500,7 +500,7 @@ describe("LocRequestAggregateRoot", () => {
         }, false);
         request.requestFileReview(hash);
         request.acceptFile(hash);
-        request.confirmFile(hash);
+        request.confirmFile(hash, SUBMITTER);
 
         request.confirmFileAcknowledged(hash, OWNER_ACCOUNT, moment());
 
@@ -524,7 +524,7 @@ describe("LocRequestAggregateRoot", () => {
         }, false);
         request.requestFileReview(hash);
         request.acceptFile(hash);
-        request.confirmFile(hash);
+        request.confirmFile(hash, SUBMITTER);
 
         request.confirmFileAcknowledged(hash, VERIFIED_ISSUER, moment());
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
@@ -629,7 +629,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ], true)
-        whenConfirmingMetadataItem(nameHash)
+        whenConfirmingMetadataItem(nameHash, SUBMITTER)
         thenMetadataItemStatusIs(nameHash, "PUBLISHED")
         thenMetadataItemRequiresUpdate(nameHash)
     })
@@ -657,20 +657,6 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ], true)
-        thenMetadataIsVisibleToRequester(name);
-    })
-
-    it("exposes published, VI-submitted metadata to requester", () => {
-        givenRequestWithStatus('OPEN');
-        const name = "target-3";
-        whenAddingMetadata([
-            {
-                name,
-                value: "value-1",
-                submitter: SUBMITTER,
-            }
-        ], true)
-        request.confirmMetadataItem(Hash.of(name));
         thenMetadataIsVisibleToRequester(name);
     })
 })
@@ -892,7 +878,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ], true);
-        whenConfirmingFile(hash)
+        whenConfirmingFile(hash, SUBMITTER)
         thenFileStatusIs(hash, "PUBLISHED")
         thenFileRequiresUpdate(hash)
     })
@@ -930,25 +916,6 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ], true);
-        thenFileIsVisibleToRequester(hash)
-    })
-
-    it("exposes published, VI-submitted file to requester", () => {
-        givenRequestWithStatus('OPEN');
-        const hash = Hash.of("hash-3");
-        whenAddingFiles([
-            {
-                hash,
-                name: "name1",
-                contentType: "text/plain",
-                cid: "cid-1234",
-                nature: "nature1",
-                submitter: VERIFIED_ISSUER,
-                restrictedDelivery: false,
-                size: 123,
-            }
-        ], true);
-        request.confirmFile(hash);
         thenFileIsVisibleToRequester(hash)
     })
 
@@ -1251,11 +1218,11 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("OPEN");
 
         // User publishes items
-        request.confirmFile(fileHash);
+        request.confirmFile(fileHash, SUBMITTER);
         request.setFileAddedOn(fileHash, moment()); // Sync
         request.confirmFileAcknowledged(fileHash, SUBMITTER);
 
-        request.confirmMetadataItem(itemNameHash);
+        request.confirmMetadataItem(itemNameHash, SUBMITTER);
         request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
         request.confirmMetadataItemAcknowledged(itemNameHash, SUBMITTER);
 
@@ -1270,7 +1237,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             restrictedDelivery: false,
             size: 123,
         }, true);
-        request.confirmFile(hash2);
+        request.confirmFile(hash2, OWNER_ACCOUNT);
         request.setFileAddedOn(hash2, moment()); // Sync
 
         const target = new UUID().toString();
@@ -1288,9 +1255,8 @@ describe("LocRequestAggregateRoot (processes)", () => {
             value: "Some other value",
             submitter: OWNER_ACCOUNT,
         }, true);
-        request.confirmMetadataItem(someOtherNameHash);
+        request.confirmMetadataItem(someOtherNameHash, OWNER_ACCOUNT);
         request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(someOtherNameHash, SUBMITTER);
 
         // LLO closes
         request.preClose();
@@ -1488,8 +1454,8 @@ function whenSettingMetadataItemAddedOn(nameHash: Hash, addedOn:Moment) {
     request.setMetadataItemAddedOn(nameHash, addedOn);
 }
 
-function whenConfirmingMetadataItem(nameHash: Hash) {
-    request.confirmMetadataItem(nameHash);
+function whenConfirmingMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+    request.confirmMetadataItem(nameHash, contributor);
 }
 
 function thenMetadataItemStatusIs(nameHash: Hash, expectedStatus: ItemStatus) {
@@ -1509,8 +1475,8 @@ function whenSettingFileAddedOn(hash: Hash, addedOn:Moment) {
     request.setFileAddedOn(hash, addedOn);
 }
 
-function whenConfirmingFile(hash: Hash) {
-    request.confirmFile(hash);
+function whenConfirmingFile(hash: Hash, contributor: SupportedAccountId) {
+    request.confirmFile(hash, contributor);
 }
 
 function thenFileStatusIs(hash: Hash, status: ItemStatus) {
