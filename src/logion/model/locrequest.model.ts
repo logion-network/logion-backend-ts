@@ -1590,11 +1590,8 @@ export class LocRequestFactory {
         request.template = description.template;
         request.sponsorshipId = description.sponsorshipId?.toString();
         if(request.locType === "Collection") {
-            // TODO: fix requireDefined and replace below by -> const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
-            if(description.valueFee === undefined) {
-                throw new Error("Collection LOC must have a value fee");
-            }
-            request.valueFee = description.valueFee.toString();
+            const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
+            request.valueFee = valueFee.toString();
         }
         request.legalFee = description.legalFee?.toString();
         return request;

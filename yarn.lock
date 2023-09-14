@@ -1984,9 +1984,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.20.0":
-  version: 0.20.0
-  resolution: "@logion/node-api@npm:0.20.0"
+"@logion/node-api@npm:^0.21.0-1":
+  version: 0.21.0-1
+  resolution: "@logion/node-api@npm:0.21.0-1"
   dependencies:
     "@polkadot/api": ^10.9.1
     "@polkadot/util": ^12.3.2
@@ -1994,7 +1994,7 @@ __metadata:
     "@types/uuid": ^9.0.2
     fast-sha256: ^1.3.0
     uuid: ^9.0.0
-  checksum: e3d312763b0fc5bc858294477e51ce0424107888d5d632531dbcace622bd3aa87f30c69cd8347afb48d2908531b8934f7477d8e9d90f7cafdb245668bd05aef8
+  checksum: cedc7fe2c4fae00f722db98179dd6a045bedaf44060528439fa5ab881ce8d13d5d47ac8ad38ac1166a1b32ee6399e57a590519afb3415a5f493d169709e14233
   languageName: node
   linkType: hard
 
@@ -2009,9 +2009,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.4.3":
-  version: 0.4.3
-  resolution: "@logion/rest-api-core@npm:0.4.3"
+"@logion/rest-api-core@npm:^0.4.4-1":
+  version: 0.4.4-1
+  resolution: "@logion/rest-api-core@npm:0.4.4-1"
   dependencies:
     "@logion/authenticator": ^0.5.2
     dinoloop: ^2.4.0
@@ -2025,7 +2025,7 @@ __metadata:
     swagger-ui-express: ^4.6.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 11fdbc894cd7898d83d829b3fbda18a1ae39b84b104a6780eedf897e9d8ed1a8cf05a15945b4a0d6f00ea74b41f82e2646c3bfbe26ffde605c3a812c05746876
+  checksum: 69b937941bfad3eb33b610884780b9fe7dcaaaaccd4932353bc7efb14ab32606d7fb16e5fbe262ed8bb1c223ec6db9c618721794cad132a2ffabb843fb65a2da
   languageName: node
   linkType: hard
 
@@ -7153,9 +7153,9 @@ __metadata:
     "@astar-network/astar-api": ^0.2.5
     "@astar-network/astar-sdk-core": ^0.2.5
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.20.0
+    "@logion/node-api": ^0.21.0-1
     "@logion/node-exiftool": ^2.3.1-3
-    "@logion/rest-api-core": ^0.4.3
+    "@logion/rest-api-core": ^0.4.4-1
     "@polkadot/api-contract": ^10.9.1
     "@polkadot/wasm-crypto": ^7.2.2
     "@tsconfig/node18": ^1.0.1
