@@ -11,6 +11,36 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
+     * ItemLifecycleView 
+     * @description All item's lifecycle attributes
+     */
+    ItemLifecycleView: {
+      /**
+       * Format: date-time 
+       * @description The date-time of addition (chain time)
+       */
+      addedOn?: string;
+      /** @description The item's status */
+      status?: components["schemas"]["ItemStatus"];
+      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
+      rejectReason?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of review
+       */
+      reviewedOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge (chain time)
+       */
+      acknowledgedByOwnerOn?: string;
+      /**
+       * Format: date-time 
+       * @description The date-time of acknowledge by verified issuer (chain time)
+       */
+      acknowledgedByVerifiedIssuerOn?: string;
+    };
+    /**
      * AcceptProtectionRequestView 
      * @description Parameters for Protection Request's acceptance
      */
@@ -375,11 +405,6 @@ export interface components {
       hash?: string;
       /** @description The file's nature */
       nature?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of addition (chain time)
-       */
-      addedOn?: string;
       /** @description The address of the submitter */
       submitter?: components["schemas"]["SupportedAccountId"];
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
@@ -391,26 +416,7 @@ export interface components {
       fees?: components["schemas"]["FeesView"];
       /** @description Account from which storage fees were withdrawn. */
       storageFeePaidBy?: string;
-      /** @description The file's status */
-      status: components["schemas"]["ItemStatus"];
-      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
-      rejectReason?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of review
-       */
-      reviewedOn?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of acknowledge (chain time)
-       */
-      acknowledgedByOwnerOn?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of acknowledge by verified issuer (chain time)
-       */
-      acknowledgedByVerifiedIssuerOn?: string;
-    };
+    } & components["schemas"]["ItemLifecycleView"];
     LocMetadataItemView: {
       /** @description The item's name */
       name?: string;
@@ -418,34 +424,19 @@ export interface components {
       nameHash: string;
       /** @description The item's value */
       value?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of addition (chain time)
-       */
-      addedOn?: string;
       /** @description The address of the submitter */
       submitter?: components["schemas"]["SupportedAccountId"];
       fees?: components["schemas"]["FeesView"];
-      /** @description The item's status */
-      status: components["schemas"]["ItemStatus"];
-      /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
-      rejectReason?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of review
-       */
-      reviewedOn?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of acknowledge by owner (chain time)
-       */
-      acknowledgedByOwnerOn?: string;
-      /**
-       * Format: date-time 
-       * @description The date-time of acknowledge by verified issuer (chain time)
-       */
-      acknowledgedByVerifiedIssuerOn?: string;
-    };
+    } & components["schemas"]["ItemLifecycleView"];
+    LocLinkView: {
+      /** @description The address of the submitter */
+      submitter?: components["schemas"]["SupportedAccountId"];
+      /** @description The link's target */
+      target?: string;
+      /** @description The link's nature */
+      nature?: string;
+      fees?: components["schemas"]["FeesView"];
+    } & components["schemas"]["ItemLifecycleView"];
     /**
      * LocRequestView 
      * @description An existing LOC Request
@@ -502,17 +493,7 @@ export interface components {
       /** @description The files attached to this request's LOC */
       files?: (components["schemas"]["LocFileView"])[];
       /** @description The links attached to this request's LOC */
-      links?: ({
-          /** @description The link's target */
-          target?: string;
-          /**
-           * Format: date-time 
-           * @description The date-time of addition (chain time)
-           */
-          addedOn?: string;
-          /** @description The link's nature */
-          nature?: string;
-        })[];
+      links?: (components["schemas"]["LocLinkView"])[];
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];
       /** @description The metadata attached to this request's LOC */
@@ -606,7 +587,8 @@ export interface components {
           addedOn?: string;
           /** @description The link's nature */
           nature?: string;
-          fees?: components["schemas"]["FeesView"];
+          /** @description The address of the submitter */
+          submitter?: components["schemas"]["SupportedAccountId"];
         })[];
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];

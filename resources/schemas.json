@@ -7,6 +7,41 @@
     "paths": {},
     "components": {
         "schemas": {
+            "ItemLifecycleView": {
+                "type": "object",
+                "properties": {
+                    "addedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of addition (chain time)"
+                    },
+                    "status": {
+                        "description": "The item's status",
+                        "$ref": "#/components/schemas/ItemStatus"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
+                    },
+                    "reviewedOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of review"
+                    },
+                    "acknowledgedByOwnerOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge (chain time)"
+                    },
+                    "acknowledgedByVerifiedIssuerOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The date-time of acknowledge by verified issuer (chain time)"
+                    }
+                },
+                "title": "ItemLifecycleView",
+                "description": "All item's lifecycle attributes"
+            },
             "AcceptProtectionRequestView": {
                 "type": "object",
                 "properties": {
@@ -670,6 +705,9 @@
             },
             "LocFileView": {
                 "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/ItemLifecycleView"
+                }],
                 "properties": {
                     "name": {
                         "type": "string",
@@ -682,11 +720,6 @@
                     "nature": {
                         "type": "string",
                         "description": "The file's nature"
-                    },
-                    "addedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of addition (chain time)"
                     },
                     "submitter": {
                         "description": "The address of the submitter",
@@ -710,29 +743,6 @@
                     "storageFeePaidBy": {
                         "type": "string",
                         "description": "Account from which storage fees were withdrawn."
-                    },
-                    "status": {
-                        "description": "The file's status",
-                        "$ref": "#/components/schemas/ItemStatus"
-                    },
-                    "rejectReason": {
-                        "type": "string",
-                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
-                    },
-                    "reviewedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of review"
-                    },
-                    "acknowledgedByOwnerOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of acknowledge (chain time)"
-                    },
-                    "acknowledgedByVerifiedIssuerOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of acknowledge by verified issuer (chain time)"
                     }
                 },
                 "required": [
@@ -741,6 +751,9 @@
             },
             "LocMetadataItemView": {
                 "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/ItemLifecycleView"
+                }],
                 "properties": {
                     "name": {
                         "type": "string",
@@ -754,46 +767,41 @@
                         "type": "string",
                         "description": "The item's value"
                     },
-                    "addedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of addition (chain time)"
-                    },
                     "submitter": {
                         "description": "The address of the submitter",
                         "$ref": "#/components/schemas/SupportedAccountId"
                     },
                     "fees": {
                         "$ref": "#/components/schemas/FeesView"
-                    },
-                    "status": {
-                        "description": "The item's status",
-                        "$ref": "#/components/schemas/ItemStatus"
-                    },
-                    "rejectReason": {
-                        "type": "string",
-                        "description": "If status is 'REVIEW_REJECTED', the reason of the rejection"
-                    },
-                    "reviewedOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of review"
-                    },
-                    "acknowledgedByOwnerOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of acknowledge by owner (chain time)"
-                    },
-                    "acknowledgedByVerifiedIssuerOn": {
-                        "type": "string",
-                        "format": "date-time",
-                        "description": "The date-time of acknowledge by verified issuer (chain time)"
                     }
                 },
                 "required": [
                     "status",
                     "nameHash"
                 ]
+            },
+            "LocLinkView": {
+                "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/ItemLifecycleView"
+                }],
+                "properties": {
+                    "submitter": {
+                        "description": "The address of the submitter",
+                        "$ref": "#/components/schemas/SupportedAccountId"
+                    },
+                    "target": {
+                        "type": "string",
+                        "description": "The link's target"
+                    },
+                    "nature": {
+                        "type": "string",
+                        "description": "The link's nature"
+                    },
+                    "fees": {
+                        "$ref": "#/components/schemas/FeesView"
+                    }
+                }
             },
             "LocRequestView": {
                 "type": "object",
@@ -871,22 +879,7 @@
                         "type": "array",
                         "description": "The links attached to this request's LOC",
                         "items": {
-                            "type": "object",
-                            "properties": {
-                                "target": {
-                                    "type": "string",
-                                    "description": "The link's target"
-                                },
-                                "addedOn": {
-                                    "type": "string",
-                                    "format": "date-time",
-                                    "description": "The date-time of addition (chain time)"
-                                },
-                                "nature": {
-                                    "type": "string",
-                                    "description": "The link's nature"
-                                }
-                            }
+                            "$ref": "#/components/schemas/LocLinkView"
                         }
                     },
                     "locType": {
@@ -1048,8 +1041,9 @@
                                     "type": "string",
                                     "description": "The link's nature"
                                 },
-                                "fees": {
-                                    "$ref": "#/components/schemas/FeesView"
+                                "submitter": {
+                                    "description": "The address of the submitter",
+                                    "$ref": "#/components/schemas/SupportedAccountId"
                                 }
                             }
                         }

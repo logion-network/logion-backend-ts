@@ -133,7 +133,7 @@ describe('LocRequestRepository - read accesses', () => {
         expect(links[0].target).toBe("ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d");
         expect(links[0].addedOn!.isSame(moment("2021-10-06T11:16:00.000"))).toBe(true);
         expect(links[0].nature).toBe("link-nature")
-        expect(request!.links![0].draft).toBe(true);
+        expect(request!.links![0].status).toBe("DRAFT");
     })
 
     it("populates requesterIdentityLoc", async () => {
@@ -376,8 +376,8 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.addLink({
         target: uuid(),
         nature: "link nature",
-        addedOn: moment()
-    })
+        submitter: SUBMITTER,
+    }, false)
     locRequest.files = []
     locRequest.addFile({
         name: "fileName",

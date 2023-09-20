@@ -106,6 +106,9 @@ export class LocSynchronizer {
                 case "acknowledgeMetadata":
                     await this.confirmAcknowledgedMetadata(timestamp, extrinsic);
                     break;
+                case "acknowledgeLink":
+                    await this.confirmAcknowledgedLink(timestamp, extrinsic);
+                    break;
                 case "sponsor":
                 case "withdrawSponsorship":
                     // Nothing to sync
@@ -325,5 +328,12 @@ export class LocSynchronizer {
         const nameHash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['name']));
         const contributor = polkadotAccount(requireDefined(extrinsic.signer));
         await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, contributor, timestamp));
+    }
+
+    private async confirmAcknowledgedLink(timestamp: Moment, extrinsic: JsonExtrinsic) {
+        const locId = extractUuid('loc_id', extrinsic.call.args);
+        const target = extractUuid('target', extrinsic.call.args);
+        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        await this.mutateLoc(locId, async loc => loc.confirmLinkAcknowledged(target, contributor, timestamp));
     }
 }

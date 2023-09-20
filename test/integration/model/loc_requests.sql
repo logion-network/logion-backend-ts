@@ -26,8 +26,8 @@ INSERT INTO loc_request_file (request_id, hash, name, oid, content_type, added_o
 VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', '0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee', 'a file', 123456, 'text/plain', '2021-10-06T11:16:00.000', 0, 'DRAFT', 'some nature', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw', 'Polkadot', 123);
 INSERT INTO loc_metadata_item (request_id, "index", name, name_hash, "value", added_on, status, submitter_address, submitter_address_type)
 VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', 0, 'a name', sha256('a name'::bytea), 'a value', '2021-10-06T11:16:00.000', 'DRAFT', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw', 'Polkadot');
-INSERT INTO loc_link (request_id, "index", target, added_on, draft, nature)
-VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', 0, 'ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d', '2021-10-06T11:16:00.000', true, 'link-nature');
+INSERT INTO loc_link (request_id, "index", target, added_on, nature, status, submitter_address, submitter_address_type)
+VALUES ('2b287596-f9d5-8030-b606-d1da538cb37f', 0, 'ec126c6c-64cf-4eb8-bfa6-2a98cd19ad5d', '2021-10-06T11:16:00.000', 'link-nature', 'DRAFT', '5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw', 'Polkadot');
 -- Open Polkadot Identity locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type, legal_fee)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ', 'Polkadot', 'loc-11', 'OPEN', 'Identity', 42);
