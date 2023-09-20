@@ -41,44 +41,11 @@ export class AddLinkSubmitterAndLifecycle1695136615896 implements MigrationInter
             WHERE "draft" = 'false'
         `);
 
-        // LOC DRAFT => ITEM draft=true > DRAFT
-        await queryRunner.query(`
-            UPDATE "loc_link" item
-            SET "status" = 'DRAFT'
-            FROM loc_request loc
-            WHERE 1=1
-              AND item.draft = 'true'
-              AND loc.id = item.request_id
-              AND loc.status = 'DRAFT'
-        `);
-        // LOC (REQUESTED, OPEN), ITEM draft=true > REVIEW_ACCEPTED
+        // EVERYTHING ELSE => > REVIEW_ACCEPTED
         await queryRunner.query(`
             UPDATE "loc_link" item
             SET "status" = 'REVIEW_ACCEPTED'
-            FROM loc_request loc
-            WHERE 1=1
-              AND item.draft = 'true'
-              AND loc.id = item.request_id
-              AND loc.status in ('REQUESTED', 'OPEN')
-        `);
-        // LOC (REJECTED), ITEM draft=true > REVIEW_REJECTED
-        await queryRunner.query(`
-            UPDATE "loc_link" item
-            SET "status" = 'REVIEW_REJECTED', "reviewed_on" = loc.decision_on
-            FROM loc_request loc
-            WHERE 1=1
-              AND item.draft = 'true'
-              AND loc.id = item.request_id
-              AND loc.status = 'REJECTED'
-        `);
-        // EVERYTHING ELSE => ITEM draft=true > REVIEW_PENDING
-        await queryRunner.query(`
-            UPDATE "loc_link" item
-            SET "status" = 'REVIEW_PENDING'
-            FROM loc_request loc
-            WHERE 1=1
-              AND item.draft = 'true'
-              AND item.status IS NULL
+            WHERE "status" IS NULL
         `);
 
         await queryRunner.query(`ALTER TABLE "loc_link" ALTER COLUMN "status" SET NOT NULL`);
