@@ -14,7 +14,8 @@ import {
     LocRequestRepository,
     MetadataItemParams,
     ItemStatus,
-    FileParams
+    FileParams,
+    LinkParams
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -29,6 +30,7 @@ import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
+import { REQUESTER_ADDRESS } from "../controllers/locrequest.controller.shared.js";
 
 const SUBMITTER: SupportedAccountId = {
     type: "Polkadot",
@@ -485,6 +487,70 @@ describe("LocRequestAggregateRoot", () => {
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
     });
 
+    it("confirms link acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: SUBMITTER,
+        }, false);
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.confirmLink(target, SUBMITTER);
+
+        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, false);
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.confirmLink(target, SUBMITTER);
+
+        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+
+        request.confirmLinkAcknowledged(target, VERIFIED_ISSUER, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, false);
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.confirmLink(target, SUBMITTER);
+
+        request.confirmLinkAcknowledged(target, VERIFIED_ISSUER, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+
+        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
     it("confirms file acknowledgment (owner only)", () => {
         givenRequestWithStatus('OPEN');
         const hash = Hash.of("test");
@@ -665,54 +731,61 @@ describe("LocRequestAggregateRoot (links)", () => {
 
     it("does not accept several links with same target", () => {
         givenRequestWithStatus('OPEN');
-        const links: LinkDescription[] = [
+        const links: LinkParams[] = [
             {
                 target: "another-loc-id",
-                nature: "nature1"
+                nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 target: "another-loc-id",
-                nature: "nature2"
+                nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
-        expect(() => whenAddingLinks(links)).toThrowError();
+        expect(() => whenAddingLinks(links, false)).toThrowError();
     });
 
     it("adds and exposes links", () => {
         givenRequestWithStatus('OPEN');
-        const links: LinkDescription[] = [
+        const links: LinkParams[] = [
             {
                 target: "value1",
                 nature: "nature1",
+                submitter: SUBMITTER,
             },
             {
                 target: "value2",
                 nature: "nature2",
+                submitter: SUBMITTER,
             }
         ];
-        whenAddingLinks(links);
+        whenAddingLinks(links, false);
         thenExposesLinks(links);
     });
 
     it("owner removes previously added link", () => {
         givenRequestWithStatus('OPEN');
-        const links: LinkDescription[] = [
+        const links: LinkParams[] = [
             {
                 target: "target-1",
-                nature: "nature-1"
+                nature: "nature-1",
+                submitter: SUBMITTER,
             },
             {
                 target: "target-2",
-                nature: "nature-2"
+                nature: "nature-2",
+                submitter: SUBMITTER,
             }
         ];
-        whenAddingLinks(links);
+        whenAddingLinks(links, true);
         whenRemovingLink(OWNER_ACCOUNT, "target-1")
 
-        const newLinks: LinkDescription[] = [
+        const newLinks: LinkParams[] = [
             {
                 target: "target-2",
-                nature: "nature-2"
+                nature: "nature-2",
+                submitter: SUBMITTER,
             }
         ];
         thenExposesLinks(newLinks);
@@ -721,19 +794,21 @@ describe("LocRequestAggregateRoot (links)", () => {
         thenHasExpectedLinkIndices();
     });
 
-    it("cannot remove link if not owner", () => {
+    it("cannot remove link if not contributor", () => {
         givenRequestWithStatus('OPEN');
-        const links: LinkDescription[] = [
+        const links: LinkParams[] = [
             {
                 target: "target-1",
-                nature: "nature-1"
+                nature: "nature-1",
+                submitter: REQUESTER_ADDRESS,
             },
             {
                 target: "target-2",
-                nature: "nature-2"
+                nature: "nature-2",
+                submitter: OWNER_ACCOUNT,
             }
         ];
-        whenAddingLinks(links);
+        whenAddingLinks(links, true);
         expect(() => whenRemovingLink(SUBMITTER, "target-1")).toThrowError();
     });
 
@@ -743,11 +818,12 @@ describe("LocRequestAggregateRoot (links)", () => {
         whenAddingLinks([
             {
                 target,
-                nature: "nature-1"
+                nature: "nature-1",
+                submitter: SUBMITTER,
             }
-        ])
-        whenConfirmingLink(target)
-        thenLinkIsNotDraft(target)
+        ], true);
+        whenConfirmingLink(target, SUBMITTER);
+        thenLinkStatusIs(target, "PUBLISHED");
         thenLinkRequiresUpdate(target)
     })
 })
@@ -1094,10 +1170,11 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
         whenAddingLinks([{
             target: "target-1",
             nature: "nature-1",
-        }])
+            submitter: SUBMITTER,
+        }], true)
         const addedOn = moment();
         whenSettingLinkAddedOn("target-1", addedOn);
-        thenLinkIsNotDraft("target-1")
+        thenLinkStatusIs("target-1", "PUBLISHED");
         thenLinkRequiresUpdate("target-1")
         thenExposesLinkByTarget("target-1", {
             target: "target-1",
@@ -1167,6 +1244,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             size: 123,
         }, false);
         expect(request.getFiles(SUBMITTER).length).toBe(1);
+
         const itemName = "Some name";
         const itemNameHash = Hash.of(itemName);
         request.addMetadataItem({
@@ -1176,23 +1254,33 @@ describe("LocRequestAggregateRoot (processes)", () => {
         }, false);
         expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
 
+        const requesterLinkTarget = new UUID().toString();
+        request.addLink({
+            target: requesterLinkTarget,
+            nature: "Some nature",
+            submitter: SUBMITTER,
+        }, false);
+
         // User requests review
         request.submit();
         thenRequestStatusIs("REVIEW_PENDING");
         thenFileStatusIs(fileHash, "REVIEW_PENDING");
         thenMetadataItemStatusIs(itemNameHash, "REVIEW_PENDING");
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_PENDING");
 
         // LLO rejects
         request.reject("Because.", moment());
         thenRequestStatusIs("REVIEW_REJECTED");
         thenFileStatusIs(fileHash, "REVIEW_REJECTED");
         thenMetadataItemStatusIs(itemNameHash, "REVIEW_REJECTED");
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_REJECTED");
 
         // User reworks and submits again
         request.rework();
         thenRequestStatusIs("DRAFT");
         thenFileStatusIs(fileHash, "DRAFT");
         thenMetadataItemStatusIs(itemNameHash, "DRAFT");
+        thenLinkStatusIs(requesterLinkTarget, "DRAFT");
         request.submit();
 
         // LLO accepts
@@ -1202,6 +1290,8 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenFileStatusIs(fileHash, "REVIEW_ACCEPTED");
         request.acceptMetadataItem(itemNameHash);
         thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
+        request.acceptLink(requesterLinkTarget);
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
 
         // User reworks and submits again
         request.rework();
@@ -1211,6 +1301,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.accept(moment());
         request.acceptFile(fileHash);
         request.acceptMetadataItem(itemNameHash);
+        request.acceptLink(requesterLinkTarget);
         thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User opens
@@ -1225,6 +1316,10 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.confirmMetadataItem(itemNameHash, SUBMITTER);
         request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
         request.confirmMetadataItemAcknowledged(itemNameHash, SUBMITTER);
+
+        request.confirmLink(requesterLinkTarget, SUBMITTER);
+        request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
+        request.confirmLinkAcknowledged(requesterLinkTarget, SUBMITTER);
 
         // LLO adds other data
         request.addFile({
@@ -1244,8 +1339,9 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.addLink({
             nature: "Some link nature",
             target: target,
-        });
-        request.confirmLink(target);
+            submitter: SUBMITTER,
+        }, true);
+        request.confirmLink(target, SUBMITTER);
         request.setLinkAddedOn(target, moment()); // Sync
 
         const someOtherName = "Some other name";
@@ -1350,7 +1446,8 @@ async function whenCreatingSofRequest(target: string, nature: string) {
         id: requestId,
         description: locDescription,
         target,
-        nature
+        nature,
+        submitter: SUBMITTER,
     });
 }
 
@@ -1496,12 +1593,12 @@ function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
     request.setLinkAddedOn(target, addedOn);
 }
 
-function whenConfirmingLink(target: string) {
-    request.confirmLink(target);
+function whenConfirmingLink(target: string, contributor: SupportedAccountId) {
+    request.confirmLink(target, contributor);
 }
 
-function thenLinkIsNotDraft(target: string) {
-    expect(request.link(target)?.draft).toBeFalse();
+function thenLinkStatusIs(target: string, expectedStatus: ItemStatus) {
+    expect(request.link(target)?.status).toEqual(expectedStatus);
 }
 
 function thenLinkRequiresUpdate(target: string) {
@@ -1544,14 +1641,15 @@ function thenHasExpectedFileIndices() {
     }
 }
 
-function whenAddingLinks(links: LinkDescription[]) {
-    links.forEach(link => request.addLink(link));
+function whenAddingLinks(links: LinkParams[], alreadyReviewed: boolean) {
+    links.forEach(link => request.addLink(link, alreadyReviewed));
 }
 
-function thenExposesLinks(expectedLinks: LinkDescription[]) {
+function thenExposesLinks(expectedLinks: Partial<LinkDescription>[]) {
     request.getLinks().forEach((link, index) => {
-        expect(link.target).toBe(expectedLinks[index].target);
-        expect(link.nature).toBe(expectedLinks[index].nature);
+        expect(link.target).toBe(expectedLinks[index].target!);
+        expect(link.nature).toBe(expectedLinks[index].nature!);
+        expect(link.submitter).toEqual(expectedLinks[index].submitter!);
         if (link.addedOn === undefined) {
             expect(expectedLinks[index].addedOn).not.toBeDefined()
         } else {
@@ -1560,13 +1658,13 @@ function thenExposesLinks(expectedLinks: LinkDescription[]) {
     });
 }
 
-function thenExposesLinkByTarget(target: string, expectedLink: LinkDescription) {
+function thenExposesLinkByTarget(target: string, expectedLink: Partial<LinkDescription>) {
     expectSameLinks(request.getLink(target), expectedLink)
 }
 
-function expectSameLinks(item1: LinkDescription, item2: LinkDescription) {
-    expect(item1.target).toEqual(item2.target);
-    expect(item1.nature).toEqual(item2.nature);
+function expectSameLinks(item1: LinkDescription, item2: Partial<LinkDescription>) {
+    expect(item1.target).toEqual(item2.target!);
+    expect(item1.nature).toEqual(item2.nature!);
     if (item1.addedOn === undefined) {
         expect(item2.addedOn).toBeUndefined()
     } else {

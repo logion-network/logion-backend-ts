@@ -190,6 +190,18 @@ describe("LocSynchronizer", () => {
         thenFileAcknowledged();
         thenLocIsSaved();
     });
+
+    it("confirms link acknowledged", async () => {
+        givenLocExtrinsic("acknowledgeLink", {
+            loc_id: locId,
+            target: LINK_TARGET,
+        });
+        givenLocRequest();
+        givenLocRequestExpectsLinkAcknowledged();
+        await whenConsumingBlock();
+        thenLinkAcknowledged();
+        thenLocIsSaved();
+    });
 });
 
 const locDecimalUuid = "130084474896785895402627605545662412605";
@@ -364,4 +376,12 @@ function givenLocRequestExpectsFileAcknowledged() {
 
 function thenFileAcknowledged() {
     locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));
+}
+
+function givenLocRequestExpectsLinkAcknowledged() {
+    locRequest.setup(instance => instance.confirmLinkAcknowledged(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+}
+
+function thenLinkAcknowledged() {
+    locRequest.verify(instance => instance.confirmLinkAcknowledged(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME));
 }

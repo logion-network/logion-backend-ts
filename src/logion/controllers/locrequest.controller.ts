@@ -80,7 +80,10 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.deleteLink(spec);
     LocRequestController.requestMetadataReview(spec);
     LocRequestController.reviewMetadata(spec);
+    LocRequestController.requestLinkReview(spec);
+    LocRequestController.reviewLink(spec);
     LocRequestController.confirmLink(spec);
+    LocRequestController.confirmLinkAcknowledged(spec);
     LocRequestController.addMetadata(spec);
     LocRequestController.deleteMetadata(spec);
     LocRequestController.confirmMetadata(spec);
@@ -801,14 +804,15 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
-        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const alreadyReviewed = accountEquals(contributor, request.getOwner());
             request.addLink({
                 target: targetRequest.id!,
-                nature: addLinkView.nature || ""
-            });
+                nature: addLinkView.nature || "",
+                submitter: contributor,
+            }, alreadyReviewed);
         });
         this.response.sendStatus(204);
     }
@@ -833,6 +837,67 @@ export class LocRequestController extends ApiController {
             request.removeLink(userCheck, target);
         });
     }
+    
+    static requestLinkReview(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{target}/review-request"].post!;
+        operationObject.summary = "Requests a review of the given link";
+        operationObject.description = "The authenticated user must be contributor of the LOC.";
+        operationObject.responses = getDefaultResponsesWithAnyBody();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The item's name hash"
+        });
+    }
+
+    @HttpPost('/:requestId/link/:target/review-request')
+    @Async()
+    @SendsResponse()
+    async requestLinkReview(_body: any, requestId: string, target: string) {
+        const request = await this.locRequestService.update(requestId, async request => {
+            if (request.status !== 'OPEN') {
+                throw badRequest("LOC must be OPEN for requesting item review");
+            }
+            await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.requestLinkReview(target);
+        });
+
+        const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+        this.notify("LegalOfficer", "review-requested", request.getDescription(), userIdentity);
+
+        this.response.sendStatus(204);
+    }
+
+    static reviewLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{target}/review"].post!;
+        operationObject.summary = "Reviews the given link";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.requestBody = getRequestBody({
+            description: "Accept/Reject with reason",
+            view: "ReviewItemView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The item's name hash"
+        });
+    }
+
+    @HttpPost('/:requestId/link/:target/review')
+    @Async()
+    @SendsResponse()
+    async reviewLink(view: ReviewItemView, requestId: string, target: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            if (view.decision === "ACCEPT") {
+                request.acceptLink(target);
+            } else {
+                const reason = requireDefined(view.rejectReason, () => badRequest("Reason is required"));
+                request.rejectLink(target, reason);
+            }
+        });
+        this.response.sendStatus(204);
+    }
 
     static confirmLink(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/confirm"].put!;
@@ -849,10 +914,39 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async confirmLink(_body: any, requestId: string, target: string) {
-        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.confirmLink(target);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if (request.canConfirmLink(target, contributor)) {
+                request.confirmLink(target, contributor);
+            } else {
+                throw unauthorized("Contributor cannot confirm");
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
+    static confirmLinkAcknowledged(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{targetHex}/confirm-acknowledged"].put!;
+        operationObject.summary = "Confirms a link as acknowledged";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'targetHex': "The item's name hash"
+        });
+    }
+
+    @HttpPut('/:requestId/link/:targetHex/confirm-acknowledged')
+    @Async()
+    @SendsResponse()
+    async confirmLinkAcknowledged(_body: any, requestId: string, target: string) {
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canConfirmLinkAcknowledged(target, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.confirmLinkAcknowledged(target, contributor);
+            }
         });
         this.response.sendStatus(204);
     }
@@ -914,19 +1008,23 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async requestMetadataReview(_body: any, requestId: string, nameHash: string) {
-        await this.locRequestService.update(requestId, async request => {
+        const request = await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
             await this.locAuthorizationService.ensureContributor(this.request, request);
             request.requestMetadataItemReview(Hash.fromHex(nameHash));
         });
+
+        const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+        this.notify("LegalOfficer", "review-requested", request.getDescription(), userIdentity);
+
         this.response.sendStatus(204);
     }
 
     static reviewMetadata(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/review"].post!;
-        operationObject.summary = "Reviews the given file";
+        operationObject.summary = "Reviews the given metadata item";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.requestBody = getRequestBody({
             description: "Accept/Reject with reason",
@@ -1061,6 +1159,7 @@ export class LocRequestController extends ApiController {
             description: requestDescription,
             target: locId,
             nature: linkNature,
+            submitter: contributor,
         });
         await this.locRequestService.addNewRequest(request);
 

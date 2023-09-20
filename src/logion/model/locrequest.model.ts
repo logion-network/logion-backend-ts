@@ -105,10 +105,13 @@ export interface ItemLifecycle {
     readonly acknowledgedByVerifiedIssuerOn?: Moment;
 }
 
-export interface LinkDescription {
+export interface LinkParams {
     readonly target: string;
     readonly nature: string;
-    readonly addedOn?: Moment;
+    readonly submitter: SupportedAccountId;
+}
+
+export interface LinkDescription extends LinkParams, ItemLifecycle {
     readonly fees?: Fees;
 }
 
@@ -450,20 +453,15 @@ export class LocRequestAggregateRoot {
             return true;
         }
         const submitter = submitted.submitter?.toSupportedAccountId();
-        const expectVerifiedIssuer = !accountEquals(submitter, owner)
-            && !accountEquals(submitter, this.getRequester());
-        return expectVerifiedIssuer && accountEquals(contributor, submitter);
+        return this.isVerifiedIssuer(submitter) && accountEquals(contributor, submitter);
     }
 
     confirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
-        const file = this.getFileOrThrow(hash);
-        const isVerifiedIssuer = !this.isOwner(contributor)
-            && !this.isRequester(contributor);
-        const submitter = file.submitter?.toSupportedAccountId();
-        const expectedVerifiedIssuer = !this.isOwner(submitter)
-            && !this.isRequester(submitter);
-        file.lifecycle!.confirmAcknowledged(expectedVerifiedIssuer, isVerifiedIssuer, acknowledgedOn);
-        file._toUpdate = true;
+        this.mutateFile(hash, file => file.lifecycle!.confirmAcknowledged(
+            this.isVerifiedIssuer(file.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(contributor),
+            acknowledgedOn
+        ))
     }
 
     canConfirmFile(hash: Hash, contributor: SupportedAccountId): boolean {
@@ -478,9 +476,7 @@ export class LocRequestAggregateRoot {
             return true;
         }
         const requester = this.getRequester();
-        const expectVerifiedIssuer = !accountEquals(submitter, owner)
-            && !accountEquals(submitter, requester);
-        if(expectVerifiedIssuer || accountEquals(submitter, requester)) {
+        if(this.isVerifiedIssuer(submitter) ||  this.isRequester(submitter)) {
             return accountEquals(contributor, requester);
         } else {
             return accountEquals(contributor, owner);
@@ -489,6 +485,11 @@ export class LocRequestAggregateRoot {
 
     isRequester(account?: SupportedAccountId) {
         return accountEquals(account, this.getRequester());
+    }
+
+    isVerifiedIssuer(account?: SupportedAccountId) {
+        return !this.isOwner(account)
+            && !this.isRequester(account)
     }
 
     private mutateFile(hash: Hash, mutator: (item: LocFile) => void) {
@@ -500,6 +501,7 @@ export class LocRequestAggregateRoot {
     private updateAllItemsStatus(statusTo: ItemStatus) {
         this.metadata?.forEach(item => item.status = statusTo);
         this.files?.forEach(item => item.status = statusTo);
+        this.links?.forEach(item => item.status = statusTo);
     }
     
     getFileOrThrow(hash: Hash) {
@@ -651,13 +653,8 @@ export class LocRequestAggregateRoot {
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
     }
 
-    private canRemove(address: SupportedAccountId, item: Submitted | LocLink): boolean {
-        if (item instanceof LocLink) {
-            return accountEquals(address, this.getOwner());
-        } else {
-            return accountEquals(address, this.getOwner()) ||
-                accountEquals(address, item.submitter);
-        }
+    private canRemove(address: SupportedAccountId, item: Submitted): boolean {
+        return this.isOwner(address) || accountEquals(address, item.submitter);
     }
 
     requestMetadataItemReview(nameHash: Hash) {
@@ -698,14 +695,11 @@ export class LocRequestAggregateRoot {
     }
 
     confirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
-        const metadata = this.getMetadataOrThrow(nameHash);
-        const isVerifiedIssuer = !this.isOwner(contributor)
-            && !this.isRequester(contributor);
-        const submitter = metadata.submitter?.toSupportedAccountId();
-        const expectedVerifiedIssuer = !this.isOwner(submitter)
-            && !this.isRequester(submitter);
-        metadata.lifecycle!.confirmAcknowledged(expectedVerifiedIssuer, isVerifiedIssuer, acknowledgedOn);
-        metadata._toUpdate = true;
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirmAcknowledged(
+            this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(contributor),
+            acknowledgedOn
+        ))
     }
 
     private mutateMetadataItem(nameHash: Hash, mutator: (item: LocMetadataItem) => void) {
@@ -749,7 +743,7 @@ export class LocRequestAggregateRoot {
         return this.toFileDescription(removedFile);
     }
 
-    addLink(itemDescription: LinkDescription) {
+    addLink(itemDescription: LinkParams, alreadyReviewed: boolean) {
         this.ensureEditable();
         if (this.hasLink(itemDescription.target)) {
             throw new Error("A link with given target was already added to this LOC");
@@ -760,7 +754,8 @@ export class LocRequestAggregateRoot {
         item.index = this.links!.length;
         item.target = itemDescription.target;
         item.nature = itemDescription.nature
-        item.draft = true;
+        item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
+        item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.links!.push(item);
     }
@@ -773,13 +768,14 @@ export class LocRequestAggregateRoot {
         return {
             target: link.target!,
             nature: link.nature!,
-            addedOn: link.addedOn ? moment(link.addedOn) : undefined,
+            submitter: link.submitter!.toSupportedAccountId(),
             fees: link.inclusionFee ? new Fees({ inclusionFee: BigInt(link.inclusionFee)}) : undefined,
+            ...(link.lifecycle!.getDescription()),
         }
     }
 
     getLinks(viewerAddress?: SupportedAccountId): LinkDescription[] {
-        return orderAndMap(this.links?.filter(link => !link.draft || accountEquals(this.getOwner(), viewerAddress)), this.toLinkDescription);
+        return orderAndMap(this.links?.filter(link => this.itemViewable(link, viewerAddress)), this.toLinkDescription);
     }
 
     setLinkAddedOn(target: string, addedOn: Moment) {
@@ -788,11 +784,7 @@ export class LocRequestAggregateRoot {
             logger.error(`Link with target ${ target } not found`);
             return;
         }
-        if (link.addedOn) {
-            logger.warn("Link added on date is already set");
-        }
-        link.addedOn = addedOn.toDate();
-        link.draft = false;
+        link.lifecycle?.setAddedOn(addedOn);
         link._toUpdate = true;
     }
 
@@ -806,16 +798,55 @@ export class LocRequestAggregateRoot {
         if (!this.canRemove(remover, removedLink)) {
             throw new Error("Item removal not allowed");
         }
-        if (!removedLink.draft) {
+        if (removedLink.status === "ACKNOWLEDGED" || removedLink.status === 'PUBLISHED') {
             throw new Error("Only draft links can be removed");
         }
         deleteIndexedChild(removedLinkIndex, this.links!, this._linksToDelete)
     }
 
-    confirmLink(target: string) {
-        const link = this.link(target)!;
-        link.draft = false;
-        link._toUpdate = true;
+    requestLinkReview(target: string) {
+        this.mutateLink(target, item => item.lifecycle!.requestReview());
+    }
+
+    acceptLink(target: string) {
+        this.ensureAcceptedOrOpen();
+        this.mutateLink(target, item => item.lifecycle!.accept());
+    }
+
+    rejectLink(target: string, reason: string) {
+        this.mutateLink(target, item => item.lifecycle!.reject(reason));
+    }
+
+    confirmLink(target: string, contributor: SupportedAccountId) {
+        if (!this.canConfirmLink(target, contributor)) {
+            throw new Error("Contributor cannot confirm");
+        }
+        this.mutateLink(target, link => link.lifecycle!.confirm(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
+    }
+
+    confirmLinkAcknowledged(target: string, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        this.mutateLink(target, link => link.lifecycle!.confirmAcknowledged(
+            this.isVerifiedIssuer(link.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(contributor),
+            acknowledgedOn
+        ))
+    }
+
+    canConfirmLink(target: string, contributor: SupportedAccountId): boolean {
+        const link = this.getLinkOrThrow(target);
+        return this.canConfirm(link, contributor);
+    }
+
+    canConfirmLinkAcknowledged(target: string, contributor: SupportedAccountId): boolean {
+        const link = this.getLinkOrThrow(target);
+        return this.canConfirmAcknowledged(link, contributor);
+    }
+
+    getLinkOrThrow(target: string) {
+        return requireDefined(
+            this.link(target),
+            () => badRequest(`Link with target ${ target } not found`)
+        );
     }
 
     hasLink(target: string): boolean {
@@ -824,6 +855,12 @@ export class LocRequestAggregateRoot {
 
     link(target: string): LocLink | undefined {
         return this.links!.find(link => link.target === target)
+    }
+
+    private mutateLink(target: string, mutator: (link: LocLink) => void) {
+        const link = this.getLinkOrThrow(target);
+        mutator(link);
+        link._toUpdate = true;
     }
 
     preVoid(reason: string) {
@@ -1267,7 +1304,7 @@ interface Submitted {
 
 @Entity("loc_link")
 @Unique([ "requestId", "index" ])
-export class LocLink extends Child implements HasIndex {
+export class LocLink extends Child implements HasIndex, Submitted {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
     requestId?: string;
@@ -1275,14 +1312,8 @@ export class LocLink extends Child implements HasIndex {
     @Column({ name: "index" })
     index?: number;
 
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
-
     @PrimaryColumn({ type: "uuid" })
     target?: string;
-
-    @Column("boolean", { default: false })
-    draft?: boolean;
 
     @Column({ length: 255, nullable: true })
     nature?: string;
@@ -1296,6 +1327,24 @@ export class LocLink extends Child implements HasIndex {
 
     setFee(inclusionFee: bigint) {
         this.inclusionFee = inclusionFee.toString();
+        this._toUpdate = true;
+    }
+
+    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableSupportedAccountId;
+
+    @Column(() => EmbeddableLifecycle, { prefix: "" })
+    lifecycle?: EmbeddableLifecycle
+
+    get status(): ItemStatus | undefined {
+        return this.lifecycle?.status;
+    }
+
+    set status(status: ItemStatus | undefined) {
+        if (!this.lifecycle) {
+            this.lifecycle = EmbeddableLifecycle.from(false);
+        }
+        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
@@ -1506,7 +1555,7 @@ export interface NewUserLocRequestParameters extends NewLocRequestParameters {
     readonly draft: boolean;
 }
 
-export interface NewSofRequestParameters extends NewLocRequestParameters, LinkDescription {
+export interface NewSofRequestParameters extends NewLocRequestParameters, LinkParams {
 }
 
 @injectable()
@@ -1531,7 +1580,7 @@ export class LocRequestFactory {
                 template: "statement_of_facts"
             }
         });
-        request.addLink(params);
+        request.addLink(params, false);
         request.submit();
         return request;
     }

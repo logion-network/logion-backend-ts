@@ -234,7 +234,9 @@ const DATA_LINK_FEES = new Fees({ inclusionFee: 42n });
 const testLink: LinkDescription = {
     target: "507a00a1-7387-44b8-ac4d-fa57ccbf6da5",
     nature: "link-nature",
+    submitter: SUBMITTER,
     fees: DATA_LINK_FEES,
+    status: "ACKNOWLEDGED",
 }
 
 const testMetadataItem: MetadataItemDescription = {

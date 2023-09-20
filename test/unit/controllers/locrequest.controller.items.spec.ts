@@ -203,7 +203,9 @@ describe('LocRequestController - Items -', () => {
             .send({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE })
             .expect(204)
         locRequest.verify(instance => instance.addLink(
-            It.Is<LinkDescription>(item => item.target == SOME_LINK_TARGET && item.nature == SOME_LINK_NATURE)))
+            It.Is<LinkDescription>(item => item.target == SOME_LINK_TARGET && item.nature == SOME_LINK_NATURE),
+            It.IsAny<boolean>()
+        ))
     });
 
     it('deletes a link', async () => {
@@ -219,12 +221,10 @@ describe('LocRequestController - Items -', () => {
     })
 
     it('confirms a link', async () => {
-        const locRequest = mockRequestForLink();
-        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
+        const app = setupApp(LocRequestController, mockModelForConfirmLink);
         await request(app)
             .put(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }/confirm`)
             .expect(204)
-        locRequest.verify(instance => instance.confirmLink(SOME_LINK_TARGET))
     })
 });
 
@@ -443,9 +443,12 @@ function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     request.setup(instance => instance.removeLink(ALICE_ACCOUNT, SOME_LINK_TARGET))
         .returns()
-    request.setup(instance => instance.confirmLink(SOME_LINK_TARGET))
+    request.setup(instance => instance.confirmLink(SOME_LINK_TARGET, ItIsAccount(REQUESTER.address)))
         .returns()
-    request.setup(instance => instance.addLink({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE }))
+    request.setup(instance => instance.addLink(
+        { target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE, submitter: REQUESTER },
+        It.IsAny<boolean>()
+        ))
         .returns()
     return request;
 }
@@ -473,5 +476,14 @@ function mockModelForConfirmMetadata(container: Container) {
     request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: { type: "Polkadot", address: ALICE } } as MetadataItemDescription);
     request.setup(instance => instance.canConfirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<SupportedAccountId>())).returns(true);
     request.setup(instance => instance.confirmMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(ALICE))).returns();
+    mockPolkadotIdentityLoc(repository, false);
+}
+
+function mockModelForConfirmLink(container: Container) {
+    const { request, repository } = buildMocksForUpdate(container);
+    setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
+    request.setup(instance => instance.getLink(SOME_LINK_TARGET)).returns({ submitter: { type: "Polkadot", address: ALICE } } as LinkDescription);
+    request.setup(instance => instance.canConfirmLink(SOME_LINK_TARGET, It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.confirmLink(SOME_LINK_TARGET, ItIsAccount(ALICE))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
