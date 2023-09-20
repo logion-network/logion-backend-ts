@@ -10,6 +10,11 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    Submittable: {
+      /** @description The address of the submitter */
+      submitter?: components["schemas"]["SupportedAccountId"];
+      fees?: components["schemas"]["FeesView"];
+    };
     /**
      * ItemLifecycleView 
      * @description All item's lifecycle attributes
@@ -405,18 +410,15 @@ export interface components {
       hash?: string;
       /** @description The file's nature */
       nature?: string;
-      /** @description The address of the submitter */
-      submitter?: components["schemas"]["SupportedAccountId"];
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
       restrictedDelivery?: boolean;
       /** @description The file's size, in bytes. */
       size?: string;
       /** @description The file's content type (MIME format). */
       contentType?: string;
-      fees?: components["schemas"]["FeesView"];
       /** @description Account from which storage fees were withdrawn. */
       storageFeePaidBy?: string;
-    } & components["schemas"]["ItemLifecycleView"];
+    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
     LocMetadataItemView: {
       /** @description The item's name */
       name?: string;
@@ -424,19 +426,13 @@ export interface components {
       nameHash: string;
       /** @description The item's value */
       value?: string;
-      /** @description The address of the submitter */
-      submitter?: components["schemas"]["SupportedAccountId"];
-      fees?: components["schemas"]["FeesView"];
-    } & components["schemas"]["ItemLifecycleView"];
+    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
     LocLinkView: {
-      /** @description The address of the submitter */
-      submitter?: components["schemas"]["SupportedAccountId"];
       /** @description The link's target */
       target?: string;
       /** @description The link's nature */
       nature?: string;
-      fees?: components["schemas"]["FeesView"];
-    } & components["schemas"]["ItemLifecycleView"];
+    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
     /**
      * LocRequestView 
      * @description An existing LOC Request

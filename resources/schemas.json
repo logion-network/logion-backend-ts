@@ -7,6 +7,18 @@
     "paths": {},
     "components": {
         "schemas": {
+            "Submittable": {
+                "type": "object",
+                "properties": {
+                    "submitter": {
+                        "description": "The address of the submitter",
+                        "$ref": "#/components/schemas/SupportedAccountId"
+                    },
+                    "fees": {
+                        "$ref": "#/components/schemas/FeesView"
+                    }
+                }
+            },
             "ItemLifecycleView": {
                 "type": "object",
                 "properties": {
@@ -705,9 +717,14 @@
             },
             "LocFileView": {
                 "type": "object",
-                "allOf": [{
-                    "$ref": "#/components/schemas/ItemLifecycleView"
-                }],
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ItemLifecycleView"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Submittable"
+                    }
+                ],
                 "properties": {
                     "name": {
                         "type": "string",
@@ -721,10 +738,6 @@
                         "type": "string",
                         "description": "The file's nature"
                     },
-                    "submitter": {
-                        "description": "The address of the submitter",
-                        "$ref": "#/components/schemas/SupportedAccountId"
-                    },
                     "restrictedDelivery": {
                         "type": "boolean",
                         "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
@@ -737,9 +750,6 @@
                         "type": "string",
                         "description": "The file's content type (MIME format)."
                     },
-                    "fees": {
-                        "$ref": "#/components/schemas/FeesView"
-                    },
                     "storageFeePaidBy": {
                         "type": "string",
                         "description": "Account from which storage fees were withdrawn."
@@ -751,9 +761,14 @@
             },
             "LocMetadataItemView": {
                 "type": "object",
-                "allOf": [{
-                    "$ref": "#/components/schemas/ItemLifecycleView"
-                }],
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ItemLifecycleView"
+                    },
+                    {
+                        "$ref": "#/components/schemas/Submittable"
+                    }
+                ],
                 "properties": {
                     "name": {
                         "type": "string",
@@ -766,13 +781,6 @@
                     "value": {
                         "type": "string",
                         "description": "The item's value"
-                    },
-                    "submitter": {
-                        "description": "The address of the submitter",
-                        "$ref": "#/components/schemas/SupportedAccountId"
-                    },
-                    "fees": {
-                        "$ref": "#/components/schemas/FeesView"
                     }
                 },
                 "required": [
@@ -782,14 +790,15 @@
             },
             "LocLinkView": {
                 "type": "object",
-                "allOf": [{
-                    "$ref": "#/components/schemas/ItemLifecycleView"
-                }],
-                "properties": {
-                    "submitter": {
-                        "description": "The address of the submitter",
-                        "$ref": "#/components/schemas/SupportedAccountId"
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/ItemLifecycleView"
                     },
+                    {
+                        "$ref": "#/components/schemas/Submittable"
+                    }
+                ],
+                "properties": {
                     "target": {
                         "type": "string",
                         "description": "The link's target"
@@ -797,9 +806,6 @@
                     "nature": {
                         "type": "string",
                         "description": "The link's nature"
-                    },
-                    "fees": {
-                        "$ref": "#/components/schemas/FeesView"
                     }
                 }
             },
