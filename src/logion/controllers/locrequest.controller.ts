@@ -831,15 +831,14 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/links/:target')
     @Async()
     async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
-        const userCheck = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
-            userCheck.require(user => user.is(request.ownerAddress));
-            request.removeLink(userCheck, target);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            request.removeLink(contributor, target);
         });
     }
     
     static requestLinkReview(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{target}/review-request"].post!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/review-request"].post!;
         operationObject.summary = "Requests a review of the given link";
         operationObject.description = "The authenticated user must be contributor of the LOC.";
         operationObject.responses = getDefaultResponsesWithAnyBody();
@@ -849,7 +848,7 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPost('/:requestId/link/:target/review-request')
+    @HttpPost('/:requestId/links/:target/review-request')
     @Async()
     @SendsResponse()
     async requestLinkReview(_body: any, requestId: string, target: string) {
@@ -868,7 +867,7 @@ export class LocRequestController extends ApiController {
     }
 
     static reviewLink(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{target}/review"].post!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/review"].post!;
         operationObject.summary = "Reviews the given link";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.requestBody = getRequestBody({
@@ -882,7 +881,7 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPost('/:requestId/link/:target/review')
+    @HttpPost('/:requestId/links/:target/review')
     @Async()
     @SendsResponse()
     async reviewLink(view: ReviewItemView, requestId: string, target: string) {
@@ -926,17 +925,17 @@ export class LocRequestController extends ApiController {
     }
 
     static confirmLinkAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/link/{targetHex}/confirm-acknowledged"].put!;
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/confirm-acknowledged"].put!;
         operationObject.summary = "Confirms a link as acknowledged";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, {
             'requestId': "The ID of the LOC",
-            'targetHex': "The item's name hash"
+            'target': "The item's name hash"
         });
     }
 
-    @HttpPut('/:requestId/link/:targetHex/confirm-acknowledged')
+    @HttpPut('/:requestId/links/:target/confirm-acknowledged')
     @Async()
     @SendsResponse()
     async confirmLinkAcknowledged(_body: any, requestId: string, target: string) {

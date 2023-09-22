@@ -101,8 +101,9 @@ export class LocRequestAdapter {
             links: request.getLinks(viewer).map(link => ({
                 target: link.target,
                 nature: link.nature,
-                addedOn: link.addedOn?.toISOString() || undefined,
+                submitter: link.submitter,
                 fees: toFeesView(link.fees),
+                ...toLifecycleView(link),
             })),
             seal: locDescription.seal?.hash ? locDescription.seal.hash.toHex() : undefined,
             company: locDescription.company,
