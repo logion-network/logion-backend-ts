@@ -237,6 +237,8 @@ const testLink: LinkDescription = {
     submitter: SUBMITTER,
     fees: DATA_LINK_FEES,
     status: "ACKNOWLEDGED",
+    acknowledgedByOwnerOn: moment(),
+    acknowledgedByVerifiedIssuerOn: moment(),
 }
 
 const testMetadataItem: MetadataItemDescription = {
@@ -275,7 +277,11 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)
             expect(link.addedOn).toBe(testLink.addedOn?.toISOString())
+            expect(link.submitter).toEqual(SUBMITTER)
             expect(link.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
+            expect(link.status).toBe(testMetadataItem.status)
+            expect(link.acknowledgedByOwnerOn).toBeDefined()
+            expect(link.acknowledgedByVerifiedIssuerOn).toBeDefined()
             const metadataItem = response.body.metadata[0]
             expect(metadataItem.name).toBe(testMetadataItem.name)
             expect(metadataItem.value).toBe(testMetadataItem.value)
