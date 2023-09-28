@@ -66,9 +66,16 @@ interface FileDescriptionMandatoryFields {
 }
 
 export interface FileParams extends FileDescriptionMandatoryFields {
-    readonly cid: string;
-    readonly contentType: string;
+    readonly cid?: string;
+    readonly contentType?: string;
     readonly nature: string;
+}
+
+export interface StoredFile {
+    readonly name: string;
+    readonly size: number;
+    readonly cid?: string;
+    readonly contentType?: string;
 }
 
 export interface FileDescription extends FileDescriptionMandatoryFields, ItemLifecycle {
@@ -119,6 +126,8 @@ export interface VoidInfo {
     readonly reason: string;
     readonly voidedOn: Moment | null;
 }
+
+export type SubmissionType = "MANUAL_BY_USER" | "MANUAL_BY_OWNER" | "DIRECT_BY_REQUESTER"; // "USER" can be Requester or VI.
 
 export class EmbeddableLifecycle {
 
@@ -218,11 +227,20 @@ export class EmbeddableLifecycle {
         }
     }
 
-    static from(alreadyReviewed: boolean) {
+    static fromSubmissionType(submissionType: SubmissionType) {
         const lifecycle = new EmbeddableLifecycle();
-        lifecycle.status = alreadyReviewed ? "REVIEW_ACCEPTED" : "DRAFT";
-        lifecycle.acknowledgedByOwner = alreadyReviewed;
-        lifecycle.acknowledgedByOwnerOn = alreadyReviewed ? moment().toDate() : undefined;
+        lifecycle.status =
+            submissionType === "DIRECT_BY_REQUESTER" ? "PUBLISHED" :
+                submissionType === "MANUAL_BY_OWNER" ? "REVIEW_ACCEPTED" : "DRAFT";
+        lifecycle.acknowledgedByOwner = submissionType === "MANUAL_BY_OWNER";
+        lifecycle.acknowledgedByOwnerOn = submissionType === "MANUAL_BY_OWNER" ? moment().toDate() : undefined;
+        lifecycle.acknowledgedByVerifiedIssuer = false;
+        return lifecycle;
+    }
+
+    static default() {
+        const lifecycle = new EmbeddableLifecycle();
+        lifecycle.acknowledgedByOwner = false;
         lifecycle.acknowledgedByVerifiedIssuer = false;
         return lifecycle;
     }
@@ -384,7 +402,7 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    addFile(fileDescription: FileParams, alreadyReviewed: boolean) {
+    addFile(fileDescription: FileParams, submissionType: SubmissionType) {
         this.ensureEditable();
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
@@ -397,13 +415,23 @@ export class LocRequestAggregateRoot {
         file.hash! = fileDescription.hash.toHex();
         file.cid = fileDescription.cid;
         file.contentType = fileDescription.contentType;
-        file.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
+        file.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
         file.nature = fileDescription.nature;
         file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
+        file.restrictedDelivery = fileDescription.restrictedDelivery;
         file.delivered = [];
         file._toAdd = true;
         this.files!.push(file);
+    }
+
+    updateFileContent(hash: Hash, storedFile: StoredFile) {
+        this.mutateFile(hash, item => {
+            item.name = storedFile.name;
+            item.size = storedFile.size.toString();
+            item.contentType = storedFile.contentType;
+            item.cid = storedFile.cid;
+        });
     }
 
     private ensureEditable() {
@@ -589,7 +617,7 @@ export class LocRequestAggregateRoot {
         return (this.closedOn !== undefined && this.closedOn !== null) ? moment(this.closedOn) : null;
     }
 
-    addMetadataItem(itemDescription: MetadataItemParams, alreadyReviewed: boolean) {
+    addMetadataItem(itemDescription: MetadataItemParams, submissionType: SubmissionType) {
         this.ensureEditable();
         const nameHash = Hash.of(itemDescription.name);
         if (this.hasMetadataItem(nameHash)) {
@@ -602,7 +630,7 @@ export class LocRequestAggregateRoot {
         item.name = itemDescription.name;
         item.nameHash = nameHash;
         item.value = itemDescription.value;
-        item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
+        item.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
@@ -743,7 +771,7 @@ export class LocRequestAggregateRoot {
         return this.toFileDescription(removedFile);
     }
 
-    addLink(itemDescription: LinkParams, alreadyReviewed: boolean) {
+    addLink(itemDescription: LinkParams, submissionType: SubmissionType) {
         this.ensureEditable();
         if (this.hasLink(itemDescription.target)) {
             throw new Error("A link with given target was already added to this LOC");
@@ -754,7 +782,7 @@ export class LocRequestAggregateRoot {
         item.index = this.links!.length;
         item.target = itemDescription.target;
         item.nature = itemDescription.nature
-        item.lifecycle = EmbeddableLifecycle.from(alreadyReviewed);
+        item.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
         item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.links!.push(item);
@@ -1211,7 +1239,7 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.from(false);
+            this.lifecycle = EmbeddableLifecycle.default();
         }
         this.lifecycle.status = status;
         this._toUpdate = true;
@@ -1291,7 +1319,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.from(false);
+            this.lifecycle = EmbeddableLifecycle.default();
         }
         this.lifecycle.status = status;
         this._toUpdate = true;
@@ -1342,7 +1370,7 @@ export class LocLink extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.from(false);
+            this.lifecycle = EmbeddableLifecycle.default();
         }
         this.lifecycle.status = status;
         this._toUpdate = true;
@@ -1551,6 +1579,12 @@ export interface NewLocRequestParameters {
     readonly description: LocRequestDescription;
 }
 
+export interface NewLocParameters extends NewLocRequestParameters {
+    readonly metadata?: MetadataItemParams[];
+    readonly files?: FileParams[];
+    readonly links?: LinkParams[];
+}
+
 export interface NewUserLocRequestParameters extends NewLocRequestParameters {
     readonly draft: boolean;
 }
@@ -1568,47 +1602,40 @@ export class LocRequestFactory {
     }
 
     async newLOLocRequest(params: NewLocRequestParameters): Promise<LocRequestAggregateRoot> {
-        return await this.newLocRequest({ ...params, draft: false }, false);
+        this.ensureCorrectRequester(params.description, true);
+        return await this.createLocRequest({ ...params, draft: false }, "MANUAL_BY_OWNER");
     }
 
     async newSofRequest(params: NewSofRequestParameters): Promise<LocRequestAggregateRoot> {
-        const request = await this.newLocRequest({
+        this.ensureCorrectRequester(params.description, false);
+        const request = await this.createLocRequest({
             ...params,
             draft: true,
             description: {
                 ...params.description,
                 template: "statement_of_facts"
             }
-        });
-        request.addLink(params, false);
+        }, "MANUAL_BY_USER");
+        request.addLink(params, "MANUAL_BY_USER");
         request.submit();
         return request;
     }
 
-    async newLocRequest(params: NewUserLocRequestParameters, isUserRequest: boolean = true): Promise<LocRequestAggregateRoot> {
-        const { description } = params;
-        this.ensureCorrectRequester(description)
-        this.ensureUserIdentityPresent(description, isUserRequest)
+    async newLoc(params: NewLocParameters): Promise<LocRequestAggregateRoot> {
+        this.ensureCorrectRequester(params.description, false);
+        const request = await this.createLocRequest({ ...params, draft: false }, "DIRECT_BY_REQUESTER")
+        params.metadata?.forEach(item => request.addMetadataItem(item, "DIRECT_BY_REQUESTER"))
+        params.files?.forEach(item => request.addFile(item, "DIRECT_BY_REQUESTER"))
+        params.links?.forEach(item => request.addLink(item, "DIRECT_BY_REQUESTER"))
+        return request;
+    }
 
-        const request = new LocRequestAggregateRoot();
-        request.id = params.id;
+    async newLocRequest(params: NewUserLocRequestParameters): Promise<LocRequestAggregateRoot> {
+        this.ensureCorrectRequester(params.description, false);
+        return this.createLocRequest(params, "MANUAL_BY_USER");
+    }
 
-        const nonDraftStatus = isUserRequest ? "REVIEW_PENDING" : "OPEN";
-        request.status = params.draft ? "DRAFT" : nonDraftStatus;
-
-        if (description.requesterAddress) {
-            request.requesterAddress = description.requesterAddress.address;
-            request.requesterAddressType = description.requesterAddress.type;
-        }
-        if (description.requesterIdentityLoc) {
-            const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
-            request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
-            request.requesterIdentityLocId = description.requesterIdentityLoc;
-        }
-        request.ownerAddress = description.ownerAddress;
-        request.description = description.description;
-        request.locType = description.locType;
-        request.createdOn = description.createdOn;
+    private populateIdentity(request: LocRequestAggregateRoot, description: LocRequestDescription) {
         const userIdentity = description.userIdentity || {
             firstName: "",
             lastName: "",
@@ -1624,14 +1651,38 @@ export class LocRequestFactory {
             country: ""
         }
         const company = description.company;
+        const personalInfo: PersonalInfo = { userIdentity, userPostalAddress, company }
+        const seal = this.sealService.seal(personalInfo, LATEST_SEAL_VERSION);
+        request.updateSealedPersonalInfo(personalInfo, seal);
+    }
+
+    private async createLocRequest(params: NewUserLocRequestParameters, submissionType: SubmissionType): Promise<LocRequestAggregateRoot> {
+        const { description } = params;
+
+        const request = new LocRequestAggregateRoot();
+        request.id = params.id;
+
+        const nonDraftStatus = submissionType === "MANUAL_BY_USER" ?
+            "REVIEW_PENDING" :
+            "OPEN";
+        request.status = params.draft ? "DRAFT" : nonDraftStatus;
+
+        if (description.requesterAddress) {
+            request.requesterAddress = description.requesterAddress.address;
+            request.requesterAddressType = description.requesterAddress.type;
+        }
+        if (description.requesterIdentityLoc) {
+            const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
+            request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
+            request.requesterIdentityLocId = description.requesterIdentityLoc;
+        }
+        request.ownerAddress = description.ownerAddress;
+        request.description = description.description;
+        request.locType = description.locType;
+        request.createdOn = description.createdOn;
         if (request.locType === 'Identity') {
-            const personalInfo: PersonalInfo = { userIdentity, userPostalAddress, company }
-            const seal = this.sealService.seal(personalInfo, LATEST_SEAL_VERSION);
-            request.updateSealedPersonalInfo(personalInfo, seal);
-        } else {
-            request.updateUserIdentity(userIdentity);
-            request.updateUserPostalAddress(userPostalAddress);
-            request.company = company;
+            this.ensureUserIdentityPresent(description)
+            this.populateIdentity(request, description);
         }
         request.files = [];
         request.metadata = [];
@@ -1646,7 +1697,10 @@ export class LocRequestFactory {
         return request;
     }
 
-    private ensureCorrectRequester(description: LocRequestDescription) {
+    private ensureCorrectRequester(description: LocRequestDescription, allowRequesterIdentityLoc: boolean) {
+        if (!description.requesterAddress && !allowRequesterIdentityLoc) {
+            throw new Error("UnexpectedRequester: Identity LOC cannot have a LOC as requester")
+        }
         switch (description.locType) {
             case 'Identity':
                 if (description.requesterIdentityLoc) {
@@ -1663,17 +1717,15 @@ export class LocRequestFactory {
         }
     }
 
-    private ensureUserIdentityPresent(description: LocRequestDescription, isUserRequest: boolean) {
-        if (description.locType === 'Identity' && (!description.requesterAddress || isUserRequest)) {
-            const userIdentity = description.userIdentity;
-            if (!userIdentity
-                || !userIdentity.firstName
-                || !userIdentity.lastName
-                || !userIdentity.email
-                || !userIdentity.phoneNumber
-            ) {
-                throw new Error("Logion Identity LOC request must contain first name, last name, email and phone number.")
-            }
+    private ensureUserIdentityPresent(description: LocRequestDescription) {
+        const userIdentity = description.userIdentity;
+        if (!userIdentity
+            || !userIdentity.firstName
+            || !userIdentity.lastName
+            || !userIdentity.email
+            || !userIdentity.phoneNumber
+        ) {
+            throw new Error("Logion Identity LOC request must contain first name, last name, email and phone number.")
         }
     }
 }

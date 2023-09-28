@@ -15,7 +15,7 @@ import {
     MetadataItemParams,
     ItemStatus,
     FileParams,
-    LinkParams
+    LinkParams, SubmissionType, LocMetadataItem
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -26,7 +26,7 @@ import {
     PublicSeal,
     LATEST_SEAL_VERSION
 } from "../../../src/logion/services/seal.service.js";
-import { UUID } from "@logion/node-api";
+import { UUID, MetadataItem } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
@@ -70,11 +70,35 @@ describe("LocRequestFactory", () => {
         thenStatusIs("REVIEW_PENDING");
     });
 
+    it("creates Transaction LOC", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+        givenLocDescription(description);
+        const metadata: MetadataItemParams[] = [
+            { name: "data01", value: "value01", submitter: REQUESTER_ADDRESS },
+            { name: "data02", value: "value02", submitter: REQUESTER_ADDRESS },
+        ];
+        const files: FileParams[] = [
+            { name: "some-name-01", size: 0, hash: Hash.of("content01"), nature: "some-nature", restrictedDelivery: true, submitter: REQUESTER_ADDRESS },
+            { name: "some-name-02", size: 0, hash: Hash.of("content02"), nature: "some-nature", restrictedDelivery: false, submitter: REQUESTER_ADDRESS },
+            { name: "some-name-03", size: 0, hash: Hash.of("content03"), nature: "some-nature", restrictedDelivery: true, submitter: REQUESTER_ADDRESS },
+        ];
+        const links: LinkParams[] = [
+            { target: "3eb0334a-3524-4eb0-bf44-e44176b72d3e", nature: "some linked loc", submitter: REQUESTER_ADDRESS }
+        ];
+        await whenCreatingLoc(metadata, files, links);
+        thenRequestCreatedWithDescription(description, "OPEN");
+        thenLocCreatedWithMetadata(metadata, "PUBLISHED");
+        thenLocCreatedWithFiles(files, "PUBLISHED");
+        thenLocCreatedWithLinks(links, "PUBLISHED");
+        thenStatusIs("OPEN");
+    });
+
     it("creates an open Transaction LOC with requester address", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
         thenRequestCreatedWithDescription(description, "OPEN");
     });
 
@@ -86,7 +110,7 @@ describe("LocRequestFactory", () => {
         requesterIdentityLoc.setup(instance => instance.id).returns(requesterIdentityLocId);
         repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
         thenRequestCreatedWithDescription(description, "OPEN")
     });
 
@@ -94,14 +118,14 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("fails to create an open Transaction LOC with no requester", async () => {
         givenRequestId(uuid());
         const description = createDescription('Transaction');
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("creates Collection LOC request", async () => {
@@ -116,7 +140,7 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
         thenRequestCreatedWithDescription(description, "OPEN");
     });
 
@@ -128,7 +152,7 @@ describe("LocRequestFactory", () => {
         requesterIdentityLoc.setup(instance => instance.id).returns(requesterIdentityLocId);
         repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
         thenRequestCreatedWithDescription(description, "OPEN");
     });
 
@@ -136,22 +160,28 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Collection', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("fails to create an open Collection LOC with no requester", async () => {
         givenRequestId(uuid());
         const description = createDescription('Collection');
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
-    it("creates Identity LOC", async () => {
+    it("fails to create Identity LOC with undefined user identity", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
-        thenRequestCreatedWithDescription(description, "OPEN");
+        await expectAsyncToThrow(whenLOCreatingOpenLoc, "Logion Identity LOC request must contain first name, last name, email and phone number.");
+    });
+
+    it("fails to create Identity LOC with incomplete user identity", async () => {
+        givenRequestId(uuid());
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, { firstName: "Scott"} as UserIdentity, undefined, PUBLIC_SEAL);
+        givenLocDescription(description);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc, "Logion Identity LOC request must contain first name, last name, email and phone number.");
     });
 
     it("creates Identity LOC request", async () => {
@@ -174,9 +204,9 @@ describe("LocRequestFactory", () => {
 
     it("creates an open Identity LOC with requester address", async () => {
         givenRequestId(uuid());
-        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, undefined, undefined, PUBLIC_SEAL);
+        const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", undefined, userIdentity, undefined, PUBLIC_SEAL);
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
         thenRequestCreatedWithDescription(description, "OPEN");
     });
 
@@ -184,28 +214,28 @@ describe("LocRequestFactory", () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', undefined, uuid().toString());
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("fails to create an open Identity LOC with 2 requesters", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW", uuid().toString());
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("creates an open Identity LOC with no requester", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity', undefined, undefined, userIdentity);
         givenLocDescription(description);
-        await whenCreatingOpenLoc();
+        await whenLOCreatingOpenLoc();
     });
 
     it("fails to create an open Identity LOC with no requester when identity is missing", async () => {
         givenRequestId(uuid());
         const description = createDescription('Identity');
         givenLocDescription(description);
-        await expectAsyncToThrow(whenCreatingOpenLoc);
+        await expectAsyncToThrow(whenLOCreatingOpenLoc);
     });
 
     it("creates SOF LOC request", async () => {
@@ -428,7 +458,7 @@ describe("LocRequestAggregateRoot", () => {
             name,
             submitter: SUBMITTER,
             value: "value",
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
         request.confirmMetadataItem(nameHash, SUBMITTER);
@@ -447,7 +477,7 @@ describe("LocRequestAggregateRoot", () => {
             name,
             submitter: VERIFIED_ISSUER,
             value: "value",
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
         request.confirmMetadataItem(nameHash, SUBMITTER);
@@ -471,7 +501,7 @@ describe("LocRequestAggregateRoot", () => {
             name,
             submitter: VERIFIED_ISSUER,
             value: "value",
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
         request.confirmMetadataItem(nameHash, SUBMITTER);
@@ -494,7 +524,7 @@ describe("LocRequestAggregateRoot", () => {
             target: target,
             nature: "SomeLinkedLoc",
             submitter: SUBMITTER,
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
         request.confirmLink(target, SUBMITTER);
@@ -512,7 +542,7 @@ describe("LocRequestAggregateRoot", () => {
             target: target,
             nature: "SomeLinkedLoc",
             submitter: VERIFIED_ISSUER,
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
         request.confirmLink(target, SUBMITTER);
@@ -535,7 +565,7 @@ describe("LocRequestAggregateRoot", () => {
             target: target,
             nature: "SomeLinkedLoc",
             submitter: VERIFIED_ISSUER,
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
         request.confirmLink(target, SUBMITTER);
@@ -563,7 +593,7 @@ describe("LocRequestAggregateRoot", () => {
             nature: "nature",
             restrictedDelivery: false,
             size: 4,
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestFileReview(hash);
         request.acceptFile(hash);
         request.confirmFile(hash, SUBMITTER);
@@ -587,7 +617,7 @@ describe("LocRequestAggregateRoot", () => {
             nature: "nature",
             restrictedDelivery: false,
             size: 4,
-        }, false);
+        }, "MANUAL_BY_USER");
         request.requestFileReview(hash);
         request.acceptFile(hash);
         request.confirmFile(hash, SUBMITTER);
@@ -628,7 +658,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        expect(() => whenAddingMetadata(items, false)).toThrowError();
+        expect(() => whenAddingMetadata(items, "MANUAL_BY_USER")).toThrowError();
     });
 
     it("adds and exposes metadata", () => {
@@ -645,7 +675,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingMetadata(metadata, false);
+        whenAddingMetadata(metadata, "MANUAL_BY_USER");
         thenExposesMetadata(metadata);
     });
 
@@ -665,7 +695,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingMetadata(items, false);
+        whenAddingMetadata(items, "MANUAL_BY_USER");
         whenRemovingMetadataItem(remover, Hash.of(items[1].name))
 
         const newItems: MetadataItemParams[] = [
@@ -694,7 +724,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 value: "value-1",
                 submitter: SUBMITTER,
             }
-        ], true)
+        ], "MANUAL_BY_OWNER")
         whenConfirmingMetadataItem(nameHash, SUBMITTER)
         thenMetadataItemStatusIs(nameHash, "PUBLISHED")
         thenMetadataItemRequiresUpdate(nameHash)
@@ -709,7 +739,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 value: "value-1",
                 submitter: OWNER_ACCOUNT,
             }
-        ], false)
+        ], "MANUAL_BY_USER")
         thenMetadataIsVisibleToRequester(name);
     })
 
@@ -722,7 +752,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
                 value: "value-1",
                 submitter: SUBMITTER,
             }
-        ], true)
+        ], "MANUAL_BY_OWNER")
         thenMetadataIsVisibleToRequester(name);
     })
 })
@@ -743,7 +773,7 @@ describe("LocRequestAggregateRoot (links)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        expect(() => whenAddingLinks(links, false)).toThrowError();
+        expect(() => whenAddingLinks(links, "MANUAL_BY_USER")).toThrowError();
     });
 
     it("adds and exposes links", () => {
@@ -760,7 +790,7 @@ describe("LocRequestAggregateRoot (links)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingLinks(links, false);
+        whenAddingLinks(links, "MANUAL_BY_USER");
         thenExposesLinks(links);
     });
 
@@ -778,7 +808,7 @@ describe("LocRequestAggregateRoot (links)", () => {
                 submitter: SUBMITTER,
             }
         ];
-        whenAddingLinks(links, true);
+        whenAddingLinks(links, "MANUAL_BY_OWNER");
         whenRemovingLink(OWNER_ACCOUNT, "target-1")
 
         const newLinks: LinkParams[] = [
@@ -808,7 +838,7 @@ describe("LocRequestAggregateRoot (links)", () => {
                 submitter: OWNER_ACCOUNT,
             }
         ];
-        whenAddingLinks(links, true);
+        whenAddingLinks(links, "MANUAL_BY_OWNER");
         expect(() => whenRemovingLink(SUBMITTER, "target-1")).toThrowError();
     });
 
@@ -821,7 +851,7 @@ describe("LocRequestAggregateRoot (links)", () => {
                 nature: "nature-1",
                 submitter: SUBMITTER,
             }
-        ], true);
+        ], "MANUAL_BY_OWNER");
         whenConfirmingLink(target, SUBMITTER);
         thenLinkStatusIs(target, "PUBLISHED");
         thenLinkRequiresUpdate(target)
@@ -854,7 +884,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files, false);
+        whenAddingFiles(files, "MANUAL_BY_USER");
         thenExposesFiles(files);
         thenExposesFileByHash(hash1, files[0]);
         thenExposesFileByHash(hash2, files[1]);
@@ -886,7 +916,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        expect(() => whenAddingFiles(files, false)).toThrowError();
+        expect(() => whenAddingFiles(files, "MANUAL_BY_USER")).toThrowError();
     });
 
     it("submitter removes previously added files", () => testRemovesFile(SUBMITTER));
@@ -915,7 +945,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files, false);
+        whenAddingFiles(files, "MANUAL_BY_USER");
         whenRemovingFile(remover, hash1);
         thenReturnedRemovedFile(files[0]);
 
@@ -953,7 +983,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 restrictedDelivery: false,
                 size: 123,
             }
-        ], true);
+        ], "MANUAL_BY_OWNER");
         whenConfirmingFile(hash, SUBMITTER)
         thenFileStatusIs(hash, "PUBLISHED")
         thenFileRequiresUpdate(hash)
@@ -973,7 +1003,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 restrictedDelivery: false,
                 size: 123,
             }
-        ], true);
+        ], "MANUAL_BY_OWNER");
         thenFileIsVisibleToRequester(hash)
     })
 
@@ -991,7 +1021,7 @@ describe("LocRequestAggregateRoot (files)", () => {
                 restrictedDelivery: false,
                 size: 123,
             }
-        ], true);
+        ], "MANUAL_BY_OWNER");
         thenFileIsVisibleToRequester(hash)
     })
 
@@ -1095,7 +1125,7 @@ describe("LocRequestAggregateRoot (files)", () => {
             restrictedDelivery: false,
             size: 123,
         };
-        whenAddingFiles([ file ], false);
+        whenAddingFiles([ file ], "MANUAL_BY_USER");
         whenUpdatingFile(hash1, false);
         thenExposesFileByHash(hash1, { ...file, restrictedDelivery: false });
         whenUpdatingFile(hash1, true);
@@ -1115,7 +1145,7 @@ describe("LocRequestAggregateRoot (files)", () => {
             restrictedDelivery: false,
             size: 123,
         };
-        whenAddingFiles([ file ], false);
+        whenAddingFiles([ file ], "MANUAL_BY_USER");
         expect(() => {
             whenUpdatingFile(hash1, true);
         }).toThrowError("Can change restricted delivery of file only on Collection LOC.");
@@ -1137,7 +1167,7 @@ function givenClosedCollectionLocWithFile(hash: Hash) {
         submitter: OWNER_ACCOUNT,
         restrictedDelivery: true,
         size: 123,
-    }, true);
+    }, "MANUAL_BY_OWNER");
     request.close(moment());
 }
 
@@ -1151,7 +1181,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             name: dataName,
             value: "value-1",
             submitter: SUBMITTER,
-        }], true)
+        }], "MANUAL_BY_OWNER")
         const addedOn = moment();
         whenSettingMetadataItemAddedOn(dataNameHash, addedOn);
         thenMetadataItemStatusIs(dataNameHash, "PUBLISHED")
@@ -1171,7 +1201,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
             target: "target-1",
             nature: "nature-1",
             submitter: SUBMITTER,
-        }], true)
+        }], "MANUAL_BY_OWNER")
         const addedOn = moment();
         whenSettingLinkAddedOn("target-1", addedOn);
         thenLinkStatusIs("target-1", "PUBLISHED");
@@ -1207,7 +1237,7 @@ describe("LocRequestAggregateRoot (synchronization)", () => {
                 size: 123,
             }
         ];
-        whenAddingFiles(files, true);
+        whenAddingFiles(files, "MANUAL_BY_OWNER");
         const addedOn = moment();
         whenSettingFileAddedOn(hash1, addedOn);
         thenFileStatusIs(hash1, "PUBLISHED")
@@ -1242,7 +1272,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             submitter: SUBMITTER,
             restrictedDelivery: false,
             size: 123,
-        }, false);
+        }, "MANUAL_BY_USER");
         expect(request.getFiles(SUBMITTER).length).toBe(1);
 
         const itemName = "Some name";
@@ -1251,7 +1281,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             name: itemName,
             value: "Some value",
             submitter: SUBMITTER,
-        }, false);
+        }, "MANUAL_BY_USER");
         expect(request.getMetadataItems(SUBMITTER).length).toBe(1);
 
         const requesterLinkTarget = new UUID().toString();
@@ -1259,7 +1289,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             target: requesterLinkTarget,
             nature: "Some nature",
             submitter: SUBMITTER,
-        }, false);
+        }, "MANUAL_BY_USER");
 
         // User requests review
         request.submit();
@@ -1331,7 +1361,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             submitter: OWNER_ACCOUNT,
             restrictedDelivery: false,
             size: 123,
-        }, true);
+        }, "MANUAL_BY_OWNER");
         request.confirmFile(hash2, OWNER_ACCOUNT);
         request.setFileAddedOn(hash2, moment()); // Sync
 
@@ -1340,7 +1370,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             nature: "Some link nature",
             target: target,
             submitter: SUBMITTER,
-        }, true);
+        }, "MANUAL_BY_OWNER");
         request.confirmLink(target, SUBMITTER);
         request.setLinkAddedOn(target, moment()); // Sync
 
@@ -1350,7 +1380,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             name: someOtherName,
             value: "Some other value",
             submitter: OWNER_ACCOUNT,
-        }, true);
+        }, "MANUAL_BY_OWNER");
         request.confirmMetadataItem(someOtherNameHash, OWNER_ACCOUNT);
         request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
 
@@ -1439,6 +1469,18 @@ async function whenCreatingLocRequest(draft: boolean) {
     });
 }
 
+async function whenCreatingLoc(metadata: MetadataItemParams[], files: FileParams[], links: LinkParams[]) {
+    const sealService = new Mock<PersonalInfoSealService>();
+    const factory = new LocRequestFactory(repository.object(), sealService.object());
+    request = await factory.newLoc({
+        id: requestId,
+        description: locDescription,
+        metadata,
+        files,
+        links,
+    });
+}
+
 async function whenCreatingSofRequest(target: string, nature: string) {
     const sealService = new Mock<PersonalInfoSealService>();
     const factory = new LocRequestFactory(repository.object(), sealService.object());
@@ -1451,7 +1493,7 @@ async function whenCreatingSofRequest(target: string, nature: string) {
     });
 }
 
-async function whenCreatingOpenLoc() {
+async function whenLOCreatingOpenLoc() {
     const sealService = new Mock<PersonalInfoSealService>();
     sealService
         .setup(instance => instance.seal(It.IsAny(), LATEST_SEAL_VERSION))
@@ -1472,12 +1514,61 @@ function thenRequestCreatedWithDescription(description: LocRequestDescription, e
     expect(request.decisionOn).toBeUndefined();
 }
 
+function thenLocCreatedWithMetadata(metadata: MetadataItemParams[], status: ItemStatus) {
+    expect(request.metadata?.length).toEqual(metadata.length);
+    for (const param of metadata) {
+        const nameHash = Hash.of(param.name);
+        const metadataItem = request.getMetadataItem(nameHash);
+        expect(metadataItem.nameHash).toEqual(nameHash);
+        expect(metadataItem.name).toEqual(param.name);
+        expect(metadataItem.value).toEqual(param.value);
+        expect(metadataItem.submitter.type).toEqual(param.submitter.type);
+        expect(metadataItem.submitter.address).toEqual(param.submitter.address);
+        expect(metadataItem.status).toEqual(status);
+        expect(metadataItem.acknowledgedByOwnerOn).toBeUndefined();
+        expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeUndefined();
+    }
+}
+
+function thenLocCreatedWithFiles(files: FileParams[], status: ItemStatus) {
+    expect(request.files?.length).toEqual(files.length);
+    for (const param of files) {
+        const file = request.getFile(param.hash);
+        expect(file.hash).toEqual(param.hash);
+        expect(file.name).toEqual(param.name);
+        expect(file.nature).toEqual(param.nature);
+        expect(file.restrictedDelivery).toEqual(param.restrictedDelivery);
+        expect(file.cid).toBeUndefined();
+        expect(file.contentType).toBeUndefined();
+        expect(file.size).toEqual(param.size)
+        expect(file.submitter.type).toEqual(param.submitter.type);
+        expect(file.submitter.address).toEqual(param.submitter.address);
+        expect(file.status).toEqual(status);
+        expect(file.acknowledgedByOwnerOn).toBeUndefined();
+        expect(file.acknowledgedByVerifiedIssuerOn).toBeUndefined();
+    }
+}
+
+function thenLocCreatedWithLinks(links: LinkParams[], status: ItemStatus) {
+    expect(request.links?.length).toEqual(links.length);
+    for (const param of links) {
+        const link = request.getLink(param.target);
+        expect(link.target).toEqual(param.target);
+        expect(link.nature).toEqual(param.nature);
+        expect(link.submitter.type).toEqual(param.submitter.type);
+        expect(link.submitter.address).toEqual(param.submitter.address);
+        expect(link.status).toEqual(status);
+        expect(link.acknowledgedByOwnerOn).toBeUndefined();
+        expect(link.acknowledgedByVerifiedIssuerOn).toBeUndefined();
+    }
+}
+
 function whenUpdatingFile(hash: Hash, restrictedDelivery: boolean) {
     request.setFileRestrictedDelivery({ hash, restrictedDelivery });
 }
 
-function whenAddingFiles(files: FileParams[], alreadyReviewed: boolean) {
-    files.forEach(file => request.addFile(file, alreadyReviewed));
+function whenAddingFiles(files: FileParams[], submissionType: SubmissionType) {
+    files.forEach(file => request.addFile(file, submissionType));
 }
 
 function thenExposesFiles(expectedFiles: FileParams[]) {
@@ -1504,8 +1595,8 @@ function thenHasFile(hash: Hash) {
     expect(request.hasFile(hash)).toBe(true);
 }
 
-function whenAddingMetadata(metadata: MetadataItemParams[], alreadyReviewed: boolean) {
-    metadata.forEach(item => request.addMetadataItem(item, alreadyReviewed));
+function whenAddingMetadata(metadata: MetadataItemParams[], submissionType: SubmissionType) {
+    metadata.forEach(item => request.addMetadataItem(item, submissionType));
 }
 
 function thenExposesMetadata(expectedMetadata: Partial<MetadataItemDescription>[]) {
@@ -1641,8 +1732,8 @@ function thenHasExpectedFileIndices() {
     }
 }
 
-function whenAddingLinks(links: LinkParams[], alreadyReviewed: boolean) {
-    links.forEach(link => request.addLink(link, alreadyReviewed));
+function whenAddingLinks(links: LinkParams[], submissionType: SubmissionType) {
+    links.forEach(link => request.addLink(link, submissionType));
 }
 
 function thenExposesLinks(expectedLinks: Partial<LinkDescription>[]) {
@@ -1715,11 +1806,15 @@ function whenVoiding(reason: string, voidingDate: Moment) {
     request.voidLoc(voidingDate);
 }
 
-async function expectAsyncToThrow(func: () => Promise<void>) {
+async function expectAsyncToThrow(func: () => Promise<void>, message?: string) {
     try {
         await func();
         expect(true).toBe(false);
-    } catch(_) {}
+    } catch(e) {
+        if (message) {
+            expect(`${ e }`).toEqual(`Error: ${ message }`)
+        }
+    }
 }
 
 function thenStatusIs(expectedStatus: LocRequestStatus) {
