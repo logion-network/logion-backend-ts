@@ -16,7 +16,8 @@ import {
     MetadataItemParams,
     FileParams,
     StoredFile,
-    LinkParams
+    LinkParams,
+    SubmissionType
 } from "../model/locrequest.model.js";
 import {
     getRequestBody,
@@ -72,7 +73,6 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.rejectLocRequest(spec);
     LocRequestController.acceptLocRequest(spec);
     LocRequestController.addFile(spec);
-    LocRequestController.uploadFile(spec);
     LocRequestController.downloadFile(spec);
     LocRequestController.deleteFile(spec);
     LocRequestController.requestFileReview(spec);
@@ -266,7 +266,6 @@ export class LocRequestController extends ApiController {
             throw badRequest("Unable to find a valid (closed) identity LOC.");
         }
         const metadata = openLocView.metadata?.map(item => this.toMetadata(item, requesterAddress));
-        const files = openLocView.files?.map(item => this.toFile(item, requesterAddress));
         const links = openLocView.links ?
             await Promise.all(openLocView.links.map(item => this.toLink(item, requesterAddress))) :
             undefined;
@@ -275,7 +274,6 @@ export class LocRequestController extends ApiController {
             id: uuid(),
             description,
             metadata,
-            files,
             links,
         })
         await this.locRequestService.addNewRequest(request);
@@ -599,54 +597,18 @@ export class LocRequestController extends ApiController {
             }
             const fileParams = this.toFile(addFileView, contributor, storedFile)
             await this.locRequestService.update(requestId, async request => {
-                const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
+                let submissionType: SubmissionType;
+                if (accountEquals(contributor, request.getRequester()) && addFileView.direct === "true") {
+                    submissionType = "DIRECT_BY_REQUESTER";
+                } else {
+                    submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
+                }
                 request.addFile(fileParams, submissionType);
             });
         } catch(e) {
             await this.fileStorageService.deleteFile({ cid });
             throw e;
         }
-    }
-
-    static uploadFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/upload"].put!;
-        operationObject.summary = "Adds the actual file content to an existing LocFile entry";
-        operationObject.description = "The authenticated user must be the submitter of the file";
-        operationObject.responses = getDefaultResponsesNoContent();
-        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
-    }
-
-    @HttpPut('/:requestId/files/:hashHex/upload')
-    @Async()
-    @SendsResponse()
-    async uploadFile(_body: any, requestId: string, hashHex: string): Promise<void> {
-        const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const hash = Hash.fromHex(hashHex);
-        const file = request.getFile(hash);
-        const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-        if (!accountEquals(file.submitter, contributor)) {
-            throw forbidden("Authenticated user is not allowed to upload this file");
-        }
-        if(file.contentType) {
-            throw badRequest("File has already been uploaded");
-        }
-        const uploadedFile = await getUploadedFile(this.request, hash);
-        const cid = await this.fileStorageService.importFile(uploadedFile.tempFilePath);
-        try {
-            const storedFile: StoredFile = {
-                name: uploadedFile.name,
-                size: uploadedFile.size,
-                contentType: uploadedFile.mimetype,
-                cid
-            }
-            await this.locRequestService.update(requestId, async request => {
-                request.updateFileContent(hash, storedFile);
-            });
-        } catch(e) {
-            await this.fileStorageService.deleteFile({ cid });
-            throw e;
-        }
-        this.response.sendStatus(204);
     }
 
     toFile(addFileView: AddFileView, submitter: SupportedAccountId, storedFile?: StoredFile): FileParams {

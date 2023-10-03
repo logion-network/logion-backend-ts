@@ -78,18 +78,12 @@ describe("LocRequestFactory", () => {
             { name: "data01", value: "value01", submitter: REQUESTER_ADDRESS },
             { name: "data02", value: "value02", submitter: REQUESTER_ADDRESS },
         ];
-        const files: FileParams[] = [
-            { name: "some-name-01", size: 0, hash: Hash.of("content01"), nature: "some-nature", restrictedDelivery: true, submitter: REQUESTER_ADDRESS },
-            { name: "some-name-02", size: 0, hash: Hash.of("content02"), nature: "some-nature", restrictedDelivery: false, submitter: REQUESTER_ADDRESS },
-            { name: "some-name-03", size: 0, hash: Hash.of("content03"), nature: "some-nature", restrictedDelivery: true, submitter: REQUESTER_ADDRESS },
-        ];
         const links: LinkParams[] = [
             { target: "3eb0334a-3524-4eb0-bf44-e44176b72d3e", nature: "some linked loc", submitter: REQUESTER_ADDRESS }
         ];
-        await whenCreatingLoc(metadata, files, links);
+        await whenCreatingLoc(metadata, links);
         thenRequestCreatedWithDescription(description, "OPEN");
         thenLocCreatedWithMetadata(metadata, "PUBLISHED");
-        thenLocCreatedWithFiles(files, "PUBLISHED");
         thenLocCreatedWithLinks(links, "PUBLISHED");
         thenStatusIs("OPEN");
     });
@@ -1469,14 +1463,13 @@ async function whenCreatingLocRequest(draft: boolean) {
     });
 }
 
-async function whenCreatingLoc(metadata: MetadataItemParams[], files: FileParams[], links: LinkParams[]) {
+async function whenCreatingLoc(metadata: MetadataItemParams[], links: LinkParams[]) {
     const sealService = new Mock<PersonalInfoSealService>();
     const factory = new LocRequestFactory(repository.object(), sealService.object());
     request = await factory.newLoc({
         id: requestId,
         description: locDescription,
         metadata,
-        files,
         links,
     });
 }

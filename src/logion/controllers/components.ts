@@ -391,8 +391,6 @@ export interface components {
       /** @description The metadata attached to this LOC */
       metadata?: (components["schemas"]["AddMetadataView"])[];
       /** @description The metadata attached to this LOC */
-      files?: (components["schemas"]["AddFileView"])[];
-      /** @description The metadata attached to this LOC */
       links?: (components["schemas"]["AddLinkView"])[];
     } & components["schemas"]["BaseLocView"];
     /**
@@ -672,6 +670,8 @@ export interface components {
       nature?: string;
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
       restrictedDelivery?: boolean;
+      /** @description true if the file is directly published (i.e. review by owner is bypassed). */
+      direct?: string;
     };
     AddLinkView: {
       /** @description The link's target */

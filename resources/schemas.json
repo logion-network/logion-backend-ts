@@ -701,13 +701,6 @@
                             "$ref": "#/components/schemas/AddMetadataView"
                         }
                     },
-                    "files": {
-                        "type": "array",
-                        "description": "The metadata attached to this LOC",
-                        "items": {
-                            "$ref": "#/components/schemas/AddFileView"
-                        }
-                    },
                     "links": {
                         "type": "array",
                         "description": "The metadata attached to this LOC",
@@ -1228,6 +1221,10 @@
                     "restrictedDelivery": {
                         "type": "boolean",
                         "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
+                    },
+                    "direct": {
+                        "type": "string",
+                        "description": "true if the file is directly published (i.e. review by owner is bypassed)."
                     }
                 }
             },

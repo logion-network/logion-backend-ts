@@ -43,14 +43,14 @@ describe('LocRequestController - Items -', () => {
         mockOwner(locRequest, ALICE_ACCOUNT);
         mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
-        await testAddFileSuccess(app, locRequest);
+        await testAddFileSuccess(app, locRequest, "MANUAL_BY_OWNER");
     })
 
     it('adds file to loc - verified issuer', async () => {
         const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const locRequest = new Mock<LocRequestAggregateRoot>();
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'SELECTED'), authenticatedUserMock);
-        await testAddFileSuccess(app, locRequest);
+        await testAddFileSuccess(app, locRequest, "MANUAL_BY_USER");
     })
 
     it('fails to add file to loc with wrong hash', async () => {
@@ -247,20 +247,21 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
 
 const REQUESTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
-async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
+async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, submissionType: SubmissionType) {
     const buffer = Buffer.from(SOME_DATA);
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/files`)
         .field({
             nature: "some nature",
-            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
+            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+            direct: "false",
         })
         .attach('file', buffer, {
             filename: FILE_NAME,
             contentType: 'text/plain',
         })
         .expect(200);
-    locRequest.verify(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>()));
+    locRequest.verify(instance => instance.addFile(It.IsAny(), It.Is<SubmissionType>(instance => instance === submissionType)));
 }
 
 async function testAddFileForbidden(app: Express) {

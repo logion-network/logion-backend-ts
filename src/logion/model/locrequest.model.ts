@@ -403,7 +403,7 @@ export class LocRequestAggregateRoot {
     }
 
     addFile(fileDescription: FileParams, submissionType: SubmissionType) {
-        this.ensureEditable();
+        this.ensureEditable(submissionType);
         if (this.hasFile(fileDescription.hash)) {
             throw new Error("A file with given hash was already added to this LOC");
         }
@@ -434,9 +434,12 @@ export class LocRequestAggregateRoot {
         });
     }
 
-    private ensureEditable() {
+    private ensureEditable(submissionType?: SubmissionType) {
         if (!(this.status === "DRAFT" || this.status === "OPEN")) {
             throw new Error("LOC is not editable");
+        }
+        if (submissionType === "DIRECT_BY_REQUESTER" && this.status !== "OPEN") {
+            throw new Error("Item directly submitted by requester is only possible on OPEN LOC.")
         }
     }
 
@@ -618,7 +621,7 @@ export class LocRequestAggregateRoot {
     }
 
     addMetadataItem(itemDescription: MetadataItemParams, submissionType: SubmissionType) {
-        this.ensureEditable();
+        this.ensureEditable(submissionType);
         const nameHash = Hash.of(itemDescription.name);
         if (this.hasMetadataItem(nameHash)) {
             throw new Error("A metadata item with given nameHash was already added to this LOC");
@@ -772,7 +775,7 @@ export class LocRequestAggregateRoot {
     }
 
     addLink(itemDescription: LinkParams, submissionType: SubmissionType) {
-        this.ensureEditable();
+        this.ensureEditable(submissionType);
         if (this.hasLink(itemDescription.target)) {
             throw new Error("A link with given target was already added to this LOC");
         }
@@ -1581,7 +1584,6 @@ export interface NewLocRequestParameters {
 
 export interface NewLocParameters extends NewLocRequestParameters {
     readonly metadata?: MetadataItemParams[];
-    readonly files?: FileParams[];
     readonly links?: LinkParams[];
 }
 
@@ -1625,7 +1627,6 @@ export class LocRequestFactory {
         this.ensureCorrectRequester(params.description, false);
         const request = await this.createLocRequest({ ...params, draft: false }, "DIRECT_BY_REQUESTER")
         params.metadata?.forEach(item => request.addMetadataItem(item, "DIRECT_BY_REQUESTER"))
-        params.files?.forEach(item => request.addFile(item, "DIRECT_BY_REQUESTER"))
         params.links?.forEach(item => request.addLink(item, "DIRECT_BY_REQUESTER"))
         return request;
     }
