@@ -238,8 +238,9 @@ export class EmbeddableLifecycle {
         return lifecycle;
     }
 
-    static default() {
+    static default(status: ItemStatus  | undefined) {
         const lifecycle = new EmbeddableLifecycle();
+        lifecycle.status = status;
         lifecycle.acknowledgedByOwner = false;
         lifecycle.acknowledgedByVerifiedIssuer = false;
         return lifecycle;
@@ -1242,9 +1243,10 @@ export class LocFile extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.default();
+            this.lifecycle = EmbeddableLifecycle.default(status);
+        } else {
+            this.lifecycle.status = status;
         }
-        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
@@ -1322,9 +1324,10 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.default();
+            this.lifecycle = EmbeddableLifecycle.default(status);
+        } else {
+            this.lifecycle.status = status;
         }
-        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
@@ -1373,9 +1376,10 @@ export class LocLink extends Child implements HasIndex, Submitted {
 
     set status(status: ItemStatus | undefined) {
         if (!this.lifecycle) {
-            this.lifecycle = EmbeddableLifecycle.default();
+            this.lifecycle = EmbeddableLifecycle.default(status);
+        } else {
+            this.lifecycle.status = status;
         }
-        this.lifecycle.status = status;
         this._toUpdate = true;
     }
 }
