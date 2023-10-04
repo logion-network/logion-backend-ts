@@ -10,7 +10,7 @@ import { Mock, It } from "moq.ts";
 import {
     LocRequestAggregateRoot,
     LinkDescription,
-    MetadataItemDescription, FileDescription,
+    MetadataItemDescription, FileDescription, SubmissionType,
 } from "../../../src/logion/model/locrequest.model.js";
 import { fileExists } from "../../helpers/filehelper.js";
 import {
@@ -43,14 +43,14 @@ describe('LocRequestController - Items -', () => {
         mockOwner(locRequest, ALICE_ACCOUNT);
         mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
-        await testAddFileSuccess(app, locRequest);
+        await testAddFileSuccess(app, locRequest, "MANUAL_BY_OWNER");
     })
 
     it('adds file to loc - verified issuer', async () => {
         const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const locRequest = new Mock<LocRequestAggregateRoot>();
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'SELECTED'), authenticatedUserMock);
-        await testAddFileSuccess(app, locRequest);
+        await testAddFileSuccess(app, locRequest, "MANUAL_BY_USER");
     })
 
     it('fails to add file to loc with wrong hash', async () => {
@@ -149,7 +149,7 @@ describe('LocRequestController - Items -', () => {
     it('adds a metadata item', async () => {
         const locRequest = mockRequestForMetadata();
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
-        await testAddMetadataSuccess(app, locRequest, true);
+        await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_OWNER");
     });
 
     it('adds a metadata item - verified issuer', async () => {
@@ -158,7 +158,7 @@ describe('LocRequestController - Items -', () => {
         mockOwner(locRequest, ALICE_ACCOUNT);
         mockRequester(locRequest, REQUESTER);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock)
-        await testAddMetadataSuccess(app, locRequest, false);
+        await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_USER");
     });
 
     it('fails to add a metadata item when not contributor', async () => {
@@ -247,20 +247,21 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
 
 const REQUESTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
-async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
+async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, submissionType: SubmissionType) {
     const buffer = Buffer.from(SOME_DATA);
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/files`)
         .field({
             nature: "some nature",
-            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee"
+            hash: "0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee",
+            direct: "false",
         })
         .attach('file', buffer, {
             filename: FILE_NAME,
             contentType: 'text/plain',
         })
         .expect(200);
-    locRequest.verify(instance => instance.addFile(It.IsAny(), It.IsAny<boolean>()));
+    locRequest.verify(instance => instance.addFile(It.IsAny(), It.Is<SubmissionType>(instance => instance === submissionType)));
 }
 
 async function testAddFileForbidden(app: Express) {
@@ -404,18 +405,18 @@ function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
         name: SOME_DATA_NAME,
         value: SOME_DATA_VALUE,
         submitter: REQUESTER
-    }, false))
+    }, "MANUAL_BY_USER"))
         .returns()
     return request;
 }
 
-async function testAddMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, alreadyReviewed: boolean) {
+async function testAddMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, submissionType: SubmissionType) {
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
         .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
         .expect(204)
     locRequest.verify(instance => instance.addMetadataItem(
-        It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE), alreadyReviewed));
+        It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE), submissionType));
 }
 
 async function testAddMetadataForbidden(app: Express) {

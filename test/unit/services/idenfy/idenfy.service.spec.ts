@@ -77,7 +77,7 @@ describe("EnabledIdenfyService", () => {
                 && file.nature === EXPECTED_FILES[fileType].nature
                 && file.name === EXPECTED_FILES[fileType].name
                 && accountEquals(file.submitter, LOC_OWNER_ACCOUNT)
-            ), false));
+            ), "MANUAL_BY_USER"));
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));
     });

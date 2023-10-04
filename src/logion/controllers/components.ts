@@ -364,17 +364,10 @@ export interface components {
       address: string;
     };
     /**
-     * CreateLocRequestView 
-     * @description A LOC Request to create
+     * BaseLocView 
+     * @description Base LOC attributes
      */
-    CreateLocRequestView: {
-      /** @description The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC) */
-      requesterAddress?: components["schemas"]["SupportedAccountId"];
-      /**
-       * Format: uuid 
-       * @description The ID of the LOC identifying the requester
-       */
-      requesterIdentityLoc?: string;
+    BaseLocView: {
       /** @description The SS58 address of the legal officer that will own the LOC upon acceptance */
       ownerAddress?: string;
       /** @description A description of the LOC */
@@ -387,17 +380,36 @@ export interface components {
       userPostalAddress?: components["schemas"]["PostalAddressView"];
       /** @description If the user requesting an Identity LOC is representing a company, its legal entity name */
       company?: string;
-      /** @description LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined) */
-      draft?: boolean;
       /** @description The LOC's template or undefined */
       template?: string;
-      /** @description The ID of the sponsorship to use */
-      sponsorshipId?: string;
       /** @description The value fee associated with this collection LOC */
       valueFee?: string;
       /** @description The legal fee associated with this LOC */
       legalFee?: string;
     };
+    OpenLocView: {
+      /** @description The metadata attached to this LOC */
+      metadata?: (components["schemas"]["AddMetadataView"])[];
+      /** @description The metadata attached to this LOC */
+      links?: (components["schemas"]["AddLinkView"])[];
+    } & components["schemas"]["BaseLocView"];
+    /**
+     * CreateLocRequestView 
+     * @description A LOC Request to create
+     */
+    CreateLocRequestView: {
+      /** @description The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC) */
+      requesterAddress?: components["schemas"]["SupportedAccountId"];
+      /**
+       * Format: uuid 
+       * @description The ID of the LOC identifying the requester
+       */
+      requesterIdentityLoc?: string;
+      /** @description LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined) */
+      draft?: boolean;
+      /** @description The ID of the sponsorship to use */
+      sponsorshipId?: string;
+    } & components["schemas"]["BaseLocView"];
     /**
      * @description The request's status 
      * @enum {string}
@@ -658,6 +670,8 @@ export interface components {
       nature?: string;
       /** @description true if the file can be downloaded by collection item owner. Applicable only for collection. */
       restrictedDelivery?: boolean;
+      /** @description true if the file is directly published (i.e. review by owner is bypassed). */
+      direct?: string;
     };
     AddLinkView: {
       /** @description The link's target */

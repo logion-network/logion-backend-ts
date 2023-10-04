@@ -377,7 +377,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         target: uuid(),
         nature: "link nature",
         submitter: SUBMITTER,
-    }, false)
+    }, "MANUAL_BY_USER")
     locRequest.files = []
     locRequest.addFile({
         name: "fileName",
@@ -388,13 +388,13 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         submitter: SUBMITTER,
         restrictedDelivery: false,
         size: 789,
-    }, false)
+    }, "MANUAL_BY_USER")
     locRequest.metadata = []
     locRequest.addMetadataItem({
         name: "itemName",
         value: "something valuable",
         submitter: SUBMITTER,
-    }, false)
+    }, "MANUAL_BY_USER")
     return locRequest;
 }
 

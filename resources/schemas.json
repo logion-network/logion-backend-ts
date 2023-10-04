@@ -643,18 +643,9 @@
                     "address"
                 ]
             },
-            "CreateLocRequestView": {
+            "BaseLocView": {
                 "type": "object",
                 "properties": {
-                    "requesterAddress": {
-                        "description": "The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC)",
-                        "$ref": "#/components/schemas/SupportedAccountId"
-                    },
-                    "requesterIdentityLoc": {
-                        "type": "string",
-                        "format": "uuid",
-                        "description": "The ID of the LOC identifying the requester"
-                    },
                     "ownerAddress": {
                         "type": "string",
                         "description": "The SS58 address of the legal officer that will own the LOC upon acceptance"
@@ -679,17 +670,9 @@
                         "type": "string",
                         "description": "If the user requesting an Identity LOC is representing a company, its legal entity name"
                     },
-                    "draft": {
-                        "type": "boolean",
-                        "description": "LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined)"
-                    },
                     "template": {
                         "type": "string",
                         "description": "The LOC's template or undefined"
-                    },
-                    "sponsorshipId": {
-                        "type": "string",
-                        "description": "The ID of the sponsorship to use"
                     },
                     "valueFee": {
                         "type": "string",
@@ -698,6 +681,59 @@
                     "legalFee": {
                         "type": "string",
                         "description": "The legal fee associated with this LOC"
+                    }
+                },
+                "title": "BaseLocView",
+                "description": "Base LOC attributes"
+            },
+            "OpenLocView": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/BaseLocView"
+                    }
+                ],
+                "properties": {
+                    "metadata": {
+                        "type": "array",
+                        "description": "The metadata attached to this LOC",
+                        "items": {
+                            "$ref": "#/components/schemas/AddMetadataView"
+                        }
+                    },
+                    "links": {
+                        "type": "array",
+                        "description": "The metadata attached to this LOC",
+                        "items": {
+                            "$ref": "#/components/schemas/AddLinkView"
+                        }
+                    }
+                }
+            },
+            "CreateLocRequestView": {
+                "type": "object",
+                "allOf": [
+                    {
+                        "$ref": "#/components/schemas/BaseLocView"
+                    }
+                ],
+                "properties": {
+                    "requesterAddress": {
+                        "description": "The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC)",
+                        "$ref": "#/components/schemas/SupportedAccountId"
+                    },
+                    "requesterIdentityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
+                    },
+                    "draft": {
+                        "type": "boolean",
+                        "description": "LOC will be created with initial status DRAFT if true, REQUESTED otherwise (false or undefined)"
+                    },
+                    "sponsorshipId": {
+                        "type": "string",
+                        "description": "The ID of the sponsorship to use"
                     }
                 },
                 "title": "CreateLocRequestView",
@@ -1185,6 +1221,10 @@
                     "restrictedDelivery": {
                         "type": "boolean",
                         "description": "true if the file can be downloaded by collection item owner. Applicable only for collection."
+                    },
+                    "direct": {
+                        "type": "string",
+                        "description": "true if the file is directly published (i.e. review by owner is bypassed)."
                     }
                 }
             },

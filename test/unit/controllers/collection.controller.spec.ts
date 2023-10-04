@@ -573,7 +573,7 @@ function mockModel(
         collectionLoc.files = [];
     } else if (hasFile && fileType === "Collection") {
         const collectionFile = new LocFile();
-        collectionFile.lifecycle = EmbeddableLifecycle.from(true);
+        collectionFile.lifecycle = EmbeddableLifecycle.fromSubmissionType("MANUAL_BY_OWNER");
         collectionFile.hash = SOME_DATA_HASH.toHex();
         if(fileAlreadyUploaded) {
             collectionFile.cid = CID;

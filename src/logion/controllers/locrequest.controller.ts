@@ -12,7 +12,12 @@ import {
     LocRequestAggregateRoot,
     FetchLocRequestsSpecification,
     LocRequestDecision,
-    FileDescription
+    FileDescription,
+    MetadataItemParams,
+    FileParams,
+    StoredFile,
+    LinkParams,
+    SubmissionType
 } from "../model/locrequest.model.js";
 import {
     getRequestBody,
@@ -61,6 +66,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     setControllerTag(spec, /^\/api\/loc-request.*/, tagName);
 
     LocRequestController.createLocRequest(spec);
+    LocRequestController.createOpenLoc(spec);
     LocRequestController.fetchRequests(spec);
     LocRequestController.getLocRequest(spec);
     LocRequestController.getPublicLoc(spec);
@@ -109,6 +115,7 @@ type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 type ReviewItemView = components["schemas"]["ReviewItemView"];
+type OpenLocView = components["schemas"]["OpenLocView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -213,6 +220,64 @@ export class LocRequestController extends ApiController {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
         return this.locRequestAdapter.toView(request, authenticatedUser, { userIdentity, userPostalAddress, identityLocId });
+    }
+
+    static createOpenLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/open"].post!;
+        operationObject.summary = "Creates a new LOC";
+        operationObject.description = "The authenticated user must be either the requester";
+        operationObject.requestBody = getRequestBody({
+            description: "LOC creation data",
+            view: "OpenLocView",
+        });
+        operationObject.responses = getDefaultResponses("LocRequestView");
+    }
+
+    @HttpPost("/open")
+    @Async()
+    async createOpenLoc(openLocView: OpenLocView): Promise<LocRequestView> {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
+        const locType = requireDefined(openLocView.locType);
+        const requesterAddress = polkadotAccount(authenticatedUser.address);
+        const valueFee = openLocView.valueFee !== undefined ? BigInt(openLocView.valueFee) : undefined;
+        if (valueFee === undefined && locType === "Collection") {
+            throw badRequest("Value fee must be set for collection LOCs");
+        }
+        const legalFee = openLocView.legalFee !== undefined ? BigInt(openLocView.legalFee) : undefined;
+        const description: LocRequestDescription = {
+            requesterAddress,
+            ownerAddress,
+            description: requireDefined(openLocView.description),
+            locType,
+            createdOn: moment().toISOString(),
+            userIdentity: locType === "Identity" ? this.fromUserIdentityView(openLocView.userIdentity) : undefined,
+            userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(openLocView.userPostalAddress) : undefined,
+            company: openLocView.company,
+            template: openLocView.template,
+            valueFee,
+            legalFee,
+        }
+        const validIdLoc = await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress);
+        if (validIdLoc && locType === "Identity") {
+            throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
+        }
+        if (!validIdLoc && locType !== "Identity") {
+            throw badRequest("Unable to find a valid (closed) identity LOC.");
+        }
+        const metadata = openLocView.metadata?.map(item => this.toMetadata(item, requesterAddress));
+        const links = openLocView.links ?
+            await Promise.all(openLocView.links.map(item => this.toLink(item, requesterAddress))) :
+            undefined;
+
+        const request = await this.locRequestFactory.newLoc({
+            id: uuid(),
+            description,
+            metadata,
+            links,
+        })
+        await this.locRequestService.addNewRequest(request);
+        return this.locRequestAdapter.toView(request, authenticatedUser);
     }
 
     private async existsValidIdentityLoc(requesterAddress: SupportedAccountId | undefined, ownerAddress: string): Promise<boolean> {
@@ -517,31 +582,47 @@ export class LocRequestController extends ApiController {
     async addFile(addFileView: AddFileView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-
         const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
         if(request.hasFile(hash)) {
             throw new Error("File already present");
         }
         const file = await getUploadedFile(this.request, hash);
         const cid = await this.fileStorageService.importFile(file.tempFilePath);
-
         try {
+            const storedFile: StoredFile = {
+                name: file.name,
+                size: file.size,
+                contentType: file.mimetype,
+                cid
+            }
+            const fileParams = this.toFile(addFileView, contributor, storedFile)
             await this.locRequestService.update(requestId, async request => {
-                const alreadyReviewed = accountEquals(contributor, request.getOwner());
-                request.addFile({
-                    name: file.name,
-                    contentType: file.mimetype,
-                    hash,
-                    cid,
-                    nature: addFileView.nature || "",
-                    submitter: contributor,
-                    restrictedDelivery: addFileView.restrictedDelivery || false,
-                    size: file.size,
-                }, alreadyReviewed);
+                let submissionType: SubmissionType;
+                if (accountEquals(contributor, request.getRequester()) && addFileView.direct === "true") {
+                    submissionType = "DIRECT_BY_REQUESTER";
+                } else {
+                    submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
+                }
+                request.addFile(fileParams, submissionType);
             });
         } catch(e) {
             await this.fileStorageService.deleteFile({ cid });
             throw e;
+        }
+    }
+
+    toFile(addFileView: AddFileView, submitter: SupportedAccountId, storedFile?: StoredFile): FileParams {
+        const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
+        const file = storedFile ? storedFile : {
+            name: "not-yet-uploaded",
+            size: 0,
+        };
+        return {
+            hash,
+            nature: addFileView.nature || "",
+            submitter,
+            restrictedDelivery: addFileView.restrictedDelivery || false,
+            ...file,
         }
     }
 
@@ -804,17 +885,23 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
-        const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            const alreadyReviewed = accountEquals(contributor, request.getOwner());
-            request.addLink({
-                target: targetRequest.id!,
-                nature: addLinkView.nature || "",
-                submitter: contributor,
-            }, alreadyReviewed);
+            const linkParams = await this.toLink(addLinkView, contributor);
+            const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
+            request.addLink(linkParams, submissionType);
         });
         this.response.sendStatus(204);
+    }
+
+    async toLink(addLinkView: AddLinkView, submitter: SupportedAccountId): Promise<LinkParams> {
+        // Note: this check (LOC exists in local backend) is stricter than the one done on-chain (LOC exists on chain)
+        const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
+        return {
+            target: targetRequest.id!,
+            nature: addLinkView.nature || "",
+            submitter,
+        }
     }
 
     static deleteLink(spec: OpenAPIV3.Document) {
@@ -962,14 +1049,18 @@ export class LocRequestController extends ApiController {
     @Async()
     @SendsResponse()
     async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
-        const name = requireLength(addMetadataView, "name", 3, 255);
-        const value = requireLength(addMetadataView, "value", 1, 4096);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            const alreadyReviewed = accountEquals(contributor, request.getOwner());
-            request.addMetadataItem({ name, value, submitter: contributor }, alreadyReviewed);
+            const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
+            request.addMetadataItem(this.toMetadata(addMetadataView, contributor), submissionType);
         });
         this.response.sendStatus(204);
+    }
+
+    toMetadata(addMetadataView: AddMetadataView, submitter: SupportedAccountId): MetadataItemParams {
+        const name = requireLength(addMetadataView, "name", 3, 255);
+        const value = requireLength(addMetadataView, "value", 1, 4096);
+        return { name, value, submitter }
     }
 
     static deleteMetadata(spec: OpenAPIV3.Document) {

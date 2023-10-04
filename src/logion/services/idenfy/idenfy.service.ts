@@ -153,7 +153,7 @@ export class EnabledIdenfyService extends IdenfyService {
         await this.locRequestService.update(json.clientId, async request => {
             request.updateIdenfyVerification(json, raw.toString());
             for(const file of files) {
-                request.addFile(file, false);
+                request.addFile(file, "MANUAL_BY_USER");
             }   
         });
     }
