@@ -320,20 +320,20 @@ export class LocSynchronizer {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const hash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['hash']));
         const contributor = polkadotAccount(requireDefined(extrinsic.signer));
-        await this.mutateLoc(locId, async loc => loc.confirmFileAcknowledged(hash, contributor, timestamp));
+        await this.mutateLoc(locId, async loc => loc.preAcknowledgeFile(hash, contributor, timestamp));
     }
 
     private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const nameHash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['name']));
         const contributor = polkadotAccount(requireDefined(extrinsic.signer));
-        await this.mutateLoc(locId, async loc => loc.confirmMetadataItemAcknowledged(nameHash, contributor, timestamp));
+        await this.mutateLoc(locId, async loc => loc.preAcknowledgeMetadataItem(nameHash, contributor, timestamp));
     }
 
     private async confirmAcknowledgedLink(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const target = extractUuid('target', extrinsic.call.args);
         const contributor = polkadotAccount(requireDefined(extrinsic.signer));
-        await this.mutateLoc(locId, async loc => loc.confirmLinkAcknowledged(target, contributor, timestamp));
+        await this.mutateLoc(locId, async loc => loc.preAcknowledgeLink(target, contributor, timestamp));
     }
 }

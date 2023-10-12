@@ -179,15 +179,15 @@ export class EmbeddableLifecycle {
         this.reviewedOn = moment().toDate();
     }
 
-    confirm(isAcknowledged: boolean) {
+    prePublishOrAcknowledge(isAcknowledged: boolean) {
         const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
         if (this.status !== "REVIEW_ACCEPTED" && this.status !== acknowledgedOrPublished) {
-            throw badRequest(`Cannot confirm item with status ${ this.status }`);
+            throw badRequest(`Cannot pre-publish/-acknowledge item with status ${ this.status }`);
         }
         this.status = acknowledgedOrPublished;
     }
 
-    confirmAcknowledged(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
+    preAcknowledge(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
         if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
         }
@@ -463,23 +463,23 @@ export class LocRequestAggregateRoot {
         this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmFile(hash: Hash, contributor: SupportedAccountId) {
-        if(!this.canConfirmFile(hash, contributor)) {
+    prePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPrePublishOrAcknowledgeFile(hash, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateFile(hash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateFile(hash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
     isOwner(account?: SupportedAccountId) {
         return accountEquals(account, this.getOwner());
     }
 
-    canConfirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
         const file = this.getFileOrThrow(hash);
-        return this.canConfirmAcknowledged(file, contributor);
+        return this.canPreAcknowledge(file, contributor);
     }
 
-    private canConfirmAcknowledged(submitted: Submitted, contributor: SupportedAccountId): boolean {
+    private canPreAcknowledge(submitted: Submitted, contributor: SupportedAccountId): boolean {
         const owner = this.getOwner();
         if (accountEquals(contributor, owner)) {
             return true;
@@ -488,20 +488,20 @@ export class LocRequestAggregateRoot {
         return this.isVerifiedIssuer(submitter) && accountEquals(contributor, submitter);
     }
 
-    confirmFileAcknowledged(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
-        this.mutateFile(hash, file => file.lifecycle!.confirmAcknowledged(
+    preAcknowledgeFile(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        this.mutateFile(hash, file => file.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(file.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
     }
 
-    canConfirmFile(hash: Hash, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
         const file = this.getFileOrThrow(hash);
-        return this.canConfirm(file, contributor);
+        return this.canPrePublishOrAcknowledge(file, contributor);
     }
 
-    private canConfirm(submitted: Submitted, contributor: SupportedAccountId): boolean {
+    private canPrePublishOrAcknowledge(submitted: Submitted, contributor: SupportedAccountId): boolean {
         const submitter = submitted.submitter?.toSupportedAccountId();
         const owner = this.getOwner();
         if (submitter?.type !== "Polkadot" && accountEquals(owner, contributor)) {
@@ -702,21 +702,21 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.reject(reason));
     }
 
-    confirmMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
-        if(!this.canConfirmMetadataItem(nameHash, contributor)) {
+    prePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPrePublishOrAcknowledgeMetadataItem(nameHash, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirm(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
-    canConfirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
         const metadata = this.getMetadataOrThrow(nameHash);
-        return this.canConfirmAcknowledged(metadata, contributor);
+        return this.canPreAcknowledge(metadata, contributor);
     }
 
-    canConfirmMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
         const metadata = this.getMetadataOrThrow(nameHash);
-        return this.canConfirm(metadata, contributor);
+        return this.canPrePublishOrAcknowledge(metadata, contributor);
     }
 
     getMetadataOrThrow(nameHash: Hash) {
@@ -726,8 +726,8 @@ export class LocRequestAggregateRoot {
         );
     }
 
-    confirmMetadataItemAcknowledged(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
-        this.mutateMetadataItem(nameHash, item => item.lifecycle!.confirmAcknowledged(
+    preAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
@@ -849,29 +849,29 @@ export class LocRequestAggregateRoot {
         this.mutateLink(target, item => item.lifecycle!.reject(reason));
     }
 
-    confirmLink(target: string, contributor: SupportedAccountId) {
-        if (!this.canConfirmLink(target, contributor)) {
+    prePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+        if (!this.canPrePublishOrAcknowledgeLink(target, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateLink(target, link => link.lifecycle!.confirm(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
+        this.mutateLink(target, link => link.lifecycle!.prePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
     }
 
-    confirmLinkAcknowledged(target: string, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
-        this.mutateLink(target, link => link.lifecycle!.confirmAcknowledged(
+    preAcknowledgeLink(target: string, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        this.mutateLink(target, link => link.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(link.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
     }
 
-    canConfirmLink(target: string, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
         const link = this.getLinkOrThrow(target);
-        return this.canConfirm(link, contributor);
+        return this.canPrePublishOrAcknowledge(link, contributor);
     }
 
-    canConfirmLinkAcknowledged(target: string, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
         const link = this.getLinkOrThrow(target);
-        return this.canConfirmAcknowledged(link, contributor);
+        return this.canPreAcknowledge(link, contributor);
     }
 
     getLinkOrThrow(target: string) {

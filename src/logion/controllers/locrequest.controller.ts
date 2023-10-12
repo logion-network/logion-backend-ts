@@ -77,8 +77,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.deleteFile(spec);
     LocRequestController.requestFileReview(spec);
     LocRequestController.reviewFile(spec);
-    LocRequestController.confirmFile(spec);
-    LocRequestController.confirmFileAcknowledged(spec);
+    LocRequestController.prePublishOrAcknowledgeFile(spec);
+    LocRequestController.preAcknowledgeFile(spec);
     LocRequestController.openLoc(spec);
     LocRequestController.closeLoc(spec);
     LocRequestController.voidLoc(spec);
@@ -88,12 +88,12 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.reviewMetadata(spec);
     LocRequestController.requestLinkReview(spec);
     LocRequestController.reviewLink(spec);
-    LocRequestController.confirmLink(spec);
-    LocRequestController.confirmLinkAcknowledged(spec);
+    LocRequestController.prePublishOrAcknowledgeLink(spec);
+    LocRequestController.preAcknowledgeLink(spec);
     LocRequestController.addMetadata(spec);
     LocRequestController.deleteMetadata(spec);
-    LocRequestController.confirmMetadata(spec);
-    LocRequestController.confirmMetadataAcknowledged(spec);
+    LocRequestController.prePublishOrAcknowledgeMetadataItem(spec);
+    LocRequestController.preAcknowledgeMetadataItem(spec);
     LocRequestController.createSofRequest(spec);
     LocRequestController.submitLocRequest(spec);
     LocRequestController.cancelLocRequest(spec);
@@ -755,8 +755,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmFile(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/confirm"].put!;
+    static prePublishOrAcknowledgeFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/pre-publish-ack"].put!;
         operationObject.summary = "Confirms a file of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a file is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -766,15 +766,15 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/files/:hashHex/confirm')
+    @HttpPut('/:requestId/files/:hashHex/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async confirmFile(_body: any, requestId: string, hashHex: string) {
+    async prePublishOrAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            if(request.canConfirmFile(hash, contributor)) {
-                request.confirmFile(hash, contributor);
+            if(request.canPrePublishOrAcknowledgeFile(hash, contributor)) {
+                request.prePublishOrAcknowledgeFile(hash, contributor);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -782,8 +782,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmFileAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/confirm-acknowledged"].put!;
+    static preAcknowledgeFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/pre-publish-ack"].put!;
         operationObject.summary = "Confirms a file as acknowledged";
         operationObject.description = "The authenticated user must be the owner or the submitter";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -793,17 +793,17 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/files/:hashHex/confirm-acknowledged')
+    @HttpPut('/:requestId/files/:hashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async confirmFileAcknowledged(_body: any, requestId: string, hashHex: string) {
+    async preAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            if(!request.canConfirmFileAcknowledged(hash, contributor)) {
+            if(!request.canPreAcknowledgeFile(hash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
-                request.confirmFileAcknowledged(hash, contributor);
+                request.preAcknowledgeFile(hash, contributor);
             }
         });
         this.response.sendStatus(204);
@@ -985,8 +985,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmLink(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/confirm"].put!;
+    static prePublishOrAcknowledgeLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/pre-publish-ack"].put!;
         operationObject.summary = "Confirms a link of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a link is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -996,14 +996,14 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/links/:target/confirm')
+    @HttpPut('/:requestId/links/:target/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async confirmLink(_body: any, requestId: string, target: string) {
+    async prePublishOrAcknowledgeLink(_body: any, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            if (request.canConfirmLink(target, contributor)) {
-                request.confirmLink(target, contributor);
+            if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
+                request.prePublishOrAcknowledgeLink(target, contributor);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -1011,8 +1011,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmLinkAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/confirm-acknowledged"].put!;
+    static preAcknowledgeLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/pre-ack"].put!;
         operationObject.summary = "Confirms a link as acknowledged";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -1022,16 +1022,16 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/links/:target/confirm-acknowledged')
+    @HttpPut('/:requestId/links/:target/pre-ack')
     @Async()
     @SendsResponse()
-    async confirmLinkAcknowledged(_body: any, requestId: string, target: string) {
+    async preAcknowledgeLink(_body: any, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            if(!request.canConfirmLinkAcknowledged(target, contributor)) {
+            if(!request.canPreAcknowledgeLink(target, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
-                request.confirmLinkAcknowledged(target, contributor);
+                request.preAcknowledgeLink(target, contributor);
             }
         });
         this.response.sendStatus(204);
@@ -1145,8 +1145,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmMetadata(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/confirm"].put!;
+    static prePublishOrAcknowledgeMetadataItem(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/pre-publish-ack"].put!;
         operationObject.summary = "Confirms a metadata item of the LOC";
         operationObject.description = "The authenticated user must be the owner of the LOC. Once a metadata item is confirmed, it cannot be deleted anymore.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -1156,15 +1156,15 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/metadata/:nameHash/confirm')
+    @HttpPut('/:requestId/metadata/:nameHash/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async confirmMetadata(_body: any, requestId: string, nameHash: string) {
+    async prePublishOrAcknowledgeMetadataItem(_body: any, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const hash = Hash.fromHex(nameHash);
-            if(request.canConfirmMetadataItem(hash, contributor)) {
-                request.confirmMetadataItem(hash, contributor);
+            if(request.canPrePublishOrAcknowledgeMetadataItem(hash, contributor)) {
+                request.prePublishOrAcknowledgeMetadataItem(hash, contributor);
             } else {
                 throw unauthorized("Contributor cannot confirm");
             }
@@ -1172,8 +1172,8 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    static confirmMetadataAcknowledged(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHashHex}/confirm-acknowledged"].put!;
+    static preAcknowledgeMetadataItem(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHashHex}/pre-ack"].put!;
         operationObject.summary = "Confirms a metadata item as acknowledged";
         operationObject.description = "The authenticated user must be the owner of the LOC.";
         operationObject.responses = getDefaultResponsesNoContent();
@@ -1183,17 +1183,17 @@ export class LocRequestController extends ApiController {
         });
     }
 
-    @HttpPut('/:requestId/metadata/:nameHashHex/confirm-acknowledged')
+    @HttpPut('/:requestId/metadata/:nameHashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async confirmMetadataAcknowledged(_body: any, requestId: string, nameHashHex: string) {
+    async preAcknowledgeMetadataItem(_body: any, requestId: string, nameHashHex: string) {
         const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
-            if(!request.canConfirmMetadataItemAcknowledged(nameHash, contributor)) {
+            if(!request.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
-                request.confirmMetadataItemAcknowledged(nameHash, contributor);
+                request.preAcknowledgeMetadataItem(nameHash, contributor);
             }
         });
         this.response.sendStatus(204);
