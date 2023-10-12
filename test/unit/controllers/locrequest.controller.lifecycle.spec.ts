@@ -16,7 +16,7 @@ import {
     testData,
     testDataWithType,
     userIdentities,
-    REQUESTER_ADDRESS, ETHEREUM_REQUESTER
+    REQUESTER_ADDRESS,
 } from "./locrequest.controller.shared.js";
 import { BOB } from "../../helpers/addresses.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";

@@ -455,9 +455,9 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash, SUBMITTER);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
 
-        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -474,14 +474,14 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash, SUBMITTER);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
 
-        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
 
-        request.confirmMetadataItemAcknowledged(nameHash, VERIFIED_ISSUER, moment());
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -498,14 +498,14 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestMetadataItemReview(nameHash);
         request.acceptMetadataItem(nameHash);
-        request.confirmMetadataItem(nameHash, SUBMITTER);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
 
-        request.confirmMetadataItemAcknowledged(nameHash, VERIFIED_ISSUER, moment());
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
 
-        request.confirmMetadataItemAcknowledged(nameHash, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -521,9 +521,9 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
-        request.confirmLink(target, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
 
-        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -539,14 +539,14 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
-        request.confirmLink(target, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
 
-        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
 
-        request.confirmLinkAcknowledged(target, VERIFIED_ISSUER, moment());
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -562,14 +562,14 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestLinkReview(target);
         request.acceptLink(target);
-        request.confirmLink(target, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
 
-        request.confirmLinkAcknowledged(target, VERIFIED_ISSUER, moment());
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
 
-        request.confirmLinkAcknowledged(target, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
@@ -590,9 +590,9 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestFileReview(hash);
         request.acceptFile(hash);
-        request.confirmFile(hash, SUBMITTER);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
 
-        request.confirmFileAcknowledged(hash, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
 
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
@@ -614,14 +614,14 @@ describe("LocRequestAggregateRoot", () => {
         }, "MANUAL_BY_USER");
         request.requestFileReview(hash);
         request.acceptFile(hash);
-        request.confirmFile(hash, SUBMITTER);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
 
-        request.confirmFileAcknowledged(hash, VERIFIED_ISSUER, moment());
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER, moment());
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
         expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
 
-        request.confirmFileAcknowledged(hash, OWNER_ACCOUNT, moment());
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
         expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
         expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
     });
@@ -1333,17 +1333,17 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("OPEN");
 
         // User publishes items
-        request.confirmFile(fileHash, SUBMITTER);
+        request.prePublishOrAcknowledgeFile(fileHash, SUBMITTER);
         request.setFileAddedOn(fileHash, moment()); // Sync
-        request.confirmFileAcknowledged(fileHash, SUBMITTER);
+        request.preAcknowledgeFile(fileHash, SUBMITTER);
 
-        request.confirmMetadataItem(itemNameHash, SUBMITTER);
+        request.prePublishOrAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
         request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
-        request.confirmMetadataItemAcknowledged(itemNameHash, SUBMITTER);
+        request.preAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
 
-        request.confirmLink(requesterLinkTarget, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(requesterLinkTarget, SUBMITTER);
         request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
-        request.confirmLinkAcknowledged(requesterLinkTarget, SUBMITTER);
+        request.preAcknowledgeLink(requesterLinkTarget, SUBMITTER);
 
         // LLO adds other data
         request.addFile({
@@ -1356,7 +1356,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             restrictedDelivery: false,
             size: 123,
         }, "MANUAL_BY_OWNER");
-        request.confirmFile(hash2, OWNER_ACCOUNT);
+        request.prePublishOrAcknowledgeFile(hash2, OWNER_ACCOUNT);
         request.setFileAddedOn(hash2, moment()); // Sync
 
         const target = new UUID().toString();
@@ -1365,7 +1365,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             target: target,
             submitter: SUBMITTER,
         }, "MANUAL_BY_OWNER");
-        request.confirmLink(target, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
         request.setLinkAddedOn(target, moment()); // Sync
 
         const someOtherName = "Some other name";
@@ -1375,7 +1375,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
             value: "Some other value",
             submitter: OWNER_ACCOUNT,
         }, "MANUAL_BY_OWNER");
-        request.confirmMetadataItem(someOtherNameHash, OWNER_ACCOUNT);
+        request.prePublishOrAcknowledgeMetadataItem(someOtherNameHash, OWNER_ACCOUNT);
         request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
 
         // LLO closes
@@ -1636,7 +1636,7 @@ function whenSettingMetadataItemAddedOn(nameHash: Hash, addedOn:Moment) {
 }
 
 function whenConfirmingMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
-    request.confirmMetadataItem(nameHash, contributor);
+    request.prePublishOrAcknowledgeMetadataItem(nameHash, contributor);
 }
 
 function thenMetadataItemStatusIs(nameHash: Hash, expectedStatus: ItemStatus) {
@@ -1657,7 +1657,7 @@ function whenSettingFileAddedOn(hash: Hash, addedOn:Moment) {
 }
 
 function whenConfirmingFile(hash: Hash, contributor: SupportedAccountId) {
-    request.confirmFile(hash, contributor);
+    request.prePublishOrAcknowledgeFile(hash, contributor);
 }
 
 function thenFileStatusIs(hash: Hash, status: ItemStatus) {
@@ -1678,7 +1678,7 @@ function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
 }
 
 function whenConfirmingLink(target: string, contributor: SupportedAccountId) {
-    request.confirmLink(target, contributor);
+    request.prePublishOrAcknowledgeLink(target, contributor);
 }
 
 function thenLinkStatusIs(target: string, expectedStatus: ItemStatus) {

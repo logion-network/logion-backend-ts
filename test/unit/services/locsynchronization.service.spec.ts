@@ -363,25 +363,25 @@ function thenCollectionItemSaved() {
 }
 
 function givenLocRequestExpectsMetadataItemAcknowledged() {
-    locRequest.setup(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenMetadataAcknowledged() {
-    locRequest.verify(instance => instance.confirmMetadataItemAcknowledged(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsFileAcknowledged() {
-    locRequest.setup(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenFileAcknowledged() {
-    locRequest.verify(instance => instance.confirmFileAcknowledged(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsLinkAcknowledged() {
-    locRequest.setup(instance => instance.confirmLinkAcknowledged(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenLinkAcknowledged() {
-    locRequest.verify(instance => instance.confirmLinkAcknowledged(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME));
 }
