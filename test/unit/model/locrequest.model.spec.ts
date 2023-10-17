@@ -1292,30 +1292,48 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenMetadataItemStatusIs(itemNameHash, "REVIEW_PENDING");
         thenLinkStatusIs(requesterLinkTarget, "REVIEW_PENDING");
 
-        // LLO rejects
-        request.reject("Because.", moment());
-        thenRequestStatusIs("REVIEW_REJECTED");
+        // LLO reviews items
+        request.acceptMetadataItem(itemNameHash);
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
+        request.rejectFile(fileHash, "Wrong format.");
         thenFileStatusIs(fileHash, "REVIEW_REJECTED");
-        thenMetadataItemStatusIs(itemNameHash, "REVIEW_REJECTED");
-        thenLinkStatusIs(requesterLinkTarget, "REVIEW_REJECTED");
+        request.acceptLink(requesterLinkTarget);
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
+
+        // LLO rejects
+        request.reject("See rejected file.", moment());
+        thenRequestStatusIs("REVIEW_REJECTED");
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
+        thenFileStatusIs(fileHash, "REVIEW_REJECTED");
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
 
         // User reworks and submits again
         request.rework();
         thenRequestStatusIs("DRAFT");
-        thenFileStatusIs(fileHash, "DRAFT");
-        thenMetadataItemStatusIs(itemNameHash, "DRAFT");
-        thenLinkStatusIs(requesterLinkTarget, "DRAFT");
+        thenFileStatusIs(fileHash, "REVIEW_REJECTED");
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
+        request.removeFile(SUBMITTER, fileHash);
+        request.addFile({
+            hash: fileHash,
+            name: "name1",
+            contentType: "text/plain",
+            cid: "1234",
+            nature: "nature1",
+            submitter: SUBMITTER,
+            restrictedDelivery: false,
+            size: 123,
+        }, "MANUAL_BY_USER");
         request.submit();
+        thenFileStatusIs(fileHash, "REVIEW_PENDING");
+        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
+        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
 
         // LLO accepts
-        request.accept(moment());
-        thenRequestStatusIs("REVIEW_ACCEPTED");
         request.acceptFile(fileHash);
         thenFileStatusIs(fileHash, "REVIEW_ACCEPTED");
-        request.acceptMetadataItem(itemNameHash);
-        thenMetadataItemStatusIs(itemNameHash, "REVIEW_ACCEPTED");
-        request.acceptLink(requesterLinkTarget);
-        thenLinkStatusIs(requesterLinkTarget, "REVIEW_ACCEPTED");
+        request.accept(moment());
+        thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User reworks and submits again
         request.rework();
@@ -1323,9 +1341,6 @@ describe("LocRequestAggregateRoot (processes)", () => {
 
         // LLO accepts again
         request.accept(moment());
-        request.acceptFile(fileHash);
-        request.acceptMetadataItem(itemNameHash);
-        request.acceptLink(requesterLinkTarget);
         thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User opens
