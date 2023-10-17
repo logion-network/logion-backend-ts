@@ -316,7 +316,7 @@ export class LocRequestAggregateRoot {
             throw new Error("Cannot submit with ongoing iDenfy verification session");
         }
         this.status = 'REVIEW_PENDING';
-        this.updateAllItemsStatus("REVIEW_PENDING");
+        this.updateAllDraftItemsStatus("REVIEW_PENDING");
     }
 
     reject(reason: string, rejectedOn: Moment): void {
@@ -327,7 +327,6 @@ export class LocRequestAggregateRoot {
         this.status = 'REVIEW_REJECTED';
         this.rejectReason = reason;
         this.decisionOn = rejectedOn.toISOString();
-        this.updateAllItemsStatus("REVIEW_REJECTED");
     }
 
     rework(): void {
@@ -337,7 +336,6 @@ export class LocRequestAggregateRoot {
         this.status = 'DRAFT';
         this.decisionOn = null;
         this.rejectReason = null;
-        this.updateAllItemsStatus("DRAFT");
     }
 
     accept(decisionOn: Moment): void {
@@ -449,17 +447,18 @@ export class LocRequestAggregateRoot {
     }
 
     acceptFile(hash: Hash) {
-        this.ensureAcceptedOrOpen();
+        this.ensureCanAcceptOrReject();
         this.mutateFile(hash, item => item.lifecycle!.accept());
     }
 
-    private ensureAcceptedOrOpen() {
-        if(this.status !== "REVIEW_ACCEPTED" && this.status !== "OPEN") {
-            throw new Error("Request must be accepted or open");
+    private ensureCanAcceptOrReject() {
+        if(this.status !== "REVIEW_PENDING" && this.status !== "REVIEW_ACCEPTED" && this.status !== "OPEN") {
+            throw new Error("Request must be pending, accepted or open");
         }
     }
 
     rejectFile(hash: Hash, reason: string) {
+        this.ensureCanAcceptOrReject();
         this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
@@ -530,12 +529,12 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    private updateAllItemsStatus(statusTo: ItemStatus) {
-        this.metadata?.forEach(item => item.status = statusTo);
-        this.files?.forEach(item => item.status = statusTo);
-        this.links?.forEach(item => item.status = statusTo);
+    private updateAllDraftItemsStatus(statusTo: ItemStatus) {
+        this.metadata?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
+        this.files?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
+        this.links?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
     }
-    
+
     getFileOrThrow(hash: Hash) {
         const file = this.file(hash);
         if(!file) {
@@ -694,11 +693,12 @@ export class LocRequestAggregateRoot {
     }
 
     acceptMetadataItem(nameHash: Hash) {
-        this.ensureAcceptedOrOpen();
+        this.ensureCanAcceptOrReject();
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.accept());
     }
 
     rejectMetadataItem(nameHash: Hash, reason: string) {
+        this.ensureCanAcceptOrReject();
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.reject(reason));
     }
 
@@ -841,11 +841,12 @@ export class LocRequestAggregateRoot {
     }
 
     acceptLink(target: string) {
-        this.ensureAcceptedOrOpen();
+        this.ensureCanAcceptOrReject();
         this.mutateLink(target, item => item.lifecycle!.accept());
     }
 
     rejectLink(target: string, reason: string) {
+        this.ensureCanAcceptOrReject();
         this.mutateLink(target, item => item.lifecycle!.reject(reason));
     }
 

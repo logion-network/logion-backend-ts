@@ -749,8 +749,10 @@ export class LocRequestController extends ApiController {
             }
         });
 
-        const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
-        this.notify("WalletUser", "data-reviewed", request.getDescription(), userIdentity);
+        if(request.status !== "REVIEW_PENDING") {
+            const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+            this.notify("WalletUser", "data-reviewed", request.getDescription(), userIdentity);
+        }
 
         this.response.sendStatus(204);
     }
@@ -973,7 +975,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async reviewLink(view: ReviewItemView, requestId: string, target: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        await this.locRequestService.update(requestId, async request => {
+        const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
                 request.acceptLink(target);
@@ -982,6 +984,12 @@ export class LocRequestController extends ApiController {
                 request.rejectLink(target, reason);
             }
         });
+
+        if(request.status !== "REVIEW_PENDING") {
+            const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+            this.notify("WalletUser", "data-reviewed", request.getDescription(), userIdentity);
+        }
+
         this.response.sendStatus(204);
     }
 
@@ -1133,7 +1141,7 @@ export class LocRequestController extends ApiController {
     async reviewMetadata(view: ReviewItemView, requestId: string, nameHash: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const hash = Hash.fromHex(nameHash);
-        await this.locRequestService.update(requestId, async request => {
+        const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             if (view.decision === "ACCEPT") {
                 request.acceptMetadataItem(hash);
@@ -1142,6 +1150,12 @@ export class LocRequestController extends ApiController {
                 request.rejectMetadataItem(hash, reason);
             }
         });
+
+        if(request.status !== "REVIEW_PENDING") {
+            const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
+            this.notify("WalletUser", "data-reviewed", request.getDescription(), userIdentity);
+        }
+
         this.response.sendStatus(204);
     }
 
