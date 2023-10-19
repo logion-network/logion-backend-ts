@@ -214,7 +214,7 @@ function mockModelForPreClose(container: Container, locType: LocType, userIdenti
         userIdentity
     };
     setupRequest(request, REQUEST_ID, locType, "OPEN", data);
-    request.setup(instance => instance.preClose()).returns();
+    request.setup(instance => instance.preClose(It.IsAny())).returns();
 
     mockPolkadotIdentityLoc(repository, false);
 }

@@ -206,6 +206,14 @@ export class EmbeddableLifecycle {
         }
     }
 
+    isAcknowledged(): boolean {
+        return this.status === "ACKNOWLEDGED";
+    }
+
+    isPublished(): boolean {
+        return this.status === "PUBLISHED";
+    }
+
     setAddedOn(addedOn: Moment) {
         if (this.addedOn) {
             logger.warn("Item added on date is already set");
@@ -496,8 +504,15 @@ export class LocRequestAggregateRoot {
     }
 
     canPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
+        this.ensureOpen();
         const file = this.getFileOrThrow(hash);
         return this.canPrePublishOrAcknowledge(file, contributor);
+    }
+
+    private ensureOpen() {
+        if(this.status !== "OPEN") {
+            throw new Error("Must be open");
+        }
     }
 
     private canPrePublishOrAcknowledge(submitted: Submitted, contributor: SupportedAccountId): boolean {
@@ -530,9 +545,17 @@ export class LocRequestAggregateRoot {
     }
 
     private updateAllDraftItemsStatus(statusTo: ItemStatus) {
-        this.metadata?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
-        this.files?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
-        this.links?.filter(item => item.status === "DRAFT").forEach(item => item.status = statusTo);
+        this.mutateAllItems(item => item.status = statusTo, this.metadata, item => item.status === "DRAFT");
+        this.mutateAllItems(item => item.status = statusTo, this.files, item => item.status === "DRAFT");
+        this.mutateAllItems(item => item.status = statusTo, this.links, item => item.status === "DRAFT");
+    }
+
+    private mutateAllItems<T extends Child>(mutator: (item: T) => void, items?: T[], filter?: (item: T) => boolean) {
+        if(filter !== undefined) {
+            items?.filter(filter).forEach(item => { mutator(item); item._toUpdate = true });
+        } else {
+            items?.forEach(item => { mutator(item); item._toUpdate = true });
+        }
     }
 
     getFileOrThrow(hash: Hash) {
@@ -602,9 +625,66 @@ export class LocRequestAggregateRoot {
         return moment(this.locCreatedOn!);
     }
 
-    preClose() {
+    preClose(autoAck: boolean) {
+        if(autoAck) {
+            this.ensureAllItemsAckedOrPublished();
+            this.ensureAllItemsAckedByVerifiedIssuer();
+            this.ackAllItemsByOwner();
+        } else {
+            this.ensureAllItemsAcked();
+        }
         if(this.status === "OPEN") {
             this.status = 'CLOSED';
+        }
+    }
+
+    private ensureAllItemsAckedOrPublished() {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.metadata)) {
+            throw new Error("A metadata item was not yet published nor acknowledged");
+        }
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.files)) {
+            throw new Error("A file was not yet published nor acknowledged");
+        }
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.links)) {
+            throw new Error("A link was not yet published nor acknowledged");
+        }
+    }
+
+    private itemExists<T>(predicate: (item: T) => boolean, items?: T[]) {
+        return items?.find(predicate) !== undefined;
+    }
+
+    private ensureAllItemsAckedByVerifiedIssuer() {
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.metadata)) {
+            throw new Error("A verified issuer's metadata item was not yet acknowledged");
+        }
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.files)) {
+            throw new Error("A verified issuer's file was not yet acknowledged");
+        }
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.links)) {
+            throw new Error("A verified issuer's link was not yet acknowledged");
+        }
+    }
+
+    private isSubmittedByVerifiedIssuerButNotAcknowledged(submitter?: EmbeddableSupportedAccountId, lifecycle?: EmbeddableLifecycle) {
+        return this.isVerifiedIssuer(submitter?.toSupportedAccountId()) && !lifecycle?.acknowledgedByVerifiedIssuer;
+    }
+
+    private ackAllItemsByOwner() {
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.metadata);
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.files);
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.links);
+    }
+
+    private ensureAllItemsAcked() {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.metadata)) {
+            throw new Error("A metadata item was not yet acknowledged");
+        }
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.files)) {
+            throw new Error("A file was not yet acknowledged");
+        }
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.links)) {
+            throw new Error("A link was not yet acknowledged");
         }
     }
 
@@ -715,6 +795,7 @@ export class LocRequestAggregateRoot {
     }
 
     canPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
+        this.ensureOpen();
         const metadata = this.getMetadataOrThrow(nameHash);
         return this.canPrePublishOrAcknowledge(metadata, contributor);
     }
@@ -866,6 +947,7 @@ export class LocRequestAggregateRoot {
     }
 
     canPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
+        this.ensureOpen();
         const link = this.getLinkOrThrow(target);
         return this.canPrePublishOrAcknowledge(link, contributor);
     }
