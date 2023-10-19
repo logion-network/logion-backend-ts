@@ -26,7 +26,7 @@ import {
     PublicSeal,
     LATEST_SEAL_VERSION
 } from "../../../src/logion/services/seal.service.js";
-import { UUID, MetadataItem } from "@logion/node-api";
+import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
@@ -1350,15 +1350,18 @@ describe("LocRequestAggregateRoot (processes)", () => {
         // User publishes items
         request.prePublishOrAcknowledgeFile(fileHash, SUBMITTER);
         request.setFileAddedOn(fileHash, moment()); // Sync
-        request.preAcknowledgeFile(fileHash, SUBMITTER);
+        request.preAcknowledgeFile(fileHash, OWNER_ACCOUNT);
+        request.preAcknowledgeFile(fileHash, OWNER_ACCOUNT, moment()); // Sync
 
         request.prePublishOrAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
         request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
-        request.preAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
+        request.preAcknowledgeMetadataItem(itemNameHash, OWNER_ACCOUNT);
+        request.preAcknowledgeMetadataItem(itemNameHash, OWNER_ACCOUNT, moment()); // Sync
 
         request.prePublishOrAcknowledgeLink(requesterLinkTarget, SUBMITTER);
         request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
-        request.preAcknowledgeLink(requesterLinkTarget, SUBMITTER);
+        request.preAcknowledgeLink(requesterLinkTarget, OWNER_ACCOUNT);
+        request.preAcknowledgeLink(requesterLinkTarget, OWNER_ACCOUNT, moment()); // Sync
 
         // LLO adds other data
         request.addFile({
@@ -1378,9 +1381,9 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.addLink({
             nature: "Some link nature",
             target: target,
-            submitter: SUBMITTER,
+            submitter: OWNER_ACCOUNT,
         }, "MANUAL_BY_OWNER");
-        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+        request.prePublishOrAcknowledgeLink(target, OWNER_ACCOUNT);
         request.setLinkAddedOn(target, moment()); // Sync
 
         const someOtherName = "Some other name";
@@ -1394,13 +1397,71 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.setMetadataItemAddedOn(someOtherNameHash, moment()); // Sync
 
         // LLO closes
-        request.preClose();
+        request.preClose(false);
         thenRequestStatusIs("CLOSED");
         request.close(moment()); // Sync
 
         // LLO voids
         request.preVoid("Void reason");
         request.voidLoc(moment()); // Sync
+    })
+
+    it("full life-cycle with auto-ack", () => {
+        const { itemNameHash, fileHash, requesterLinkTarget } = givenOpenLocWithAllAccepted(SUBMITTER);
+
+        request.prePublishOrAcknowledgeFile(fileHash, SUBMITTER);
+        request.setFileAddedOn(fileHash, moment()); // Sync
+
+        request.prePublishOrAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
+        request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
+
+        request.prePublishOrAcknowledgeLink(requesterLinkTarget, SUBMITTER);
+        request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
+
+        request.preClose(true);
+        thenFileStatusIs(fileHash, "ACKNOWLEDGED");
+        thenMetadataItemStatusIs(itemNameHash, "ACKNOWLEDGED");
+        thenLinkStatusIs(requesterLinkTarget, "ACKNOWLEDGED");
+        thenRequestStatusIs("CLOSED");
+        request.close(moment()); // Sync
+    })
+
+    it("auto-ack fails if not all published", () => {
+        givenOpenLocWithAllAccepted(SUBMITTER);
+        expect(() => request.preClose(true)).toThrowError("A metadata item was not yet published nor acknowledged");
+    })
+
+    it("auto-ack fails if not all acked by verified issuer", () => {
+        givenOpenLocWithAllAccepted(VERIFIED_ISSUER);
+        expect(() => request.preClose(true)).toThrowError("A metadata item was not yet published nor acknowledged");
+    })
+
+    it("auto-ack if all acked by verified issuer", () => {
+        const { itemNameHash, fileHash, requesterLinkTarget } = givenOpenLocWithAllAccepted(VERIFIED_ISSUER);
+
+        request.prePublishOrAcknowledgeFile(fileHash, SUBMITTER);
+        request.setFileAddedOn(fileHash, moment()); // Sync
+
+        request.prePublishOrAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
+        request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
+
+        request.prePublishOrAcknowledgeLink(requesterLinkTarget, SUBMITTER);
+        request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
+
+        request.preAcknowledgeFile(fileHash, VERIFIED_ISSUER);
+        request.preAcknowledgeFile(fileHash, VERIFIED_ISSUER, moment()); // Sync
+
+        request.preAcknowledgeMetadataItem(itemNameHash, VERIFIED_ISSUER);
+        request.preAcknowledgeMetadataItem(itemNameHash, VERIFIED_ISSUER, moment()); // Sync
+
+        request.preAcknowledgeLink(requesterLinkTarget, VERIFIED_ISSUER);
+        request.preAcknowledgeLink(requesterLinkTarget, VERIFIED_ISSUER, moment()); // Sync
+
+        request.preClose(true);
+        thenFileStatusIs(fileHash, "ACKNOWLEDGED");
+        thenMetadataItemStatusIs(itemNameHash, "ACKNOWLEDGED");
+        thenLinkStatusIs(requesterLinkTarget, "ACKNOWLEDGED");
+        thenRequestStatusIs("CLOSED");
     })
 })
 
@@ -1782,7 +1843,7 @@ function thenHasExpectedLinkIndices() {
 }
 
 function whenPreClosing() {
-    request.preClose();
+    request.preClose(false);
 }
 
 function whenPreVoiding(reason: string) {
@@ -1827,4 +1888,46 @@ async function expectAsyncToThrow(func: () => Promise<void>, message?: string) {
 
 function thenStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
+}
+
+function givenOpenLocWithAllAccepted(submitter: SupportedAccountId) {
+    givenRequestWithStatus("DRAFT");
+
+    const fileHash = Hash.of("hash1");
+    request.addFile({
+        hash: fileHash,
+        name: "name1",
+        contentType: "text/plain",
+        cid: "1234",
+        nature: "nature1",
+        submitter,
+        restrictedDelivery: false,
+        size: 123,
+    }, "MANUAL_BY_USER");
+
+    const itemName = "Some name";
+    const itemNameHash = Hash.of(itemName);
+    request.addMetadataItem({
+        name: itemName,
+        value: "Some value",
+        submitter,
+    }, "MANUAL_BY_USER");
+
+    const requesterLinkTarget = new UUID().toString();
+    request.addLink({
+        target: requesterLinkTarget,
+        nature: "Some nature",
+        submitter: submitter,
+    }, "MANUAL_BY_USER");
+
+    request.submit();
+
+    request.acceptMetadataItem(itemNameHash);
+    request.acceptFile(fileHash);
+    request.acceptLink(requesterLinkTarget);
+    request.accept(moment());
+    request.open();
+    request.open(moment()); // Sync
+
+    return { itemNameHash, fileHash, requesterLinkTarget };
 }

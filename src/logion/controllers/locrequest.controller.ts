@@ -116,6 +116,7 @@ type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
 type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 type ReviewItemView = components["schemas"]["ReviewItemView"];
 type OpenLocView = components["schemas"]["OpenLocView"];
+type CloseView = components["schemas"]["CloseView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -842,11 +843,11 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/close')
     @Async()
     @SendsResponse()
-    async closeLoc(_body: any, requestId: string) {
+    async closeLoc(body: CloseView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.preClose();
+            request.preClose(body.autoAck || false);
         });
         this.response.sendStatus(204);
     }
