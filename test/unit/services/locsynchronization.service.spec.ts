@@ -3,7 +3,7 @@ import { PolkadotService } from "@logion/rest-api-core";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
-import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
+import { EMPTY_ITEMS, LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
 import {
     CollectionFactory,
@@ -54,7 +54,7 @@ describe("LocSynchronizer", () => {
             givenLocRequest();
             givenLocRequestExpectsLocCreationDate();
             await whenConsumingBlock();
-            thenLocCreateDateSet();
+            thenOpened();
             thenLocIsSaved();
         }
     });
@@ -259,7 +259,7 @@ let locRequest: Mock<LocRequestAggregateRoot>;
 let collectionItem: Mock<CollectionItemAggregateRoot>;
 
 function givenLocRequestExpectsLocCreationDate() {
-    locRequest.setup(instance => instance.setLocCreatedDate(IS_BLOCK_TIME))
+    locRequest.setup(instance => instance.open(IS_BLOCK_TIME, EMPTY_ITEMS))
         .returns(undefined);
 }
 
@@ -291,8 +291,8 @@ let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 let tokensRecordFactory: Mock<TokensRecordFactory>;
 
-function thenLocCreateDateSet() {
-    locRequest.verify(instance => instance.setLocCreatedDate(IS_BLOCK_TIME));
+function thenOpened() {
+    locRequest.verify(instance => instance.open(IS_BLOCK_TIME, EMPTY_ITEMS));
 }
 
 function thenLocIsSaved() {

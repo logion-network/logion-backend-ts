@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees, UUID } from "@logion/node-api";
+import { Fees, UUID, ValidAccountId } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -179,12 +179,13 @@ export class EmbeddableLifecycle {
         this.reviewedOn = moment().toDate();
     }
 
-    prePublishOrAcknowledge(isAcknowledged: boolean) {
+    prePublishOrAcknowledge(isAcknowledged: boolean, addedOn?: Moment) {
         const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
         if (this.status !== "REVIEW_ACCEPTED" && this.status !== acknowledgedOrPublished) {
             throw badRequest(`Cannot pre-publish/-acknowledge item with status ${ this.status }`);
         }
         this.status = acknowledgedOrPublished;
+        this.addedOn = addedOn?.toDate();
     }
 
     preAcknowledge(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
@@ -313,6 +314,18 @@ class EmbeddableIdenfyVerification {
     callbackPayload?: string | null;
 }
 
+export interface LocItems {
+    metadataNameHashes: Hash[];
+    fileHashes: Hash[];
+    linkTargets: UUID[];
+}
+
+export const EMPTY_ITEMS: LocItems = {
+    fileHashes: [],
+    linkTargets: [],
+    metadataNameHashes: [],
+};
+
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
@@ -354,14 +367,24 @@ export class LocRequestAggregateRoot {
         this.decisionOn = decisionOn.toISOString();
     }
 
-    open(createdOn?: Moment): void {
+    preOpen(autoPublish: boolean): void {
         if (this.status != 'REVIEW_ACCEPTED' && this.status != 'OPEN') {
             throw new Error(`Cannot open request with status ${ this.status }`);
         }
-        this.status = 'OPEN';
-        if (createdOn) {
-            this.createdOn = createdOn.toISOString();
+        if(autoPublish) {
+            this.publishAllAcceptedItems();
         }
+        this.status = 'OPEN';
+    }
+
+    private publishAllAcceptedItems() {
+        this.mutateAllItems(item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.metadata, item => item.status === "REVIEW_ACCEPTED");
+        this.mutateAllItems(item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.files, item => item.status === "REVIEW_ACCEPTED");
+        this.mutateAllItems(item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.links, item => item.status === "REVIEW_ACCEPTED");
+    }
+
+    private isPublishAcknowledge(item: { submitter?: EmbeddableSupportedAccountId }) {
+        return item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())
     }
 
     getDescription(): LocRequestDescription {
@@ -611,14 +634,24 @@ export class LocRequestAggregateRoot {
         return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
     }
 
-    setLocCreatedDate(timestamp: Moment) {
+    open(createdOn: Moment, items: LocItems) {
         if (this.locCreatedOn) {
             logger.warn("LOC created date is already set");
         }
-        this.locCreatedOn = timestamp.toISOString();
+        this.locCreatedOn = createdOn.toISOString();
         if (this.status === "REVIEW_ACCEPTED" || this.status === "OPEN") {
-            this.open(timestamp);
+            this.status = 'OPEN';
+            this.prePublishOrAcknowledgeItems(createdOn, items);
         }
+    }
+
+    private prePublishOrAcknowledgeItems(addedOn: Moment, items: LocItems) {
+        items.fileHashes
+            .forEach(hash => this.mutateFile(hash, item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item), addedOn)));
+        items.metadataNameHashes
+            .forEach(hash => this.mutateMetadataItem(hash, item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item), addedOn)));
+        items.linkTargets
+            .forEach(target => this.mutateLink(target.toString(), item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item), addedOn)));
     }
 
     getLocCreatedDate(): Moment {

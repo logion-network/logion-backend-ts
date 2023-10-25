@@ -15,7 +15,7 @@ import {
     MetadataItemParams,
     ItemStatus,
     FileParams,
-    LinkParams, SubmissionType, LocMetadataItem
+    LinkParams, SubmissionType, EMPTY_ITEMS
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -296,7 +296,7 @@ describe("LocRequestAggregateRoot", () => {
 
     it("opens an accepted request", () => {
         givenRequestWithStatus('REVIEW_ACCEPTED');
-        whenOpening();
+        whenPreOpening(false);
         thenRequestStatusIs('OPEN');
     });
 
@@ -323,7 +323,7 @@ describe("LocRequestAggregateRoot", () => {
     it("sets LOC created date", () => {
         givenRequestWithStatus('OPEN');
         const locCreatedDate = moment();
-        whenSettingLocCreatedDate(locCreatedDate);
+        whenOpening(locCreatedDate);
         thenExposesLocCreatedDate(locCreatedDate);
     });
 
@@ -383,7 +383,7 @@ describe("LocRequestAggregateRoot", () => {
     it("accepts if pending when setting creation date", () => {
         givenRequestWithStatus('REVIEW_ACCEPTED');
         const locCreatedDate = moment();
-        whenSettingLocCreatedDate(locCreatedDate);
+        whenOpening(locCreatedDate);
         thenStatusIs('OPEN');
     });
 
@@ -1344,7 +1344,7 @@ describe("LocRequestAggregateRoot (processes)", () => {
         thenRequestStatusIs("REVIEW_ACCEPTED");
 
         // User opens
-        request.open(moment());
+        request.open(moment(), EMPTY_ITEMS);
         thenRequestStatusIs("OPEN");
 
         // User publishes items
@@ -1406,17 +1406,25 @@ describe("LocRequestAggregateRoot (processes)", () => {
         request.voidLoc(moment()); // Sync
     })
 
-    it("full life-cycle with auto-ack", () => {
-        const { itemNameHash, fileHash, requesterLinkTarget } = givenOpenLocWithAllAccepted(SUBMITTER);
+    it("full life-cycle with auto-publish and auto-ack", () => {
+        const { itemNameHash, fileHash, requesterLinkTarget } = givenAcceptedLocWithAllAccepted(SUBMITTER);
 
-        request.prePublishOrAcknowledgeFile(fileHash, SUBMITTER);
-        request.setFileAddedOn(fileHash, moment()); // Sync
-
-        request.prePublishOrAcknowledgeMetadataItem(itemNameHash, SUBMITTER);
-        request.setMetadataItemAddedOn(itemNameHash, moment()); // Sync
-
-        request.prePublishOrAcknowledgeLink(requesterLinkTarget, SUBMITTER);
-        request.setLinkAddedOn(requesterLinkTarget, moment()); // Sync
+        request.preOpen(true);
+        thenFileStatusIs(fileHash, "PUBLISHED");
+        thenMetadataItemStatusIs(itemNameHash, "PUBLISHED");
+        thenLinkStatusIs(requesterLinkTarget, "PUBLISHED");
+        thenFileAddedOnSet(fileHash, false);
+        thenMetadataItemAddedOnSet(itemNameHash, false);
+        thenLinkAddedOnSet(requesterLinkTarget, false);
+        thenRequestStatusIs("OPEN");
+        request.open(moment(), {
+            fileHashes: [ fileHash ],
+            linkTargets: [ new UUID(requesterLinkTarget) ],
+            metadataNameHashes: [ itemNameHash ]
+        }); // Sync
+        thenFileAddedOnSet(fileHash, true);
+        thenMetadataItemAddedOnSet(itemNameHash, true);
+        thenLinkAddedOnSet(requesterLinkTarget, true);
 
         request.preClose(true);
         thenFileStatusIs(fileHash, "ACKNOWLEDGED");
@@ -1493,8 +1501,8 @@ function whenAccepting(acceptedOn: Moment) {
     request.accept(acceptedOn);
 }
 
-function whenOpening() {
-    request.open();
+function whenPreOpening(autoPublish: boolean) {
+    request.preOpen(autoPublish);
 }
 
 function thenRequestStatusIs(expectedStatus: LocRequestStatus) {
@@ -1765,8 +1773,8 @@ function thenLinkRequiresUpdate(target: string) {
     expect(request.link(target)?._toUpdate).toBeTrue();
 }
 
-function whenSettingLocCreatedDate(locCreatedDate: Moment) {
-    request.setLocCreatedDate(locCreatedDate);
+function whenOpening(locCreatedDate: Moment) {
+    request.open(locCreatedDate, EMPTY_ITEMS);
 }
 
 function thenExposesLocCreatedDate(expectedDate: Moment) {
@@ -1890,7 +1898,7 @@ function thenStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
 }
 
-function givenOpenLocWithAllAccepted(submitter: SupportedAccountId) {
+function givenAcceptedLocWithAllAccepted(submitter: SupportedAccountId) {
     givenRequestWithStatus("DRAFT");
 
     const fileHash = Hash.of("hash1");
@@ -1926,8 +1934,27 @@ function givenOpenLocWithAllAccepted(submitter: SupportedAccountId) {
     request.acceptFile(fileHash);
     request.acceptLink(requesterLinkTarget);
     request.accept(moment());
-    request.open();
-    request.open(moment()); // Sync
 
     return { itemNameHash, fileHash, requesterLinkTarget };
+}
+
+function givenOpenLocWithAllAccepted(submitter: SupportedAccountId) {
+    const items = givenAcceptedLocWithAllAccepted(submitter);
+
+    request.preOpen(false);
+    request.open(moment(), EMPTY_ITEMS); // Sync
+
+    return items;
+}
+
+function thenFileAddedOnSet(hash: Hash, set: boolean) {
+    return request.files?.find(file => file.hash === hash.toHex() && (set && file.lifecycle?.addedOn !== undefined) || (!set && file.lifecycle?.addedOn === undefined)) !== undefined;
+}
+
+function thenMetadataItemAddedOnSet(name: Hash, set: boolean) {
+    return request.metadata?.find(item => item.nameHash?.equalTo(name) && (set && item.lifecycle?.addedOn !== undefined) || (!set && item.lifecycle?.addedOn === undefined)) !== undefined;
+}
+
+function thenLinkAddedOnSet(target: string, set: boolean) {
+    return request.links?.find(link => link.target === target && (set && link.lifecycle?.addedOn !== undefined) || (!set && link.lifecycle?.addedOn === undefined)) !== undefined;
 }

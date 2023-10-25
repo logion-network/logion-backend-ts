@@ -226,7 +226,7 @@ function mockModelForPreVoid(container: Container) {
 }
 
 function mockModelForOpen(container: Container, locType: LocType, userIdentity?: UserIdentity) {
-    const { request, repository } = buildMocksForUpdate(container);
+    const { request } = buildMocksForUpdate(container);
 
     const data = {
         ...testDataWithType(locType),
@@ -239,7 +239,7 @@ function mockModelForOpen(container: Container, locType: LocType, userIdentity?:
         .returns(false);
     request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params === undefined)))
         .returns(false);
-    request.setup(instance => instance.open()).returns();
+    request.setup(instance => instance.preOpen(It.IsAny())).returns();
 }
 
 const VOID_REASON = "Expired";

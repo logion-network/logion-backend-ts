@@ -999,6 +999,10 @@ export interface components {
       /** @description The rejection reason */
       rejectReason?: string;
     };
+    OpenView: {
+      /** @description Accepted items should be published automatically on opening */
+      autoPublish?: boolean;
+    };
   };
   responses: never;
   parameters: never;

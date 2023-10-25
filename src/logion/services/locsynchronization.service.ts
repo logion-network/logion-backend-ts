@@ -3,7 +3,7 @@ import { UUID, Adapters, Fees, Hash } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
-import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
+import { EMPTY_ITEMS, LocItems, LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
 import { JsonExtrinsic, toString, extractUuid } from "./types/responses/Extrinsic.js";
 import { CollectionFactory } from "../model/collection.model.js";
 import { LocRequestService } from './locrequest.service.js';
@@ -124,7 +124,7 @@ export class LocSynchronizer {
         const inclusionFee = await extrinsic.partialFee();
         if(inclusionFee) {
             await this.mutateLoc(locId, async loc => {
-                loc.setLocCreatedDate(timestamp);
+                loc.open(timestamp, this.extractLocItems(extrinsic));
                 // TODO set fees (inclusion and legal)
             });
         } else {
@@ -137,6 +137,22 @@ export class LocSynchronizer {
             logger.info("Mutating LOC %s : %s", locId, mutator);
             await mutator(loc);
         });
+    }
+
+    private extractLocItems(extrinsic: JsonExtrinsic): LocItems {
+        const items = extrinsic.call.args["items"];
+        if(Adapters.isJsonObject(items)) {
+            const metadata = Adapters.asArray(items.metadata).map(Adapters.asJsonObject);
+            const files = Adapters.asArray(items.files).map(Adapters.asJsonObject);
+            const links = Adapters.asArray(items.links).map(Adapters.asJsonObject);
+            return {
+                fileHashes: files.map(item => Adapters.asHexString(item.hash_)).map(Hash.fromHex),
+                linkTargets: links.map(item => Adapters.asBigInt(item.id).toString()).map(UUID.fromDecimalString).map(maybeUuid => requireDefined(maybeUuid)),
+                metadataNameHashes: metadata.map(item => Adapters.asHexString(item.name)).map(Hash.fromHex),
+            };
+        } else {
+            return EMPTY_ITEMS;
+        }
     }
 
     private async updateMetadataItem(loc: LocRequestAggregateRoot, timestamp: Moment, extrinsic: JsonExtrinsic) {
