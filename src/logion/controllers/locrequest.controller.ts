@@ -117,6 +117,7 @@ type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 type ReviewItemView = components["schemas"]["ReviewItemView"];
 type OpenLocView = components["schemas"]["OpenLocView"];
 type CloseView = components["schemas"]["CloseView"];
+type OpenView = components["schemas"]["OpenView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -499,13 +500,13 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/accept')
     @Async()
-    async acceptLocRequest(_ignoredBody: any, requestId: string) {
+    async acceptLocRequest(body: OpenView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.accept(moment());
             if (!request.canOpen(request.getRequester())) {
-                request.open();
+                request.preOpen(body.autoPublish || false);
             }
         });
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
@@ -823,11 +824,11 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/open')
     @Async()
     @SendsResponse()
-    async openLoc(_body: any, requestId: string) {
+    async openLoc(body: OpenView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => request.canOpen(user), "LOC must be opened by Polkadot requester");
-            request.open();
+            request.preOpen(body.autoPublish || false);
         });
         this.response.sendStatus(204);
     }

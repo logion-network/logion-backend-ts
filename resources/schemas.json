@@ -1826,6 +1826,15 @@
                 "required": [
                     "decision"
                 ]
+            },
+            "OpenView": {
+                "type": "object",
+                "properties": {
+                    "autoPublish": {
+                        "type": "boolean",
+                        "description": "Accepted items should be published automatically on opening"
+                    }
+                }
             }
         }
     }
