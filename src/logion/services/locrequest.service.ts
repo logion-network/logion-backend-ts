@@ -36,6 +36,11 @@ export abstract class LocRequestService {
         await this.locRequestRepository.deleteDraftRejectedOrAccepted(request);
         return request;
     }
+
+    async deleteOpen(requestId: string): Promise<void> {
+        const request = requireDefined(await this.locRequestRepository.findById(requestId));
+        await this.locRequestRepository.deleteOpen(request);
+    }
 }
 
 @injectable()
@@ -65,6 +70,11 @@ export class TransactionalLocRequestService extends LocRequestService {
     @DefaultTransactional()
     override async deleteDraftRejectedOrAccepted(requestId: string, callback: (request: LocRequestAggregateRoot) => Promise<void>): Promise<LocRequestAggregateRoot> {
         return super.deleteDraftRejectedOrAccepted(requestId, callback);
+    }
+
+    @DefaultTransactional()
+    override async deleteOpen(requestId: string): Promise<void> {
+        return super.deleteOpen(requestId);
     }
 }
 

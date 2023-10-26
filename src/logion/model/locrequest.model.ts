@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees, UUID, ValidAccountId } from "@logion/node-api";
+import { Fees, UUID } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -188,6 +188,17 @@ export class EmbeddableLifecycle {
         this.addedOn = addedOn?.toDate();
     }
 
+    cancelPrePublishOrAcknowledge(isAcknowledged: boolean) {
+        const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
+        if (this.status !== acknowledgedOrPublished) {
+            throw badRequest(`Cannot cancel pre-publish/-acknowledge of item with status ${ this.status }`);
+        }
+        if(this.addedOn) {
+            throw badRequest(`Cannot cancel, published/acknowledged`);
+        }
+        this.status = "REVIEW_ACCEPTED";
+    }
+
     preAcknowledge(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
         if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
             throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
@@ -204,6 +215,23 @@ export class EmbeddableLifecycle {
             || (!expectVerifiedIssuer && this.acknowledgedByOwner)
         ) {
             this.status = "ACKNOWLEDGED";
+        }
+    }
+
+    cancelPreAcknowledge(byVerifiedIssuer: boolean) {
+        if (this.status !== "ACKNOWLEDGED") {
+            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
+        }
+        if(this.acknowledgedByVerifiedIssuerOn || this.acknowledgedByOwnerOn) {
+            throw badRequest(`Cannot cancel, acknowledged`);
+        }
+        if(byVerifiedIssuer) {
+            this.acknowledgedByVerifiedIssuer = false;
+        } else {
+            this.acknowledgedByOwner = false;
+        }
+        if(this.status === "ACKNOWLEDGED") {
+            this.status = "PUBLISHED";
         }
     }
 
@@ -500,6 +528,13 @@ export class LocRequestAggregateRoot {
         this.mutateFile(hash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
+    cancelPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPrePublishOrAcknowledgeFile(hash, contributor)) {
+            throw new Error("Contributor cannot cancel");
+        }
+        this.mutateFile(hash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+    }
+
     isOwner(account?: SupportedAccountId) {
         return accountEquals(account, this.getOwner());
     }
@@ -519,11 +554,21 @@ export class LocRequestAggregateRoot {
     }
 
     preAcknowledgeFile(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        if(!this.canPreAcknowledgeFile(hash, contributor)) {
+            throw new Error("Contributor cannot ack");
+        }
         this.mutateFile(hash, file => file.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(file.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
+    }
+
+    cancelPreAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPreAcknowledgeFile(hash, contributor)) {
+            throw new Error("Contributor cannot cancel");
+        }
+        this.mutateFile(hash, file => file.lifecycle!.cancelPreAcknowledge(this.isVerifiedIssuer(contributor)));
     }
 
     canPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
@@ -721,6 +766,21 @@ export class LocRequestAggregateRoot {
         }
     }
 
+    cancelPreClose(autoAck: boolean) {
+        if(autoAck) {
+            this.cancelPreAckItems();
+        } else {
+            this.ensureAllItemsAcked();
+        }
+        this.status = 'OPEN';
+    }
+
+    private cancelPreAckItems() {
+        this.mutateAllItems(item => item.lifecycle?.cancelPreAcknowledge(false), this.metadata, item => item.status === "ACKNOWLEDGED" && !item.lifecycle?.acknowledgedByOwnerOn);
+        this.mutateAllItems(item => item.lifecycle?.cancelPreAcknowledge(false), this.files, item => item.status === "ACKNOWLEDGED" && !item.lifecycle?.acknowledgedByOwnerOn);
+        this.mutateAllItems(item => item.lifecycle?.cancelPreAcknowledge(false), this.links, item => item.status === "ACKNOWLEDGED" && !item.lifecycle?.acknowledgedByOwnerOn);
+    }
+
     close(timestamp: Moment) {
         if (this.closedOn) {
             logger.warn("LOC is already closed");
@@ -822,6 +882,13 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
     }
 
+    cancelPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPrePublishOrAcknowledgeMetadataItem(nameHash, contributor)) {
+            throw new Error("Contributor cannot confirm");
+        }
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+    }
+
     canPreAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
         const metadata = this.getMetadataOrThrow(nameHash);
         return this.canPreAcknowledge(metadata, contributor);
@@ -841,11 +908,21 @@ export class LocRequestAggregateRoot {
     }
 
     preAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        if(!this.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
+            throw new Error("Contributor cannot ack");
+        }
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
+    }
+
+    cancelPreAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+        if(!this.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
+            throw new Error("Contributor cannot cancel");
+        }
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.cancelPreAcknowledge(this.isVerifiedIssuer(contributor)));
     }
 
     private mutateMetadataItem(nameHash: Hash, mutator: (item: LocMetadataItem) => void) {
@@ -971,12 +1048,29 @@ export class LocRequestAggregateRoot {
         this.mutateLink(target, link => link.lifecycle!.prePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
     }
 
+    cancelPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+        if (!this.canPrePublishOrAcknowledgeLink(target, contributor)) {
+            throw new Error("Contributor cannot confirm");
+        }
+        this.mutateLink(target, link => link.lifecycle!.cancelPrePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
+    }
+
     preAcknowledgeLink(target: string, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+        if(!this.canPreAcknowledgeLink(target, contributor)) {
+            throw new Error("Contributor cannot ack");
+        }
         this.mutateLink(target, link => link.lifecycle!.preAcknowledge(
             this.isVerifiedIssuer(link.submitter?.toSupportedAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
+    }
+
+    cancelPreAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+        if(!this.canPreAcknowledgeLink(target, contributor)) {
+            throw new Error("Contributor cannot ack");
+        }
+        this.mutateLink(target, link => link.lifecycle!.cancelPreAcknowledge(this.isVerifiedIssuer(contributor)));
     }
 
     canPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
@@ -1664,11 +1758,21 @@ export class LocRequestRepository {
         if(request.status !== "DRAFT" && request.status !== "REVIEW_REJECTED" && request.status !== "REVIEW_ACCEPTED") {
             throw new Error("Cannot delete non-draft and non-reviewed request");
         }
+        await this.deleteRequest(request);
+    }
 
+    private async deleteRequest(request: LocRequestAggregateRoot) {
         await this.repository.manager.delete(LocFile, { requestId: request.id });
         await this.repository.manager.delete(LocMetadataItem, { requestId: request.id });
         await this.repository.manager.delete(LocLink, { requestId: request.id });
         await this.repository.manager.delete(LocRequestAggregateRoot, request.id);
+    }
+
+    async deleteOpen(request: LocRequestAggregateRoot): Promise<void> {
+        if(request.status !== "OPEN") {
+            throw new Error("Cannot delete non-open request");
+        }
+        await this.deleteRequest(request);
     }
 
     public async findAllDeliveries(query: { collectionLocId: string, hash?: Hash }): Promise<Record<string, LocFileDelivered[]>> {
