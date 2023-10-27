@@ -917,6 +917,26 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static cancelOpenLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/open"].delete!;
+        operationObject.summary = "Cancels LOC opening";
+        operationObject.description = "The authenticated user must be the Polkadot requester of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
+    }
+
+    @HttpDelete('/:requestId/open')
+    @Async()
+    @SendsResponse()
+    async cancelOpenLoc(_body: any, requestId: string, @QueryParam() autoPublish: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => request.canOpen(user), "LOC must be opened by Polkadot requester");
+            request.cancelPreOpen(autoPublish === "true" || false);
+        });
+        this.response.sendStatus(204);
+    }
+
     static closeLoc(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/close"].post!;
         operationObject.summary = "Closes a LOC";

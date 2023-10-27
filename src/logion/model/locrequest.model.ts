@@ -415,6 +415,22 @@ export class LocRequestAggregateRoot {
         return item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())
     }
 
+    cancelPreOpen(autoPublish: boolean): void {
+        if(this.status !== "OPEN") {
+            throw new Error(`Cannot cancel open, status is ${ this.status }`);
+        }
+        if(autoPublish) {
+            this.cancelPublishAllAcceptedItems();
+        }
+        this.status = 'REVIEW_ACCEPTED';
+    }
+
+    private cancelPublishAllAcceptedItems() {
+        this.mutateAllItems(item => item.lifecycle?.cancelPrePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.metadata, item => item.status === "PUBLISHED" && !item.lifecycle?.addedOn);
+        this.mutateAllItems(item => item.lifecycle?.cancelPrePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.files, item => item.status === "PUBLISHED" && !item.lifecycle?.addedOn);
+        this.mutateAllItems(item => item.lifecycle?.cancelPrePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.links, item => item.status === "PUBLISHED" && !item.lifecycle?.addedOn);
+    }
+
     getDescription(): LocRequestDescription {
         const userIdentity = toUserIdentity(this.userIdentity);
         const userPostalAddress = this.userPostalAddress &&
@@ -767,10 +783,11 @@ export class LocRequestAggregateRoot {
     }
 
     cancelPreClose(autoAck: boolean) {
+        if(this.status !== "CLOSED") {
+            throw new Error(`Cannot cancel closed, status is ${ this.status }`);
+        }
         if(autoAck) {
             this.cancelPreAckItems();
-        } else {
-            this.ensureAllItemsAcked();
         }
         this.status = 'OPEN';
     }

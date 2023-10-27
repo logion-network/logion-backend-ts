@@ -300,6 +300,12 @@ describe("LocRequestAggregateRoot", () => {
         thenRequestStatusIs('OPEN');
     });
 
+    it("cancels pre-open", () => {
+        givenRequestWithStatus('OPEN');
+        request.cancelPreOpen(false);
+        thenRequestStatusIs('REVIEW_ACCEPTED');
+    });
+
     it("fails reject given already open", () => {
         givenRequestWithStatus('OPEN');
         expect(() => whenRejecting(REJECT_REASON, REJECTED_ON)).toThrowError();
@@ -331,6 +337,12 @@ describe("LocRequestAggregateRoot", () => {
         givenRequestWithStatus('OPEN');
         whenPreClosing();
         thenRequestStatusIs('CLOSED');
+    });
+
+    it("cancels pre-close", () => {
+        givenRequestWithStatus('CLOSED');
+        request.cancelPreClose(false);
+        thenRequestStatusIs('OPEN');
     });
 
     it("closes", () => {
