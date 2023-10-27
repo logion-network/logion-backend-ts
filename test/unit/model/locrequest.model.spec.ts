@@ -443,188 +443,6 @@ describe("LocRequestAggregateRoot", () => {
         const payload = JSON.parse(rawJson);
         expect(() => request.updateIdenfyVerification(payload, rawJson)).toThrowError("iDenfy verification was not initiated");
     });
-
-    it("confirms metadata acknowledgment (owner only)", () => {
-        givenRequestWithStatus('OPEN');
-        const name = "name";
-        const nameHash = Hash.of(name);
-        request.addMetadataItem({
-            name,
-            submitter: SUBMITTER,
-            value: "value",
-        }, "MANUAL_BY_USER");
-        request.requestMetadataItemReview(nameHash);
-        request.acceptMetadataItem(nameHash);
-        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
-
-        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms metadata acknowledgment (owner then verified issuer)", () => {
-        givenRequestWithStatus('OPEN');
-        const name = "name";
-        const nameHash = Hash.of(name);
-        request.addMetadataItem({
-            name,
-            submitter: VERIFIED_ISSUER,
-            value: "value",
-        }, "MANUAL_BY_USER");
-        request.requestMetadataItemReview(nameHash);
-        request.acceptMetadataItem(nameHash);
-        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
-
-        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
-
-        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms metadata acknowledgment (verified issuer then owner)", () => {
-        givenRequestWithStatus('OPEN');
-        const name = "name";
-        const nameHash = Hash.of(name);
-        request.addMetadataItem({
-            name,
-            submitter: VERIFIED_ISSUER,
-            value: "value",
-        }, "MANUAL_BY_USER");
-        request.requestMetadataItemReview(nameHash);
-        request.acceptMetadataItem(nameHash);
-        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
-
-        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
-
-        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms link acknowledgment (owner only)", () => {
-        givenRequestWithStatus('OPEN');
-        const target = new UUID().toString();
-        request.addLink({
-            target: target,
-            nature: "SomeLinkedLoc",
-            submitter: SUBMITTER,
-        }, "MANUAL_BY_USER");
-        request.requestLinkReview(target);
-        request.acceptLink(target);
-        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
-
-        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms metadata acknowledgment (owner then verified issuer)", () => {
-        givenRequestWithStatus('OPEN');
-        const target = new UUID().toString();
-        request.addLink({
-            target: target,
-            nature: "SomeLinkedLoc",
-            submitter: VERIFIED_ISSUER,
-        }, "MANUAL_BY_USER");
-        request.requestLinkReview(target);
-        request.acceptLink(target);
-        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
-
-        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
-
-        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms metadata acknowledgment (verified issuer then owner)", () => {
-        givenRequestWithStatus('OPEN');
-        const target = new UUID().toString();
-        request.addLink({
-            target: target,
-            nature: "SomeLinkedLoc",
-            submitter: VERIFIED_ISSUER,
-        }, "MANUAL_BY_USER");
-        request.requestLinkReview(target);
-        request.acceptLink(target);
-        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
-
-        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
-
-        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms file acknowledgment (owner only)", () => {
-        givenRequestWithStatus('OPEN');
-        const hash = Hash.of("test");
-        request.addFile({
-            name: "name",
-            submitter: SUBMITTER,
-            hash,
-            cid: "cid",
-            contentType: "text/plain",
-            nature: "nature",
-            restrictedDelivery: false,
-            size: 4,
-        }, "MANUAL_BY_USER");
-        request.requestFileReview(hash);
-        request.acceptFile(hash);
-        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
-
-        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
-
-        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
-        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
-
-    it("confirms file acknowledgment (owner and verified issuer)", () => {
-        givenRequestWithStatus('OPEN');
-        const hash = Hash.of("test");
-        request.addFile({
-            name: "name",
-            submitter: SUBMITTER,
-            hash,
-            cid: "cid",
-            contentType: "text/plain",
-            nature: "nature",
-            restrictedDelivery: false,
-            size: 4,
-        }, "MANUAL_BY_USER");
-        request.requestFileReview(hash);
-        request.acceptFile(hash);
-        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
-
-        request.preAcknowledgeFile(hash, VERIFIED_ISSUER, moment());
-        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
-        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
-        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
-
-        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
-        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
-        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
-    });
 });
 
 function idenfyCallbackPayload(status: IdenfyVerificationStatus) {
@@ -724,6 +542,24 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenMetadataItemRequiresUpdate(nameHash)
     })
 
+    it("cancels requester metadata item pre-publish", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "target-1";
+        const nameHash = Hash.of(name);
+        whenAddingMetadata([
+            {
+                name,
+                value: "value-1",
+                submitter: SUBMITTER,
+            }
+        ], "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        whenConfirmingMetadataItem(nameHash, SUBMITTER);
+        request.cancelPrePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+        thenMetadataItemStatusIs(nameHash, "REVIEW_ACCEPTED");
+    })
+
     it("exposes draft, owner-submitted metadata to requester", () => {
         givenRequestWithStatus('OPEN');
         const name = "target-3";
@@ -749,6 +585,132 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         ], "MANUAL_BY_OWNER")
         thenMetadataIsVisibleToRequester(name);
     })
+
+    it("confirms metadata acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: SUBMITTER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms metadata acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT, moment());
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("cancel metadata acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: SUBMITTER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancel metadata acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancel metadata acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "name";
+        const nameHash = Hash.of(name);
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "value",
+        }, "MANUAL_BY_USER");
+        request.requestMetadataItemReview(nameHash);
+        request.acceptMetadataItem(nameHash);
+        request.prePublishOrAcknowledgeMetadataItem(nameHash, SUBMITTER);
+
+        request.preAcknowledgeMetadataItem(nameHash, VERIFIED_ISSUER);
+        request.preAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
+        expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
+    });
 })
 
 describe("LocRequestAggregateRoot (links)", () => {
@@ -850,6 +812,142 @@ describe("LocRequestAggregateRoot (links)", () => {
         thenLinkStatusIs(target, "PUBLISHED");
         thenLinkRequiresUpdate(target)
     })
+
+    it("cancels link pre-publish", () => {
+        givenRequestWithStatus('OPEN');
+        const target = "target-1";
+        whenAddingLinks([
+            {
+                target,
+                nature: "nature-1",
+                submitter: SUBMITTER,
+            }
+        ], "MANUAL_BY_OWNER");
+        whenConfirmingLink(target, SUBMITTER);
+        thenLinkStatusIs(target, "PUBLISHED");
+        request.cancelPrePublishOrAcknowledgeLink(target, SUBMITTER);
+        thenLinkStatusIs(target, "REVIEW_ACCEPTED");
+    })
+
+    it("confirms link acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: SUBMITTER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms link acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms link acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT, moment());
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("cancels link acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: SUBMITTER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeLink(target, OWNER_ACCOUNT);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancels link acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT);
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeLink(target, VERIFIED_ISSUER);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancels link acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target: target,
+            nature: "SomeLinkedLoc",
+            submitter: VERIFIED_ISSUER,
+        }, "MANUAL_BY_USER");
+        request.requestLinkReview(target);
+        request.acceptLink(target);
+        request.prePublishOrAcknowledgeLink(target, SUBMITTER);
+
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER);
+        request.preAcknowledgeLink(target, OWNER_ACCOUNT);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeLink(target, OWNER_ACCOUNT);
+        expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
+    });
 })
 
 describe("LocRequestAggregateRoot (files)", () => {
@@ -981,6 +1079,27 @@ describe("LocRequestAggregateRoot (files)", () => {
         whenConfirmingFile(hash, SUBMITTER)
         thenFileStatusIs(hash, "PUBLISHED")
         thenFileRequiresUpdate(hash)
+    })
+
+    it("cancel file pre-publish", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("hash-1");
+        whenAddingFiles([
+            {
+                hash,
+                name: "name1",
+                contentType: "text/plain",
+                cid: "cid-1234",
+                nature: "nature1",
+                submitter: SUBMITTER,
+                restrictedDelivery: false,
+                size: 123,
+            }
+        ], "MANUAL_BY_OWNER");
+        whenConfirmingFile(hash, SUBMITTER);
+        thenFileStatusIs(hash, "PUBLISHED");
+        request.cancelPrePublishOrAcknowledgeFile(hash, SUBMITTER);
+        thenFileStatusIs(hash, "REVIEW_ACCEPTED");
     })
 
     it("exposes draft, owner-submitted file to requester", () => {
@@ -1143,6 +1262,155 @@ describe("LocRequestAggregateRoot (files)", () => {
         expect(() => {
             whenUpdatingFile(hash1, true);
         }).toThrowError("Can change restricted delivery of file only on Collection LOC.");
+    });
+
+    it("confirms file acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: SUBMITTER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
+
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms file acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: VERIFIED_ISSUER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).not.toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("confirms file acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: VERIFIED_ISSUER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByOwnerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).not.toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
+
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER, moment());
+        expect(request.getFileOrThrow(hash).lifecycle?.acknowledgedByVerifiedIssuerOn).toBeDefined();
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+    });
+
+    it("cancels file acknowledgment (owner only)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: SUBMITTER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeFile(hash, OWNER_ACCOUNT);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancels file acknowledgment (verified issuer then owner)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: VERIFIED_ISSUER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER);
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeFile(hash, OWNER_ACCOUNT);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
+    });
+
+    it("cancels file acknowledgment (owner then verified issuer)", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("test");
+        request.addFile({
+            name: "name",
+            submitter: VERIFIED_ISSUER,
+            hash,
+            cid: "cid",
+            contentType: "text/plain",
+            nature: "nature",
+            restrictedDelivery: false,
+            size: 4,
+        }, "MANUAL_BY_USER");
+        request.requestFileReview(hash);
+        request.acceptFile(hash);
+        request.prePublishOrAcknowledgeFile(hash, SUBMITTER);
+
+        request.preAcknowledgeFile(hash, OWNER_ACCOUNT);
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("ACKNOWLEDGED");
+        request.cancelPreAcknowledgeFile(hash, VERIFIED_ISSUER);
+        expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
     });
 });
 

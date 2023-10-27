@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse, HttpDelete } from "dinoloop";
+import { Controller, ApiController, HttpPost, Async, HttpPut, HttpGet, SendsResponse, HttpDelete, QueryParam } from "dinoloop";
 import { OpenAPIV3 } from "express-oas-generator";
 import { v4 as uuid } from "uuid";
 import moment from "moment";
@@ -67,6 +67,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 
     LocRequestController.createLocRequest(spec);
     LocRequestController.createOpenLoc(spec);
+    LocRequestController.cancelCreateOpenLoc(spec);
     LocRequestController.fetchRequests(spec);
     LocRequestController.getLocRequest(spec);
     LocRequestController.getPublicLoc(spec);
@@ -78,9 +79,12 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.requestFileReview(spec);
     LocRequestController.reviewFile(spec);
     LocRequestController.prePublishOrAcknowledgeFile(spec);
+    LocRequestController.cancelPrePublishOrAcknowledgeFile(spec);
     LocRequestController.preAcknowledgeFile(spec);
+    LocRequestController.cancelPreAcknowledgeFile(spec);
     LocRequestController.openLoc(spec);
     LocRequestController.closeLoc(spec);
+    LocRequestController.cancelCloseLoc(spec);
     LocRequestController.voidLoc(spec);
     LocRequestController.addLink(spec);
     LocRequestController.deleteLink(spec);
@@ -89,11 +93,15 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.requestLinkReview(spec);
     LocRequestController.reviewLink(spec);
     LocRequestController.prePublishOrAcknowledgeLink(spec);
+    LocRequestController.cancelPrePublishOrAcknowledgeLink(spec);
     LocRequestController.preAcknowledgeLink(spec);
+    LocRequestController.cancelPreAcknowledgeLink(spec);
     LocRequestController.addMetadata(spec);
     LocRequestController.deleteMetadata(spec);
     LocRequestController.prePublishOrAcknowledgeMetadataItem(spec);
+    LocRequestController.cancelPrePublishOrAcknowledgeMetadataItem(spec);
     LocRequestController.preAcknowledgeMetadataItem(spec);
+    LocRequestController.cancelPreAcknowledgeMetadataItem(spec);
     LocRequestController.createSofRequest(spec);
     LocRequestController.submitLocRequest(spec);
     LocRequestController.cancelLocRequest(spec);
@@ -342,6 +350,28 @@ export class LocRequestController extends ApiController {
             view: "FetchLocRequestsSpecificationView",
         });
         operationObject.responses = getDefaultResponses("FetchLocRequestsResponseView");
+    }
+
+    static cancelCreateOpenLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/open/{requestId}"].delete!;
+        operationObject.summary = "Cancels new open LOC";
+        operationObject.description = "The authenticated user must be either the requester";
+        operationObject.responses = getDefaultResponsesNoContent();
+    }
+
+    @HttpDelete("/open/:requestId")
+    @Async()
+    @SendsResponse()
+    async cancelCreateOpenLoc(requestId: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const request = await this.locRequestRepository.findById(requestId);
+        if(request && request.id) {
+            if(!request.isRequester(authenticatedUser)) {
+                throw unauthorized("Only requester can cancel request");
+            }
+            await this.locRequestService.deleteOpen(request.id);
+        }
+        this.response.sendStatus(204);
     }
 
     @HttpPut('')
@@ -786,6 +816,33 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static cancelPrePublishOrAcknowledgeFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/pre-publish-ack"].delete!;
+        operationObject.summary = "Cancels a file publication";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a file is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hashHex': "The hash of the file to download"
+        });
+    }
+
+    @HttpDelete('/:requestId/files/:hashHex/pre-publish-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPrePublishOrAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+        const hash = Hash.fromHex(hashHex);
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(request.canPrePublishOrAcknowledgeFile(hash, contributor)) {
+                request.cancelPrePublishOrAcknowledgeFile(hash, contributor);
+            } else {
+                throw unauthorized("Contributor cannot cancel");
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
     static preAcknowledgeFile(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/pre-publish-ack"].put!;
         operationObject.summary = "Confirms a file as acknowledged";
@@ -808,6 +865,33 @@ export class LocRequestController extends ApiController {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
                 request.preAcknowledgeFile(hash, contributor);
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
+    static cancelPreAcknowledgeFile(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/files/{hashHex}/pre-publish-ack"].delete!;
+        operationObject.summary = "Cancels a file acknowledgment";
+        operationObject.description = "The authenticated user must be the owner or the submitter";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'hashHex': "The hash of the file to download"
+        });
+    }
+
+    @HttpDelete('/:requestId/files/:hashHex/pre-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPreAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+        const hash = Hash.fromHex(hashHex);
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canPreAcknowledgeFile(hash, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.cancelPreAcknowledgeFile(hash, contributor);
             }
         });
         this.response.sendStatus(204);
@@ -849,6 +933,26 @@ export class LocRequestController extends ApiController {
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
             request.preClose(body.autoAck || false);
+        });
+        this.response.sendStatus(204);
+    }
+
+    static cancelCloseLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/close"].delete!;
+        operationObject.summary = "Cancels LOC closing";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
+    }
+
+    @HttpDelete('/:requestId/close')
+    @Async()
+    @SendsResponse()
+    async cancelCloseLoc(_body: any, requestId: string, @QueryParam() autoAck: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            request.cancelPreClose(autoAck === "true");
         });
         this.response.sendStatus(204);
     }
@@ -1021,6 +1125,32 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static cancelPrePublishOrAcknowledgeLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/pre-publish-ack"].delete!;
+        operationObject.summary = "Cancels a link publication";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a link is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The target of the link"
+        });
+    }
+
+    @HttpDelete('/:requestId/links/:target/pre-publish-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPrePublishOrAcknowledgeLink(_body: any, requestId: string, target: string) {
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
+                request.cancelPrePublishOrAcknowledgeLink(target, contributor);
+            } else {
+                throw unauthorized("Contributor cannot cancel");
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
     static preAcknowledgeLink(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/pre-ack"].put!;
         operationObject.summary = "Confirms a link as acknowledged";
@@ -1042,6 +1172,32 @@ export class LocRequestController extends ApiController {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
                 request.preAcknowledgeLink(target, contributor);
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
+    static cancelPreAcknowledgeLink(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/pre-ack"].delete!;
+        operationObject.summary = "Cancels a link acknowledgment";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'target': "The item's name hash"
+        });
+    }
+
+    @HttpDelete('/:requestId/links/:target/pre-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPreAcknowledgeLink(_body: any, requestId: string, target: string) {
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canPreAcknowledgeLink(target, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.cancelPreAcknowledgeLink(target, contributor);
             }
         });
         this.response.sendStatus(204);
@@ -1188,6 +1344,33 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static cancelPrePublishOrAcknowledgeMetadataItem(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHash}/pre-publish-ack"].delete!;
+        operationObject.summary = "Cancels a metadata item publication";
+        operationObject.description = "The authenticated user must be the owner of the LOC. Once a metadata item is confirmed, it cannot be deleted anymore.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'nameHash': "The item's name hash"
+        });
+    }
+
+    @HttpDelete('/:requestId/metadata/:nameHash/pre-publish-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPrePublishOrAcknowledgeMetadataItem(_body: any, requestId: string, nameHash: string) {
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const hash = Hash.fromHex(nameHash);
+            if(request.canPrePublishOrAcknowledgeMetadataItem(hash, contributor)) {
+                request.cancelPrePublishOrAcknowledgeMetadataItem(hash, contributor);
+            } else {
+                throw unauthorized("Contributor cannot confirm");
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
     static preAcknowledgeMetadataItem(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHashHex}/pre-ack"].put!;
         operationObject.summary = "Confirms a metadata item as acknowledged";
@@ -1210,6 +1393,33 @@ export class LocRequestController extends ApiController {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
                 request.preAcknowledgeMetadataItem(nameHash, contributor);
+            }
+        });
+        this.response.sendStatus(204);
+    }
+
+    static cancelPreAcknowledgeMetadataItem(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/metadata/{nameHashHex}/pre-ack"].delete!;
+        operationObject.summary = "Cancel a metadata item acknowledgment";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'nameHashHex': "The item's name hash"
+        });
+    }
+
+    @HttpDelete('/:requestId/metadata/:nameHashHex/pre-ack')
+    @Async()
+    @SendsResponse()
+    async cancelPreAcknowledgeMetadataItem(_body: any, requestId: string, nameHashHex: string) {
+        const nameHash = Hash.fromHex(nameHashHex);
+        await this.locRequestService.update(requestId, async request => {
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            if(!request.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
+                throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
+            } else {
+                request.cancelPreAcknowledgeMetadataItem(nameHash, contributor);
             }
         });
         this.response.sendStatus(204);
