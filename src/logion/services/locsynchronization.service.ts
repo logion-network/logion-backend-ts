@@ -5,7 +5,6 @@ import { Moment } from "moment";
 
 import { EMPTY_ITEMS, LocItems, LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
 import { JsonExtrinsic, toString, extractUuid } from "./types/responses/Extrinsic.js";
-import { CollectionFactory } from "../model/collection.model.js";
 import { LocRequestService } from './locrequest.service.js';
 import { CollectionService } from './collection.service.js';
 import { UserIdentity } from '../model/useridentity.js';
@@ -13,7 +12,6 @@ import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
-import { TokensRecordFactory } from '../model/tokensrecord.model.js';
 import { polkadotAccount } from '../model/supportedaccountid.model.js';
 
 const { logger } = Log;
@@ -23,7 +21,6 @@ export class LocSynchronizer {
 
     constructor(
         private locRequestRepository: LocRequestRepository,
-        private collectionFactory: CollectionFactory,
         private locRequestService: LocRequestService,
         private collectionService: CollectionService,
         private notificationService: NotificationService,
@@ -31,7 +28,6 @@ export class LocSynchronizer {
         private polkadotService: PolkadotService,
         private verifiedIssuerSelectionService: VerifiedIssuerSelectionService,
         private tokensRecordService: TokensRecordService,
-        private tokensRecordFactory: TokensRecordFactory,
     ) {}
 
     async updateLocRequests(extrinsic: JsonExtrinsic, timestamp: Moment) {

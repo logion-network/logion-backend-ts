@@ -27,6 +27,7 @@ import { NotificationService } from "../services/notification.service.js";
 import { DirectoryService } from "../services/directory.service.js";
 import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model.js';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
+import { LocalsObject } from 'pug';
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
 type VaultTransferRequestView = components["schemas"]["VaultTransferRequestView"];
@@ -135,7 +136,7 @@ export class VaultTransferRequestController extends ApiController {
         vaultTransfer: VaultTransferRequestDescription,
         protectionRequestDescription: ProtectionRequestDescription,
         decision?: VaultTransferRequestDecision
-    ): Promise<{ legalOfficerEmail: string, userEmail: string, data: any }> {
+    ): Promise<{ legalOfficerEmail: string, userEmail: string, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(vaultTransfer.legalOfficerAddress);
         return {
@@ -247,7 +248,7 @@ export class VaultTransferRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/accept')
-    async acceptVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
+    async acceptVaultTransferRequest(_body: never, id: string): Promise<VaultTransferRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.vaultTransferRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.legalOfficerAddress))
@@ -264,7 +265,7 @@ export class VaultTransferRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/cancel')
-    async cancelVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
+    async cancelVaultTransferRequest(_body: never, id: string): Promise<VaultTransferRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
 
         const request = await this.vaultTransferRequestService.update(id, async request => {
@@ -282,7 +283,7 @@ export class VaultTransferRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/resubmit')
-    async resubmitVaultTransferRequest(_body: any, id: string): Promise<VaultTransferRequestView> {
+    async resubmitVaultTransferRequest(_body: never, id: string): Promise<VaultTransferRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
 
         const request = await this.vaultTransferRequestService.update(id, async request => {

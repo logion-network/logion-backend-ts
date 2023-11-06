@@ -69,7 +69,9 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
         },
         userIdentity: undefined,
         userPostalAddress: undefined,
-        legalFee: 2000n,
+        fees: {
+            legalFee: 2000n,
+        }
     }
 }
 

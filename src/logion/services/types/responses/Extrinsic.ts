@@ -42,7 +42,7 @@ export function toStringWithoutError(extrinsic: JsonExtrinsic): string {
 export interface JsonEvent {
     section: string;
     method: string;
-    data: any[];
+    data: any[]; // eslint-disable-line @typescript-eslint/no-explicit-any
 }
 
 function methodToString(call: TypesJsonCall): string {

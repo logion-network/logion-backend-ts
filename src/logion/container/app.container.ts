@@ -62,7 +62,7 @@ import { SponsorshipService } from "../services/sponsorship.service.js";
 import { MultiversxService } from "../services/ownership/multiversx.service.js";
 import { AstarService, ConnectedAstarService } from "../services/ownership/astar.service.js";
 
-let container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
+const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
 
 container.bind(ProtectionRequestRepository).toSelf();

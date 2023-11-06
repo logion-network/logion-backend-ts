@@ -28,6 +28,7 @@ import { components } from './components.js';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
 import { DirectoryService } from "../services/directory.service.js";
 import { ProtectionRequestService } from '../services/protectionrequest.service.js';
+import { LocalsObject } from 'pug';
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -242,7 +243,7 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPut('/:id/recovery-info')
-    async fetchRecoveryInfo(_body: any, id: string): Promise<RecoveryInfoView> {
+    async fetchRecoveryInfo(_body: never, id: string): Promise<RecoveryInfoView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
 
         const recovery = await this.protectionRequestRepository.findById(id);
@@ -286,7 +287,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/resubmit')
     @SendsResponse()
-    async resubmit(_body: any, id: string): Promise<void> {
+    async resubmit(_body: never, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
@@ -307,7 +308,7 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('/:id/cancel')
     @SendsResponse()
-    async cancel(_body: any, id: string): Promise<void> {
+    async cancel(_body: never, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
@@ -355,7 +356,7 @@ export class ProtectionRequestController extends ApiController {
     }
 
     private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription):
-        Promise<{ legalOfficerEMail: string, data: any }> {
+        Promise<{ legalOfficerEMail: string, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(protection.legalOfficerAddress)
         const otherLegalOfficer = await this.directoryService.get(protection.otherLegalOfficerAddress)

@@ -8,12 +8,12 @@ import PSP34 from "./psp34.js";
 
 // Source: https://github.com/w3f/PSPs/blob/master/PSPs/psp-34.md#types
 export interface AstarTokenId {
-    U8?: any;
-    U16?: any;
-    U32?: any;
-    U64?: any;
-    U128?: any;
-    Bytes?: any;
+    U8?: unknown;
+    U16?: unknown;
+    U32?: unknown;
+    U64?: unknown;
+    U128?: unknown;
+    Bytes?: unknown;
 }
 
 export class AstarClient {
@@ -51,7 +51,7 @@ export class AstarClient {
             } else {
                 const type = this.contract.abi.messages[0].returnType;
                 const typeName = type?.lookupName || type?.type || "";
-                const result = this.contract.abi.registry.createTypeUnsafe(typeName, [okResult.data]) as any;
+                const result = this.contract.abi.registry.createTypeUnsafe(typeName, [okResult.data]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
                 if(result.isOk) {
                     const account = result.asOk;
                     return encodeAddress(account.toString(), 42);

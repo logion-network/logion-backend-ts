@@ -9,6 +9,7 @@ import {
     LocLink,
     LocType,
     LocFileDelivered,
+    EmbeddableLocFees,
 } from "../../../src/logion/model/locrequest.model.js";
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
@@ -370,7 +371,13 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()
     locRequest.status = status
-    locRequest.legalFee = "42"
+    locRequest.fees = new EmbeddableLocFees()
+    locRequest.fees.legalFee = "42"
+    if(locType === "Collection") {
+        locRequest.fees.valueFee = "42"
+        locRequest.fees.collectionItemFee = "21"
+        locRequest.fees.tokensRecordFee = "21"
+    }
 
     locRequest.links = []
     locRequest.addLink({

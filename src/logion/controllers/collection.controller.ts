@@ -117,7 +117,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId')
     @Async()
-    async getCollectionItems(_body: any, collectionLocId: string): Promise<CollectionItemsView> {
+    async getCollectionItems(_body: never, collectionLocId: string): Promise<CollectionItemsView> {
         const loc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`No LOC with ID ${collectionLocId}`));
         (await this.authenticationService.authenticatedUser(this.request))
@@ -166,7 +166,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/items/:itemId')
     @Async()
-    async getCollectionItem(_body: any, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
+    async getCollectionItem(_body: never, collectionLocId: string, itemId: string): Promise<CollectionItemView> {
         const collectionItem = await this.collectionRepository.findBy(collectionLocId, Hash.fromHex(itemId));
         if (collectionItem) {
             return this.toView(collectionItem.getDescription());
@@ -209,7 +209,7 @@ export class CollectionController extends ApiController {
 
     @HttpDelete('/:collectionLocId/items/:itemId')
     @Async()
-    async cancelItem(_body: any, collectionLocId: string, itemId: string): Promise<void> {
+    async cancelItem(_body: never, collectionLocId: string, itemId: string): Promise<void> {
         const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({
             collectionLocId,
             itemId: Hash.fromHex(itemId as HexString),
@@ -319,7 +319,7 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemIdHex/files/:hashHex')
     @Async()
     @SendsResponse()
-    async downloadItemFile(_body: any, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
+    async downloadItemFile(_body: never, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const itemId = Hash.fromHex(itemIdHex);
         const hash = Hash.fromHex(hashHex);
@@ -408,7 +408,7 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/files/:hashHex/:itemIdHex')
     @Async()
     @SendsResponse()
-    async downloadCollectionFile(_body: any, collectionLocId: string, hashHex: string, itemIdHex: string): Promise<void> {
+    async downloadCollectionFile(_body: never, collectionLocId: string, hashHex: string, itemIdHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const hash = Hash.fromHex(hashHex);
         const itemId = Hash.fromHex(itemIdHex);
@@ -487,7 +487,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/items/:itemId/check')
     @Async()
-    async checkOwnership(_body: any, collectionLocId: string, itemId: string): Promise<void> {
+    async checkOwnership(_body: never, collectionLocId: string, itemId: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionItem = await this.collectionRepository.findBy(collectionLocId, Hash.fromHex(itemId));
         if(!collectionItem) {
@@ -536,7 +536,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/:itemId/latest-deliveries')
     @Async()
-    async getLatestItemDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
+    async getLatestItemDeliveries(_body: never, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
         return this.getItemDeliveries({
             collectionLocId,
             itemId: Hash.fromHex(itemId),
@@ -605,7 +605,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/:itemId/all-deliveries')
     @Async()
-    async getAllItemDeliveries(_body: any, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
+    async getAllItemDeliveries(_body: never, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
@@ -629,7 +629,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/file-deliveries/:hash')
     @Async()
-    async getAllCollectionFileDeliveries(_body: any, collectionLocId: string, hash: string): Promise<CollectionFileDeliveriesResponse> {
+    async getAllCollectionFileDeliveries(_body: never, collectionLocId: string, hash: string): Promise<CollectionFileDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
@@ -697,7 +697,7 @@ export class CollectionController extends ApiController {
 
     @HttpGet('/:collectionLocId/file-deliveries')
     @Async()
-    async getAllCollectionDeliveries(_body: any, collectionLocId: string): Promise<CollectionDeliveriesResponse> {
+    async getAllCollectionDeliveries(_body: never, collectionLocId: string): Promise<CollectionDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
@@ -730,7 +730,7 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId/:itemIdHex/files/:hashHex/source')
     @Async()
     @SendsResponse()
-    async downloadFileSource(_body: any, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
+    async downloadFileSource(_body: never, collectionLocId: string, itemIdHex: string, hashHex: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));

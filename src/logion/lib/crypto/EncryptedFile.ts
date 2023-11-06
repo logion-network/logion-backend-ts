@@ -141,7 +141,7 @@ export class EncryptedFileReader {
     }
 
     async readAll(): Promise<Buffer> {
-        let chunks: Buffer[] = [];
+        const chunks: Buffer[] = [];
         let chunk = await this.read();
         while(chunk.length > 0) {
             chunks.push(chunk);

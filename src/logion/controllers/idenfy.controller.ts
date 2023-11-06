@@ -72,7 +72,7 @@ export class IdenfyController extends ApiController {
 
     @HttpPost('/callback')
     @Async()
-    async callback(body: any): Promise<void> {
+    async callback(body: unknown): Promise<void> {
         const payload = body as IdenfyCallbackPayload;
         if(!payload.final) {
             return;

@@ -270,8 +270,12 @@ describe("LocRequestFactory", () => {
             company: undefined,
             template: "some-template",
             sponsorshipId: new UUID(),
-            valueFee: locType === "Collection" ? 100n : undefined,
-            legalFee: 2000n,
+            fees: {
+                legalFee: 2000n,
+                valueFee: locType === "Collection" ? 100n : undefined,
+                collectionItemFee: locType === "Collection" ? 50n : undefined,
+                tokensRecordFee: locType === "Collection" ? 50n : undefined,
+            }
         };
     }
 });

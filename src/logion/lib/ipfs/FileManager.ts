@@ -33,7 +33,7 @@ export class DefaultFileManager extends FileManager {
     }
 
     private readonly configuration: DefaultFileManagerConfiguration;
-    private readonly ipfs: any;
+    private readonly ipfs: any; // eslint-disable-line @typescript-eslint/no-explicit-any
 
     async deleteFile(file: string): Promise<void> {
         await rm(file);

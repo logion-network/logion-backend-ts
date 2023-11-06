@@ -26,7 +26,7 @@ export class Scheduler {
                 this.running = true;
                 try {
                     await this.blockConsumer.consumeNewBlocks(() => moment());
-                } catch(e: any) {
+                } catch(e: any) { // eslint-disable-line @typescript-eslint/no-explicit-any
                     logger.error(e.message);
                     logger.error(e.stack);
                 } finally {

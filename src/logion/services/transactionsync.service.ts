@@ -29,7 +29,7 @@ export class TransactionSynchronizer {
 
     private toEntity(blockWithTransactions: BlockWithTransactions, transaction: Transaction): TransactionAggregateRoot {
         const createdOn = blockWithTransactions.timestamp!.toISOString();
-        let description: TransactionDescription = {
+        const description: TransactionDescription = {
             ...transaction,
             id: uuid(),
             blockNumber: blockWithTransactions.blockNumber!,

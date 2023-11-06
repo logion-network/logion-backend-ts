@@ -643,6 +643,27 @@
                     "address"
                 ]
             },
+            "LocFeesView": {
+                "type": "object",
+                "properties": {
+                    "valueFee": {
+                        "type": "string",
+                        "description": "The value fee associated with this collection LOC"
+                    },
+                    "legalFee": {
+                        "type": "string",
+                        "description": "The legal fee associated with this LOC"
+                    },
+                    "collectionItemFee": {
+                        "type": "string",
+                        "description": "The fee to be charged on item creation"
+                    },
+                    "tokensRecordFee": {
+                        "type": "string",
+                        "description": "The fee to be charged on tokens record creation"
+                    }
+                }
+            },
             "BaseLocView": {
                 "type": "object",
                 "properties": {
@@ -674,13 +695,8 @@
                         "type": "string",
                         "description": "The LOC's template or undefined"
                     },
-                    "valueFee": {
-                        "type": "string",
-                        "description": "The value fee associated with this collection LOC"
-                    },
-                    "legalFee": {
-                        "type": "string",
-                        "description": "The legal fee associated with this LOC"
+                    "fees": {
+                        "$ref": "#/components/schemas/LocFeesView"
                     }
                 },
                 "title": "BaseLocView",
@@ -991,13 +1007,8 @@
                         "type": "string",
                         "description": "The ID of the sponsorship to use"
                     },
-                    "valueFee": {
-                        "type": "string",
-                        "description": "The value fee associated with this collection LOC"
-                    },
-                    "legalFee": {
-                        "type": "string",
-                        "description": "The legal fee associated with this LOC"
+                    "fees": {
+                        "$ref": "#/components/schemas/LocFeesView"
                     }
                 },
                 "title": "LocRequestView",

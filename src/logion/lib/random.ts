@@ -6,4 +6,4 @@ export function randomAlphanumericString(length: number): string {
         str += ALPHANUMERICS.charAt(Math.floor(Math.random() * ALPHANUMERICS.length));
     }
     return str;
-};
+}

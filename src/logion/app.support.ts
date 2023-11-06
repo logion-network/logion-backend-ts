@@ -87,7 +87,7 @@ export function buildExpress(expressConfig?: ExpressConfig): Express {
 
     app.use(bodyParser.json({
         verify: (req, _res, buf) => {
-            (req as any).rawBody = buf;
+            (req as any).rawBody = buf; // eslint-disable-line @typescript-eslint/no-explicit-any
         }
     }));
     app.use(bodyParser.urlencoded({ extended: false }));

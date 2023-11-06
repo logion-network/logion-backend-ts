@@ -363,6 +363,16 @@ export interface components {
       /** @description The address. Depending on type, either a Polkadot address (SS58 format) or Ethereum (usual '0x' prefixed hexadecimal format) */
       address: string;
     };
+    LocFeesView: {
+      /** @description The value fee associated with this collection LOC */
+      valueFee?: string;
+      /** @description The legal fee associated with this LOC */
+      legalFee?: string;
+      /** @description The fee to be charged on item creation */
+      collectionItemFee?: string;
+      /** @description The fee to be charged on tokens record creation */
+      tokensRecordFee?: string;
+    };
     /**
      * BaseLocView 
      * @description Base LOC attributes
@@ -382,10 +392,7 @@ export interface components {
       company?: string;
       /** @description The LOC's template or undefined */
       template?: string;
-      /** @description The value fee associated with this collection LOC */
-      valueFee?: string;
-      /** @description The legal fee associated with this LOC */
-      legalFee?: string;
+      fees?: components["schemas"]["LocFeesView"];
     };
     OpenLocView: {
       /** @description The metadata attached to this LOC */
@@ -534,10 +541,7 @@ export interface components {
       template?: string;
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
-      /** @description The value fee associated with this collection LOC */
-      valueFee?: string;
-      /** @description The legal fee associated with this LOC */
-      legalFee?: string;
+      fees?: components["schemas"]["LocFeesView"];
     };
     /**
      * LocPublicView 

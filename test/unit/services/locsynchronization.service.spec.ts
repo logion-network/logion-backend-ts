@@ -6,10 +6,8 @@ import { LocSynchronizer } from "../../../src/logion/services/locsynchronization
 import { EMPTY_ITEMS, LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
 import {
-    CollectionFactory,
     CollectionRepository,
     CollectionItemAggregateRoot,
-    CollectionItemDescription
 } from "../../../src/logion/model/collection.model.js";
 import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
@@ -17,23 +15,20 @@ import { NotificationService } from "../../../src/logion/services/notification.s
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
-import { TokensRecordFactory, TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
+import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
 import { ALICE } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
-import { SupportedAccountId } from "src/logion/model/supportedaccountid.model.js";
 
 describe("LocSynchronizer", () => {
 
     beforeEach(() => {
         locRequestRepository = new Mock<LocRequestRepository>();
-        collectionFactory = new Mock<CollectionFactory>();
         collectionRepository = new Mock<CollectionRepository>();
         notificationService = new Mock();
         directoryService = new Mock();
         polkadotService = new Mock();
         verifiedIssuerSelectionService = new Mock();
-        tokensRecordFactory = new Mock();
         tokensRecordRepository = new Mock();
     });
 
@@ -134,7 +129,6 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addCollectionItem", { collection_loc_id: locId, item_id: itemId.toHex()});
         givenLocRequest();
         givenCollectionItem();
-        givenCollectionFactory();
         await whenConsumingBlock();
         thenCollectionItemSaved();
     });
@@ -143,7 +137,6 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("addCollectionItemWithTermsAndConditions", { collection_loc_id: locId, item_id: itemId.toHex() });
         givenLocRequest();
         givenCollectionItem();
-        givenCollectionFactory();
         await whenConsumingBlock();
         thenCollectionItemSaved();
     });
@@ -163,7 +156,6 @@ describe("LocSynchronizer", () => {
         givenLocExtrinsic("unknownExtrinsic", {});
         givenLocRequest();
         givenCollectionItem();
-        givenCollectionFactory();
         await expectAsync(whenConsumingBlock()).toBeRejected();
     });
 
@@ -211,7 +203,6 @@ const itemIdHex = "0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a68183468
 const itemId = Hash.fromHex(itemIdHex);
 const blockTimestamp = moment();
 let locRequestRepository: Mock<LocRequestRepository>;
-let collectionFactory: Mock<CollectionFactory>;
 let collectionRepository: Mock<CollectionRepository>;
 
 function givenLocExtrinsic(method: string, args: TypesJsonObject) {
@@ -247,14 +238,6 @@ function givenCollectionItem() {
     collectionRepository.setup(instance => instance.save(collectionItem.object())).returns(Promise.resolve());
 }
 
-function givenCollectionFactory() {
-    collectionFactory.setup(instance => instance.newItem(It.Is<CollectionItemDescription>(params =>
-        params.collectionLocId === locIdUuid &&
-        params.itemId.equalTo(itemId) &&
-        params.addedOn !== undefined
-    ))).returns(collectionItem.object())
-}
-
 let locRequest: Mock<LocRequestAggregateRoot>;
 let collectionItem: Mock<CollectionItemAggregateRoot>;
 
@@ -272,7 +255,6 @@ async function whenConsumingBlock() {
 function locSynchronizer(): LocSynchronizer {
     return new LocSynchronizer(
         locRequestRepository.object(),
-        collectionFactory.object(),
         new NonTransactionalLocRequestService(locRequestRepository.object()),
         new NonTransactionalCollectionService(collectionRepository.object()),
         notificationService.object(),
@@ -280,7 +262,6 @@ function locSynchronizer(): LocSynchronizer {
         polkadotService.object(),
         verifiedIssuerSelectionService.object(),
         new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
-        tokensRecordFactory.object(),
     );
 }
 
@@ -289,7 +270,6 @@ let directoryService: Mock<DirectoryService>;
 let polkadotService: Mock<PolkadotService>;
 let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
-let tokensRecordFactory: Mock<TokensRecordFactory>;
 
 function thenOpened() {
     locRequest.verify(instance => instance.open(IS_BLOCK_TIME, EMPTY_ITEMS));

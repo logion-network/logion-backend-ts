@@ -24,13 +24,13 @@ export class HashTransformer implements ValueTransformer {
     }
 }
 
-export function sha256(attributes: any[]): string {
+export function sha256(attributes: string[]): string {
     return hash(algorithm, attributes);
 }
 
-function hash(algorithm: string, attributes: any[], encoding: BinaryToTextEncoding = "base64"): string {
+function hash(algorithm: string, attributes: string[], encoding: BinaryToTextEncoding = "base64"): string {
     const hash = crypto.createHash(algorithm);
-    attributes.forEach(attribute => hash.update(Buffer.from(attribute.toString(), 'utf8')));
+    attributes.forEach(attribute => hash.update(Buffer.from(attribute, 'utf8')));
     return hash.digest(encoding);
 }
 

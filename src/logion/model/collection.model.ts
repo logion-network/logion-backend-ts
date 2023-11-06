@@ -347,7 +347,7 @@ export class CollectionRepository {
 
     private async saveFiles(root: CollectionItemAggregateRoot): Promise<void> {
         if(root.files) {
-            const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: CollectionItemFile) => E = (sql, _file) => sql
+            const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: CollectionItemFile) => E = sql => sql
                 .where("collection_loc_id = :locId", { locId: root.collectionLocId })
                 .andWhere("item_id = :itemId", { itemId: root.itemId });
             await saveChildren({
@@ -411,7 +411,7 @@ export class CollectionRepository {
 
     public async findLatestDeliveries(query: { collectionLocId: string, itemId: Hash, fileHash?: Hash, limit?: number }): Promise<Record<string, CollectionItemFileDelivered[]>> {
         const { collectionLocId, itemId, fileHash, limit } = query;
-        let builder = this.deliveredRepository.createQueryBuilder("delivery");
+        const builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
         builder.andWhere("delivery.item_id = :itemId", { itemId: itemId.toHex() });
         if(fileHash) {

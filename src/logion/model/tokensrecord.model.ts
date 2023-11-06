@@ -240,7 +240,7 @@ export class TokensRecordRepository {
 
     private async saveFiles(root: TokensRecordAggregateRoot): Promise<void> {
         if(root.files) {
-            const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: TokensRecordFile) => E = (sql, _file) => sql
+            const whereExpression: <E extends WhereExpressionBuilder>(sql: E, file: TokensRecordFile) => E = sql => sql
                 .where("collection_loc_id = :locId", { locId: root.collectionLocId })
                 .andWhere("record_id = :recordId", { recordId: root.recordId });
             await saveChildren({
@@ -293,7 +293,7 @@ export class TokensRecordRepository {
 
     public async findLatestDeliveries(query: { collectionLocId: string, recordId: Hash, fileHash?: Hash, limit?: number }): Promise<Record<string, TokensRecordFileDelivered[]>> {
         const { collectionLocId, recordId, fileHash, limit } = query;
-        let builder = this.deliveredRepository.createQueryBuilder("delivery");
+        const builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.collection_loc_id = :collectionLocId", { collectionLocId });
         builder.andWhere("delivery.record_id = :recordId", { recordId: recordId.toHex() });
         if(fileHash) {

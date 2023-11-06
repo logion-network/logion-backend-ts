@@ -110,7 +110,7 @@ export class LoFileController extends ApiController {
     @HttpGet('/:legalOfficerAddress/:id')
     @Async()
     @SendsResponse()
-    async downloadFile(_body: any, legalOfficerAddress: string, id: string): Promise<void> {
+    async downloadFile(_body: never, legalOfficerAddress: string, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         authenticatedUser.require(user => user.is(legalOfficerAddress));
         const file = requireDefined(

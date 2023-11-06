@@ -28,6 +28,7 @@ import {
 } from "./locrequest.controller.shared.js";
 import { UUID } from "@logion/node-api";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { LocalsObject } from "pug";
 
 const { mockAuthenticationForUserOrLegalOfficer, mockAuthenticationFailureWithInvalidSignature, setupApp } = TestApp;
 
@@ -81,7 +82,7 @@ describe('LocRequestController - Creation -', () => {
             .post('/api/loc-request')
             .send({
                 ...data,
-                legalFee: data.legalFee?.toString(),
+                fees: { legalFee: data.fees?.legalFee?.toString() },
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -102,7 +103,7 @@ describe('LocRequestController - Creation -', () => {
             .post('/api/loc-request')
             .send({
                 ...testDataWithLogionIdentity,
-                legalFee: testDataWithLogionIdentity.legalFee?.toString(),
+                fees: { legalFee: testDataWithLogionIdentity.fees?.legalFee?.toString() },
             })
             .expect(200)
             .expect('Content-Type', /application\/json/)
@@ -127,7 +128,7 @@ describe('LocRequestController - Creation -', () => {
             .post('/api/loc-request')
             .send({
                 ...data,
-                legalFee: data.legalFee?.toString(),
+                fees: { legalFee: data.fees?.legalFee?.toString() },
             })
             .expect(401)
             .expect('Content-Type', /application\/json/)
@@ -150,7 +151,7 @@ describe('LocRequestController - Creation -', () => {
             .send({
                 ...data,
                 sponsorshipId: EXISTING_SPONSORSHIP_ID.toString(),
-                legalFee: data.legalFee?.toString(),
+                fees: { legalFee: data.fees?.legalFee?.toString() },
             })
             .expect(400)
             .expect('Content-Type', /application\/json/)
@@ -173,8 +174,12 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
         .post('/api/loc-request')
         .send({
             ...data,
-            valueFee: data.valueFee?.toString(),
-            legalFee: data.legalFee?.toString(),
+            fees: {
+                legalFee: data.fees?.legalFee?.toString(),
+                valueFee: data.fees?.valueFee?.toString(),
+                collectionItemFee: data.fees?.collectionItemFee?.toString(),
+                tokensRecordFee: data.fees?.tokensRecordFee?.toString(),
+            },
         })
         .expect(expectedStatus)
         .expect('Content-Type', /application\/json/)
@@ -205,8 +210,12 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
         .post('/api/loc-request')
         .send({
             ...data,
-            valueFee: data.valueFee?.toString(),
-            legalFee: data.legalFee?.toString(),
+            fees: {
+                legalFee: data.fees?.legalFee?.toString(),
+                valueFee: data.fees?.valueFee?.toString(),
+                collectionItemFee: data.fees?.collectionItemFee?.toString(),
+                tokensRecordFee: data.fees?.tokensRecordFee?.toString(),
+            }
         })
         .expect(200)
         .expect('Content-Type', /application\/json/)
@@ -220,7 +229,7 @@ async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boo
     if(isLegalOfficer) {
         notificationService.verify(instance => instance.notify, Times.Never());
     } else {
-        notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<any>(data => {
+        notificationService.verify(instance => instance.notify("alice@logion.network", "loc-requested", It.Is<LocalsObject>(data => {
             return data.loc.locType === locType
         })));
     }
