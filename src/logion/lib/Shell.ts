@@ -8,19 +8,19 @@ export interface ShellExecResult {
 
 export abstract class ProcessHandler {
 
-    async onStdOut(data: any) {
+    async onStdOut(_data: any) { // eslint-disable-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
 
     }
 
-    async onStdErr(data: any) {
+    async onStdErr(_data: any) { // eslint-disable-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unused-vars
 
     }
 
-    async onClose(code: number | null) {
+    async onClose(_code: number | null) { // eslint-disable-line @typescript-eslint/no-unused-vars
 
     }
 
-    onStdIn(stdin: Writable) {
+    onStdIn(_stdin: Writable) { // eslint-disable-line @typescript-eslint/no-unused-vars
 
     }
 }

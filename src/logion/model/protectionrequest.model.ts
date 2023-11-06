@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, ObjectLiteral } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource, Log, badRequest } from "@logion/rest-api-core";
@@ -208,26 +208,26 @@ export class ProtectionRequestRepository {
     }
 
     public async findBy(specification: FetchProtectionRequestsSpecification): Promise<ProtectionRequestAggregateRoot[]> {
-        let builder = this.repository.createQueryBuilder("request");
+        const builder = this.repository.createQueryBuilder("request");
 
-        let where = (a: any, b?: any) => builder.where(a, b);
+        let where = (a: string, b?: ObjectLiteral) => builder.where(a, b);
 
         if(specification.expectedRequesterAddress !== null) {
             where("request.requester_address = :expectedRequesterAddress", {expectedRequesterAddress: specification.expectedRequesterAddress});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
         if(specification.expectedLegalOfficerAddress !== null) {
             where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
         if(specification.kind === 'RECOVERY') {
             where("request.is_recovery IS TRUE");
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         } else if(specification.kind === 'PROTECTION_ONLY') {
             where("request.is_recovery IS FALSE");
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
         if(specification.expectedStatuses.length > 0) {

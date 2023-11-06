@@ -34,7 +34,7 @@ export class VerifiedIssuerController extends ApiController {
 
     @HttpGet('/issuers-identity')
     @Async()
-    async getLegalOfficerVerifiedIssuersIdentity(_body: never): Promise<VerifiedIssuersIdentityResponse> {
+    async getLegalOfficerVerifiedIssuersIdentity(): Promise<VerifiedIssuersIdentityResponse> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await authenticatedUser.requireLegalOfficerOnNode();
 

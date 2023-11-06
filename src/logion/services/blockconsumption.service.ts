@@ -51,7 +51,7 @@ export class BlockConsumer {
             throw new Error("Out-of-sync error: last synced block number greater than head number");
         }
 
-        let blocksToSync = head - lastSynced;
+        const blocksToSync = head - lastSynced;
         let totalProcessedBlocks: bigint = 0n;
         let nextStop = this.nextStopNumber(lastSynced, head);
         const progressRateLogger = new ProgressRateLogger(now(), lastSynced, head, logger, 100n);

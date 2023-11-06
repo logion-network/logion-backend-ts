@@ -1,4 +1,4 @@
-import { Entity, PrimaryColumn, Column, Repository, Unique } from "typeorm";
+import { Entity, PrimaryColumn, Column, Repository, Unique, ObjectLiteral } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource } from "@logion/rest-api-core";
@@ -167,18 +167,18 @@ export class VaultTransferRequestRepository {
     }
 
     public async findBy(specification: FetchVaultTransferRequestsSpecification): Promise<VaultTransferRequestAggregateRoot[]> {
-        let builder = this.repository.createQueryBuilder("request");
+        const builder = this.repository.createQueryBuilder("request");
 
-        let where = (a: any, b?: any) => builder.where(a, b);
+        let where = (a: string, b?: ObjectLiteral) => builder.where(a, b);
 
         if(specification.expectedRequesterAddress !== null) {
             where("request.requester_address = :expectedRequesterAddress", {expectedRequesterAddress: specification.expectedRequesterAddress});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
         if(specification.expectedLegalOfficerAddress !== null) {
             where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
-            where = (a: any, b?: any) => builder.andWhere(a, b);
+            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
         if(specification.expectedStatuses.length > 0) {

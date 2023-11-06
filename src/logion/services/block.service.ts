@@ -34,7 +34,7 @@ export class BlockExtrinsicsService {
         let nextHash = hash;
         let index = arrayLength - 1;
         while(index >= 0) {
-            let nextBlock = await this.getBlockByHash(nextHash);
+            const nextBlock = await this.getBlockByHash(nextHash);
             blocks[index] = nextBlock;
             nextHash = nextBlock.block.header.parentHash;
             --index;

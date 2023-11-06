@@ -96,7 +96,7 @@ export function deleteIndexedChild<T extends IndexedChild>(arrayIndex: number, c
 }
 
 function reindexChildren<T extends IndexedChild>(dbIndex: number, children: T[]) {
-    for (let child of children) {
+    for (const child of children) {
         if (child.index! > dbIndex) {
             child.index = child.index! - 1;
             child._toUpdate = true;

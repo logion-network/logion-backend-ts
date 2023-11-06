@@ -289,8 +289,3 @@ export class TransactionExtractor {
         }
     }
 }
-
-interface Reservation {
-    who: string;
-    amount: bigint;
-}

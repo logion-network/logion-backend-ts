@@ -260,7 +260,7 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
         .then(response => {
             expect(response.body.id).toBe(REQUEST_ID);
             expect(response.body.voteId).toBe(VOTE_ID);
-            expect(response.body.legalFee).toBeDefined();
+            expect(response.body.fees.legalFee).toBeDefined();
             const file = response.body.files[0]
             expect(file.name).toBe(testFile.name)
             expect(file.nature).toBe(testFile.nature)

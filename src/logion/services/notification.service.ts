@@ -1,7 +1,7 @@
 import { Log } from "@logion/rest-api-core";
 import { readFileSync } from 'fs';
 import { injectable } from "inversify";
-import { compileTemplate, compile, Options } from "pug";
+import { compileTemplate, compile, Options, LocalsObject } from "pug";
 
 import { MailService } from "./mail.service.js";
 
@@ -85,7 +85,7 @@ export class NotificationService {
         return mailTemplate;
     }
 
-    async notify(to: string | undefined, templateId: Template, data: any): Promise<void> {
+    async notify(to: string | undefined, templateId: Template, data: LocalsObject): Promise<void> {
         if (!to) {
             logger.warn("Cannot notify undefined recipient")
             return
@@ -100,7 +100,7 @@ export class NotificationService {
             .catch(reason => logger.error("Failed to notify %s of '%s': %s", to, templateId, reason))
     }
 
-    renderMessage(templateId: Template, data: any): Message {
+    renderMessage(templateId: Template, data: LocalsObject): Message {
         const template: MailTemplate = this.getMailTemplate(templateId)
         return {
             subject: template.renderSubject(data),

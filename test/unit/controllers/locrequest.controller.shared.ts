@@ -104,8 +104,12 @@ export function testDataWithType(locType: LocType, draft?: boolean): Partial<Loc
         description: "I want to open a case",
         locType,
         draft,
-        valueFee: locType === "Collection" ? 100n : undefined,
-        legalFee: 2000n,
+        fees: {
+            legalFee: 2000n,
+            valueFee: locType === "Collection" ? 100n : undefined,
+            collectionItemFee: locType === "Collection" ? 50n : undefined,
+            tokensRecordFee: locType === "Collection" ? 50n : undefined,
+        }
     }
 }
 
@@ -135,7 +139,9 @@ export const testDataWithLogionIdentity: Partial<LocRequestDescription> = {
     ownerAddress: ALICE,
     description: "I want to open a case",
     locType: "Transaction",
-    legalFee: 2000n,
+    fees: {
+        legalFee: 2000n
+    },
 };
 
 export interface Mocks {

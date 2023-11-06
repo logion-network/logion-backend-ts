@@ -137,7 +137,7 @@ export class TransactionRepository {
     }
 
     async findByAddress(address: string): Promise<TransactionAggregateRoot[]> {
-        let builder = this.repository.createQueryBuilder("transaction");
+        const builder = this.repository.createQueryBuilder("transaction");
         builder.where("transaction.from_address = :address", { address });
         builder.orWhere("(transaction.to_address = :address AND transaction.successful is true)", { address });
         builder.orderBy("transaction.block_number", "DESC");
@@ -155,7 +155,7 @@ export class TransactionFactory {
 
     newTransaction(description: TransactionDescription): TransactionAggregateRoot {
         const { blockNumber, extrinsicIndex } = description;
-        let transaction = new TransactionAggregateRoot();
+        const transaction = new TransactionAggregateRoot();
         transaction.id = description.id;
         transaction.blockNumber = blockNumber.toString();
         transaction.extrinsicIndex = extrinsicIndex;

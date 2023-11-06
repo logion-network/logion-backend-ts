@@ -27,6 +27,7 @@ import {
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
 import { Hash, HashTransformer } from "../lib/crypto/hashing.js";
+import { toBigInt } from "../lib/convert.js";
 
 const { logger } = Log;
 
@@ -34,6 +35,13 @@ export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
 export type LocType = components["schemas"]["LocType"];
 export type IdentityLocType = components["schemas"]["IdentityLocType"];
 export type ItemStatus = components["schemas"]["ItemStatus"];
+
+export interface LocFees {
+    readonly valueFee?: bigint;
+    readonly legalFee?: bigint;
+    readonly collectionItemFee?: bigint;
+    readonly tokensRecordFee?: bigint;
+}
 
 export interface LocRequestDescription {
     readonly requesterAddress?: SupportedAccountId;
@@ -48,8 +56,7 @@ export interface LocRequestDescription {
     readonly company?: string;
     readonly template?: string;
     readonly sponsorshipId?: UUID;
-    readonly valueFee?: bigint;
-    readonly legalFee?: bigint;
+    readonly fees: LocFees;
 }
 
 export interface LocRequestDecision {
@@ -354,6 +361,43 @@ export const EMPTY_ITEMS: LocItems = {
     metadataNameHashes: [],
 };
 
+export class EmbeddableLocFees {
+
+    @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
+    valueFee?: string | null;
+
+    @Column("numeric", { name: "legal_fee", precision: AMOUNT_PRECISION, nullable: true })
+    legalFee?: string | null;
+
+    @Column("numeric", { name: "collection_item_fee", precision: AMOUNT_PRECISION, nullable: true })
+    collectionItemFee?: string | null;
+
+    @Column("numeric", { name: "tokens_record_fee", precision: AMOUNT_PRECISION, nullable: true })
+    tokensRecordFee?: string | null;
+
+    static from(fees: LocFees | undefined): EmbeddableLocFees | undefined {
+        if(fees) {
+            const embeddable = new EmbeddableLocFees();
+            embeddable.valueFee = fees.valueFee?.toString();
+            embeddable.legalFee = fees.legalFee?.toString();
+            embeddable.collectionItemFee = fees.collectionItemFee?.toString();
+            embeddable.tokensRecordFee = fees.tokensRecordFee?.toString();
+            return embeddable;
+        } else {
+            return undefined;
+        }
+    }
+
+    to(): LocFees {
+        return {
+            valueFee: toBigInt(this.valueFee),
+            legalFee: toBigInt(this.legalFee),
+            collectionItemFee: toBigInt(this.collectionItemFee),
+            tokensRecordFee: toBigInt(this.tokensRecordFee),
+        }
+    }
+}
+
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
 
@@ -455,8 +499,7 @@ export class LocRequestAggregateRoot {
             company: this.company!,
             template: this.template,
             sponsorshipId: this.sponsorshipId ? new UUID(this.sponsorshipId) : undefined,
-            valueFee: this.valueFee ? BigInt(this.valueFee) : undefined,
-            legalFee: this.legalFee ? BigInt(this.legalFee) : undefined,
+            fees: this.fees ? this.fees.to() : {},
         };
     }
 
@@ -1364,11 +1407,8 @@ export class LocRequestAggregateRoot {
     @Column({ type: "uuid", name: "sponsorship_id", nullable: true, unique: true })
     sponsorshipId?: string;
 
-    @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
-    valueFee?: string;
-
-    @Column("numeric", { name: "legal_fee", precision: AMOUNT_PRECISION, nullable: true })
-    legalFee?: string;
+    @Column(() => EmbeddableLocFees, { prefix: "" })
+    fees?: EmbeddableLocFees;
 
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
@@ -1702,7 +1742,7 @@ export class LocRequestRepository {
     }
 
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
-        let builder = this.createQueryBuilder(specification)
+        const builder = this.createQueryBuilder(specification)
             .leftJoinAndSelect("request.files", "file")
             .leftJoinAndSelect("file.delivered", "delivered")
             .leftJoinAndSelect("request.metadata", "metadata_item")
@@ -1723,7 +1763,7 @@ export class LocRequestRepository {
     }
 
     public createQueryBuilder(specification: FetchLocRequestsSpecification): SelectQueryBuilder<LocRequestAggregateRoot> {
-        let builder = this.repository.createQueryBuilder("request")
+        const builder = this.repository.createQueryBuilder("request")
 
         if (specification.expectedRequesterAddress) {
             builder.andWhere("request.requester_address = :expectedRequesterAddress",
@@ -1794,7 +1834,7 @@ export class LocRequestRepository {
 
     public async findAllDeliveries(query: { collectionLocId: string, hash?: Hash }): Promise<Record<string, LocFileDelivered[]>> {
         const { collectionLocId, hash } = query;
-        let builder = this.deliveredRepository.createQueryBuilder("delivery");
+        const builder = this.deliveredRepository.createQueryBuilder("delivery");
         builder.where("delivery.request_id = :collectionLocId", { collectionLocId });
         if (hash) {
             builder.andWhere("delivery.hash = :hash", { hash: hash.toHex() });
@@ -1932,10 +1972,11 @@ export class LocRequestFactory {
         request.template = description.template;
         request.sponsorshipId = description.sponsorshipId?.toString();
         if(request.locType === "Collection") {
-            const valueFee = requireDefined(description.valueFee, () => new Error("Collection LOC must have a value fee"));
-            request.valueFee = valueFee.toString();
+            requireDefined(description.fees.valueFee, () => new Error("Collection LOC must have a value fee"));
+            requireDefined(description.fees.collectionItemFee, () => new Error("Collection LOC must have a collection item fee"));
+            requireDefined(description.fees.tokensRecordFee, () => new Error("Collection LOC must have a tokens record fee"));
         }
-        request.legalFee = description.legalFee?.toString();
+        request.fees = EmbeddableLocFees.from(description.fees);
         return request;
     }
 

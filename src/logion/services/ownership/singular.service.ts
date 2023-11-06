@@ -12,6 +12,6 @@ export class SingularService {
      */
     async getOwners(nftId: string): Promise<string[]> {
         const response = await axios.get(`https://singular.app/api/nft/${nftId}`);
-        return response.data.nfts.map((nft: any) => encodeAddress(nft.owner, 42));
+        return response.data.nfts.map((nft: any) => encodeAddress(nft.owner, 42)); // eslint-disable-line @typescript-eslint/no-explicit-any
     }
 }

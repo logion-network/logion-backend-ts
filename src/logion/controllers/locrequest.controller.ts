@@ -17,7 +17,8 @@ import {
     FileParams,
     StoredFile,
     LinkParams,
-    SubmissionType
+    SubmissionType,
+    LocFees
 } from "../model/locrequest.model.js";
 import {
     getRequestBody,
@@ -35,7 +36,7 @@ import {
     forbidden,
     unauthorized,
 } from "@logion/rest-api-core";
-import { UUID } from "@logion/node-api";
+import { LocType, UUID } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -54,6 +55,8 @@ import { LocAuthorizationService } from "../services/locauthorization.service.js
 import { accountEquals, polkadotAccount } from "../model/supportedaccountid.model.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
 import { Hash } from "../lib/crypto/hashing.js";
+import { toBigInt } from "../lib/convert.js";
+import { LocalsObject } from "pug";
 
 const { logger } = Log;
 
@@ -126,6 +129,7 @@ type ReviewItemView = components["schemas"]["ReviewItemView"];
 type OpenLocView = components["schemas"]["OpenLocView"];
 type CloseView = components["schemas"]["CloseView"];
 type OpenView = components["schemas"]["OpenView"];
+type LocFeesView = components["schemas"]["LocFeesView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -178,11 +182,6 @@ export class LocRequestController extends ApiController {
                 throw badRequest("" + e);
             }
         }
-        const valueFee = createLocRequestView.valueFee !== undefined ? BigInt(createLocRequestView.valueFee) : undefined;
-        if (valueFee === undefined && locType === "Collection") {
-            throw badRequest("Value fee must be set for collection LOCs");
-        }
-        const legalFee = createLocRequestView.legalFee !== undefined ? BigInt(createLocRequestView.legalFee) : undefined;
         const description: LocRequestDescription = {
             requesterAddress,
             requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
@@ -195,8 +194,7 @@ export class LocRequestController extends ApiController {
             company: createLocRequestView.company,
             template: createLocRequestView.template,
             sponsorshipId,
-            valueFee,
-            legalFee,
+            fees: this.toLocFees(createLocRequestView.fees, locType),
         }
         if (locType === "Identity") {
             if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {
@@ -232,6 +230,28 @@ export class LocRequestController extends ApiController {
         return this.locRequestAdapter.toView(request, authenticatedUser, { userIdentity, userPostalAddress, identityLocId });
     }
 
+    private toLocFees(view: LocFeesView | undefined, locType: LocType): LocFees {
+        const valueFee = toBigInt(view?.valueFee);
+        if (valueFee === undefined && locType === "Collection") {
+            throw badRequest("Value fee must be set for collection LOCs");
+        }
+        const collectionItemFee = toBigInt(view?.collectionItemFee);
+        if (collectionItemFee === undefined && locType === "Collection") {
+            throw badRequest("Collection item fee must be set for collection LOCs");
+        }
+        const tokensRecordFee = toBigInt(view?.tokensRecordFee);
+        if (tokensRecordFee === undefined && locType === "Collection") {
+            throw badRequest("Tokens record fee must be set for collection LOCs");
+        }
+        const legalFee = toBigInt(view?.legalFee);
+        return {
+            valueFee,
+            legalFee,
+            collectionItemFee,
+            tokensRecordFee,
+        };
+    }
+
     static createOpenLoc(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/open"].post!;
         operationObject.summary = "Creates a new LOC";
@@ -250,11 +270,6 @@ export class LocRequestController extends ApiController {
         const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
         const locType = requireDefined(openLocView.locType);
         const requesterAddress = polkadotAccount(authenticatedUser.address);
-        const valueFee = openLocView.valueFee !== undefined ? BigInt(openLocView.valueFee) : undefined;
-        if (valueFee === undefined && locType === "Collection") {
-            throw badRequest("Value fee must be set for collection LOCs");
-        }
-        const legalFee = openLocView.legalFee !== undefined ? BigInt(openLocView.legalFee) : undefined;
         const description: LocRequestDescription = {
             requesterAddress,
             ownerAddress,
@@ -265,8 +280,7 @@ export class LocRequestController extends ApiController {
             userPostalAddress: locType === "Identity" ? this.fromUserPostalAddressView(openLocView.userPostalAddress) : undefined,
             company: openLocView.company,
             template: openLocView.template,
-            valueFee,
-            legalFee,
+            fees: this.toLocFees(openLocView.fees, locType),
         }
         const validIdLoc = await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress);
         if (validIdLoc && locType === "Identity") {
@@ -404,7 +418,7 @@ export class LocRequestController extends ApiController {
 
     @HttpGet('/:requestId')
     @Async()
-    async getLocRequest(_body: any, requestId: string): Promise<LocRequestView> {
+    async getLocRequest(_body: never, requestId: string): Promise<LocRequestView> {
         try {
             const request = requireDefined(await this.locRequestRepository.findById(requestId));
             const { contributor } = await this.ensureContributorOrVoter(request);
@@ -449,7 +463,7 @@ export class LocRequestController extends ApiController {
 
     @HttpGet('/:requestId/public')
     @Async()
-    async getPublicLoc(_body: any, requestId: string): Promise<LocPublicView> {
+    async getPublicLoc(_body: never, requestId: string): Promise<LocPublicView> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         if (request.status === 'OPEN' || request.status === 'CLOSED') {
             return this.toPublicView(request);
@@ -553,7 +567,7 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/submit')
     @Async()
-    async submitLocRequest(_ignoredBody: any, requestId: string) {
+    async submitLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
@@ -573,7 +587,7 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/cancel')
     @Async()
-    async cancelLocRequest(_ignoredBody: any, requestId: string) {
+    async cancelLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestService.deleteDraftRejectedOrAccepted(requestId, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
@@ -593,7 +607,7 @@ export class LocRequestController extends ApiController {
 
     @HttpPost('/:requestId/rework')
     @Async()
-    async reworkLocRequest(_ignoredBody: any, requestId: string) {
+    async reworkLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.requesterAddress));
@@ -672,7 +686,7 @@ export class LocRequestController extends ApiController {
     @HttpGet('/:requestId/files/:hash')
     @Async()
     @SendsResponse()
-    async downloadFile(_body: any, requestId: string, hash: string): Promise<void> {
+    async downloadFile(_body: never, requestId: string, hash: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
         const { contributor, voter } = await this.ensureContributorOrVoter(request);
 
@@ -710,7 +724,7 @@ export class LocRequestController extends ApiController {
 
     @HttpDelete('/:requestId/files/:hash')
     @Async()
-    async deleteFile(_body: any, requestId: string, hash: string): Promise<void> {
+    async deleteFile(_body: never, requestId: string, hash: string): Promise<void> {
         let file: FileDescription | undefined;
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -735,7 +749,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/files/:hash/review-request')
     @Async()
     @SendsResponse()
-    async requestFileReview(_body: any, requestId: string, hash: string) {
+    async requestFileReview(_body: never, requestId: string, hash: string) {
         const request = await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
@@ -803,7 +817,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/files/:hashHex/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async prePublishOrAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+    async prePublishOrAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -830,7 +844,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/files/:hashHex/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async cancelPrePublishOrAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+    async cancelPrePublishOrAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -857,7 +871,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/files/:hashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async preAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+    async preAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -884,7 +898,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/files/:hashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async cancelPreAcknowledgeFile(_body: any, requestId: string, hashHex: string) {
+    async cancelPreAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -928,7 +942,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/open')
     @Async()
     @SendsResponse()
-    async cancelOpenLoc(_body: any, requestId: string, @QueryParam() autoPublish: string) {
+    async cancelOpenLoc(_body: never, requestId: string, @QueryParam() autoPublish: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => request.canOpen(user), "LOC must be opened by Polkadot requester");
@@ -968,7 +982,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/close')
     @Async()
     @SendsResponse()
-    async cancelCloseLoc(_body: any, requestId: string, @QueryParam() autoAck: string) {
+    async cancelCloseLoc(_body: never, requestId: string, @QueryParam() autoAck: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
@@ -1045,7 +1059,7 @@ export class LocRequestController extends ApiController {
 
     @HttpDelete('/:requestId/links/:target')
     @Async()
-    async deleteLink(_body: any, requestId: string, target: string): Promise<void> {
+    async deleteLink(_body: never, requestId: string, target: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             request.removeLink(contributor, target);
@@ -1066,7 +1080,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/links/:target/review-request')
     @Async()
     @SendsResponse()
-    async requestLinkReview(_body: any, requestId: string, target: string) {
+    async requestLinkReview(_body: never, requestId: string, target: string) {
         const request = await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
@@ -1133,7 +1147,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/links/:target/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async prePublishOrAcknowledgeLink(_body: any, requestId: string, target: string) {
+    async prePublishOrAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
@@ -1159,7 +1173,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/links/:target/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async cancelPrePublishOrAcknowledgeLink(_body: any, requestId: string, target: string) {
+    async cancelPrePublishOrAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
@@ -1185,7 +1199,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/links/:target/pre-ack')
     @Async()
     @SendsResponse()
-    async preAcknowledgeLink(_body: any, requestId: string, target: string) {
+    async preAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             if(!request.canPreAcknowledgeLink(target, contributor)) {
@@ -1211,7 +1225,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/links/:target/pre-ack')
     @Async()
     @SendsResponse()
-    async cancelPreAcknowledgeLink(_body: any, requestId: string, target: string) {
+    async cancelPreAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             if(!request.canPreAcknowledgeLink(target, contributor)) {
@@ -1262,7 +1276,7 @@ export class LocRequestController extends ApiController {
 
     @HttpDelete('/:requestId/metadata/:nameHash')
     @Async()
-    async deleteMetadata(_body: any, requestId: string, nameHash: string): Promise<void> {
+    async deleteMetadata(_body: never, requestId: string, nameHash: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             request.removeMetadataItem(contributor, Hash.fromHex(nameHash));
@@ -1283,7 +1297,7 @@ export class LocRequestController extends ApiController {
     @HttpPost('/:requestId/metadata/:nameHash/review-request')
     @Async()
     @SendsResponse()
-    async requestMetadataReview(_body: any, requestId: string, nameHash: string) {
+    async requestMetadataReview(_body: never, requestId: string, nameHash: string) {
         const request = await this.locRequestService.update(requestId, async request => {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
@@ -1351,7 +1365,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/metadata/:nameHash/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async prePublishOrAcknowledgeMetadataItem(_body: any, requestId: string, nameHash: string) {
+    async prePublishOrAcknowledgeMetadataItem(_body: never, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const hash = Hash.fromHex(nameHash);
@@ -1378,7 +1392,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/metadata/:nameHash/pre-publish-ack')
     @Async()
     @SendsResponse()
-    async cancelPrePublishOrAcknowledgeMetadataItem(_body: any, requestId: string, nameHash: string) {
+    async cancelPrePublishOrAcknowledgeMetadataItem(_body: never, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
             const hash = Hash.fromHex(nameHash);
@@ -1405,7 +1419,7 @@ export class LocRequestController extends ApiController {
     @HttpPut('/:requestId/metadata/:nameHashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async preAcknowledgeMetadataItem(_body: any, requestId: string, nameHashHex: string) {
+    async preAcknowledgeMetadataItem(_body: never, requestId: string, nameHashHex: string) {
         const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -1432,7 +1446,7 @@ export class LocRequestController extends ApiController {
     @HttpDelete('/:requestId/metadata/:nameHashHex/pre-ack')
     @Async()
     @SendsResponse()
-    async cancelPreAcknowledgeMetadataItem(_body: any, requestId: string, nameHashHex: string) {
+    async cancelPreAcknowledgeMetadataItem(_body: never, requestId: string, nameHashHex: string) {
         const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
             const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
@@ -1476,7 +1490,6 @@ export class LocRequestController extends ApiController {
             linkNature = `${ linkNature } - Collection Item: ${ itemId }`
         }
 
-        const legalFee = createSofRequestView.legalFee ? BigInt(createSofRequestView.legalFee) : undefined;
         const requestDescription: LocRequestDescription = {
             requesterAddress: {
                 address: contributor.address,
@@ -1488,9 +1501,9 @@ export class LocRequestController extends ApiController {
             createdOn: moment().toISOString(),
             userIdentity: undefined,
             userPostalAddress: undefined,
-            legalFee,
+            fees: this.toLocFees(createSofRequestView, "Transaction"),
         }
-        let request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
+        const request: LocRequestAggregateRoot = await this.locRequestFactory.newSofRequest({
             id: uuid(),
             description: requestDescription,
             target: locId,
@@ -1522,7 +1535,7 @@ export class LocRequestController extends ApiController {
     }
 
     private async getNotificationInfo(loc: LocRequestDescription, userIdentity: UserIdentity, decision?: LocRequestDecision):
-        Promise<{ legalOfficerEMail: string, data: any }> {
+        Promise<{ legalOfficerEMail: string, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(loc.ownerAddress);
         return {

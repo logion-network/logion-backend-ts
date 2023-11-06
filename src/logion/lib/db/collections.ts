@@ -2,7 +2,7 @@ export interface HasIndex {
     index?: number;
 }
 
-export function orderAndMap<T>(items: HasIndex[] | undefined | null, mapper: (item: any) => T): Array<T> {
+export function orderAndMap<T extends HasIndex, U>(items: T[] | undefined | null, mapper: (item: T) => U): Array<U> {
     if(items === undefined || items === null) {
         return [];
     }

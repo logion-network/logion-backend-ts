@@ -100,7 +100,7 @@ export class TokensRecordController extends ApiController {
 
     @HttpGet('/:collectionLocId')
     @Async()
-    async getTokensRecords(_body: any, collectionLocId: string): Promise<TokensRecordsView> {
+    async getTokensRecords(_body: never, collectionLocId: string): Promise<TokensRecordsView> {
         await this.authenticationService.authenticatedUser(this.request);
         const records = await this.tokensRecordRepository.findAllBy(collectionLocId);
         return {
@@ -137,7 +137,7 @@ export class TokensRecordController extends ApiController {
 
     @HttpGet('/:collectionLocId/record/:recordIdHex')
     @Async()
-    async getTokensRecord(_body: any, collectionLocId: string, recordIdHex: string): Promise<TokensRecordView> {
+    async getTokensRecord(_body: never, collectionLocId: string, recordIdHex: string): Promise<TokensRecordView> {
         const recordId = Hash.fromHex(recordIdHex);
         requireDefined(
             await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId }),
@@ -181,7 +181,7 @@ export class TokensRecordController extends ApiController {
 
     @HttpDelete('/:collectionLocId/record/:recordIdHex')
     @Async()
-    async cancelRecord(_body: any, collectionLocId: string, recordIdHex: string): Promise<void> {
+    async cancelRecord(_body: never, collectionLocId: string, recordIdHex: string): Promise<void> {
         const recordId = Hash.fromHex(recordIdHex);
         const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({ collectionLocId, recordId });
         if (publishedTokensRecord) {
@@ -294,7 +294,7 @@ export class TokensRecordController extends ApiController {
     @HttpGet('/:collectionLocId/:recordIdHex/files/:hashHex/:itemIdHex')
     @Async()
     @SendsResponse()
-    async downloadItemFile(_body: any, collectionLocId: string, recordIdHex: string, hashHex: string, itemIdHex: string): Promise<void> {
+    async downloadItemFile(_body: never, collectionLocId: string, recordIdHex: string, hashHex: string, itemIdHex: string): Promise<void> {
         const recordId = Hash.fromHex(recordIdHex);
         const hash = Hash.fromHex(hashHex);
         const itemId = Hash.fromHex(itemIdHex);
@@ -420,7 +420,7 @@ export class TokensRecordController extends ApiController {
 
     @HttpGet('/:collectionLocId/:recordIdHex/deliveries')
     @Async()
-    async getAllItemDeliveries(_body: any, collectionLocId: string, recordIdHex: string): Promise<ItemDeliveriesResponse> {
+    async getAllItemDeliveries(_body: never, collectionLocId: string, recordIdHex: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
@@ -444,7 +444,7 @@ export class TokensRecordController extends ApiController {
     @HttpGet('/:collectionLocId/:recordIdHex/files-sources/:hashHex')
     @Async()
     @SendsResponse()
-    async downloadFileSource(_body: any, collectionLocId: string, recordIdHex: string, hashHex: string): Promise<void> {
+    async downloadFileSource(_body: never, collectionLocId: string, recordIdHex: string, hashHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
         await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
