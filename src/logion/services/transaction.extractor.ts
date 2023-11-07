@@ -4,7 +4,7 @@ import { Vault, Adapters, TypesJsonObject, Fees } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
-import { JsonExtrinsic, findEventsData, AbstractFee } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, findEventsData, Fee } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
 
 enum ExtrinsicType {
@@ -200,7 +200,7 @@ export class TransactionExtractor {
     }
 
     private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
-        const feesPaidBySigner = (abstractFee: AbstractFee | undefined) => {
+        const feesPaidBySigner = (abstractFee: Fee | undefined) => {
             if (abstractFee?.withdrawnFrom === extrinsic.signer) {
                 return abstractFee.fee
             }
@@ -211,6 +211,8 @@ export class TransactionExtractor {
             legalFee: feesPaidBySigner(extrinsic.legalFee),
             certificateFee: feesPaidBySigner(extrinsic.certificateFee),
             valueFee: feesPaidBySigner(extrinsic.valueFee),
+            collectionItemFee: feesPaidBySigner(extrinsic.collectionItemFee),
+            tokensRecordFee: feesPaidBySigner(extrinsic.tokensRecordFee),
         });
     }
 

@@ -272,7 +272,13 @@ export interface components {
       legal?: string;
       /** @description Certificate fee (if applicable) */
       certificate?: string;
-      /** @description Total fee (inclusion + storage) */
+      /** @description Value fee (if applicable) */
+      value?: string;
+      /** @description Collection item fee (if applicable) */
+      collectionItem?: string;
+      /** @description Tokens record fee (if applicable) */
+      tokensRecord?: string;
+      /** @description Total fee */
       total?: string;
     };
     /**
@@ -321,7 +327,7 @@ export interface components {
        * @description The transaction's type 
        * @enum {string}
        */
-      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE";
+      type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE" | "COLLECTION_ITEM_FEE" | "TOKENS_RECORD_FEE";
     };
     /**
      * UserIdentityView 

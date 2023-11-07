@@ -4,10 +4,29 @@ import { appDataSource } from "@logion/rest-api-core";
 import { Fees } from '@logion/node-api';
 import { EmbeddableFees, NULL_FEES } from './fees.js';
 
-export type TransactionType = "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE";
+export type TransactionType = "EXTRINSIC"
+    | "VAULT_OUT"
+    | "LEGAL_FEE"
+    | "STORAGE_FEE"
+    | "CERTIFICATE_FEE"
+    | "OTHER_FEES"
+    | "VALUE_FEE"
+    | "RESERVE"
+    | "COLLECTION_ITEM_FEE"
+    | "TOKENS_RECORD_FEE"
+;
 
 function asTransactionType(type?: string): TransactionType {
-    if(type === "EXTRINSIC" || type === "LEGAL_FEE" || type === "VAULT_OUT" || type === "STORAGE_FEE" || type === "OTHER_FEES" || type === "VALUE_FEE" || type === "RESERVE") {
+    if(type === "EXTRINSIC"
+        || type === "LEGAL_FEE"
+        || type === "VAULT_OUT"
+        || type === "STORAGE_FEE"
+        || type === "OTHER_FEES"
+        || type === "VALUE_FEE"
+        || type === "RESERVE"
+        || type === "COLLECTION_ITEM_FEE"
+        || type === "TOKENS_RECORD_FEE"
+    ) {
         return type;
     } else {
         throw new Error(`Unexpected value ${type}`);
