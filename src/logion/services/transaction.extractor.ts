@@ -200,7 +200,6 @@ export class TransactionExtractor {
                 transferValue: undefined,
                 to: undefined,
                 type: "TOKENS_RECORD_FEE",
-                hiddenFrom: "TO",
             }));
 
             // Beneficiary
@@ -212,7 +211,7 @@ export class TransactionExtractor {
                 fees: new Fees({ inclusionFee: 0n }),
                 reserved: 0n,
                 from: extrinsic.tokensRecordFee.withdrawnFrom,
-                transferValue: extrinsic.tokensRecordFee.fee, // Wrong number for beneficiary (should be received)
+                transferValue: extrinsic.tokensRecordFee.received,
                 to: extrinsic.tokensRecordFee.beneficiary,
                 type: "TOKENS_RECORD_FEE",
                 hiddenFrom: "FROM",
