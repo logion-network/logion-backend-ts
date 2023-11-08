@@ -22,19 +22,19 @@ describe('TransactionRepository', () => {
         await disconnect();
     });
 
-    it("finds failed transaction of when 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg when sender", async () => {
+    it("finds transactions of 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg", async () => {
         const transactions = await repository.findByAddress("5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg");
-        expect(transactions.length).toBe(1);
+        expect(transactions.length).toBe(2); // 2 and 3 in SQL file
     });
 
-    it("finds only successful transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY when recipient", async () => {
+    it("finds transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", async () => {
         const transactions = await repository.findByAddress("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
-        expect(transactions.length).toBe(1);
+        expect(transactions.length).toBe(2); // 1 and 4 in SQL file
     });
 
     it("finds transactions of 5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", async () => {
         const transactions = await repository.findByAddress("5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo");
-        expect(transactions.length).toBe(1);
+        expect(transactions.length).toBe(1); // 1 in SQL file
     });
 
     it("finds no transaction for Unknown", async () => {
@@ -45,7 +45,7 @@ describe('TransactionRepository', () => {
     it("saves transaction", async () => {
         // Given
         const transaction = new TransactionAggregateRoot();
-        transaction.blockNumber = "3";
+        transaction.blockNumber = "4";
         transaction.extrinsicIndex = 1;
         transaction.from = "from-address";
         transaction.transferValue = "1";

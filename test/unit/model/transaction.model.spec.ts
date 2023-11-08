@@ -72,6 +72,7 @@ describe("TransactionFactory", () => {
         method: "createRecovery",
         createdOn: moment().toISOString(),
         type: "EXTRINSIC",
+        hiddenFrom: undefined,
     };
 
     it("creates expected successful root", () => {

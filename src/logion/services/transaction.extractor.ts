@@ -4,7 +4,7 @@ import { Vault, Adapters, TypesJsonObject, Fees } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
-import { JsonExtrinsic, findEventsData, AbstractFee } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, findEventsData, Fee } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
 
 enum ExtrinsicType {
@@ -169,6 +169,55 @@ export class TransactionExtractor {
             delete reservedMap[extrinsic.valueFee.withdrawnFrom];
         }
 
+        if(extrinsic.collectionItemFee && extrinsic.collectionItemFee.beneficiary) {
+            // Requester -> already handled with EXTRINSIC transaction
+            // Beneficiary
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n }),
+                reserved: 0n,
+                from: extrinsic.collectionItemFee.withdrawnFrom,
+                transferValue: extrinsic.collectionItemFee.received,
+                to: extrinsic.collectionItemFee.beneficiary,
+                type: "COLLECTION_ITEM_FEE",
+                hiddenFrom: "FROM",
+            }));
+        }
+
+        if(extrinsic.tokensRecordFee) {
+            // Requester
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n, tokensRecordFee: extrinsic.tokensRecordFee.fee }),
+                reserved: 0n,
+                from: extrinsic.tokensRecordFee.withdrawnFrom,
+                transferValue: undefined,
+                to: undefined,
+                type: "TOKENS_RECORD_FEE",
+            }));
+
+            // Beneficiary
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n }),
+                reserved: 0n,
+                from: extrinsic.tokensRecordFee.withdrawnFrom,
+                transferValue: extrinsic.tokensRecordFee.received,
+                to: extrinsic.tokensRecordFee.beneficiary,
+                type: "TOKENS_RECORD_FEE",
+                hiddenFrom: "FROM",
+            }));
+        }
+
         for(const account of Object.keys(reservedMap)) {
             transactions.push(new Transaction({
                 extrinsicIndex: index,
@@ -200,7 +249,7 @@ export class TransactionExtractor {
     }
 
     private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
-        const feesPaidBySigner = (abstractFee: AbstractFee | undefined) => {
+        const feesPaidBySigner = (abstractFee: Fee | undefined) => {
             if (abstractFee?.withdrawnFrom === extrinsic.signer) {
                 return abstractFee.fee
             }
@@ -211,6 +260,8 @@ export class TransactionExtractor {
             legalFee: feesPaidBySigner(extrinsic.legalFee),
             certificateFee: feesPaidBySigner(extrinsic.certificateFee),
             valueFee: feesPaidBySigner(extrinsic.valueFee),
+            collectionItemFee: feesPaidBySigner(extrinsic.collectionItemFee),
+            // recurrent fees must be addressed by specific transactions
         });
     }
 

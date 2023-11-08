@@ -224,6 +224,9 @@ export function toFeesView(fees?: Fees): FeesView | undefined {
             storage: fees.storageFee?.toString(),
             legal: fees.legalFee?.toString(),
             certificate: fees.certificateFee?.toString(),
+            value: fees.valueFee?.toString(),
+            collectionItem: fees.collectionItemFee?.toString(),
+            tokensRecord: fees.tokensRecordFee?.toString(),
             total: fees.totalFee.toString(),
         };
     } else {

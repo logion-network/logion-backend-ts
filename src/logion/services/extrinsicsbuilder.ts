@@ -8,10 +8,9 @@ import {
     ExtrinsicError,
     JsonEvent,
     JsonExtrinsic,
-    LegalFee,
-    StorageFee,
-    AbstractFee,
-    CertificateFee
+    Fee,
+    FeeWithBeneficiary,
+    FeeWithBeneficiaryAmount,
 } from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
@@ -46,17 +45,25 @@ export class ExtrinsicsBuilder {
                         method: event.method,
                         data: event.data,
                     };
-                    if(event.section === "logionLoc" && event.method === "StorageFeeWithdrawn") {
-                        extrinsicBuilder.storageFee = this.getFee(jsonEvent);
-                    }
-                    if(event.section === "logionLoc" && event.method === "LegalFeeWithdrawn") {
-                        extrinsicBuilder.legalFee = this.getLegalFee(jsonEvent);
-                    }
-                    if(event.section === "logionLoc" && event.method === "CertificateFeeWithdrawn") {
-                        extrinsicBuilder.certificateFee = this.getFee(jsonEvent);
-                    }
-                    if(event.section === "logionLoc" && event.method === "ValueFeeWithdrawn") {
-                        extrinsicBuilder.valueFee = this.getFee(jsonEvent);
+                    if(event.section === "logionLoc") {
+                        if(event.method === "StorageFeeWithdrawn") {
+                            extrinsicBuilder.storageFee = this.getFee(jsonEvent);
+                        }
+                        if(event.method === "LegalFeeWithdrawn") {
+                            extrinsicBuilder.legalFee = this.getFeeWithBeneficiary(jsonEvent);
+                        }
+                        if(event.method === "CertificateFeeWithdrawn") {
+                            extrinsicBuilder.certificateFee = this.getFee(jsonEvent);
+                        }
+                        if(event.method === "ValueFeeWithdrawn") {
+                            extrinsicBuilder.valueFee = this.getFee(jsonEvent);
+                        }
+                        if(event.method === "CollectionItemFeeWithdrawn") {
+                            extrinsicBuilder.collectionItemFee = this.getFeeWithBeneficiaryAmount(jsonEvent);
+                        }
+                        if(event.method === "TokensRecordFeeWithdrawn") {
+                            extrinsicBuilder.tokensRecordFee = this.getFeeWithBeneficiaryAmount(jsonEvent);
+                        }
                     }
                     extrinsicBuilder.events.push(jsonEvent);
                 }
@@ -134,16 +141,16 @@ export class ExtrinsicsBuilder {
         return partialFee.toBigInt();
     }
 
-    private getFee<T extends AbstractFee> (event: JsonEvent): T | undefined {
+    private getFee(event: JsonEvent): Fee | undefined {
         const withdrawnFrom = event.data[0].toString();
         const fee = event.data[1].toBigInt();
         return {
             withdrawnFrom,
             fee,
-        } as T;
+        };
     }
 
-    private getLegalFee(event: JsonEvent): LegalFee | undefined {
+    private getFeeWithBeneficiary(event: JsonEvent): FeeWithBeneficiary | undefined {
         const withdrawnFrom = event.data[0].toString();
         const beneficiary: string | undefined = event.data[1].isLegalOfficer ?
             event.data[1].asLegalOfficer.toString() :
@@ -153,6 +160,21 @@ export class ExtrinsicsBuilder {
             withdrawnFrom,
             beneficiary,
             fee,
+        };
+    }
+
+    private getFeeWithBeneficiaryAmount(event: JsonEvent): FeeWithBeneficiaryAmount | undefined {
+        const withdrawnFrom = event.data[0].toString();
+        const fee = event.data[1].toBigInt();
+        const beneficiary: string | undefined = event.data[2].isLegalOfficer ?
+            event.data[2].asLegalOfficer.toString() :
+            undefined;
+        const received = event.data[3].toBigInt();
+        return {
+            withdrawnFrom,
+            beneficiary,
+            fee,
+            received,
         };
     }
 }
@@ -180,10 +202,12 @@ export class ExtrinsicBuilder {
     public readonly tip: ICompact<INumber> | null;
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
-    public storageFee?: StorageFee;
-    public legalFee?: LegalFee;
-    public certificateFee?: CertificateFee;
-    public valueFee?: CertificateFee;
+    public storageFee?: Fee;
+    public legalFee?: FeeWithBeneficiary;
+    public certificateFee?: Fee;
+    public valueFee?: Fee;
+    public collectionItemFee?: FeeWithBeneficiaryAmount;
+    public tokensRecordFee?: FeeWithBeneficiaryAmount;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 
@@ -196,6 +220,8 @@ export class ExtrinsicBuilder {
             legalFee: this.legalFee,
             certificateFee: this.certificateFee,
             valueFee: this.valueFee,
+            collectionItemFee: this.collectionItemFee,
+            tokensRecordFee: this.tokensRecordFee,
             signer: this.signer ? this.signer.toString() : null,
             tip: this.tip !== null ? this.tip.toString() : null,
             error: this.error,

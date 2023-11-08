@@ -1,5 +1,6 @@
 import { Column } from "typeorm";
 import { Fees } from "@logion/node-api";
+import { toBigInt } from "../lib/convert.js";
 
 export const AMOUNT_PRECISION = 50;
 export const NULL_FEES = new Fees({ inclusionFee: 0n });
@@ -44,6 +45,12 @@ export class EmbeddableFees extends EmbeddableStorageFees {
     @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
     valueFee?: string;
 
+    @Column("numeric", { name: "collection_item_fee", precision: AMOUNT_PRECISION, nullable: true })
+    collectionItemFee?: string;
+
+    @Column("numeric", { name: "tokens_record_fee", precision: AMOUNT_PRECISION, nullable: true })
+    tokensRecordFee?: string;
+
     getDescription(): Fees {
         return new Fees({
             inclusionFee: toBigInt(this.inclusionFee) || 0n,
@@ -51,6 +58,8 @@ export class EmbeddableFees extends EmbeddableStorageFees {
             legalFee: toBigInt(this.legalFee),
             certificateFee: toBigInt(this.certificateFee),
             valueFee: toBigInt(this.valueFee),
+            collectionItemFee: toBigInt(this.collectionItemFee),
+            tokensRecordFee: toBigInt(this.tokensRecordFee),
         });
     }
 
@@ -61,10 +70,8 @@ export class EmbeddableFees extends EmbeddableStorageFees {
         entity.legalFee = fees.legalFee?.toString();
         entity.certificateFee = fees.certificateFee?.toString();
         entity.valueFee = fees.valueFee?.toString();
+        entity.collectionItemFee = fees.collectionItemFee?.toString();
+        entity.tokensRecordFee = fees.tokensRecordFee?.toString();
         return entity;
     }
-}
-
-function toBigInt(fee?: string): bigint | undefined {
-    return fee ? BigInt(fee) : undefined
 }

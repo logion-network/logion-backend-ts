@@ -470,9 +470,21 @@
                         "type": "string",
                         "description": "Certificate fee (if applicable)"
                     },
+                    "value": {
+                        "type": "string",
+                        "description": "Value fee (if applicable)"
+                    },
+                    "collectionItem": {
+                        "type": "string",
+                        "description": "Collection item fee (if applicable)"
+                    },
+                    "tokensRecord": {
+                        "type": "string",
+                        "description": "Tokens record fee (if applicable)"
+                    },
                     "total": {
                         "type": "string",
-                        "description": "Total fee (inclusion + storage)"
+                        "description": "Total fee"
                     }
                 }
             },
@@ -556,7 +568,9 @@
                             "CERTIFICATE_FEE",
                             "OTHER_FEES",
                             "VALUE_FEE",
-                            "RESERVE"
+                            "RESERVE",
+                            "COLLECTION_ITEM_FEE",
+                            "TOKENS_RECORD_FEE"
                         ]
                     }
                 },

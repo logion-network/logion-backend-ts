@@ -1,21 +1,16 @@
 import { TypesJsonCall, TypesJsonObject, UUID, Adapters } from "@logion/node-api";
 
-export interface AbstractFee {
+export interface Fee {
     fee: bigint;
     withdrawnFrom: string;
 }
 
-export interface StorageFee extends AbstractFee {
-}
-
-export interface LegalFee extends AbstractFee {
+export interface FeeWithBeneficiary extends Fee {
     beneficiary?: string;
 }
 
-export interface CertificateFee extends AbstractFee {
-}
-
-export interface ValueFee extends AbstractFee {
+export interface FeeWithBeneficiaryAmount extends FeeWithBeneficiary {
+    received: bigint;
 }
 
 export interface JsonExtrinsic {
@@ -23,10 +18,12 @@ export interface JsonExtrinsic {
     signer: string | null;
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
-    storageFee?: StorageFee;
-    legalFee?: LegalFee;
-    certificateFee?: CertificateFee;
-    valueFee?: ValueFee;
+    storageFee?: Fee;
+    legalFee?: FeeWithBeneficiary;
+    certificateFee?: Fee;
+    valueFee?: Fee;
+    collectionItemFee?: FeeWithBeneficiaryAmount;
+    tokensRecordFee?: FeeWithBeneficiaryAmount;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }

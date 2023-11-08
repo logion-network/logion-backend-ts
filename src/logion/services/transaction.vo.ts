@@ -43,6 +43,16 @@ export interface TransactionError {
     readonly details: string
 }
 
+export type Party = "FROM" | "TO";
+
+export function asParty(party: string | undefined | null): Party | undefined | null {
+    if(party === "FROM" || party === "TO" || party === undefined || party === null) {
+        return party;
+    } else {
+        throw new Error(`Unexpected value ${party}`);
+    }
+}
+
 export class Transaction {
 
     constructor(builder: {
@@ -57,6 +67,7 @@ export class Transaction {
         method: string,
         error?: TransactionError,
         type: TransactionType,
+        hiddenFrom?: Party,
     }) {
         this.extrinsicIndex = builder.extrinsicIndex;
         this.from = builder.from;
@@ -69,6 +80,7 @@ export class Transaction {
         this.method = builder.method;
         this.error = builder.error;
         this.type = builder.type;
+        this.hiddenFrom = builder.hiddenFrom;
     }
     readonly extrinsicIndex: number;
     readonly from: string;
@@ -81,4 +93,5 @@ export class Transaction {
     readonly method: string;
     readonly error?: TransactionError;
     readonly type: TransactionType;
+    readonly hiddenFrom?: Party;
 }
