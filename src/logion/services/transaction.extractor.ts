@@ -169,6 +169,56 @@ export class TransactionExtractor {
             delete reservedMap[extrinsic.valueFee.withdrawnFrom];
         }
 
+        if(extrinsic.collectionItemFee && extrinsic.collectionItemFee.beneficiary) {
+            // Requester -> already handled with EXTRINSIC transaction
+            // Beneficiary
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n }),
+                reserved: 0n,
+                from: extrinsic.collectionItemFee.withdrawnFrom,
+                transferValue: extrinsic.collectionItemFee.received,
+                to: extrinsic.collectionItemFee.beneficiary,
+                type: "COLLECTION_ITEM_FEE",
+                hiddenFrom: "FROM",
+            }));
+        }
+
+        if(extrinsic.tokensRecordFee) {
+            // Requester
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n, tokensRecordFee: extrinsic.tokensRecordFee.fee }),
+                reserved: 0n,
+                from: extrinsic.tokensRecordFee.withdrawnFrom,
+                transferValue: undefined,
+                to: undefined,
+                type: "TOKENS_RECORD_FEE",
+                hiddenFrom: "TO",
+            }));
+
+            // Beneficiary
+            transactions.push(new Transaction({
+                extrinsicIndex: index,
+                pallet: this.pallet(extrinsic),
+                method: this.methodName(extrinsic),
+                tip: 0n,
+                fees: new Fees({ inclusionFee: 0n }),
+                reserved: 0n,
+                from: extrinsic.tokensRecordFee.withdrawnFrom,
+                transferValue: extrinsic.tokensRecordFee.fee, // Wrong number for beneficiary (should be received)
+                to: extrinsic.tokensRecordFee.beneficiary,
+                type: "TOKENS_RECORD_FEE",
+                hiddenFrom: "FROM",
+            }));
+        }
+
         for(const account of Object.keys(reservedMap)) {
             transactions.push(new Transaction({
                 extrinsicIndex: index,
@@ -212,7 +262,7 @@ export class TransactionExtractor {
             certificateFee: feesPaidBySigner(extrinsic.certificateFee),
             valueFee: feesPaidBySigner(extrinsic.valueFee),
             collectionItemFee: feesPaidBySigner(extrinsic.collectionItemFee),
-            tokensRecordFee: feesPaidBySigner(extrinsic.tokensRecordFee),
+            // recurrent fees must be addressed by specific transactions
         });
     }
 

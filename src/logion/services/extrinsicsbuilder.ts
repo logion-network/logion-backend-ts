@@ -8,8 +8,9 @@ import {
     ExtrinsicError,
     JsonEvent,
     JsonExtrinsic,
-    LegalFee,
     Fee,
+    FeeWithBeneficiary,
+    FeeWithBeneficiaryAmount,
 } from './types/responses/Extrinsic.js';
 
 export class ExtrinsicsBuilder {
@@ -49,7 +50,7 @@ export class ExtrinsicsBuilder {
                             extrinsicBuilder.storageFee = this.getFee(jsonEvent);
                         }
                         if(event.method === "LegalFeeWithdrawn") {
-                            extrinsicBuilder.legalFee = this.getLegalFee(jsonEvent);
+                            extrinsicBuilder.legalFee = this.getFeeWithBeneficiary(jsonEvent);
                         }
                         if(event.method === "CertificateFeeWithdrawn") {
                             extrinsicBuilder.certificateFee = this.getFee(jsonEvent);
@@ -58,10 +59,10 @@ export class ExtrinsicsBuilder {
                             extrinsicBuilder.valueFee = this.getFee(jsonEvent);
                         }
                         if(event.method === "CollectionItemFeeWithdrawn") {
-                            extrinsicBuilder.collectionItemFee = this.getFee(jsonEvent);
+                            extrinsicBuilder.collectionItemFee = this.getFeeWithBeneficiaryAmount(jsonEvent);
                         }
                         if(event.method === "TokensRecordFeeWithdrawn") {
-                            extrinsicBuilder.tokensRecordFee = this.getFee(jsonEvent);
+                            extrinsicBuilder.tokensRecordFee = this.getFeeWithBeneficiaryAmount(jsonEvent);
                         }
                     }
                     extrinsicBuilder.events.push(jsonEvent);
@@ -149,7 +150,7 @@ export class ExtrinsicsBuilder {
         };
     }
 
-    private getLegalFee(event: JsonEvent): LegalFee | undefined {
+    private getFeeWithBeneficiary(event: JsonEvent): FeeWithBeneficiary | undefined {
         const withdrawnFrom = event.data[0].toString();
         const beneficiary: string | undefined = event.data[1].isLegalOfficer ?
             event.data[1].asLegalOfficer.toString() :
@@ -159,6 +160,21 @@ export class ExtrinsicsBuilder {
             withdrawnFrom,
             beneficiary,
             fee,
+        };
+    }
+
+    private getFeeWithBeneficiaryAmount(event: JsonEvent): FeeWithBeneficiaryAmount | undefined {
+        const withdrawnFrom = event.data[0].toString();
+        const fee = event.data[1].toBigInt();
+        const beneficiary: string | undefined = event.data[2].isLegalOfficer ?
+            event.data[2].asLegalOfficer.toString() :
+            undefined;
+        const received = event.data[3].toBigInt();
+        return {
+            withdrawnFrom,
+            beneficiary,
+            fee,
+            received,
         };
     }
 }
@@ -187,11 +203,11 @@ export class ExtrinsicBuilder {
     public readonly extrinsic: Extrinsic;
     public readonly partialFee: () => Promise<bigint>;
     public storageFee?: Fee;
-    public legalFee?: LegalFee;
+    public legalFee?: FeeWithBeneficiary;
     public certificateFee?: Fee;
     public valueFee?: Fee;
-    public collectionItemFee?: Fee;
-    public tokensRecordFee?: Fee;
+    public collectionItemFee?: FeeWithBeneficiaryAmount;
+    public tokensRecordFee?: FeeWithBeneficiaryAmount;
     public readonly events: JsonEvent[];
     public readonly error: () => ExtrinsicError | null;
 

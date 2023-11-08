@@ -3,6 +3,7 @@ import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
 import { Fees } from '@logion/node-api';
 import { EmbeddableFees, NULL_FEES } from './fees.js';
+import { Party, asParty } from '../services/transaction.vo.js';
 
 export type TransactionType = "EXTRINSIC"
     | "VAULT_OUT"
@@ -48,6 +49,7 @@ export interface TransactionDescription {
     readonly createdOn: string;
     readonly error?: TransactionDescriptionError;
     readonly type: TransactionType;
+    readonly hiddenFrom?: Party | null;
 }
 
 export interface TransactionDescriptionError {
@@ -83,6 +85,7 @@ export class TransactionAggregateRoot {
             createdOn: this.createdOn!,
             error,
             type: asTransactionType(this.type),
+            hiddenFrom: asParty(this.hiddenFrom),
         };
     }
 
@@ -134,8 +137,11 @@ export class TransactionAggregateRoot {
     @Column({ name: "error_details", nullable: true })
     errorDetails?: string;
 
-    @Column({name: "type", length: 255})
+    @Column({ name: "type", length: 255 })
     type?: string;
+
+    @Column("varchar", { name: "hidden_from", length: 255, nullable: true })
+    hiddenFrom?: string | null;
 }
 
 @injectable()
@@ -157,8 +163,8 @@ export class TransactionRepository {
 
     async findByAddress(address: string): Promise<TransactionAggregateRoot[]> {
         const builder = this.repository.createQueryBuilder("transaction");
-        builder.where("transaction.from_address = :address", { address });
-        builder.orWhere("(transaction.to_address = :address AND transaction.successful is true)", { address });
+        builder.where("(transaction.from_address = :address AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'FROM'))", { address });
+        builder.orWhere("(transaction.to_address = :address AND transaction.successful IS TRUE AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'TO'))", { address });
         builder.orderBy("transaction.block_number", "DESC");
         builder.addOrderBy("transaction.extrinsic_index", "DESC");
         return builder.getMany();
@@ -203,6 +209,7 @@ export class TransactionFactory {
         }
 
         transaction.type = description.type;
+        transaction.hiddenFrom = description.hiddenFrom;
 
         return transaction;
     }

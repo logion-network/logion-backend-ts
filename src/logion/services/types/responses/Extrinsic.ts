@@ -5,8 +5,12 @@ export interface Fee {
     withdrawnFrom: string;
 }
 
-export interface LegalFee extends Fee {
+export interface FeeWithBeneficiary extends Fee {
     beneficiary?: string;
+}
+
+export interface FeeWithBeneficiaryAmount extends FeeWithBeneficiary {
+    received: bigint;
 }
 
 export interface JsonExtrinsic {
@@ -15,11 +19,11 @@ export interface JsonExtrinsic {
     tip: string | null;
     partialFee: () => Promise<string | undefined>;
     storageFee?: Fee;
-    legalFee?: LegalFee;
+    legalFee?: FeeWithBeneficiary;
     certificateFee?: Fee;
     valueFee?: Fee;
-    collectionItemFee?: Fee;
-    tokensRecordFee?: Fee;
+    collectionItemFee?: FeeWithBeneficiaryAmount;
+    tokensRecordFee?: FeeWithBeneficiaryAmount;
     events: JsonEvent[];
     error: () => ExtrinsicError | null;
 }
