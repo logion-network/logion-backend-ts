@@ -435,8 +435,21 @@ export class LocRequestAggregateRoot {
         if (this.status != 'REVIEW_PENDING') {
             throw new Error("Cannot accept already decided request");
         }
+        this.ensureAllItemsAccepted();
         this.status = 'REVIEW_ACCEPTED';
         this.decisionOn = decisionOn.toISOString();
+    }
+
+    private ensureAllItemsAccepted() {
+        if(this.itemExists(item => item.lifecycle?.status !== "REVIEW_ACCEPTED", this.metadata)) {
+            throw new Error("A metadata item was not yet accepted");
+        }
+        if(this.itemExists(item => item.lifecycle?.status !== "REVIEW_ACCEPTED", this.files)) {
+            throw new Error("A file was not yet accepted");
+        }
+        if(this.itemExists(item => item.lifecycle?.status !== "REVIEW_ACCEPTED", this.links)) {
+            throw new Error("A link was not yet accepted");
+        }
     }
 
     preOpen(autoPublish: boolean): void {
