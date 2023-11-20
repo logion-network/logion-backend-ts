@@ -298,6 +298,42 @@ describe("LocRequestAggregateRoot", () => {
         thenDecisionOnIs(ACCEPTED_ON);
     });
 
+    it("fails accepting with non-accepted metadata", () => {
+        givenRequestWithStatus('DRAFT');
+        request.addMetadataItem({
+            name: "Test",
+            value: "Value",
+            submitter: SUBMITTER,
+        }, "MANUAL_BY_USER");
+        request.submit();
+        expect(() => request.accept(ACCEPTED_ON)).toThrowError("A metadata item was not yet accepted");
+    });
+
+    it("fails accepting with non-accepted file", () => {
+        givenRequestWithStatus('DRAFT');
+        request.addFile({
+            hash: Hash.of("Test"),
+            name: "Test",
+            nature: "Test",
+            restrictedDelivery: false,
+            size: 4,
+            submitter: SUBMITTER,
+        }, "MANUAL_BY_USER");
+        request.submit();
+        expect(() => request.accept(ACCEPTED_ON)).toThrowError("A file was not yet accepted");
+    });
+
+    it("fails accepting with non-accepted link", () => {
+        givenRequestWithStatus('DRAFT');
+        request.addLink({
+            nature: "Test",
+            target: new UUID().toString(),
+            submitter: SUBMITTER,
+        }, "MANUAL_BY_USER");
+        request.submit();
+        expect(() => request.accept(ACCEPTED_ON)).toThrowError("A link was not yet accepted");
+    });
+
     it("opens an accepted request", () => {
         givenRequestWithStatus('REVIEW_ACCEPTED');
         whenPreOpening(false);
@@ -1888,25 +1924,6 @@ function thenLocCreatedWithMetadata(metadata: MetadataItemParams[], status: Item
         expect(metadataItem.status).toEqual(status);
         expect(metadataItem.acknowledgedByOwnerOn).toBeUndefined();
         expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeUndefined();
-    }
-}
-
-function thenLocCreatedWithFiles(files: FileParams[], status: ItemStatus) {
-    expect(request.files?.length).toEqual(files.length);
-    for (const param of files) {
-        const file = request.getFile(param.hash);
-        expect(file.hash).toEqual(param.hash);
-        expect(file.name).toEqual(param.name);
-        expect(file.nature).toEqual(param.nature);
-        expect(file.restrictedDelivery).toEqual(param.restrictedDelivery);
-        expect(file.cid).toBeUndefined();
-        expect(file.contentType).toBeUndefined();
-        expect(file.size).toEqual(param.size)
-        expect(file.submitter.type).toEqual(param.submitter.type);
-        expect(file.submitter.address).toEqual(param.submitter.address);
-        expect(file.status).toEqual(status);
-        expect(file.acknowledgedByOwnerOn).toBeUndefined();
-        expect(file.acknowledgedByVerifiedIssuerOn).toBeUndefined();
     }
 }
 
