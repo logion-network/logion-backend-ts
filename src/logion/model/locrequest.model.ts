@@ -942,7 +942,10 @@ export class LocRequestAggregateRoot {
     }
 
     private canRemove(address: SupportedAccountId, item: Submitted): boolean {
-        return this.isOwner(address) || accountEquals(address, item.submitter);
+        return this.isOwner(address) || (
+            accountEquals(address, item.submitter)
+            && (item.lifecycle?.status === "DRAFT" || item.lifecycle?.status === "REVIEW_REJECTED")
+        );
     }
 
     requestMetadataItemReview(nameHash: Hash) {
@@ -1625,6 +1628,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 
 interface Submitted {
     submitter?: EmbeddableSupportedAccountId;
+    lifecycle?: EmbeddableLifecycle;
 }
 
 @Entity("loc_link")

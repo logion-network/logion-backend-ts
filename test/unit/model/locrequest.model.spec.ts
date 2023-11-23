@@ -877,7 +877,31 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         request.cancelPreAcknowledgeMetadataItem(nameHash, OWNER_ACCOUNT);
         expect(request.getMetadataOrThrow(nameHash).lifecycle?.status).toBe("PUBLISHED");
     });
+
+    it("requester cannot remove accepted metadata", () => {
+        const nameHash = givenRequestWithAcceptedMetadata();
+        expect(() => request.removeMetadataItem(SUBMITTER, nameHash)).toThrowError("Item removal not allowed");
+    });
+
+    it("owner can still remove accepted metadata", () => {
+        const nameHash = givenRequestWithAcceptedMetadata();
+        expect(() => request.removeMetadataItem(ALICE_ACCOUNT, nameHash)).not.toThrow();
+    });
 })
+
+function givenRequestWithAcceptedMetadata() {
+    givenRequestWithStatus("OPEN");
+    const name = "Name";
+    request.addMetadataItem({
+        name,
+        submitter: SUBMITTER,
+        value: "Value",
+    }, "MANUAL_BY_USER");
+    const nameHash = Hash.of(name);
+    request.requestMetadataItemReview(nameHash);
+    request.acceptMetadataItem(nameHash);
+    return nameHash;
+}
 
 describe("LocRequestAggregateRoot (links)", () => {
 
@@ -1114,7 +1138,30 @@ describe("LocRequestAggregateRoot (links)", () => {
         request.cancelPreAcknowledgeLink(target, OWNER_ACCOUNT);
         expect(request.getLinkOrThrow(target).lifecycle?.status).toBe("PUBLISHED");
     });
+
+    it("requester cannot remove accepted link", () => {
+        const target = givenRequestWithAcceptedLink();
+        expect(() => request.removeLink(SUBMITTER, target)).toThrowError("Item removal not allowed");
+    });
+
+    it("owner can still remove accepted link", () => {
+        const target = givenRequestWithAcceptedLink();
+        expect(() => request.removeLink(ALICE_ACCOUNT, target)).not.toThrow();
+    });
 })
+
+function givenRequestWithAcceptedLink() {
+    givenRequestWithStatus("OPEN");
+    const target = new UUID().toString();
+    request.addLink({
+        target,
+        submitter: SUBMITTER,
+        nature: "Nature",
+    }, "MANUAL_BY_USER");
+    request.requestLinkReview(target);
+    request.acceptLink(target);
+    return target;
+}
 
 describe("LocRequestAggregateRoot (files)", () => {
 
@@ -1578,7 +1625,33 @@ describe("LocRequestAggregateRoot (files)", () => {
         request.cancelPreAcknowledgeFile(hash, VERIFIED_ISSUER);
         expect(request.getFileOrThrow(hash).lifecycle?.status).toBe("PUBLISHED");
     });
+
+    it("requester cannot remove accepted file", () => {
+        const hash = givenRequestWithAcceptedFile();
+        expect(() => request.removeFile(SUBMITTER, hash)).toThrowError("Item removal not allowed");
+    });
+
+    it("owner can still remove accepted file", () => {
+        const hash = givenRequestWithAcceptedFile();
+        expect(() => request.removeFile(ALICE_ACCOUNT, hash)).not.toThrow();
+    });
 });
+
+function givenRequestWithAcceptedFile() {
+    givenRequestWithStatus("OPEN");
+    const hash = Hash.of("content");
+    request.addFile({
+        hash,
+        name: "test.txt",
+        restrictedDelivery: false,
+        size: 7,
+        submitter: SUBMITTER,
+        nature: "Nature",
+    }, "MANUAL_BY_USER");
+    request.requestFileReview(hash);
+    request.acceptFile(hash);
+    return hash;
+}
 
 const hash1 = Hash.of("hash1");
 const hash2 = Hash.of("hash2");
