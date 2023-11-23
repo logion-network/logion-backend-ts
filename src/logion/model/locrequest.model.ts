@@ -1204,7 +1204,7 @@ export class LocRequestAggregateRoot {
         } else if (this.voidInfo?.voidedOn) {
             throw new Error(`Cannot cancelPreVoid a Void LOC`);
         }
-        this.voidInfo = undefined;
+        this.voidInfo!.reason = null;
     }
 
     isVoid(): boolean {

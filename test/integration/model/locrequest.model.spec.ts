@@ -23,6 +23,7 @@ const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, L
 const hash = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
 const anotherHash = Hash.fromHex("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
 const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";
+const VOID_REASON = "Some reason";
 
 describe('LocRequestRepository - read accesses', () => {
 
@@ -322,6 +323,24 @@ describe('LocRequestRepository.save()', () => {
         });
         const updatedRequest = await repository.findById(id);
         expect(updatedRequest?.files![0].restrictedDelivery).toBe(true);
+    })
+
+    it("pre-voids then cancel pre-void", async() => {
+        const id = uuid();
+        const locRequest = givenLoc(id, "Collection", "OPEN");
+        await service.addNewRequest(locRequest);
+        await service.update(id, async request => {
+            request.preVoid(VOID_REASON);
+        });
+        let updatedRequest = await repository.findById(id);
+        expect(updatedRequest?.voidInfo?.reason).toEqual(VOID_REASON);
+
+        await service.update(id, async request => {
+            request.cancelPreVoid();
+        });
+        updatedRequest = await repository.findById(id);
+        expect(updatedRequest?.voidInfo?.reason).toBeNull()
+
     })
 })
 
