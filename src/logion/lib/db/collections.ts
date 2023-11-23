@@ -16,3 +16,7 @@ export function order<T extends HasIndex>(items: T[] | undefined | null): Array<
     }
     return [ ...items ].sort((a, b) => a.index! - b.index!);
 }
+
+export function isTruthy<T>(value: T | undefined | null): boolean {
+    return value !== undefined && value !== null;
+}
