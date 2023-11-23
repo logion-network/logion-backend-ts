@@ -89,6 +89,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.closeLoc(spec);
     LocRequestController.cancelCloseLoc(spec);
     LocRequestController.voidLoc(spec);
+    LocRequestController.cancelVoidLoc(spec);
     LocRequestController.addLink(spec);
     LocRequestController.deleteLink(spec);
     LocRequestController.requestMetadataReview(spec);
@@ -1019,6 +1020,26 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static cancelVoidLoc(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/void"].delete!;
+        operationObject.summary = "Cancels LOC voiding";
+        operationObject.description = "The authenticated user must be the owner of the LOC.";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'requestId': "The ID of the LOC" });
+    }
+
+    @HttpDelete('/:requestId/void')
+    @Async()
+    @SendsResponse()
+    async cancelVoidLoc(_body: never, requestId: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        await this.locRequestService.update(requestId, async request => {
+            authenticatedUser.require(user => user.is(request.ownerAddress));
+            request.cancelPreVoid();
+        });
+        this.response.sendStatus(204);
+    }
+
     static addLink(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/links"].post!;
         operationObject.summary = "Adds a link to the LOC";
@@ -1069,7 +1090,7 @@ export class LocRequestController extends ApiController {
             request.removeLink(contributor, target);
         });
     }
-    
+
     static requestLinkReview(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/{requestId}/links/{target}/review-request"].post!;
         operationObject.summary = "Requests a review of the given link";
