@@ -1198,6 +1198,15 @@ export class LocRequestAggregateRoot {
         this.voidInfo.reason = reason;
     }
 
+    cancelPreVoid() {
+        if(!this.isVoid()) {
+            throw new Error(`Cannot cancelPreVoid a non pre-Voided LOC`);
+        } else if (this.voidInfo?.voidedOn) {
+            throw new Error(`Cannot cancelPreVoid a Void LOC`);
+        }
+        this.voidInfo = undefined;
+    }
+
     isVoid(): boolean {
         return this.voidInfo !== undefined && (this.voidInfo.reason !== null && this.voidInfo.reason !== undefined);
     }

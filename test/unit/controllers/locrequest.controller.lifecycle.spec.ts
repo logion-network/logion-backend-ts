@@ -132,6 +132,13 @@ describe('LocRequestController - Life Cycle - Authenticated LLO is LOC owner', (
             .expect(204);
     });
 
+    it('cancel-pre-voids', async () => {
+        const app = setupApp(LocRequestController, mockModelForCancelPreVoid)
+        await request(app)
+            .delete(`/api/loc-request/${REQUEST_ID}/void`)
+            .expect(204);
+    });
+
     it('submits a draft loc', async () => {
         const app = setupApp(LocRequestController, mockModelForSubmit)
         await request(app)
@@ -223,6 +230,12 @@ function mockModelForPreVoid(container: Container) {
     const { request } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Identity", "OPEN", testData);
     request.setup(instance => instance.preVoid(VOID_REASON)).returns();
+}
+
+function mockModelForCancelPreVoid(container: Container) {
+    const { request } = buildMocksForUpdate(container);
+    setupRequest(request, REQUEST_ID, "Identity", "OPEN", testData);
+    request.setup(instance => instance.cancelPreVoid()).returns();
 }
 
 function mockModelForOpen(container: Container, locType: LocType, userIdentity?: UserIdentity) {

@@ -516,6 +516,27 @@ describe("LocRequestAggregateRoot", () => {
         })
     });
 
+    it("cancels pre-voided LOC", () => {
+        givenPreVoidedRequest('OPEN');
+        whenCancelingPreVoid();
+        thenVoidInfoIs(undefined);
+    });
+
+    it("fails to cancelPreVoid non pre-voided LOC", () => {
+        givenRequestWithStatus('OPEN');
+        expect(whenCancelingPreVoid).toThrowError("Cannot cancelPreVoid a non pre-Voided LOC")
+        thenVoidInfoIs(undefined);
+    });
+
+    it("fails to cancelPreVoid Voided LOC", () => {
+        givenVoidedRequest('OPEN');
+        expect(whenCancelingPreVoid).toThrowError("Cannot cancelPreVoid a Void LOC")
+        thenVoidInfoIs({
+            reason: VOID_REASON,
+            voidedOn: VOIDED_ON,
+        });
+    });
+
     it("pre-voids when CLOSED", () => {
         givenRequestWithStatus('CLOSED');
         whenPreVoiding("reason");
@@ -1949,6 +1970,20 @@ describe("LocRequestAggregateRoot (processes)", () => {
 const REJECT_REASON = "Illegal";
 const REJECTED_ON = moment();
 const ACCEPTED_ON = moment().add(1, "minute");
+const VOID_REASON = "Some good reason";
+const VOIDED_ON = moment();
+
+function givenPreVoidedRequest(status: LocRequestStatus) {
+    givenRequestWithStatus(status);
+    request.voidInfo = {
+        reason: VOID_REASON
+    }
+}
+
+function givenVoidedRequest(status: LocRequestStatus) {
+    givenPreVoidedRequest(status);
+    request.voidInfo!.voidedOn = VOIDED_ON.toISOString();
+}
 
 function givenRequestWithStatus(status: LocRequestStatus) {
     request = new LocRequestAggregateRoot();
@@ -2312,15 +2347,23 @@ function whenPreVoiding(reason: string) {
     request.preVoid(reason);
 }
 
-function thenVoidInfoIs(expected: VoidInfo) {
+function whenCancelingPreVoid() {
+    request.cancelPreVoid();
+}
+
+function thenVoidInfoIs(expected: VoidInfo | undefined) {
     const voidInfo = request.getVoidInfo();
-    expect(voidInfo).toBeDefined();
-    expect(voidInfo!.reason).toEqual(expected.reason);
-    if(expected.voidedOn !== null) {
-        expect(voidInfo!.voidedOn).toBeDefined();
-        expect(voidInfo!.voidedOn!.isSame(expected.voidedOn)).toBe(true);
+    if (expected) {
+        expect(voidInfo).toBeDefined();
+        expect(voidInfo!.reason).toEqual(expected.reason);
+        if (expected.voidedOn !== null) {
+            expect(voidInfo!.voidedOn).toBeDefined();
+            expect(voidInfo!.voidedOn!.isSame(expected.voidedOn)).toBe(true);
+        } else {
+            expect(voidInfo!.voidedOn).toBeNull();
+        }
     } else {
-        expect(voidInfo!.voidedOn).toBeNull();
+        expect(voidInfo).toBeNull();
     }
 }
 
