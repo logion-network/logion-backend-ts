@@ -385,6 +385,120 @@ describe("LocRequestAggregateRoot", () => {
         thenRequestStatusIs('OPEN');
     });
 
+    it("fails auto-ack pre-close with metadata not published on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "Name";
+        request.addMetadataItem({
+            name,
+            submitter: SUBMITTER,
+            value: "Value",
+        }, "DIRECT_BY_REQUESTER");
+        expect(() => request.preClose(true)).toThrowError("A metadata item was not yet published nor acknowledged");
+    });
+
+    it("fails auto-ack pre-close with metadata not acknowledged on-chain by VI", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "Name";
+        request.addMetadataItem({
+            name,
+            submitter: VERIFIED_ISSUER,
+            value: "Value",
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeMetadataItem(Hash.of(name), VERIFIED_ISSUER);
+        expect(() => request.preClose(true)).toThrowError("A metadata item was not yet published nor acknowledged");
+    });
+
+    it("fails pre-close with metadata not acknowledged on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const name = "Name";
+        request.addMetadataItem({
+            name,
+            submitter: SUBMITTER,
+            value: "Value",
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeMetadataItem(Hash.of(name), ALICE_ACCOUNT);
+        expect(() => request.preClose(false)).toThrowError("A metadata item was not yet acknowledged");
+    });
+
+    it("fails auto-ack pre-close with file not published on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("content");
+        request.addFile({
+            hash,
+            submitter: SUBMITTER,
+            name: "Name",
+            nature: "Nature",
+            restrictedDelivery: false,
+            size: 7,
+        }, "DIRECT_BY_REQUESTER");
+        expect(() => request.preClose(true)).toThrowError("A file was not yet published nor acknowledged");
+    });
+
+    it("fails auto-ack pre-close with file not acknowledged on-chain by VI", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("content");
+        request.addFile({
+            hash,
+            submitter: VERIFIED_ISSUER,
+            name: "Name",
+            nature: "Nature",
+            restrictedDelivery: false,
+            size: 7,
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeFile(hash, VERIFIED_ISSUER);
+        expect(() => request.preClose(true)).toThrowError("A file was not yet published nor acknowledged");
+    });
+
+    it("fails pre-close with file not acknowledged on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const hash = Hash.of("content");
+        request.addFile({
+            hash,
+            submitter: SUBMITTER,
+            name: "Name",
+            nature: "Nature",
+            restrictedDelivery: false,
+            size: 7,
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeFile(hash, ALICE_ACCOUNT);
+        expect(() => request.preClose(false)).toThrowError("A file was not yet acknowledged");
+    });
+
+    it("fails auto-ack pre-close with link not published on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target,
+            submitter: SUBMITTER,
+            nature: "Nature",
+        }, "DIRECT_BY_REQUESTER");
+        expect(() => request.preClose(true)).toThrowError("A link was not yet published nor acknowledged");
+    });
+
+    it("fails auto-ack pre-close with link not acknowledged on-chain by VI", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target,
+            submitter: VERIFIED_ISSUER,
+            nature: "Nature",
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeLink(target, VERIFIED_ISSUER);
+        expect(() => request.preClose(true)).toThrowError("A link was not yet published nor acknowledged");
+    });
+
+    it("fails pre-close with link not acknowledged on-chain", () => {
+        givenRequestWithStatus('OPEN');
+        const target = new UUID().toString();
+        request.addLink({
+            target,
+            submitter: SUBMITTER,
+            nature: "Nature",
+        }, "DIRECT_BY_REQUESTER");
+        request.preAcknowledgeLink(target, ALICE_ACCOUNT);
+        expect(() => request.preClose(false)).toThrowError("A link was not yet acknowledged");
+    });
+
     it("closes", () => {
         givenRequestWithStatus('CLOSED');
         const closingDate = moment();

@@ -46,7 +46,7 @@ import { DirectoryService } from "../services/directory.service.js";
 import { CollectionRepository } from "../model/collection.model.js";
 import { getUploadedFile } from "./fileupload.js";
 import { PostalAddress } from "../model/postaladdress.js";
-import { downloadAndClean } from "../lib/http.js";
+import { downloadAndClean, toBadRequest } from "../lib/http.js";
 import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import { LocRequestService } from "../services/locrequest.service.js";
 import { VoteRepository } from "../model/vote.model.js";
@@ -966,7 +966,11 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
             authenticatedUser.require(user => user.is(request.ownerAddress));
-            request.preClose(body.autoAck || false);
+            try {
+                request.preClose(body.autoAck || false);
+            } catch(e) {
+                throw toBadRequest(e);
+            }
         });
         this.response.sendStatus(204);
     }

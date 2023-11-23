@@ -8,7 +8,7 @@ import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api
 
 import { components } from "../controllers/components.js";
 import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
-import { orderAndMap, HasIndex } from "../lib/db/collections.js";
+import { orderAndMap, HasIndex, isTruthy } from "../lib/db/collections.js";
 import { deleteIndexedChild, Child, saveIndexedChildren, saveChildren } from "./child.js";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
@@ -246,8 +246,19 @@ export class EmbeddableLifecycle {
         return this.status === "ACKNOWLEDGED";
     }
 
+    isAcknowledgedOnChain(expectVerifiedIssuer: boolean): boolean {
+        return this.isAcknowledged() && (
+            (expectVerifiedIssuer && isTruthy(this.acknowledgedByOwnerOn) && isTruthy(this.acknowledgedByVerifiedIssuerOn))
+            || (!expectVerifiedIssuer && isTruthy(this.acknowledgedByOwnerOn))
+        );
+    }
+
     isPublished(): boolean {
         return this.status === "PUBLISHED";
+    }
+
+    isPublishedOnChain(): boolean {
+        return this.isPublished() && isTruthy(this.addedOn);
     }
 
     setAddedOn(addedOn: Moment) {
@@ -777,25 +788,25 @@ export class LocRequestAggregateRoot {
 
     preClose(autoAck: boolean) {
         if(autoAck) {
-            this.ensureAllItemsAckedOrPublished();
-            this.ensureAllItemsAckedByVerifiedIssuer();
+            this.ensureAllItemsAckedOrPublishedOnChain();
+            this.ensureAllItemsAckedByVerifiedIssuerOnChain();
             this.ackAllItemsByOwner();
         } else {
-            this.ensureAllItemsAcked();
+            this.ensureAllItemsAckedOnChain();
         }
         if(this.status === "OPEN") {
             this.status = 'CLOSED';
         }
     }
 
-    private ensureAllItemsAckedOrPublished() {
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.metadata)) {
+    private ensureAllItemsAckedOrPublishedOnChain() {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.metadata)) {
             throw new Error("A metadata item was not yet published nor acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.files)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.files)) {
             throw new Error("A file was not yet published nor acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged() && !item.lifecycle?.isPublished(), this.links)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.links)) {
             throw new Error("A link was not yet published nor acknowledged");
         }
     }
@@ -804,20 +815,20 @@ export class LocRequestAggregateRoot {
         return items?.find(predicate) !== undefined;
     }
 
-    private ensureAllItemsAckedByVerifiedIssuer() {
-        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.metadata)) {
+    private ensureAllItemsAckedByVerifiedIssuerOnChain() {
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(item.submitter, item.lifecycle), this.metadata)) {
             throw new Error("A verified issuer's metadata item was not yet acknowledged");
         }
-        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.files)) {
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(item.submitter, item.lifecycle), this.files)) {
             throw new Error("A verified issuer's file was not yet acknowledged");
         }
-        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledged(item.submitter, item.lifecycle), this.links)) {
+        if(this.itemExists(item => this.isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(item.submitter, item.lifecycle), this.links)) {
             throw new Error("A verified issuer's link was not yet acknowledged");
         }
     }
 
-    private isSubmittedByVerifiedIssuerButNotAcknowledged(submitter?: EmbeddableSupportedAccountId, lifecycle?: EmbeddableLifecycle) {
-        return this.isVerifiedIssuer(submitter?.toSupportedAccountId()) && !lifecycle?.acknowledgedByVerifiedIssuer;
+    private isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(submitter?: EmbeddableSupportedAccountId, lifecycle?: EmbeddableLifecycle) {
+        return this.isVerifiedIssuer(submitter?.toSupportedAccountId()) && !lifecycle?.acknowledgedByVerifiedIssuerOn;
     }
 
     private ackAllItemsByOwner() {
@@ -826,14 +837,14 @@ export class LocRequestAggregateRoot {
         this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.links);
     }
 
-    private ensureAllItemsAcked() {
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.metadata)) {
+    private ensureAllItemsAckedOnChain() {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.metadata)) {
             throw new Error("A metadata item was not yet acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.files)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.files)) {
             throw new Error("A file was not yet acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledged(), this.links)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.links)) {
             throw new Error("A link was not yet acknowledged");
         }
     }
