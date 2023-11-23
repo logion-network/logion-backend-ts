@@ -942,10 +942,8 @@ export class LocRequestAggregateRoot {
     }
 
     private canRemove(address: SupportedAccountId, item: Submitted): boolean {
-        return this.isOwner(address) || (
-            accountEquals(address, item.submitter)
-            && (item.lifecycle?.status === "DRAFT" || item.lifecycle?.status === "REVIEW_REJECTED")
-        );
+        return accountEquals(address, item.submitter)
+            && (item.lifecycle?.status === "DRAFT" || item.lifecycle?.status === "REVIEW_REJECTED");
     }
 
     requestMetadataItemReview(nameHash: Hash) {

@@ -690,8 +690,6 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         thenHasExpectedMetadataIndices();
     }
 
-    it("owner removes previously added metadata item", () => testRemovesItem(OWNER_ACCOUNT));
-
     it("confirms metadata item", () => {
         givenRequestWithStatus('OPEN');
         const name = "target-1";
@@ -883,9 +881,9 @@ describe("LocRequestAggregateRoot (metadata)", () => {
         expect(() => request.removeMetadataItem(SUBMITTER, nameHash)).toThrowError("Item removal not allowed");
     });
 
-    it("owner can still remove accepted metadata", () => {
+    it("owner cannot remove accepted metadata", () => {
         const nameHash = givenRequestWithAcceptedMetadata();
-        expect(() => request.removeMetadataItem(ALICE_ACCOUNT, nameHash)).not.toThrow();
+        expect(() => request.removeMetadataItem(ALICE_ACCOUNT, nameHash)).toThrowError("Item removal not allowed");
     });
 })
 
@@ -938,36 +936,6 @@ describe("LocRequestAggregateRoot (links)", () => {
         ];
         whenAddingLinks(links, "MANUAL_BY_USER");
         thenExposesLinks(links);
-    });
-
-    it("owner removes previously added link", () => {
-        givenRequestWithStatus('OPEN');
-        const links: LinkParams[] = [
-            {
-                target: "target-1",
-                nature: "nature-1",
-                submitter: SUBMITTER,
-            },
-            {
-                target: "target-2",
-                nature: "nature-2",
-                submitter: SUBMITTER,
-            }
-        ];
-        whenAddingLinks(links, "MANUAL_BY_OWNER");
-        whenRemovingLink(OWNER_ACCOUNT, "target-1")
-
-        const newLinks: LinkParams[] = [
-            {
-                target: "target-2",
-                nature: "nature-2",
-                submitter: SUBMITTER,
-            }
-        ];
-        thenExposesLinks(newLinks);
-        thenExposesLinkByTarget("target-2", newLinks[0]);
-        thenHasLink("target-2");
-        thenHasExpectedLinkIndices();
     });
 
     it("cannot remove link if not contributor", () => {
@@ -1144,9 +1112,9 @@ describe("LocRequestAggregateRoot (links)", () => {
         expect(() => request.removeLink(SUBMITTER, target)).toThrowError("Item removal not allowed");
     });
 
-    it("owner can still remove accepted link", () => {
+    it("owner cannot remove accepted link", () => {
         const target = givenRequestWithAcceptedLink();
-        expect(() => request.removeLink(ALICE_ACCOUNT, target)).not.toThrow();
+        expect(() => request.removeLink(ALICE_ACCOUNT, target)).toThrowError("Item removal not allowed");
     });
 })
 
@@ -1271,8 +1239,6 @@ describe("LocRequestAggregateRoot (files)", () => {
         thenHasFile(hash2);
         thenHasExpectedFileIndices();
     }
-
-    it("owner removes previously added files", () => testRemovesFile(OWNER_ACCOUNT));
 
     it("confirms file", () => {
         givenRequestWithStatus('OPEN');
@@ -1631,9 +1597,9 @@ describe("LocRequestAggregateRoot (files)", () => {
         expect(() => request.removeFile(SUBMITTER, hash)).toThrowError("Item removal not allowed");
     });
 
-    it("owner can still remove accepted file", () => {
+    it("owner cannot remove accepted file", () => {
         const hash = givenRequestWithAcceptedFile();
-        expect(() => request.removeFile(ALICE_ACCOUNT, hash)).not.toThrow();
+        expect(() => request.removeFile(ALICE_ACCOUNT, hash)).toThrowError("Item removal not allowed");
     });
 });
 
