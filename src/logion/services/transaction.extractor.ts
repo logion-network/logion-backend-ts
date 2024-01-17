@@ -1,11 +1,12 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { Vault, Adapters, TypesJsonObject, Fees } from "@logion/node-api";
+import { Vault, Adapters, TypesJsonObject, Fees, Lgnt } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { JsonExtrinsic, findEventsData, Fee } from "./types/responses/Extrinsic.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
+import { toLgnt } from "../lib/convert.js";
 
 enum ExtrinsicType {
     TIMESTAMP,
@@ -80,7 +81,7 @@ export class TransactionExtractor {
                 pallet: "balances",
                 method: "transfer",
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: 0n,
                 from: vaultAddress,
                 transferValue: vaultTransferValue,
@@ -113,7 +114,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n, storageFee: extrinsic.storageFee.fee }),
+                fees: new Fees({ inclusionFee: Lgnt.zero(), storageFee: Lgnt.fromCanonical(extrinsic.storageFee.fee) }),
                 reserved: 0n,
                 from: extrinsic.storageFee.withdrawnFrom,
                 transferValue: 0n,
@@ -128,7 +129,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n, certificateFee: extrinsic.certificateFee.fee }),
+                fees: new Fees({ inclusionFee: Lgnt.zero(), certificateFee: Lgnt.fromCanonical(extrinsic.certificateFee.fee) }),
                 reserved: 0n,
                 from: extrinsic.certificateFee.withdrawnFrom,
                 transferValue: 0n,
@@ -143,7 +144,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: 0n,
                 from: extrinsic.legalFee.withdrawnFrom,
                 transferValue: extrinsic.legalFee.fee,
@@ -158,7 +159,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: reservedMap[extrinsic.valueFee.withdrawnFrom] || 0n,
                 from: extrinsic.valueFee.withdrawnFrom,
                 transferValue: extrinsic.valueFee.fee,
@@ -177,7 +178,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: 0n,
                 from: extrinsic.collectionItemFee.withdrawnFrom,
                 transferValue: extrinsic.collectionItemFee.received,
@@ -194,7 +195,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n, tokensRecordFee: extrinsic.tokensRecordFee.fee }),
+                fees: new Fees({ inclusionFee: Lgnt.zero(), tokensRecordFee: Lgnt.fromCanonical(extrinsic.tokensRecordFee.fee) }),
                 reserved: 0n,
                 from: extrinsic.tokensRecordFee.withdrawnFrom,
                 transferValue: undefined,
@@ -208,7 +209,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: 0n,
                 from: extrinsic.tokensRecordFee.withdrawnFrom,
                 transferValue: extrinsic.tokensRecordFee.received,
@@ -224,7 +225,7 @@ export class TransactionExtractor {
                 pallet: this.pallet(extrinsic),
                 method: this.methodName(extrinsic),
                 tip: 0n,
-                fees: new Fees({ inclusionFee: 0n }),
+                fees: Fees.zero(),
                 reserved: reservedMap[account],
                 from: account,
                 transferValue: undefined,
@@ -251,11 +252,11 @@ export class TransactionExtractor {
     private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
         const feesPaidBySigner = (abstractFee: Fee | undefined) => {
             if (abstractFee?.withdrawnFrom === extrinsic.signer) {
-                return abstractFee.fee
+                return Lgnt.fromCanonical(abstractFee.fee)
             }
         }
         return new Fees({
-            inclusionFee: this.undefinedTo0(await extrinsic.partialFee()),
+            inclusionFee: toLgnt(await extrinsic.partialFee()) || Lgnt.zero(),
             storageFee: feesPaidBySigner(extrinsic.storageFee),
             legalFee: feesPaidBySigner(extrinsic.legalFee),
             certificateFee: feesPaidBySigner(extrinsic.certificateFee),

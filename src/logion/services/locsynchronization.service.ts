@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { UUID, Adapters, Fees, Hash } from "@logion/node-api";
+import { UUID, Adapters, Fees, Hash, Lgnt } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
@@ -170,7 +170,10 @@ export class LocSynchronizer {
         if(inclusionFee) {
             loc.setFileFees(
                 hash,
-                new Fees({ inclusionFee: BigInt(inclusionFee), storageFee: storageFee?.fee}),
+                new Fees({
+                    inclusionFee: Lgnt.fromCanonical(BigInt(inclusionFee)),
+                    storageFee: storageFee?.fee !== undefined ? Lgnt.fromCanonical(storageFee.fee) : undefined,
+                }),
                 extrinsic.storageFee?.withdrawnFrom
             );
         } else {

@@ -6,6 +6,7 @@ import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from '@
 import { components } from './components.js';
 import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model.js";
 import { toFeesView } from './adapters/locrequestadapter.js';
+import { Lgnt } from "@logion/node-api";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';
@@ -55,11 +56,11 @@ export class TransactionController extends ApiController {
         const description = transaction.getDescription();
         const successful = description.error === undefined;
         let total =
-            description.fees.totalFee +
-            description.tip +
-            description.reserved;
+            description.fees.totalFee
+                .add(Lgnt.fromCanonical(description.tip))
+                .add(Lgnt.fromCanonical(description.reserved));
         if (successful) {
-            total += description.transferValue;
+            total = total.add(Lgnt.fromCanonical(description.transferValue));
         }
         return {
             id: description.id,

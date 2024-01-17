@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees, UUID } from "@logion/node-api";
+import { Fees, UUID, Lgnt } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -906,7 +906,7 @@ export class LocRequestAggregateRoot {
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
-            fees: item.inclusionFee ? new Fees({ inclusionFee: BigInt(item.inclusionFee)}) : undefined,
+            fees: item.inclusionFee ? new Fees({ inclusionFee: Lgnt.fromCanonical(BigInt(item.inclusionFee)) }) : undefined,
             ...(item.lifecycle!.getDescription()),
         })
     }
@@ -1077,7 +1077,7 @@ export class LocRequestAggregateRoot {
             target: link.target!,
             nature: link.nature!,
             submitter: link.submitter!.toSupportedAccountId(),
-            fees: link.inclusionFee ? new Fees({ inclusionFee: BigInt(link.inclusionFee)}) : undefined,
+            fees: link.inclusionFee ? new Fees({ inclusionFee: Lgnt.fromCanonical(BigInt(link.inclusionFee)) }) : undefined,
             ...(link.lifecycle!.getDescription()),
         }
     }

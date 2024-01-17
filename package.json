@@ -26,7 +26,7 @@
     "dependencies": {
         "@astar-network/astar-api": "^0.2.5",
         "@astar-network/astar-sdk-core": "^0.2.5",
-        "@logion/node-api": "^0.26.0",
+        "@logion/node-api": "^0.28.0-2",
         "@logion/node-exiftool": "^2.3.1",
         "@logion/rest-api-core": "^0.4.5",
         "@polkadot/api-contract": "^10.10.1",

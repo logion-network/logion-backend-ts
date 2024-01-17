@@ -31,7 +31,7 @@ import {
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
-import { Fees, Hash } from "@logion/node-api";
+import { Fees, Hash, Lgnt } from "@logion/node-api";
 import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -212,7 +212,7 @@ function mockModelForGetSingle(
 
 const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
-const FILE_FEES = new Fees({ inclusionFee: 42n, storageFee: 24n });
+const FILE_FEES = new Fees({ inclusionFee: Lgnt.fromCanonical(42n), storageFee: Lgnt.fromCanonical(24n) });
 const testFile: FileDescription = {
     name: "test-file",
     nature: "file-nature",
@@ -230,7 +230,7 @@ const testFile: FileDescription = {
     acknowledgedByVerifiedIssuerOn: moment(),
 }
 
-const DATA_LINK_FEES = new Fees({ inclusionFee: 42n });
+const DATA_LINK_FEES = new Fees({ inclusionFee: Lgnt.fromCanonical(42n) });
 const testLink: LinkDescription = {
     target: "507a00a1-7387-44b8-ac4d-fa57ccbf6da5",
     nature: "link-nature",

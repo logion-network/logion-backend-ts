@@ -217,7 +217,7 @@ export class TokensRecordController extends ApiController {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
 
-        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
+        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc, true);
 
         const recordId = Hash.fromHex(recordIdHex);
         const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({

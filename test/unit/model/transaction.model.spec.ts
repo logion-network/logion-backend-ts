@@ -1,4 +1,4 @@
-import { Fees } from "@logion/node-api";
+import { Fees, Lgnt } from "@logion/node-api";
 import moment from "moment";
 import {
     TransactionAggregateRoot,
@@ -64,7 +64,7 @@ describe("TransactionFactory", () => {
         extrinsicIndex: 5,
         from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
         to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
-        fees: new Fees({ inclusionFee: 12n }),
+        fees: new Fees({ inclusionFee: Lgnt.fromCanonical(12n) }),
         transferValue: 34n,
         tip: 56n,
         reserved: 78n,

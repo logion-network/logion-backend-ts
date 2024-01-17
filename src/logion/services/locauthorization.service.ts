@@ -14,9 +14,11 @@ export class LocAuthorizationService {
         private polkadotService: PolkadotService,
     ) {}
 
-    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot): Promise<SupportedAccountId> {
+    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot, allowInvitedContributor = false): Promise<SupportedAccountId> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
         if (await this.isContributor(request, authenticatedUser)) {
+            return authenticatedUser;
+        } else if (allowInvitedContributor && await this.isInvitedContributor(request, authenticatedUser)) {
             return authenticatedUser;
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");
@@ -40,5 +42,14 @@ export class LocAuthorizationService {
         const issuers = (await api.batch.locs([ locId ]).getLocsVerifiedIssuers())[ locId.toDecimalString() ];
         const selectedParticipant = issuers.find(issuer => issuer.address === submitter.address);
         return selectedParticipant !== undefined;
+    }
+
+    private async isInvitedContributor(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
+        if (!submitter.isPolkadot()) {
+            return false;
+        }
+        const api = await this.polkadotService.readyApi();
+        const locId = new UUID(request.id);
+        return await api.queries.isInvitedContributorOf(submitter.address, locId);
     }
 }
