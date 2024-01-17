@@ -1,4 +1,4 @@
-import { Fees } from "@logion/node-api";
+import { Fees, Lgnt } from "@logion/node-api";
 import { TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { TransactionController } from '../../../src/logion/controllers/transaction.controller.js';
@@ -85,16 +85,16 @@ function transactionDescription(fees: Fees): TransactionDescription {
 function mockModelForFetch(container: Container): void {
 
     const successfulTransactionFees = new Fees({
-        inclusionFee: 3n,
-        storageFee: 4n,
-        legalFee: 5n,
-        certificateFee: 6n,
+        inclusionFee: Lgnt.fromCanonical(3n),
+        storageFee: Lgnt.fromCanonical(4n),
+        legalFee: Lgnt.fromCanonical(5n),
+        certificateFee: Lgnt.fromCanonical(6n),
     });
 
     const successfulTransaction = new Mock<TransactionAggregateRoot>();
     successfulTransaction.setup(instance => instance.getDescription()).returns(transactionDescription(successfulTransactionFees));
 
-    const failedTransactionFees = new Fees({ inclusionFee: 3n });
+    const failedTransactionFees = new Fees({ inclusionFee: Lgnt.fromCanonical(3n) });
     const failedTransaction = new Mock<TransactionAggregateRoot>();
     failedTransaction.setup(instance => instance.getDescription()).returns({
         ...transactionDescription(failedTransactionFees),

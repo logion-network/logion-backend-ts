@@ -245,7 +245,7 @@ describe("TransactionExtractor", () => {
 
         // Legal fee transfer
         const transaction2 = blockWithTransactions!.transactions[1];
-        expect(transaction2.fees.inclusionFee).toBe(0n);
+        expect(transaction2.fees.inclusionFee.canonical).toBe(0n);
         expect(transaction2.transferValue).toBe(125000150n);
         expect(transaction2.from).toBe("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
         expect(transaction2.to).toBe("5DAAnrj7VHTznn2AWBemMuyBwZWs6FNFjdyVXUeYum3PTXFy");
@@ -348,7 +348,7 @@ async function expectTransaction(params: ExpectTransactionParams, transactionInd
     expect(transaction.extrinsicIndex).toBe(1);
     expect(transaction.pallet).toBe(params.pallet);
     expect(transaction.method).toBe(params.method);
-    expect(transaction.fees.inclusionFee).toBe(params.fee);
+    expect(transaction.fees.inclusionFee.canonical).toBe(params.fee);
     expect(transaction.reserved).toBe(params.reserved);
     expect(transaction.tip).toBe(params.tip);
     expect(transaction.transferValue).toBe(params.transferValue);

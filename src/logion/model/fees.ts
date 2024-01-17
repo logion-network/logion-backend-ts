@@ -1,9 +1,9 @@
 import { Column } from "typeorm";
-import { Fees } from "@logion/node-api";
-import { toBigInt } from "../lib/convert.js";
+import { Fees, Lgnt } from "@logion/node-api";
+import { toLgnt } from "../lib/convert.js";
 
 export const AMOUNT_PRECISION = 50;
-export const NULL_FEES = new Fees({ inclusionFee: 0n });
+export const NULL_FEES = new Fees({ inclusionFee: Lgnt.zero() });
 
 export class EmbeddableStorageFees {
 
@@ -15,8 +15,8 @@ export class EmbeddableStorageFees {
 
     getDescription(): Fees {
         return new Fees({
-            inclusionFee: toBigInt(this.inclusionFee) || 0n,
-            storageFee: toBigInt(this.storageFee),
+            inclusionFee: toLgnt(this.inclusionFee) || Lgnt.zero(),
+            storageFee: toLgnt(this.storageFee),
         });
     }
 
@@ -27,7 +27,7 @@ export class EmbeddableStorageFees {
         return entity;
     }
 
-    static onlyInclusion(fees: { inclusionFee: bigint }): EmbeddableFees {
+    static onlyInclusion(fees: { inclusionFee: Lgnt }): EmbeddableFees {
         const entity = new EmbeddableFees();
         entity.inclusionFee = fees.inclusionFee.toString();
         return entity;
@@ -53,13 +53,13 @@ export class EmbeddableFees extends EmbeddableStorageFees {
 
     getDescription(): Fees {
         return new Fees({
-            inclusionFee: toBigInt(this.inclusionFee) || 0n,
-            storageFee: toBigInt(this.storageFee),
-            legalFee: toBigInt(this.legalFee),
-            certificateFee: toBigInt(this.certificateFee),
-            valueFee: toBigInt(this.valueFee),
-            collectionItemFee: toBigInt(this.collectionItemFee),
-            tokensRecordFee: toBigInt(this.tokensRecordFee),
+            inclusionFee: toLgnt(this.inclusionFee) || Lgnt.zero(),
+            storageFee: toLgnt(this.storageFee),
+            legalFee: toLgnt(this.legalFee),
+            certificateFee: toLgnt(this.certificateFee),
+            valueFee: toLgnt(this.valueFee),
+            collectionItemFee: toLgnt(this.collectionItemFee),
+            tokensRecordFee: toLgnt(this.tokensRecordFee),
         });
     }
 

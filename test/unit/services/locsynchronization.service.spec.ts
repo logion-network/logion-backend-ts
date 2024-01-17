@@ -323,7 +323,7 @@ function givenLocRequestExpectsFileUpdated() {
 }
 
 const FILE_HASH = Hash.fromHex("0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7");
-const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee === 42n && fees.storageFee === 24n);
+const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee.canonical === 42n && fees.storageFee?.canonical === 24n);
 
 function thenFileUpdated() {
     locRequest.verify(instance => instance.setFileAddedOn(ItIsHash(FILE_HASH), IS_BLOCK_TIME));

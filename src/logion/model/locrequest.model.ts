@@ -27,7 +27,7 @@ import {
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
 import { Hash, HashTransformer } from "../lib/crypto/hashing.js";
-import { toBigInt } from "../lib/convert.js";
+import { toBigInt, toLgnt } from "../lib/convert.js";
 
 const { logger } = Log;
 
@@ -906,7 +906,7 @@ export class LocRequestAggregateRoot {
             name: item.name!,
             value: item.value!,
             submitter: item.submitter!.toSupportedAccountId(),
-            fees: item.inclusionFee ? new Fees({ inclusionFee: BigInt(item.inclusionFee)}) : undefined,
+            fees: item.inclusionFee ? new Fees({ inclusionFee: toLgnt(item.inclusionFee)! }) : undefined,
             ...(item.lifecycle!.getDescription()),
         })
     }
@@ -1077,7 +1077,7 @@ export class LocRequestAggregateRoot {
             target: link.target!,
             nature: link.nature!,
             submitter: link.submitter!.toSupportedAccountId(),
-            fees: link.inclusionFee ? new Fees({ inclusionFee: BigInt(link.inclusionFee)}) : undefined,
+            fees: link.inclusionFee ? new Fees({ inclusionFee: toLgnt(link.inclusionFee)!}) : undefined,
             ...(link.lifecycle!.getDescription()),
         }
     }
