@@ -3,7 +3,7 @@ import { Fees, Lgnt } from "@logion/node-api";
 import { toLgnt } from "../lib/convert.js";
 
 export const AMOUNT_PRECISION = 50;
-export const NULL_FEES = new Fees({ inclusionFee: Lgnt.zero() });
+export const NULL_FEES = Fees.zero();
 
 export class EmbeddableStorageFees {
 
