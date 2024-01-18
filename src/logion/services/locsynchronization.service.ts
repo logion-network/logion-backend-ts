@@ -107,6 +107,7 @@ export class LocSynchronizer {
                     break;
                 case "sponsor":
                 case "withdrawSponsorship":
+                case "setInvitedContributorSelection":
                     // Nothing to sync
                     break;
                 default:
