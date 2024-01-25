@@ -100,6 +100,7 @@ export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
 export function testDataWithType(locType: LocType, draft?: boolean): Partial<LocRequestDescription & { draft: boolean }> {
     return {
         requesterAddress: REQUESTER_ADDRESS,
+        requesterIdentityLoc: "eb1b554e-f8de-4ea2-bcff-64d0c1f1f237",
         ownerAddress: ALICE,
         description: "I want to open a case",
         locType,

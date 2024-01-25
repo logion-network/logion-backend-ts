@@ -127,28 +127,12 @@ export class LocRequestAdapter {
 
     async findUserPrivateData(request: LocRequestAggregateRoot): Promise<UserPrivateData> {
         const description = request.getDescription();
-        if (description.locType === 'Identity') {
+        if (description.requesterIdentityLoc === undefined) {
             return {
                 identityLocId: undefined,
                 ...description
             };
-        }
-        if (description.requesterAddress) {
-            const identityLoc = (await this.locRequestRepository.findBy({
-                expectedLocTypes: [ "Identity" ],
-                expectedIdentityLocType: "Polkadot",
-                expectedRequesterAddress: description.requesterAddress.address,
-                expectedOwnerAddress: description.ownerAddress,
-                expectedStatuses: [ "CLOSED" ]
-            })).find(loc => loc.getVoidInfo() === null);
-            if (identityLoc) {
-                return {
-                    identityLocId: identityLoc.id,
-                    ...identityLoc.getDescription()
-                }
-            }
-        }
-        if (description.requesterIdentityLoc) {
+        } else {
             const identityLoc = await this.locRequestRepository.findById(description.requesterIdentityLoc)
             if (identityLoc) {
                 return {

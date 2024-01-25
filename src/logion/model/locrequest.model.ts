@@ -1365,6 +1365,11 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address_type", nullable: true })
     requesterAddressType?: string;
 
+    // NOTE: As of 24-01-2024, the requester identity LOC is always populated for Transaction anc Collection LOCs,
+    // regardless of the type identity (POLKADOT or LOGION) of the requester.
+    // Therefore, in a fully normalized model, requesterAddress field should not be populated anymore.
+    // for Transaction/Collection LOC, but rather fetched from linked identity LOC.
+    // Given that many queries rely on this field, this denormalization is kept.
     @ManyToOne(() => LocRequestAggregateRoot, { nullable: true })
     @JoinColumn({ name: "requester_identity_loc" })
     _requesterIdentityLoc?: LocRequestAggregateRoot;
@@ -2015,9 +2020,9 @@ export class LocRequestFactory {
         return request;
     }
 
-    private ensureCorrectRequester(description: LocRequestDescription, allowRequesterIdentityLoc: boolean) {
-        if (!description.requesterAddress && !allowRequesterIdentityLoc) {
-            throw new Error("UnexpectedRequester: Identity LOC cannot have a LOC as requester")
+    private ensureCorrectRequester(description: LocRequestDescription, allowRequesterWithLogionIdentity: boolean) {
+        if (!description.requesterAddress && !allowRequesterWithLogionIdentity) {
+            throw new Error("UnexpectedRequester: LOC must have one requester")
         }
         switch (description.locType) {
             case 'Identity':
@@ -2026,11 +2031,8 @@ export class LocRequestFactory {
                 }
                 return;
             default:
-                if (description.requesterAddress && description.requesterIdentityLoc) {
-                    throw new Error("UnexpectedRequester: LOC cannot have both requester address and id loc")
-                }
-                if (!description.requesterAddress && !description.requesterIdentityLoc) {
-                    throw new Error("UnexpectedRequester: LOC must have one requester")
+                if (!description.requesterIdentityLoc) {
+                    throw new Error("UnexpectedRequester: Transaction/Collection LOC must refer the ID LOC of the requester");
                 }
         }
     }

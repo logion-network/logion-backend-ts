@@ -86,6 +86,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.preAcknowledgeFile(spec);
     LocRequestController.cancelPreAcknowledgeFile(spec);
     LocRequestController.openLoc(spec);
+    LocRequestController.cancelOpenLoc(spec);
     LocRequestController.closeLoc(spec);
     LocRequestController.cancelCloseLoc(spec);
     LocRequestController.voidLoc(spec);
@@ -183,9 +184,23 @@ export class LocRequestController extends ApiController {
                 throw badRequest("" + e);
             }
         }
+        const requesterIdentityLoc = await this.getValidPolkadotIdentityLoc(requesterAddress, ownerAddress);
+        if (locType === "Identity") {
+            if (requesterAddress && requesterIdentityLoc) {
+                throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
+            }
+        } else {
+            if (requesterAddress && requesterAddress.type !== "Polkadot") {
+                throw badRequest("Only Polkadot address can request a Transaction/Collection LOC");
+            }
+            if (!requesterIdentityLoc &&
+                !(await this.existsValidLogionIdentityLoc(createLocRequestView.requesterIdentityLoc))) {
+                throw badRequest("Unable to find a valid (closed) identity LOC.");
+            }
+        }
         const description: LocRequestDescription = {
             requesterAddress,
-            requesterIdentityLoc: createLocRequestView.requesterIdentityLoc,
+            requesterIdentityLoc: requesterIdentityLoc ? requesterIdentityLoc : createLocRequestView.requesterIdentityLoc,
             ownerAddress,
             description: requireDefined(createLocRequestView.description),
             locType,
@@ -196,19 +211,6 @@ export class LocRequestController extends ApiController {
             template: createLocRequestView.template,
             sponsorshipId,
             fees: this.toLocFees(createLocRequestView.fees, locType),
-        }
-        if (locType === "Identity") {
-            if (requesterAddress && (await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress))) {
-                throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
-            }
-        } else {
-            if (requesterAddress && requesterAddress.type !== "Polkadot") {
-                throw badRequest("Only Polkadot address can request a Transaction/Collection LOC");
-            }
-            if (!(await this.existsValidIdentityLoc(requesterAddress, ownerAddress)) &&
-                !(await this.existsValidLogionIdentityLoc(description.requesterIdentityLoc))) {
-                throw badRequest("Unable to find a valid (closed) identity LOC.");
-            }
         }
         let request: LocRequestAggregateRoot;
         if (accountEquals(authenticatedUser, owner)) {
@@ -271,8 +273,16 @@ export class LocRequestController extends ApiController {
         const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
         const locType = requireDefined(openLocView.locType);
         const requesterAddress = polkadotAccount(authenticatedUser.address);
+        const requesterIdentityLoc = await this.getValidPolkadotIdentityLoc(requesterAddress, ownerAddress);
+        if (requesterIdentityLoc && locType === "Identity") {
+            throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
+        }
+        if (!requesterIdentityLoc && locType !== "Identity") {
+            throw badRequest("Unable to find a valid (closed) identity LOC.");
+        }
         const description: LocRequestDescription = {
             requesterAddress,
+            requesterIdentityLoc,
             ownerAddress,
             description: requireDefined(openLocView.description),
             locType,
@@ -282,13 +292,6 @@ export class LocRequestController extends ApiController {
             company: openLocView.company,
             template: openLocView.template,
             fees: this.toLocFees(openLocView.fees, locType),
-        }
-        const validIdLoc = await this.existsValidIdentityLoc(description.requesterAddress, ownerAddress);
-        if (validIdLoc && locType === "Identity") {
-            throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
-        }
-        if (!validIdLoc && locType !== "Identity") {
-            throw badRequest("Unable to find a valid (closed) identity LOC.");
         }
         const metadata = openLocView.metadata?.map(item => this.toMetadata(item, requesterAddress));
         const links = openLocView.links ?
@@ -305,9 +308,9 @@ export class LocRequestController extends ApiController {
         return this.locRequestAdapter.toView(request, authenticatedUser);
     }
 
-    private async existsValidIdentityLoc(requesterAddress: SupportedAccountId | undefined, ownerAddress: string): Promise<boolean> {
+    private async getValidPolkadotIdentityLoc(requesterAddress: SupportedAccountId | undefined, ownerAddress: string): Promise<string | undefined> {
         if (requesterAddress === undefined) {
-            return false;
+            return undefined;
         }
         const identityLoc = (await this.locRequestRepository.findBy({
             expectedLocTypes: [ "Identity" ],
@@ -316,7 +319,7 @@ export class LocRequestController extends ApiController {
             expectedOwnerAddress: ownerAddress,
             expectedStatuses: [ "CLOSED" ]
         })).find(loc => loc.getVoidInfo() === null);
-        return identityLoc !== undefined;
+        return identityLoc !== undefined ? identityLoc.id : undefined
     }
 
     private async existsValidLogionIdentityLoc(identityLocId:string | undefined): Promise<boolean> {
@@ -324,7 +327,7 @@ export class LocRequestController extends ApiController {
             return false;
         }
         const identityLoc = await this.locRequestRepository.findById(identityLocId);
-        return identityLoc !== null &&
+        return identityLoc !== null && identityLoc !== undefined &&
             identityLoc.locType === 'Identity' &&
             identityLoc.status === 'CLOSED' &&
             identityLoc.getVoidInfo() === null &&
@@ -1514,13 +1517,12 @@ export class LocRequestController extends ApiController {
             description = `${ description } - ${ itemId }`
             linkNature = `${ linkNature } - Collection Item: ${ itemId }`
         }
-
+        const ownerAddress = requireDefined(loc.ownerAddress);
+        const requesterIdentityLoc = await this.getValidPolkadotIdentityLoc(contributor, loc.ownerAddress!)
         const requestDescription: LocRequestDescription = {
-            requesterAddress: {
-                address: contributor.address,
-                type: contributor.type,
-            },
-            ownerAddress: loc.ownerAddress!,
+            requesterAddress: contributor,
+            requesterIdentityLoc,
+            ownerAddress,
             description,
             locType: 'Transaction',
             createdOn: moment().toISOString(),
