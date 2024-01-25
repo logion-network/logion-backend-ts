@@ -16,7 +16,8 @@ export class LinkLocToIdentity1706107298453 implements MigrationInterface {
                        AND identity_loc.owner_address = loc.owner_address
                        AND identity_loc.status = 'CLOSED'
                        AND identity_loc.void_reason IS NULL
-                       AND identity_loc.voided_on IS NULL)
+                       AND identity_loc.voided_on IS NULL
+                     LIMIT 1)
             WHERE loc_type in ('Transaction', 'Collection')
               AND requester_identity_loc IS NULL
               AND requester_address IS NOT NULL
