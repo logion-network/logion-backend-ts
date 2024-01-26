@@ -186,19 +186,18 @@
                         "type": "string",
                         "description": "The SS58 address of the other legal officer the request was submitted to"
                     },
-                    "requesterAddress": {
+                    "requesterIdentityLoc": {
                         "type": "string",
-                        "description": "The SS58 address of the requester"
-                    },
-                    "userIdentity": {
-                        "description": "The identification data of the requester",
-                        "$ref": "#/components/schemas/UserIdentityView"
-                    },
-                    "userPostalAddress": {
-                        "description": "The postal address of the requester",
-                        "$ref": "#/components/schemas/PostalAddressView"
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
                     }
                 },
+                "required": [
+                    "isRecovery",
+                    "legalOfficerAddress",
+                    "otherLegalOfficerAddress",
+                    "requesterIdentityLoc"
+                ],
                 "title": "CreateProtectionRequestView",
                 "description": "A Protection Request to create"
             },
@@ -371,7 +370,7 @@
                     },
                     "isRecovery": {
                         "type": "boolean",
-                        "description": "True if the the protection request is also a recovery request"
+                        "description": "True if the protection request is also a recovery request"
                     },
                     "legalOfficerAddress": {
                         "type": "string",
@@ -384,6 +383,11 @@
                     "requesterAddress": {
                         "type": "string",
                         "description": "The SS58 address of the requester"
+                    },
+                    "requesterIdentityLoc": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of the LOC identifying the requester"
                     },
                     "status": {
                         "type": "string",
@@ -889,7 +893,7 @@
                     "requesterIdentityLoc": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of the LOC identifying the requester (populated for LOGION identity only)"
+                        "description": "The ID of the LOC identifying the requester"
                     },
                     "description": {
                         "type": "string",

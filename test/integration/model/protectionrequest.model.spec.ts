@@ -9,6 +9,7 @@ import {
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model.js";
 import { ALICE, BOB } from "../../helpers/addresses.js";
+import { LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -112,20 +113,29 @@ describe('ProtectionRequestRepositoryTest', () => {
 
     it("saves protection request", async () => {
         // Given
+        const identityLoc = new LocRequestAggregateRoot();
+        identityLoc.id = "80124e8a-a7d8-456f-a7be-deb4e0983e87";
+        identityLoc.status = "CLOSED"
+        identityLoc.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'
+        identityLoc.requesterAddressType = 'Polkadot'
+        identityLoc.ownerAddress = BOB
+        identityLoc.userIdentity = new EmbeddableUserIdentity()
+        identityLoc.userIdentity.email = 'john.doe@logion.network'
+        identityLoc.userIdentity.phoneNumber = '+1234897'
+        identityLoc.userIdentity.firstName = 'John'
+        identityLoc.userIdentity.lastName = 'Doe'
+        identityLoc.userPostalAddress = new EmbeddablePostalAddress()
+        identityLoc.userPostalAddress.line1 = '15 Rue du Bois'
+        identityLoc.userPostalAddress.postalCode = '75000'
+        identityLoc.userPostalAddress.city = 'Paris'
+        identityLoc.userPostalAddress.country = 'France'
+
         const protectionRequest = new ProtectionRequestAggregateRoot()
         protectionRequest.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639'
         protectionRequest.isRecovery = false
-        protectionRequest.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'
-        protectionRequest.userIdentity = new EmbeddableUserIdentity()
-        protectionRequest.userIdentity.email = 'john.doe@logion.network'
-        protectionRequest.userIdentity.phoneNumber = '+1234897'
-        protectionRequest.userIdentity.firstName = 'John'
-        protectionRequest.userIdentity.lastName = 'Doe'
-        protectionRequest.userPostalAddress = new EmbeddablePostalAddress()
-        protectionRequest.userPostalAddress.line1 = '15 Rue du Bois'
-        protectionRequest.userPostalAddress.postalCode = '75000'
-        protectionRequest.userPostalAddress.city = 'Paris'
-        protectionRequest.userPostalAddress.country = 'France'
+        protectionRequest.requesterAddress = identityLoc.requesterAddress;
+        protectionRequest.requesterIdentityLocId = identityLoc.id;
+
         protectionRequest.status = 'PENDING'
         protectionRequest.legalOfficerAddress = BOB
         protectionRequest.otherLegalOfficerAddress = ALICE

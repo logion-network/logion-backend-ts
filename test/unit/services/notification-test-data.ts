@@ -9,24 +9,12 @@ import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferr
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+    requesterIdentityLocId: "7a6ca6b7-87ca-4e55-9c5f-422c9f799b74",
     legalOfficerAddress: ALICE,
     otherLegalOfficerAddress: BOB,
     addressToRecover: "5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn",
     createdOn: "2021-06-10T16:25:23.668294",
     isRecovery: false,
-    userIdentity: {
-        firstName: "John",
-        lastName: "Doe",
-        email: "john.doe@logion.network",
-        phoneNumber: "123456",
-    },
-    userPostalAddress: {
-        line1: "Rue de la Paix",
-        line2: "",
-        postalCode: "4000",
-        city: "Liège",
-        country: "Belgium"
-    },
     decision: {
         decisionOn: "2021-06-10T16:25:23.668294",
         rejectReason: "Failed to provide some data",
@@ -96,8 +84,19 @@ export function notificationData() {
         protection: notifiedProtection,
         legalOfficer: lo,
         otherLegalOfficer: otherLo,
-        walletUser: notifiedProtection.userIdentity,
-        walletUserPostalAddress: notifiedProtection.userPostalAddress,
+        walletUser: {
+            firstName: "John",
+            lastName: "Doe",
+            email: "john.doe@logion.network",
+            phoneNumber: "123456",
+        },
+        walletUserPostalAddress: {
+            line1: "Rue de la Paix",
+            line2: "",
+            postalCode: "4000",
+            city: "Liège",
+            country: "Belgium"
+        },
         loc: notifiedLOC(),
         vaultTransfer: {
             ...vaultTransfer,

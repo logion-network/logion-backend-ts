@@ -127,24 +127,22 @@ export class LocRequestAdapter {
 
     async findUserPrivateData(request: LocRequestAggregateRoot): Promise<UserPrivateData> {
         const description = request.getDescription();
-        if (description.requesterIdentityLoc === undefined) {
+        if (description.locType === "Identity" || description.requesterIdentityLoc === undefined) {
             return {
                 identityLocId: undefined,
                 ...description
             };
         } else {
-            const identityLoc = await this.locRequestRepository.findById(description.requesterIdentityLoc)
-            if (identityLoc) {
-                return {
-                    identityLocId: identityLoc.id,
-                    ...identityLoc.getDescription()
-                }
-            }
+            return this.getUserPrivateData(description.requesterIdentityLoc)
         }
+    }
+
+    async getUserPrivateData(identityLocId: string): Promise<UserPrivateData> {
+        const identityLoc = requireDefined(await this.locRequestRepository.findById(identityLocId), () => new Error(`Unable to find ID LOC ${ identityLocId }`));
         return {
-            identityLocId: undefined,
-            ...description
-        };
+            identityLocId: identityLoc.id,
+            ...identityLoc.getDescription()
+        }
     }
 
     async getSelectedIssuersIdentities(selectedIssuers: VerifiedIssuerAggregateRoot[]): Promise<VerifiedIssuerIdentity[]> {

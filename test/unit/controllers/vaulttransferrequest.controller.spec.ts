@@ -25,6 +25,7 @@ import {
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
+import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode } = TestApp;
 
@@ -230,12 +231,12 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container, repository);
+    mockOtherDependencies(container, repository);
 }
 
 const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE);
 
-function mockNotificationAndDirectoryService(container: Container, repository: Mock<VaultTransferRequestRepository>) {
+function mockOtherDependencies(container: Container, repository: Mock<VaultTransferRequestRepository>) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
@@ -261,6 +262,7 @@ function mockNotificationAndDirectoryService(container: Container, repository: M
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRequestRepository.object());
 
     container.bind(VaultTransferRequestService).toConstantValue(new NonTransactionalVaultTransferRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 }
 
 function mockVaultTransferRequest(): Mock<VaultTransferRequestAggregateRoot> {
@@ -304,15 +306,16 @@ const POSTAL_ADDRESS: PostalAddress = {
     country: "Belgium"
 };
 
+const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
+
 const protectionRequestDescription: ProtectionRequestDescription = {
     addressToRecover: null,
+    requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
     legalOfficerAddress: ALICE,
     createdOn: TIMESTAMP,
     isRecovery: false,
     otherLegalOfficerAddress: BOB,
     requesterAddress: REQUESTER_ADDRESS,
-    userIdentity: IDENTITY,
-    userPostalAddress: POSTAL_ADDRESS,
 };
 
 function mockModelForFetch(container: Container): void {
@@ -333,7 +336,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container, repository);
+    mockOtherDependencies(container, repository);
 }
 
 function mockModelForRequest(container: Container): void {
@@ -355,7 +358,7 @@ function mockVaultTransferRequestModel(container: Container): void {
                 description.requesterAddress === REQUESTER_ADDRESS)))
         .returns(root.object());
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container, repository);
+    mockOtherDependencies(container, repository);
 }
 
 let notificationService: Mock<NotificationService>;
@@ -381,5 +384,17 @@ function mockModelForAcceptOrCancel(container: Container, verifies: boolean): vo
 
     const factory = new Mock<VaultTransferRequestFactory>();
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container, repository);
+    mockOtherDependencies(container, repository);
 }
+
+function mockLocRequestAdapter(): LocRequestAdapter {
+    const locRequestAdapter = new Mock<LocRequestAdapter>();
+    locRequestAdapter.setup(instance => instance.getUserPrivateData(REQUESTER_IDENTITY_LOC_ID))
+        .returns(Promise.resolve({
+            userIdentity: IDENTITY,
+            userPostalAddress: POSTAL_ADDRESS,
+            identityLocId: REQUESTER_IDENTITY_LOC_ID
+        }))
+    return locRequestAdapter.object();
+}
+

@@ -7,22 +7,55 @@ import {
     ProtectionRequestAggregateRoot, ProtectionRequestStatus,
 } from '../../../src/logion/model/protectionrequest.model.js';
 import { BOB, CHARLY, ALICE } from '../../helpers/addresses.js';
+import { Mock, It } from "moq.ts";
+import {
+    LocRequestRepository,
+    LocRequestAggregateRoot,
+    LocRequestStatus
+} from "../../../src/logion/model/locrequest.model.js";
+import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity.js";
+import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress.js";
+import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
 
 describe('ProtectionRequestFactoryTest', () => {
 
     it('createsPendingRequests', async () => {
-        const result = newProtectionRequestUsingFactory();
+        const result = await newProtectionRequestUsingFactory();
 
         expect(result.id!).toBe(id);
         expect(result.getDescription()).toEqual(description);
         expect(result.status).toBe('PENDING');
+    });
+
+    it('fails to create a protection request with MISSING identity LOC', async () => {
+        const locRequestRepository = new Mock<LocRequestRepository>();
+        locRequestRepository.setup(instance => instance.findById(It.IsAny<string>()))
+            .returns(Promise.resolve(null));
+        const factory = new ProtectionRequestFactory(locRequestRepository.object());
+        await expectAsyncToThrow(
+            () => factory.newProtectionRequest({
+                id,
+                requesterIdentityLoc: "missing",
+                ...description,
+            }),
+            undefined,
+            "Identity LOC not found"
+        )
+    });
+
+    it('fails to create a protection request with OPEN identity LOC', async () => {
+        await expectAsyncToThrow(
+            () => newProtectionRequestUsingFactory(undefined, "OPEN"),
+            undefined,
+            "Identity LOC not valid"
+        )
     });
 });
 
 describe('ProtectionRequestAggregateRootTest', () => {
 
     it('accepts', async () => {
-        const request = newProtectionRequestUsingFactory();
+        const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
         const locId = "locId";
 
@@ -34,7 +67,7 @@ describe('ProtectionRequestAggregateRootTest', () => {
     });
 
     it('rejects', async () => {
-        const request = newProtectionRequestUsingFactory();
+        const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
         const reason = "Because.";
 
@@ -45,7 +78,7 @@ describe('ProtectionRequestAggregateRootTest', () => {
     });
 
     it('fails on re-accept', async () => {
-        const request = newProtectionRequestUsingFactory();
+        const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
         const locId = "locId";
         request.accept(decisionOn, locId);
@@ -54,39 +87,39 @@ describe('ProtectionRequestAggregateRootTest', () => {
     });
 
     it('fails on re-reject', async () => {
-        const request = newProtectionRequestUsingFactory();
+        const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
         request.reject("", decisionOn);
 
         expect(() => request.reject("", decisionOn)).toThrowError();
     });
 
-    it("resubmit", () => {
-        const request = newProtectionRequestUsingFactory("REJECTED");
+    it("resubmit", async () => {
+        const request = await newProtectionRequestUsingFactory("REJECTED");
         request.resubmit();
         expect(request.status).toEqual("PENDING")
     });
 
-    it("cancels a pending protection request ", () => {
-        const request = newProtectionRequestUsingFactory();
+    it("cancels a pending protection request ", async () => {
+        const request = await newProtectionRequestUsingFactory();
         request.cancel();
         expect(request.status).toEqual("CANCELLED")
     });
 
-    it("cancels a rejected protection request", () => {
-        const request = newProtectionRequestUsingFactory("REJECTED");
+    it("cancels a rejected protection request", async () => {
+        const request = await newProtectionRequestUsingFactory("REJECTED");
         request.cancel();
         expect(request.status).toEqual("REJECTED_CANCELLED")
     });
 
-    it("cancels an accepted protection request ", () => {
-        const request = newProtectionRequestUsingFactory("ACCEPTED");
+    it("cancels an accepted protection request ", async () => {
+        const request = await newProtectionRequestUsingFactory("ACCEPTED");
         request.cancel();
         expect(request.status).toEqual("ACCEPTED_CANCELLED")
     });
 
-    it("updates", () => {
-        const request = newProtectionRequestUsingFactory();
+    it("updates", async () => {
+        const request = await newProtectionRequestUsingFactory();
         request.updateOtherLegalOfficer(CHARLY);
         expect(request.otherLegalOfficerAddress).toEqual(CHARLY);
     });
@@ -94,33 +127,54 @@ describe('ProtectionRequestAggregateRootTest', () => {
 
 
 const id = uuid();
+const userIdentity = {
+    email: "john.doe@logion.network",
+    firstName: "John",
+    lastName: "Doe",
+    phoneNumber: "+1234",
+};
+const userPostalAddress = {
+    line1: "Place de le République Française, 10",
+    line2: "boite 15",
+    postalCode: "4000",
+    city: "Liège",
+    country: "Belgium",
+};
 const description: ProtectionRequestDescription = {
     requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    requesterIdentityLocId: "80124e8a-a7d8-456f-a7be-deb4e0983e87",
     legalOfficerAddress: ALICE,
     otherLegalOfficerAddress: BOB,
-    userIdentity: {
-        email: "john.doe@logion.network",
-        firstName: "John",
-        lastName: "Doe",
-        phoneNumber: "+1234",
-    },
-    userPostalAddress: {
-        line1: "Place de le République Française, 10",
-        line2: "boite 15",
-        postalCode: "4000",
-        city: "Liège",
-        country: "Belgium",
-    },
     createdOn: moment().toISOString(),
     isRecovery: false,
     addressToRecover: null,
 };
 
-function newProtectionRequestUsingFactory(status?: ProtectionRequestStatus): ProtectionRequestAggregateRoot {
-    const factory = new ProtectionRequestFactory();
-    const protectionRequest = factory.newProtectionRequest({
+async function newProtectionRequestUsingFactory(status?: ProtectionRequestStatus, identityLocStatus?: LocRequestStatus): Promise<ProtectionRequestAggregateRoot> {
+
+    const identityLoc = new LocRequestAggregateRoot();
+    identityLoc.id = "80124e8a-a7d8-456f-a7be-deb4e0983e87";
+    identityLoc.locType = "Identity";
+    if (identityLocStatus) {
+        identityLoc.status = identityLocStatus;
+    } else {
+        identityLoc.status = "CLOSED";
+    }
+    identityLoc.userIdentity = EmbeddableUserIdentity.from(userIdentity);
+    identityLoc.userPostalAddress = EmbeddablePostalAddress.from(userPostalAddress);
+    identityLoc.requesterAddress = description.requesterAddress;
+    identityLoc.requesterAddressType = "Polkadot";
+    identityLoc.ownerAddress = description.legalOfficerAddress;
+
+    const locRequestRepository = new Mock<LocRequestRepository>();
+    locRequestRepository.setup(instance => instance.findById(It.IsAny<string>()))
+        .returns(Promise.resolve(identityLoc));
+
+    const factory = new ProtectionRequestFactory(locRequestRepository.object());
+    const protectionRequest = await factory.newProtectionRequest({
         id,
-        description,
+        requesterIdentityLoc: identityLoc.id!,
+        ...description,
     });
     if (status) {
         protectionRequest.status = status;

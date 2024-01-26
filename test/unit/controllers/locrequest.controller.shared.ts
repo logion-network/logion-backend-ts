@@ -100,7 +100,7 @@ export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
 export function testDataWithType(locType: LocType, draft?: boolean): Partial<LocRequestDescription & { draft: boolean }> {
     return {
         requesterAddress: REQUESTER_ADDRESS,
-        requesterIdentityLoc: "eb1b554e-f8de-4ea2-bcff-64d0c1f1f237",
+        requesterIdentityLoc: locType === "Identity" ? undefined : userIdentities["Polkadot"].identityLocId,
         ownerAddress: ALICE,
         description: "I want to open a case",
         locType,
@@ -133,7 +133,7 @@ export function testDataWithUserIdentityWithType(locType: LocType): Partial<LocR
     }
 }
 
-export const testDataWithUserIdentity = testDataWithUserIdentityWithType("Transaction");
+export const testDataWithUserIdentity = testDataWithUserIdentityWithType("Identity");
 
 export const testDataWithLogionIdentity: Partial<LocRequestDescription> = {
     requesterIdentityLoc: userIdentities["Logion"].identityLocId,
@@ -304,6 +304,8 @@ export function setupRequest(
         .returns(status);
     request.setup(instance => instance.id)
         .returns(id);
+    request.setup(instance => instance.requesterIdentityLocId)
+        .returns(description.requesterIdentityLoc);
     request.setup(instance => instance.getDescription())
         .returns({
             ...description,
@@ -427,7 +429,6 @@ export function setupSelectedIssuer(
 }
 
 export const ISSUER = polkadotAccount("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
-export const ISSUER_LOC_ID = "501a5a20-2d16-4597-83aa-b96df7c8f194";
 
 export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean) {
     if (exists) {
