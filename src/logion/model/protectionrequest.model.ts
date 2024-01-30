@@ -275,7 +275,10 @@ export class ProtectionRequestFactory {
         root.createdOn = params.createdOn;
         root.isRecovery = params.isRecovery;
         if(root.isRecovery) {
-            root.addressToRecover = params.addressToRecover || undefined;
+            root.addressToRecover = requireDefined(
+                params.addressToRecover,
+                () => badRequest("Recovery requires an address to recover")
+            );
         }
         return root;
     }

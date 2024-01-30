@@ -127,13 +127,13 @@ export class LocRequestAdapter {
 
     async findUserPrivateData(request: LocRequestAggregateRoot): Promise<UserPrivateData> {
         const description = request.getDescription();
-        if (description.locType === "Identity" || description.requesterIdentityLoc === undefined) {
+        if (description.locType === "Identity") {
             return {
                 identityLocId: undefined,
                 ...description
             };
         } else {
-            return this.getUserPrivateData(description.requesterIdentityLoc)
+            return this.getUserPrivateData(description.requesterIdentityLoc!)
         }
     }
 
