@@ -54,17 +54,6 @@
                 "title": "ItemLifecycleView",
                 "description": "All item's lifecycle attributes"
             },
-            "AcceptProtectionRequestView": {
-                "type": "object",
-                "properties": {
-                    "locId": {
-                        "type": "string",
-                        "description": "ID of the Identity LOC to associate with the protection request"
-                    }
-                },
-                "title": "AcceptProtectionRequestView",
-                "description": "Parameters for Protection Request's acceptance"
-            },
             "ItemDeliveriesResponse": {
                 "type": "object",
                 "additionalProperties": {
@@ -312,10 +301,6 @@
                             "PENDING",
                             "REJECTED"
                         ]
-                    },
-                    "locId": {
-                        "type": "string",
-                        "description": "ID of the Identity LOC linked to an accepted protection request."
                     }
                 },
                 "title": "LegalOfficerDecisionView",

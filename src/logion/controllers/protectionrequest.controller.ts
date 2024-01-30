@@ -11,7 +11,6 @@ import {
     setPathParameters,
     getDefaultResponsesNoContent,
     requireDefined,
-    badRequest,
     Log,
     AuthenticationService,
 } from '@logion/rest-api-core';
@@ -36,7 +35,6 @@ type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
 type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProtectionRequestsSpecificationView"];
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
 type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
-type AcceptProtectionRequestView = components["schemas"]["AcceptProtectionRequestView"];
 type UpdateProtectionRequestView = components["schemas"]["UpdateProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 
@@ -155,7 +153,6 @@ export class ProtectionRequestController extends ApiController {
             decision: {
                 rejectReason: request.decision!.rejectReason || "",
                 decisionOn: request.decision!.decisionOn || undefined,
-                locId: request.decision!.locId,
             },
             createdOn: request.createdOn!,
             isRecovery: request.isRecovery || false,
@@ -204,14 +201,11 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/accept')
-    async acceptProtectionRequest(body: AcceptProtectionRequestView, id: string): Promise<ProtectionRequestView> {
+    async acceptProtectionRequest(_body: never, id: string): Promise<ProtectionRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        if(body.locId === undefined || body.locId === null) {
-            throw badRequest("Missing LOC ID");
-        }
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.legalOfficerAddress))
-            request.accept(moment(), body.locId!);
+            request.accept(moment());
         });
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted";
         const userPrivateData = await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId!)

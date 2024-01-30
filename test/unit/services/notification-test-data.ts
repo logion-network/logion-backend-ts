@@ -18,7 +18,6 @@ export const notifiedProtection: ProtectionRequestDescription & { decision: Lega
     decision: {
         decisionOn: "2021-06-10T16:25:23.668294",
         rejectReason: "Failed to provide some data",
-        locId: "103850a5-84f5-4ba9-bad8-f10fdbab3592",
     }
 }
 

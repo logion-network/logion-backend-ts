@@ -13,11 +13,13 @@ export class LinkProtectionToIdentity1706536716815 implements MigrationInterface
         await queryRunner.query(`ALTER TABLE "protection_request" DROP COLUMN "last_name"`);
         await queryRunner.query(`ALTER TABLE "protection_request" DROP COLUMN "first_name"`);
         await queryRunner.query(`ALTER TABLE "protection_request" DROP COLUMN "email"`);
-        await queryRunner.query(`ALTER TABLE "protection_request" ADD "requester_identity_loc_id" uuid NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "protection_request" RENAME "loc_id" TO "requester_identity_loc_id"`);
+        await queryRunner.query(`ALTER TABLE "protection_request" ALTER COLUMN "requester_identity_loc_id" SET NOT NULL`);
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
-        await queryRunner.query(`ALTER TABLE "protection_request" DROP COLUMN "requester_identity_loc_id"`);
+        await queryRunner.query(`ALTER TABLE "protection_request" ALTER COLUMN "requester_identity_loc_id" DROP NOT NULL`);
+        await queryRunner.query(`ALTER TABLE "protection_request" RENAME "requester_identity_loc_id" TO "loc_id"`);
         await queryRunner.query(`ALTER TABLE "protection_request" ADD "email" character varying(255)`);
         await queryRunner.query(`ALTER TABLE "protection_request" ADD "first_name" character varying(255)`);
         await queryRunner.query(`ALTER TABLE "protection_request" ADD "last_name" character varying(255)`);

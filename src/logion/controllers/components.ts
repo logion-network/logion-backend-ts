@@ -45,14 +45,6 @@ export interface components {
        */
       acknowledgedByVerifiedIssuerOn?: string;
     };
-    /**
-     * AcceptProtectionRequestView 
-     * @description Parameters for Protection Request's acceptance
-     */
-    AcceptProtectionRequestView: {
-      /** @description ID of the Identity LOC to associate with the protection request */
-      locId?: string;
-    };
     ItemDeliveriesResponse: {
       [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
     };
@@ -177,8 +169,6 @@ export interface components {
        * @enum {string}
        */
       status?: "ACCEPTED" | "PENDING" | "REJECTED";
-      /** @description ID of the Identity LOC linked to an accepted protection request. */
-      locId?: string;
     };
     /**
      * PostalAddressView 
