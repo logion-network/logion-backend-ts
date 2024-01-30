@@ -1413,6 +1413,13 @@ export class LocRequestAggregateRoot {
     @Column("timestamp without time zone", { name: "loc_created_on", nullable: true })
     locCreatedOn?: string | null;
 
+    // ==================
+    // Note to developers
+    // ==================
+    // On the standalone mvp chain, it exists 1 (one) (open and voided) Collection LOC that embeds
+    // its requester identity, with id 3e1a58c7-0ae1-47d3-a723-e4a7a0bb3598 or 82548936078803348923932065901508769176
+    // The private data are hosted on node03
+    // The requester is a Polkadot address that has NO identity LOC.
     @Column(() => EmbeddableUserIdentity, { prefix: "" })
     userIdentity?: EmbeddableUserIdentity;
 
