@@ -1353,6 +1353,18 @@ export class LocRequestAggregateRoot {
             && (this.status === 'REVIEW_ACCEPTED' || this.status === 'OPEN')
     }
 
+    isValidPolkadotIdentityLocOrThrow(requesterAddress: string, ownerAddress: string) {
+        const valid = this.locType === "Identity"
+            && this.requesterAddressType === "Polkadot"
+            && this.requesterAddress === requesterAddress
+            && this.ownerAddress === ownerAddress
+            && this.status === "CLOSED"
+            && !this.isVoid();
+        if (!valid) {
+            throw badRequest("Identity LOC not valid")
+        }
+    }
+
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 

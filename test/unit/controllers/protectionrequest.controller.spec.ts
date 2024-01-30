@@ -19,25 +19,30 @@ import { NotificationService, Template } from "../../../src/logion/services/noti
 import moment from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
-import { EmbeddableUserIdentity, UserIdentity } from '../../../src/logion/model/useridentity.js';
-import { EmbeddablePostalAddress, PostalAddress } from '../../../src/logion/model/postaladdress.js';
+import { UserIdentity } from '../../../src/logion/model/useridentity.js';
+import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
+import { LocRequestAggregateRoot, LocRequestDescription } from "../../../src/logion/model/locrequest.model.js";
+import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
-const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser } = TestApp;
+const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
 describe('createProtectionRequest', () => {
 
     it('success with valid protection request', async () => {
-        const app = setupApp(ProtectionRequestController, mockModelForRequest);
+        const app = setupApp(
+            ProtectionRequestController,
+            mockModelForRequest,
+            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER_ADDRESS))
+        );
 
         await request(app)
             .post('/api/protection-request')
             .send({
-                requesterAddress: REQUESTER_ADDRESS,
+                requesterIdentityLoc: REQUESTER_IDENTITY_LOC_ID,
                 legalOfficerAddress: ALICE,
-                userIdentity: IDENTITY,
-                userPostalAddress: POSTAL_ADDRESS,
+                otherLegalOfficerAddress: BOB,
                 isRecovery: false,
                 addressToRecover: null,
             })
@@ -50,15 +55,18 @@ describe('createProtectionRequest', () => {
 
     it('success with valid recovery request', async () => {
         const addressToRecover = "toRecover";
-        const app = setupApp(ProtectionRequestController, container => mockModelForRecovery(container, addressToRecover));
+        const app = setupApp(
+            ProtectionRequestController,
+            container => mockModelForRecovery(container, addressToRecover),
+            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER_ADDRESS))
+        );
 
         await request(app)
             .post('/api/protection-request')
             .send({
-                requesterAddress: REQUESTER_ADDRESS,
+                requesterIdentityLoc: REQUESTER_IDENTITY_LOC_ID,
                 legalOfficerAddress: ALICE,
-                userIdentity: IDENTITY,
-                userPostalAddress: POSTAL_ADDRESS,
+                otherLegalOfficerAddress: BOB,
                 isRecovery: true,
                 addressToRecover,
             })
@@ -108,17 +116,45 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
     const factory = new Mock<ProtectionRequestFactory>();
     const root = mockProtectionRequest()
     mockDecision(root, undefined)
+    const identityLoc = mockIdentityLoc();
+    root.setup(instance => instance.requesterIdentityLocId)
+        .returns(identityLoc.id)
 
     factory.setup(instance => instance.newProtectionRequest(
-            It.Is<NewProtectionRequestParameters>(params =>
-                params.description.addressToRecover === addressToRecover
-                && params.description.isRecovery === isRecovery
-                && params.description.requesterAddress === REQUESTER_ADDRESS)))
-        .returns(root.object());
+            It.Is<NewProtectionRequestParameters>(params => {
+                return params.addressToRecover === addressToRecover
+                && params.isRecovery === isRecovery
+                && params.requesterAddress === REQUESTER_ADDRESS})))
+        .returns(Promise.resolve(root.object()));
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
     mockNotificationAndDirectoryService(container);
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+}
+
+function mockLocRequestAdapter(): LocRequestAdapter {
+    const locRequestAdapter = new Mock<LocRequestAdapter>();
+    locRequestAdapter.setup(instance => instance.getUserPrivateData(REQUESTER_IDENTITY_LOC_ID))
+        .returns(Promise.resolve({
+            userIdentity: IDENTITY,
+            userPostalAddress: POSTAL_ADDRESS,
+            identityLocId: REQUESTER_IDENTITY_LOC_ID
+        }))
+    return locRequestAdapter.object();
+}
+
+function mockIdentityLoc(): LocRequestAggregateRoot {
+    const identityLoc = new Mock<LocRequestAggregateRoot>();
+    const description = {
+        userIdentity: IDENTITY,
+        userPostalAddress: POSTAL_ADDRESS,
+    }
+    identityLoc.setup(instance => instance.id)
+        .returns(REQUESTER_IDENTITY_LOC_ID);
+    identityLoc.setup(instance => instance.getDescription())
+        .returns(description as LocRequestDescription)
+    return identityLoc.object()
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
@@ -142,6 +178,7 @@ describe('fetchProtectionRequests', () => {
                 expect(response.body.requests).toBeDefined();
                 expect(response.body.requests.length).toBe(1);
                 expect(response.body.requests[0].requesterAddress).toBe(REQUESTER_ADDRESS);
+                expect(response.body.requests[0].requesterIdentityLoc).toBe(REQUESTER_IDENTITY_LOC_ID);
                 expect(response.body.requests[0].legalOfficerAddress).toBe(ALICE);
                 expect(response.body.requests[0].userIdentity.firstName).toBe("John");
                 expect(response.body.requests[0].userIdentity.lastName).toBe("Doe");
@@ -178,6 +215,7 @@ describe('fetchProtectionRequests', () => {
 });
 
 const REQUESTER_ADDRESS = "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY";
+const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 const REJECT_REASON = "Illegal";
 
@@ -196,6 +234,8 @@ function mockModelForFetch(container: Container): void {
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
     protectionRequest.setup(instance => instance.status).returns('REJECTED');
+    const identityLoc = mockIdentityLoc();
+    protectionRequest.setup(instance => instance.requesterIdentityLocId).returns(identityLoc.id);
 
     const requests: ProtectionRequestAggregateRoot[] = [ protectionRequest.object() ];
     repository.setup(instance => instance.findBy)
@@ -207,6 +247,7 @@ function mockModelForFetch(container: Container): void {
     mockNotificationAndDirectoryService(container)
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 }
 
 function authenticatedLLONotProtectingUser() {
@@ -269,6 +310,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
     mockNotificationAndDirectoryService(container);
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 }
 
 const REQUEST_ID = "requestId";
@@ -436,6 +478,7 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     mockNotificationAndDirectoryService(container);
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 }
 
 function mockNotificationAndDirectoryService(container: Container) {
@@ -457,23 +500,22 @@ function mockNotificationAndDirectoryService(container: Container) {
 
 function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
 
+    const identityLoc = mockIdentityLoc();
     const description: ProtectionRequestDescription = {
         requesterAddress: REQUESTER_ADDRESS,
+        requesterIdentityLocId: identityLoc.id!,
         legalOfficerAddress: ALICE,
         isRecovery: false,
         otherLegalOfficerAddress: "",
         createdOn: moment.now().toString(),
         addressToRecover: null,
-        userIdentity: IDENTITY,
-        userPostalAddress: POSTAL_ADDRESS
     }
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>()
     protectionRequest.setup(instance => instance.id).returns(REQUEST_ID)
     protectionRequest.setup(instance => instance.requesterAddress).returns(description.requesterAddress)
+    protectionRequest.setup(instance => instance.requesterIdentityLocId).returns(description.requesterIdentityLocId)
     protectionRequest.setup(instance => instance.isRecovery).returns(description.isRecovery)
     protectionRequest.setup(instance => instance.otherLegalOfficerAddress).returns(description.otherLegalOfficerAddress)
-    protectionRequest.setup(instance => instance.userIdentity).returns(EmbeddableUserIdentity.from(description.userIdentity));
-    protectionRequest.setup(instance => instance.userPostalAddress).returns(EmbeddablePostalAddress.from(description.userPostalAddress));
     protectionRequest.setup(instance => instance.getDescription()).returns(description)
     return protectionRequest
 }
@@ -509,4 +551,5 @@ function mockModelForUser(container: Container, protectionRequest: Mock<Protecti
     mockNotificationAndDirectoryService(container);
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
+    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 }

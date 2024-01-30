@@ -24,7 +24,7 @@ describe("NotificationService", () => {
         notificationService.templatePath = "test/resources/mail";
         const message = notificationService.renderMessage("protection-requested", {
             protection: notifiedProtection,
-            walletUser: notifiedProtection.userIdentity
+            walletUser: notificationData().walletUser,
         });
         expect(message.subject).toEqual("Your protection is requested")
         const actualText = message.text;
@@ -63,7 +63,7 @@ describe("NotificationService", () => {
         notificationService.templatePath = "test/resources/mail";
         notificationService.notify(to, "protection-requested", {
             protection: notifiedProtection,
-            walletUser: notifiedProtection.userIdentity
+            walletUser: notificationData().walletUser,
         })
         mailService
             .verify(instance => instance.send(It.Is<MailMessage>(mailMessage => mailMessage.to === to)))

@@ -1,8 +1,15 @@
 
 
-export function expectAsyncToThrow(func: () => Promise<void>, expectedError: string): Promise<void> {
+export function expectAsyncToThrow<T>(func: () => Promise<T>, expectedError?: string, errorMessage?: string): Promise<void> {
     const promise = func();
     return promise
         .then(_ => fail("Call succeeded while an error was expected to throw"))
-        .catch(error => expect(error.toString()).toEqual(`Error: ${ expectedError }`));
+        .catch(error => {
+            if (expectedError) {
+                expect(error.toString()).toEqual(`Error: ${ expectedError }`);
+            }
+            if (errorMessage) {
+                expect(error.content.errorMessage).toEqual(errorMessage);
+            }
+        });
 }

@@ -100,17 +100,16 @@ export interface components {
       /** @description If this request is a recovery request, tells the address to recover */
       addressToRecover?: string;
       /** @description True if the protection request is also a recovery request */
-      isRecovery?: boolean;
+      isRecovery: boolean;
       /** @description The SS58 address of the legal officer the request was submitted to */
-      legalOfficerAddress?: string;
+      legalOfficerAddress: string;
       /** @description The SS58 address of the other legal officer the request was submitted to */
-      otherLegalOfficerAddress?: string;
-      /** @description The SS58 address of the requester */
-      requesterAddress?: string;
-      /** @description The identification data of the requester */
-      userIdentity?: components["schemas"]["UserIdentityView"];
-      /** @description The postal address of the requester */
-      userPostalAddress?: components["schemas"]["PostalAddressView"];
+      otherLegalOfficerAddress: string;
+      /**
+       * Format: uuid 
+       * @description The ID of the LOC identifying the requester
+       */
+      requesterIdentityLoc: string;
     };
     /**
      * AcceptProtectionRequestView 
@@ -215,7 +214,7 @@ export interface components {
        * @description The ID of created Protection Request
        */
       id?: string;
-      /** @description True if the the protection request is also a recovery request */
+      /** @description True if the protection request is also a recovery request */
       isRecovery?: boolean;
       /** @description The SS58 address of the legal officer the request was submitted to */
       legalOfficerAddress?: string;
@@ -223,6 +222,11 @@ export interface components {
       otherLegalOfficerAddress?: string;
       /** @description The SS58 address of the requester */
       requesterAddress?: string;
+      /**
+       * Format: uuid 
+       * @description The ID of the LOC identifying the requester
+       */
+      requesterIdentityLoc?: string;
       /**
        * @description The status 
        * @enum {string}
@@ -469,7 +473,7 @@ export interface components {
       requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
        * Format: uuid 
-       * @description The ID of the LOC identifying the requester (populated for LOGION identity only)
+       * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
       /** @description A description of the LOC */

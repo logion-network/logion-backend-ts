@@ -1,10 +1,8 @@
 import { Entity, PrimaryColumn, Column, Repository, ObjectLiteral } from "typeorm";
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
-import { appDataSource, Log, badRequest } from "@logion/rest-api-core";
-
-import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
-import { EmbeddablePostalAddress, PostalAddress, toPostalAddress } from "./postaladdress.js";
+import { appDataSource, Log, badRequest, requireDefined } from "@logion/rest-api-core";
+import { LocRequestRepository } from "./locrequest.model.js";
 
 const { logger } = Log;
 
@@ -111,11 +109,12 @@ export class ProtectionRequestAggregateRoot {
     @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
 
-    @Column(() => EmbeddableUserIdentity, { prefix: "" })
-    userIdentity?: EmbeddableUserIdentity;
-
-    @Column(() => EmbeddablePostalAddress, { prefix: "" })
-    userPostalAddress?: EmbeddablePostalAddress;
+    // NOTE: As of 24-01-2024, the requester identity LOC is populated instead of userIdentity and userPostalAddress
+    // Therefore, in a fully normalized model, requesterAddress field should not be populated anymore,
+    // but rather fetched from linked identity LOC.
+    // Given that many queries rely on this field, this denormalization is kept.
+    @Column({ name: "requester_identity_loc_id", type: "uuid", nullable: false })
+    requesterIdentityLocId?: string;
 
     @Column({ length: 255 })
     status?: ProtectionRequestStatus;
@@ -129,28 +128,12 @@ export class ProtectionRequestAggregateRoot {
     @Column({ length: 255, name: "other_legal_officer_address" })
     otherLegalOfficerAddress?: string;
 
-    setDescription(description: ProtectionRequestDescription): void {
-        this.requesterAddress = description.requesterAddress;
-        this.legalOfficerAddress = description.legalOfficerAddress;
-        this.otherLegalOfficerAddress = description.otherLegalOfficerAddress;
-
-        this.userIdentity = EmbeddableUserIdentity.from(description.userIdentity);
-        this.userPostalAddress = EmbeddablePostalAddress.from(description.userPostalAddress);
-
-        this.createdOn = description.createdOn;
-        this.isRecovery = description.isRecovery;
-        if(description.isRecovery) {
-            this.addressToRecover = description.addressToRecover || undefined;
-        }
-    }
-
     getDescription(): ProtectionRequestDescription {
         return {
             requesterAddress: this.requesterAddress || "",
+            requesterIdentityLocId: this.requesterIdentityLocId || "",
             legalOfficerAddress: this.legalOfficerAddress || "",
             otherLegalOfficerAddress: this.otherLegalOfficerAddress || "",
-            userIdentity: toUserIdentity(this.userIdentity)!,
-            userPostalAddress: toPostalAddress(this.userPostalAddress)!,
             createdOn: this.createdOn!,
             isRecovery: this.isRecovery!,
             addressToRecover: this.addressToRecover || null,
@@ -240,10 +223,9 @@ export class ProtectionRequestRepository {
 
 export interface ProtectionRequestDescription {
     readonly requesterAddress: string,
+    readonly requesterIdentityLocId: string,
     readonly legalOfficerAddress: string,
     readonly otherLegalOfficerAddress: string,
-    readonly userIdentity: UserIdentity,
-    readonly userPostalAddress: PostalAddress,
     readonly createdOn: string,
     readonly isRecovery: boolean,
     readonly addressToRecover: string | null,
@@ -256,19 +238,45 @@ export interface LegalOfficerDecisionDescription {
 }
 
 export interface NewProtectionRequestParameters {
-    id: string;
-    description: ProtectionRequestDescription;
+    readonly id: string;
+    readonly requesterAddress: string,
+    readonly requesterIdentityLoc: string,
+    readonly legalOfficerAddress: string,
+    readonly otherLegalOfficerAddress: string,
+    readonly createdOn: string,
+    readonly isRecovery: boolean,
+    readonly addressToRecover: string | null,
 }
 
 @injectable()
 export class ProtectionRequestFactory {
 
-    public newProtectionRequest(params: NewProtectionRequestParameters): ProtectionRequestAggregateRoot {
+
+    constructor(
+        private locRequestRepository: LocRequestRepository
+    ) {
+    }
+
+    public async newProtectionRequest(params: NewProtectionRequestParameters): Promise<ProtectionRequestAggregateRoot> {
+        const identityLoc = requireDefined(
+            await this.locRequestRepository.findById(params.requesterIdentityLoc),
+            () => badRequest("Identity LOC not found")
+        )
+        identityLoc.isValidPolkadotIdentityLocOrThrow(params.requesterAddress, params.legalOfficerAddress);
+
         const root = new ProtectionRequestAggregateRoot();
         root.id = params.id;
         root.status = 'PENDING';
         root.decision = new LegalOfficerDecision();
-        root.setDescription(params.description);
+        root.requesterAddress = params.requesterAddress;
+        root.requesterIdentityLocId = identityLoc.id;
+        root.legalOfficerAddress = params.legalOfficerAddress;
+        root.otherLegalOfficerAddress = params.otherLegalOfficerAddress;
+        root.createdOn = params.createdOn;
+        root.isRecovery = params.isRecovery;
+        if(root.isRecovery) {
+            root.addressToRecover = params.addressToRecover || undefined;
+        }
         return root;
     }
 }

@@ -84,11 +84,6 @@ describe('LocRequestController - Fetch -', () => {
             });
     });
 
-    it('succeeds to get single Transaction Loc request with embedded Identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction', 'EmbeddedInLoc'))
-        await testGet(app, userIdentities["EmbeddedInLoc"])
-    });
-
     it('succeeds to get single Transaction Loc request with Polkadot Identity', async () => {
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Polkadot'))
         await testGet(app, userIdentities["Polkadot"])
@@ -97,11 +92,6 @@ describe('LocRequestController - Fetch -', () => {
     it('succeeds to get single Transaction Loc request with Logion Identity', async () => {
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Logion'))
         await testGet(app, userIdentities["Logion"])
-    });
-
-    it('succeeds to get single Collection Loc request with embedded Identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection', 'EmbeddedInLoc'))
-        await testGet(app, userIdentities["EmbeddedInLoc"])
     });
 
     it('succeeds to get single Collection Loc request with Polkadot Identity', async () => {

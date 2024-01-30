@@ -16,8 +16,9 @@ import {
     mockRequest,
     REQUEST_ID,
     setupRequest,
-    testDataWithUserIdentityWithType,
-    setupSelectedIssuer, mockOwner
+    setupSelectedIssuer,
+    mockOwner,
+    testDataWithType
 } from "./locrequest.controller.shared.js";
 import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { ItIsHash } from "../../helpers/Mock.js";
@@ -76,19 +77,19 @@ describe('LocRequestController - SoF -', () => {
 function mockModelForCreateSofRequest(container: Container, factory: Mock<LocRequestFactory>, locType: LocType, locId: UUID, itemId?: Hash) {
     const { request, repository, collectionRepository, loc } = buildMocksForUpdate(container, { factory });
 
-    const targetLoc = mockRequest("CLOSED", testDataWithUserIdentityWithType(locType));
+    const targetLoc = mockRequest("CLOSED", testDataWithType(locType));
     targetLoc.setup(instance => instance.id).returns(locId.toString());
     targetLoc.setup(instance => instance.locType).returns(locType);
     mockOwner(targetLoc, ALICE_ACCOUNT);
     repository.setup(instance => instance.findById(locId.toString()))
         .returns(Promise.resolve(targetLoc.object()));
 
-    setupRequest(request, REQUEST_ID, locType, "REVIEW_PENDING", testDataWithUserIdentityWithType(locType));
+    setupRequest(request, REQUEST_ID, locType, "REVIEW_PENDING", testDataWithType(locType));
 
     factory.setup(instance => instance.newSofRequest(It.IsAny<NewSofRequestParameters>()))
         .returns(Promise.resolve(request.object()));
 
-    mockPolkadotIdentityLoc(repository, false);
+    mockPolkadotIdentityLoc(repository, true);
 
     if (locType === 'Collection' && itemId) {
         const collectionItem = new Mock<CollectionItemAggregateRoot>();

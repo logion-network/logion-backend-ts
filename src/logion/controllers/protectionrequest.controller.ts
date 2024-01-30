@@ -29,6 +29,7 @@ import { NotificationService, Template, NotificationRecipient } from "../service
 import { DirectoryService } from "../services/directory.service.js";
 import { ProtectionRequestService } from '../services/protectionrequest.service.js';
 import { LocalsObject } from 'pug';
+import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -70,6 +71,7 @@ export class ProtectionRequestController extends ApiController {
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
         private protectionRequestService: ProtectionRequestService,
+        private locRequestAdapter: LocRequestAdapter,
     ) {
         super();
     }
@@ -88,37 +90,24 @@ export class ProtectionRequestController extends ApiController {
     @Async()
     @HttpPost('')
     async createProtectionRequest(body: CreateProtectionRequestView): Promise<ProtectionRequestView> {
-        await this.authenticationService.authenticatedUserIs(this.request, body.requesterAddress);
+        const requester = await this.authenticationService.authenticatedUser(this.request);
         const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
-        const request = this.protectionRequestFactory.newProtectionRequest({
+        const requesterIdentityLoc = requireDefined(body.requesterIdentityLoc);
+        const request = await this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
-            description: {
-                requesterAddress: body.requesterAddress!,
-                legalOfficerAddress,
-                otherLegalOfficerAddress: body.otherLegalOfficerAddress!,
-                userIdentity: {
-                    firstName: body.userIdentity!.firstName!,
-                    lastName: body.userIdentity!.lastName!,
-                    email: body.userIdentity!.email!,
-                    phoneNumber: body.userIdentity!.phoneNumber!,
-                },
-                userPostalAddress: {
-                    line1: body.userPostalAddress!.line1!,
-                    line2: body.userPostalAddress!.line2!,
-                    postalCode: body.userPostalAddress!.postalCode!,
-                    city: body.userPostalAddress!.city!,
-                    country: body.userPostalAddress!.country!,
-                },
-                createdOn: moment().toISOString(),
-                isRecovery: body.isRecovery!,
-                addressToRecover: body.addressToRecover!,
-            },
+            requesterAddress: requester.address,
+            requesterIdentityLoc,
+            legalOfficerAddress,
+            otherLegalOfficerAddress: body.otherLegalOfficerAddress,
+            createdOn: moment().toISOString(),
+            isRecovery: body.isRecovery,
+            addressToRecover: body.addressToRecover || null,
         });
-
         await this.protectionRequestService.add(request);
         const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
-        this.notify("LegalOfficer", templateId, request.getDescription())
-        return this.adapt(request);
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(requesterIdentityLoc)
+        this.notify("LegalOfficer", templateId, request.getDescription(), userPrivateData)
+        return this.adapt(request, userPrivateData);
     }
 
     static fetchProtectionRequests(spec: OpenAPIV3.Document) {
@@ -144,30 +133,25 @@ export class ProtectionRequestController extends ApiController {
             kind: body.kind,
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(specification);
+        const requests = protectionRequests.map(request =>
+            this.locRequestAdapter.getUserPrivateData(request.getDescription().requesterIdentityLocId)
+                .then(userPrivateData => this.adapt(request, userPrivateData))
+        );
         return {
-            requests: protectionRequests.map(request => this.adapt(request))
+            requests: await Promise.all(requests)
         };
     }
 
-    adapt(request: ProtectionRequestAggregateRoot): ProtectionRequestView {
+    adapt(request: ProtectionRequestAggregateRoot, userPrivateData: UserPrivateData): ProtectionRequestView {
+        const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             id: request.id!,
             requesterAddress: request.requesterAddress || "",
+            requesterIdentityLoc: request.requesterIdentityLocId,
             legalOfficerAddress: request.legalOfficerAddress || "",
             otherLegalOfficerAddress: request.otherLegalOfficerAddress || "",
-            userIdentity: {
-                firstName: request.userIdentity?.firstName || "",
-                lastName: request.userIdentity?.lastName || "",
-                email: request.userIdentity?.email || "",
-                phoneNumber: request.userIdentity?.phoneNumber || "",
-            },
-            userPostalAddress: {
-                line1: request.userPostalAddress?.line1 || "",
-                line2: request.userPostalAddress?.line2 || "",
-                postalCode: request.userPostalAddress?.postalCode || "",
-                city: request.userPostalAddress?.city || "",
-                country: request.userPostalAddress?.country || "",
-            },
+            userIdentity,
+            userPostalAddress,
             decision: {
                 rejectReason: request.decision!.rejectReason || "",
                 decisionOn: request.decision!.decisionOn || undefined,
@@ -201,8 +185,9 @@ export class ProtectionRequestController extends ApiController {
             request.reject(body.rejectReason!, moment());
         });
         const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected";
-        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision());
-        return this.adapt(request);
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId!)
+        this.notify("WalletUser", templateId, request.getDescription(), userPrivateData, request.getDecision());
+        return this.adapt(request, userPrivateData);
     }
 
     static acceptProtectionRequest(spec: OpenAPIV3.Document) {
@@ -229,8 +214,9 @@ export class ProtectionRequestController extends ApiController {
             request.accept(moment(), body.locId!);
         });
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted";
-        this.notify("WalletUser", templateId, request.getDescription(), request.getDecision());
-        return this.adapt(request);
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId!)
+        this.notify("WalletUser", templateId, request.getDescription(), userPrivateData, request.getDecision());
+        return this.adapt(request, userPrivateData);
     }
 
     static fetchRecoveryInfo(spec: OpenAPIV3.Document) {
@@ -262,16 +248,18 @@ export class ProtectionRequestController extends ApiController {
             expectedStatuses: [ 'ACTIVATED' ]
         });
         const protectionRequests = await this.protectionRequestRepository.findBy(querySpecification);
+        const recoveryUserPrivateData = await this.locRequestAdapter.getUserPrivateData(recovery.requesterIdentityLocId!)
         if (protectionRequests.length === 0) {
             return {
                 addressToRecover,
-                recoveryAccount: this.adapt(recovery),
+                recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
             };
         } else {
+            const accountToRecoverUserPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequests[0].requesterIdentityLocId!)
             return {
                 addressToRecover,
-                recoveryAccount: this.adapt(recovery),
-                accountToRecover: this.adapt(protectionRequests[0]),
+                recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
+                accountToRecover: this.adapt(protectionRequests[0], accountToRecoverUserPrivateData),
             };
         }
     }
@@ -343,10 +331,10 @@ export class ProtectionRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    private notify(recipient: NotificationRecipient, templateId: Template, protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription): void {
-        this.getNotificationInfo(protection, decision)
+    private notify(recipient: NotificationRecipient, templateId: Template, protection: ProtectionRequestDescription, userPrivateData?: UserPrivateData, decision?: LegalOfficerDecisionDescription): void {
+        this.getNotificationInfo(protection, userPrivateData, decision)
             .then(info => {
-                const to = recipient === "WalletUser" ? protection.userIdentity.email : info.legalOfficerEMail
+                const to = recipient === "WalletUser" ? info.userEmail : info.legalOfficerEMail
                 return this.notificationService.notify(to, templateId, info.data)
                     .catch(reason => logger.warn("Failed to send email '%s' to %s : %s", templateId, to, reason))
             })
@@ -355,19 +343,21 @@ export class ProtectionRequestController extends ApiController {
             )
     }
 
-    private async getNotificationInfo(protection: ProtectionRequestDescription, decision?: LegalOfficerDecisionDescription):
-        Promise<{ legalOfficerEMail: string, data: LocalsObject }> {
+    private async getNotificationInfo(protection: ProtectionRequestDescription, userPrivateData?: UserPrivateData, decision?: LegalOfficerDecisionDescription):
+        Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(protection.legalOfficerAddress)
         const otherLegalOfficer = await this.directoryService.get(protection.otherLegalOfficerAddress)
+        const { userIdentity, userPostalAddress } = userPrivateData ? userPrivateData : await this.locRequestAdapter.getUserPrivateData(protection.requesterIdentityLocId)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
+            userEmail: userIdentity?.email,
             data: {
                 protection: { ...protection, decision },
                 legalOfficer,
                 otherLegalOfficer,
-                walletUser: protection.userIdentity,
-                walletUserPostalAddress: protection.userPostalAddress
+                walletUser: userIdentity,
+                walletUserPostalAddress: userPostalAddress
             }
         }
     }

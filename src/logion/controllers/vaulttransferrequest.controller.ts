@@ -28,6 +28,7 @@ import { DirectoryService } from "../services/directory.service.js";
 import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model.js';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
 import { LocalsObject } from 'pug';
+import { UserPrivateData, LocRequestAdapter } from "./adapters/locrequestadapter.js";
 
 type CreateVaultTransferRequestView = components["schemas"]["CreateVaultTransferRequestView"];
 type VaultTransferRequestView = components["schemas"]["VaultTransferRequestView"];
@@ -63,6 +64,7 @@ export class VaultTransferRequestController extends ApiController {
         private directoryService: DirectoryService,
         private protectionRequestRepository: ProtectionRequestRepository,
         private vaultTransferRequestService: VaultTransferRequestService,
+        private locRequestAdapter: LocRequestAdapter,
     ) {
         super();
     }
@@ -101,11 +103,12 @@ export class VaultTransferRequestController extends ApiController {
 
         await this.vaultTransferRequestService.add(request);
 
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId)
         this.getNotificationInfo(request.getDescription(), protectionRequestDescription)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription);
+        return this.adapt(request, userPrivateData);
     }
 
     private async userAuthorizedAndProtected(origin: string, legalOfficerAddress: string): Promise<ProtectionRequestDescription> {
@@ -135,18 +138,20 @@ export class VaultTransferRequestController extends ApiController {
     private async getNotificationInfo(
         vaultTransfer: VaultTransferRequestDescription,
         protectionRequestDescription: ProtectionRequestDescription,
+        userPrivateData?: UserPrivateData,
         decision?: VaultTransferRequestDecision
-    ): Promise<{ legalOfficerEmail: string, userEmail: string, data: LocalsObject }> {
+    ): Promise<{ legalOfficerEmail: string, userEmail: string | undefined, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(vaultTransfer.legalOfficerAddress);
+        const { userIdentity, userPostalAddress } = userPrivateData ? userPrivateData : await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId)
         return {
             legalOfficerEmail: legalOfficer.userIdentity.email,
-            userEmail: protectionRequestDescription.userIdentity.email,
+            userEmail: userIdentity?.email,
             data: {
                 vaultTransfer: { ...vaultTransfer, decision },
                 legalOfficer,
-                walletUser: protectionRequestDescription.userIdentity,
-                walletUserPostalAddress: protectionRequestDescription.userPostalAddress,
+                walletUser: userIdentity,
+                walletUserPostalAddress: userPostalAddress,
             }
         }
     }
@@ -180,12 +185,17 @@ export class VaultTransferRequestController extends ApiController {
             protectionDescriptions[request.requesterAddress!] ||= await this.getProtectionRequestDescription(request.requesterAddress!, request.legalOfficerAddress!);
         }
 
+        const requests = vaultTransferRequests.map(request => {
+            const protectionDescription = protectionDescriptions[request.requesterAddress!];
+            return this.locRequestAdapter.getUserPrivateData(protectionDescription.requesterIdentityLocId)
+                .then(userPrivateData => this.adapt(request, userPrivateData))
+        });
         return {
-            requests: vaultTransferRequests.map(request => this.adapt(request, protectionDescriptions[request.requesterAddress!]))
+            requests: await Promise.all(requests)
         };
     }
 
-    adapt(request: VaultTransferRequestAggregateRoot, protectionDescription: ProtectionRequestDescription): VaultTransferRequestView {
+    adapt(request: VaultTransferRequestAggregateRoot, userPrivateData: UserPrivateData): VaultTransferRequestView {
         const description = request.getDescription();
         return {
             id: description.id,
@@ -200,8 +210,8 @@ export class VaultTransferRequestController extends ApiController {
                 decisionOn: request.decision!.decisionOn || undefined,
             },
             status: request.status!,
-            requesterIdentity: protectionDescription.userIdentity,
-            requesterPostalAddress: protectionDescription.userPostalAddress,
+            requesterIdentity: userPrivateData.userIdentity,
+            requesterPostalAddress: userPrivateData.userPostalAddress,
         };
     }
 
@@ -227,11 +237,12 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!, request.legalOfficerAddress!);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId!)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-rejected", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription);
+        return this.adapt(request, userPrivateData);
     }
 
     static acceptVaultTransferRequest(spec: OpenAPIV3.Document) {
@@ -256,11 +267,12 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!, request.legalOfficerAddress!);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId!)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-accepted", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription);
+        return this.adapt(request, userPrivateData);
     }
 
     @Async()
@@ -272,13 +284,14 @@ export class VaultTransferRequestController extends ApiController {
             authenticatedUser.require(user => user.address === request.getDescription().requesterAddress);
             request.cancel(moment());
         });
-            
+
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!, request.legalOfficerAddress!);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId!)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-cancelled", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription);
+        return this.adapt(request, userPrivateData);
     }
 
     @Async()
@@ -292,11 +305,11 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const protectionRequestDescription = await this.getProtectionRequestDescription(request.requesterAddress!, request.legalOfficerAddress!);
-
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, request.decision)
+        const userPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequestDescription.requesterIdentityLocId!)
+        this.getNotificationInfo(request.getDescription(), protectionRequestDescription, userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription);
+        return this.adapt(request, userPrivateData);
     }
 }
