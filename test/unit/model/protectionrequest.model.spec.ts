@@ -57,13 +57,11 @@ describe('ProtectionRequestAggregateRootTest', () => {
     it('accepts', async () => {
         const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
-        const locId = "locId";
 
-        request.accept(decisionOn, locId);
+        request.accept(decisionOn);
 
         expect(request.status).toBe('ACCEPTED');
         expect(request.decision!.decisionOn).toBe(decisionOn.toISOString());
-        expect(request.decision!.locId).toBe(locId);
     });
 
     it('rejects', async () => {
@@ -80,10 +78,9 @@ describe('ProtectionRequestAggregateRootTest', () => {
     it('fails on re-accept', async () => {
         const request = await newProtectionRequestUsingFactory();
         const decisionOn = moment();
-        const locId = "locId";
-        request.accept(decisionOn, locId);
+        request.accept(decisionOn);
 
-        expect(() => request.accept(decisionOn, locId)).toThrowError();
+        expect(() => request.accept(decisionOn)).toThrowError();
     });
 
     it('fails on re-reject', async () => {

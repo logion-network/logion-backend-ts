@@ -291,8 +291,8 @@ let notificationService: Mock<NotificationService>;
 
 function mockModelForAccept(container: Container, verifies: boolean): void {
     const protectionRequest = mockProtectionRequest();
-    protectionRequest.setup(instance => instance.accept(
-        It.IsAny(), It.Is<string>(locId => locId !== undefined && locId !== null))).returns(undefined);
+    protectionRequest.setup(instance => instance.accept(It.IsAny()))
+        .returns(undefined);
 
     mockDecision(protectionRequest, { decisionOn: DECISION_TIMESTAMP} )
 
@@ -446,8 +446,6 @@ function mockDecision(protectionRequest: Mock<ProtectionRequestAggregateRoot>, d
             .returns(decisionDescription.rejectReason)
         decision.setup(instance => instance.decisionOn)
             .returns(decisionDescription.decisionOn)
-        decision.setup(instance => instance.locId)
-            .returns(decisionDescription.locId)
     }
     protectionRequest.setup(instance => instance.decision)
         .returns(decision.object());

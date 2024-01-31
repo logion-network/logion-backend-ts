@@ -17,9 +17,8 @@ export class LegalOfficerDecision {
         this.rejectReason = reason;
     }
 
-    accept(decisionOn: Moment, locId: string): void {
+    accept(decisionOn: Moment): void {
         this.decisionOn = decisionOn.toISOString();
-        this.locId = locId;
     }
 
     clear() {
@@ -32,9 +31,6 @@ export class LegalOfficerDecision {
 
     @Column({ length: 255, name: "reject_reason", nullable: true })
     rejectReason?: string;
-
-    @Column({ type: "uuid", nullable: true, name: "loc_id" })
-    locId?: string;
 }
 
 @Entity("protection_request")
@@ -48,12 +44,12 @@ export class ProtectionRequestAggregateRoot {
         this.decision!.reject(reason, decisionOn);
     }
 
-    accept(decisionOn: Moment, locId: string): void {
+    accept(decisionOn: Moment): void {
         if(this.status !== 'PENDING') {
             throw badRequest("Request is not pending");
         }
         this.status = 'ACCEPTED';
-        this.decision!.accept(decisionOn, locId);
+        this.decision!.accept(decisionOn);
     }
 
     setActivated() {
@@ -144,11 +140,10 @@ export class ProtectionRequestAggregateRoot {
         if (!this.decision || this.decision.decisionOn === undefined) {
             return undefined
         }
-        const { decisionOn, locId, rejectReason} = this.decision
+        const { decisionOn, rejectReason } = this.decision
         return {
             decisionOn,
             rejectReason,
-            locId
         }
     }
 }
@@ -234,7 +229,6 @@ export interface ProtectionRequestDescription {
 export interface LegalOfficerDecisionDescription {
     readonly decisionOn: string;
     readonly rejectReason?: string;
-    readonly locId?: string;
 }
 
 export interface NewProtectionRequestParameters {
