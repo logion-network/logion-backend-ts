@@ -22,7 +22,7 @@ import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
-import { LocRequestAggregateRoot, LocRequestDescription } from "../../../src/logion/model/locrequest.model.js";
+import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
 import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
@@ -131,6 +131,7 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
 function mockLocRequestAdapter(): LocRequestAdapter {
@@ -142,6 +143,11 @@ function mockLocRequestAdapter(): LocRequestAdapter {
             identityLocId: REQUESTER_IDENTITY_LOC_ID
         }))
     return locRequestAdapter.object();
+}
+
+function mockLocRequestRepository(): LocRequestRepository {
+    const repository = new Mock<LocRequestRepository>();
+    return repository.object();
 }
 
 function mockIdentityLoc(): LocRequestAggregateRoot {
@@ -248,6 +254,7 @@ function mockModelForFetch(container: Container): void {
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
 function authenticatedLLONotProtectingUser() {
@@ -311,6 +318,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
 const REQUEST_ID = "requestId";
@@ -477,6 +485,7 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
 function mockNotificationAndDirectoryService(container: Container) {
@@ -550,4 +559,5 @@ function mockModelForUser(container: Container, protectionRequest: Mock<Protecti
 
     container.bind(ProtectionRequestService).toConstantValue(new NonTransactionalProtectionRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }

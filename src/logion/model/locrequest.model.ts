@@ -1915,6 +1915,22 @@ export class LocRequestRepository {
         const { deliveredFileHash } = query;
         return await this.deliveredRepository.findOneBy({ requestId, deliveredFileHash: deliveredFileHash.toHex() })
     }
+
+    async getValidPolkadotIdentityLoc(requesterAddress: SupportedAccountId | undefined, ownerAddress: string): Promise<LocRequestAggregateRoot | undefined> {
+        if (requesterAddress === undefined) {
+            return undefined;
+        }
+
+        const identityLoc = (await this.findBy({
+            expectedLocTypes: [ "Identity" ],
+            expectedIdentityLocType: requesterAddress.type,
+            expectedRequesterAddress: requesterAddress.address,
+            expectedOwnerAddress: ownerAddress,
+            expectedStatuses: [ "CLOSED" ]
+        })).find(loc => loc.getVoidInfo() === null);
+
+        return identityLoc;
+    }
 }
 
 export interface NewLocRequestParameters {
