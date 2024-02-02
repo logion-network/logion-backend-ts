@@ -18,10 +18,10 @@ import {
 import {
     ProtectionRequestRepository,
     FetchProtectionRequestsSpecification,
-    ProtectionRequestAggregateRoot,
     ProtectionRequestFactory,
     ProtectionRequestDescription,
     LegalOfficerDecisionDescription,
+    ProtectionRequestStatus,
 } from '../model/protectionrequest.model.js';
 import { components } from './components.js';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
@@ -29,6 +29,7 @@ import { DirectoryService } from "../services/directory.service.js";
 import { ProtectionRequestService } from '../services/protectionrequest.service.js';
 import { LocalsObject } from 'pug';
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
+import { LocRequestRepository } from '../model/locrequest.model.js';
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -58,6 +59,29 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     ProtectionRequestController.update(spec);
 }
 
+interface ProtectionRequestPublicFields {
+
+    id?: string;
+
+    addressToRecover?: string | null;
+
+    createdOn?: string;
+
+    isRecovery?: boolean;
+
+    requesterAddress?: string;
+
+    requesterIdentityLocId?: string;
+
+    status?: ProtectionRequestStatus;
+
+    decision?: { decisionOn?: string, rejectReason?: string };
+
+    legalOfficerAddress?: string;
+
+    otherLegalOfficerAddress?: string;
+}
+
 @injectable()
 @Controller('/protection-request')
 export class ProtectionRequestController extends ApiController {
@@ -70,6 +94,7 @@ export class ProtectionRequestController extends ApiController {
         private directoryService: DirectoryService,
         private protectionRequestService: ProtectionRequestService,
         private locRequestAdapter: LocRequestAdapter,
+        private locRequestRepository: LocRequestRepository,
     ) {
         super();
     }
@@ -140,7 +165,7 @@ export class ProtectionRequestController extends ApiController {
         };
     }
 
-    adapt(request: ProtectionRequestAggregateRoot, userPrivateData: UserPrivateData): ProtectionRequestView {
+    adapt(request: ProtectionRequestPublicFields, userPrivateData: UserPrivateData): ProtectionRequestView {
         const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             id: request.id!,
@@ -236,26 +261,34 @@ export class ProtectionRequestController extends ApiController {
         }
 
         const addressToRecover = recovery.getDescription().addressToRecover!;
-        const querySpecification = new FetchProtectionRequestsSpecification({
-            expectedRequesterAddress: addressToRecover,
-            expectedLegalOfficerAddress: authenticatedUser.address,
-            expectedStatuses: [ 'ACTIVATED' ]
-        });
-        const protectionRequests = await this.protectionRequestRepository.findBy(querySpecification);
         const recoveryUserPrivateData = await this.locRequestAdapter.getUserPrivateData(recovery.requesterIdentityLocId!)
-        if (protectionRequests.length === 0) {
-            return {
-                addressToRecover,
-                recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
-            };
-        } else {
-            const accountToRecoverUserPrivateData = await this.locRequestAdapter.getUserPrivateData(protectionRequests[0].requesterIdentityLocId!)
-            return {
-                addressToRecover,
-                recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
-                accountToRecover: this.adapt(protectionRequests[0], accountToRecoverUserPrivateData),
+        const identityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc({
+            address: addressToRecover,
+            type: "Polkadot"
+        }, requireDefined(recovery?.legalOfficerAddress));
+        let accountToRecoverUserPrivateData: UserPrivateData | undefined;
+        if(identityLoc) {
+            const description = identityLoc.getDescription();
+            accountToRecoverUserPrivateData = {
+                identityLocId: identityLoc?.id,
+                userIdentity: description.userIdentity,
+                userPostalAddress: description.userPostalAddress,
             };
         }
+        return {
+            addressToRecover,
+            recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
+            accountToRecover: accountToRecoverUserPrivateData ? this.adapt({
+                id: "dummy",
+                legalOfficerAddress: recovery?.legalOfficerAddress,
+                requesterAddress: addressToRecover,
+                requesterIdentityLocId: accountToRecoverUserPrivateData.identityLocId,
+                status: 'ACCEPTED',
+                decision: {
+                    
+                }
+            }, accountToRecoverUserPrivateData) : undefined,
+        };
     }
 
     static resubmit(spec: OpenAPIV3.Document) {

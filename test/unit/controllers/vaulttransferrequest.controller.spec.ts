@@ -1,7 +1,7 @@
 import { Container } from 'inversify';
 import { Mock, It, Times } from 'moq.ts';
 import request from 'supertest';
-import { TestApp } from '@logion/rest-api-core';
+import { PolkadotService, TestApp } from '@logion/rest-api-core';
 
 import {
     VaultTransferRequestRepository,
@@ -25,7 +25,8 @@ import {
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
-import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
+import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
+import { LogionNodeApiClass } from '@logion/node-api';
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode } = TestApp;
 
@@ -262,11 +263,44 @@ function mockOtherDependencies(container: Container, repository: Mock<VaultTrans
     container.bind(ProtectionRequestRepository).toConstantValue(protectionRequestRepository.object());
 
     container.bind(VaultTransferRequestService).toConstantValue(new NonTransactionalVaultTransferRequestService(repository.object()));
-    container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
+
+    container.bind(PolkadotService).toConstantValue(mockPolkadotService());
+
+    container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
+}
+
+function mockPolkadotService(): PolkadotService {
+    const polkadotService = new Mock<PolkadotService>();
+    const api = {
+        queries: {
+            getRecoveryConfig: (_origin: string) => {
+                return ({
+                    legalOfficers: [
+
+                    ],
+                });
+            } 
+        }
+    } as unknown as LogionNodeApiClass;
+    polkadotService.setup(instance => instance.readyApi()).returns(Promise.resolve(api));
+    return polkadotService.object();
+}
+
+function mockLocRequestRepository(): LocRequestRepository {
+    const repository = new Mock<LocRequestRepository>();
+    const idLoc = new Mock<LocRequestAggregateRoot>();
+    idLoc.setup(instance => instance.id).returns(REQUESTER_IDENTITY_LOC_ID);
+    idLoc.setup(instance => instance.getDescription()).returns({
+        userIdentity: IDENTITY,
+        userPostalAddress: POSTAL_ADDRESS,
+    } as unknown as LocRequestDescription);
+    repository.setup(instance => instance.findById(REQUESTER_IDENTITY_LOC_ID)).returns(Promise.resolve(idLoc.object()));
+    return repository.object();
 }
 
 function mockVaultTransferRequest(): Mock<VaultTransferRequestAggregateRoot> {
     const vaultTransferRequest = new Mock<VaultTransferRequestAggregateRoot>()
+    vaultTransferRequest.setup(instance => instance.requesterAddress).returns(REQUESTER_ADDRESS)
     vaultTransferRequest.setup(instance => instance.getDescription()).returns(description)
     return vaultTransferRequest
 }
@@ -386,15 +420,3 @@ function mockModelForAcceptOrCancel(container: Container, verifies: boolean): vo
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
     mockOtherDependencies(container, repository);
 }
-
-function mockLocRequestAdapter(): LocRequestAdapter {
-    const locRequestAdapter = new Mock<LocRequestAdapter>();
-    locRequestAdapter.setup(instance => instance.getUserPrivateData(REQUESTER_IDENTITY_LOC_ID))
-        .returns(Promise.resolve({
-            userIdentity: IDENTITY,
-            userPostalAddress: POSTAL_ADDRESS,
-            identityLocId: REQUESTER_IDENTITY_LOC_ID
-        }))
-    return locRequestAdapter.object();
-}
-
