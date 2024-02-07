@@ -246,7 +246,7 @@ export class TransactionExtractor {
     }
 
     private tip(extrinsic: JsonExtrinsic): bigint {
-        return this.undefinedTo0(extrinsic.tip!);
+        return this.undefinedTo0(extrinsic.tip);
     }
 
     private async fees(extrinsic: JsonExtrinsic): Promise<Fees> {
@@ -333,8 +333,8 @@ export class TransactionExtractor {
         }
     }
 
-    private undefinedTo0(value?: string): bigint {
-        if (value === undefined) {
+    private undefinedTo0(value?: string | null): bigint {
+        if (value === undefined || value === null) {
             return 0n;
         } else {
             return BigInt(value);

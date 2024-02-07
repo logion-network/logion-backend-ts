@@ -10,11 +10,13 @@ import { LocSynchronizer } from "./locsynchronization.service.js";
 import { TransactionSynchronizer } from "./transactionsync.service.js";
 import { ProtectionSynchronizer } from "./protectionsynchronization.service.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
-import { toStringWithoutError } from "./types/responses/Extrinsic.js";
+import { JsonExtrinsic, toStringWithoutError } from "./types/responses/Extrinsic.js";
 import { ProgressRateLogger } from "./progressratelogger.js";
 import { PrometheusService } from "./prometheus.service.js";
 import { SyncPointService } from "./syncpoint.service.js";
 import { VoteSynchronizer } from "./votesynchronization.service.js";
+import { BlockExtrinsics } from "./types/responses/Block.js";
+import { Adapters } from "@logion/node-api";
 
 const { logger } = Log;
 
@@ -92,8 +94,9 @@ export class BlockConsumer {
         }
         try {
             await this.transactionSynchronizer.addTransactions(extrinsics);
-            for (let i = 0; i < extrinsics.extrinsics.length; ++i) {
-                const extrinsic = extrinsics.extrinsics[i];
+            const unwrappedExtrinsics = this.unwrapExtrinsics(extrinsics);
+            for (let i = 0; i < unwrappedExtrinsics.length; ++i) {
+                const extrinsic = unwrappedExtrinsics[i];
                 if (extrinsic.call.pallet !== "timestamp") {
                     logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                     await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
@@ -106,6 +109,34 @@ export class BlockConsumer {
             logger.error(JSON.stringify(extrinsics, (_, v) => typeof v === 'bigint' ? v.toString() : v, 4));
             throw e;
         }
+    }
+
+    private unwrapExtrinsics(blockExtrinsics: BlockExtrinsics): JsonExtrinsic[] {
+        const extrinsics: JsonExtrinsic[] = [];
+        for(const extrinsic of blockExtrinsics.extrinsics) {
+            extrinsics.push(extrinsic);
+
+            if(extrinsic.call.section === "utility") {
+                if(extrinsic.call.method === "batchAll" && extrinsic.error() === null) {
+                    const jsonCalls = Adapters.asArray(extrinsic.call.args["calls"]);
+                    for(const jsonCall of jsonCalls) {
+                        const call = Adapters.asJsonCall(jsonCall);
+                        extrinsics.push({
+                            call,
+                            signer: extrinsic.signer,
+                            events: extrinsic.events, // Filtering events would require an understanding
+                                                      // of underlying call, so keeping them all for now
+                            tip: null, // Fees are accounted at batch level
+                            partialFee: () => Promise.resolve(undefined), // Fees are accounted at batch level
+                            error: () => null,
+                        });
+                    }
+                } else if(extrinsic.call.method === "batch" || extrinsic.call.method === "forceBatch") {
+                    throw new Error("Unsupported batch");
+                }
+            }
+        }
+        return extrinsics;
     }
 
     private async sync(lastSyncPoint: SyncPointAggregateRoot | null, now: Moment, head: bigint): Promise<SyncPointAggregateRoot> {
