@@ -61,6 +61,8 @@ import { LocAuthorizationService } from "../services/locauthorization.service.js
 import { SponsorshipService } from "../services/sponsorship.service.js";
 import { MultiversxService } from "../services/ownership/multiversx.service.js";
 import { AstarService, ConnectedAstarService } from "../services/ownership/astar.service.js";
+import { WorkloadService } from "../services/workload.service.js";
+import { WorkloadController } from "../controllers/workload.controller.js";
 
 const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -148,6 +150,7 @@ container.bind(LocAuthorizationService).toSelf();
 container.bind(SponsorshipService).toSelf();
 container.bind(ConnectedAstarService).toSelf();
 container.bind(AstarService).toService(ConnectedAstarService);
+container.bind(WorkloadService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
@@ -160,5 +163,6 @@ container.bind(ConfigController).toSelf().inTransientScope();
 container.bind(IdenfyController).toSelf().inTransientScope();
 container.bind(VoteController).toSelf().inTransientScope();
 container.bind(TokensRecordController).toSelf().inTransientScope();
+container.bind(WorkloadController).toSelf().inTransientScope();
 
 export { container as AppContainer };

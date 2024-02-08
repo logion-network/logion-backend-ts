@@ -23,6 +23,7 @@ import { fillInSpec as fillInSpecConfig, ConfigController } from "./controllers/
 import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/idenfy.controller.js";
 import { fillInSpec as fillInSpecVote, VoteController } from "./controllers/vote.controller.js";
 import { fillInSpec as fillInSpecTokensRecord, TokensRecordController } from "./controllers/records.controller.js";
+import { fillInSpec as fillInSpecWorkload, WorkloadController } from "./controllers/workload.controller.js";
 
 const { logger } = Log;
 
@@ -60,6 +61,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecIdenfy(spec);
     fillInSpecVote(spec);
     fillInSpecTokensRecord(spec);
+    fillInSpecWorkload(spec);
 
     return spec;
 }
@@ -121,6 +123,7 @@ export function setupApp(expressConfig?: ExpressConfig): Express {
     dino.registerController(IdenfyController);
     dino.registerController(VoteController);
     dino.registerController(TokensRecordController);
+    dino.registerController(WorkloadController);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {

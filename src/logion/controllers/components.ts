@@ -1007,6 +1007,10 @@ export interface components {
       /** @description Accepted items should be published automatically on opening */
       autoPublish?: boolean;
     };
+    WorkloadView: {
+      /** @description The number of pending tasks */
+      workload?: number;
+    };
   };
   responses: never;
   parameters: never;

@@ -1849,6 +1849,15 @@
                         "description": "Accepted items should be published automatically on opening"
                     }
                 }
+            },
+            "WorkloadView": {
+                "type": "object",
+                "properties": {
+                    "workload": {
+                        "type": "number",
+                        "description": "The number of pending tasks"
+                    }
+                }
             }
         }
     }
