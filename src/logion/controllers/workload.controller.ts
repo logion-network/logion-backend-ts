@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Controller, ApiController, Async, HttpGet } from "dinoloop";
+import { Controller, ApiController, Async, HttpPut } from "dinoloop";
 import { components } from "./components.js";
 import { OpenAPIV3 } from "express-oas-generator";
 import {
@@ -18,9 +18,10 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     });
     setControllerTag(spec, /^\/api\/workload.*/, tagName);
 
-    WorkloadController.getWorkload(spec);
+    WorkloadController.getWorkloads(spec);
 }
 
+type FetchWorkloadsView = components["schemas"]["FetchWorkloadsView"];
 type WorkloadView = components["schemas"]["WorkloadView"];
 
 @injectable()
@@ -34,19 +35,19 @@ export class WorkloadController extends ApiController {
         super();
     }
 
-    static getWorkload(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/workload/{legalOfficerAddress}"].get!;
-        operationObject.summary = "Provides the workload of a given legal officer";
+    static getWorkloads(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/workload"].put!;
+        operationObject.summary = "Provides the workloads of given legal officers";
         operationObject.description = "Requires authentication.";
         operationObject.responses = getDefaultResponses("WorkloadView");
     }
 
-    @HttpGet('/:legalOfficerAddress')
+    @HttpPut('')
     @Async()
-    async getWorkload(legalOfficerAddress: string): Promise<WorkloadView> {
+    async getWorkloads(body: FetchWorkloadsView): Promise<WorkloadView> {
         await this.authenticationService.authenticatedUser(this.request);
         return {
-            workload: await this.workloadService.workloadOf(legalOfficerAddress),
+            workloads: await this.workloadService.workloadOf(body.legalOfficerAddresses || []),
         }
     }
 }

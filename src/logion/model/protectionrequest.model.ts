@@ -152,7 +152,7 @@ export class FetchProtectionRequestsSpecification {
 
     constructor(builder: {
         expectedRequesterAddress?: string,
-        expectedLegalOfficerAddress?: string,
+        expectedLegalOfficerAddress?: string | string[],
         expectedStatuses?: ProtectionRequestStatus[],
         kind?: ProtectionRequestKind,
     }) {
@@ -163,7 +163,7 @@ export class FetchProtectionRequestsSpecification {
     }
 
     readonly expectedRequesterAddress: string | null;
-    readonly expectedLegalOfficerAddress: string | null;
+    readonly expectedLegalOfficerAddress: string | string[] | null;
     readonly kind: ProtectionRequestKind;
     readonly expectedStatuses: ProtectionRequestStatus[];
 }
@@ -196,7 +196,11 @@ export class ProtectionRequestRepository {
         }
 
         if(specification.expectedLegalOfficerAddress !== null) {
-            where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            if(typeof specification.expectedLegalOfficerAddress === "string") {
+                where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            } else {
+                where("request.legal_officer_address IN (:...expectedLegalOfficerAddress)", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            }
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 

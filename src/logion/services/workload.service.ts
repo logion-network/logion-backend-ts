@@ -13,19 +13,24 @@ export class WorkloadService {
     ) {
     }
 
-    async workloadOf(address: string): Promise<number> {
+    async workloadOf(addresses: string[]): Promise<Record<string, number>> {
         const pendingLocRequests = await this.locRequestRepository.findBy({
-            expectedOwnerAddress: address,
+            expectedOwnerAddress: addresses,
             expectedStatuses: [ "REVIEW_PENDING" ],
         });
         const pendingVaultTransferRequests = await this.vaultTransferRequestRepository.findBy(new FetchVaultTransferRequestsSpecification({
-            expectedLegalOfficerAddress: address,
+            expectedLegalOfficerAddress: addresses,
             expectedStatuses: [ "PENDING" ],
         }));
         const pendingProtectionRequests = await this.protectionRequestRepository.findBy(new FetchProtectionRequestsSpecification({
-            expectedLegalOfficerAddress: address,
+            expectedLegalOfficerAddress: addresses,
             expectedStatuses: [ "PENDING" ],
         }));
-        return pendingLocRequests.length + pendingVaultTransferRequests.length + pendingProtectionRequests.length;
+        return addresses.reduce((map, address) => {
+            map[address] = pendingLocRequests.filter(request => request.ownerAddress === address).length
+                + pendingVaultTransferRequests.filter(request => request.legalOfficerAddress === address).length
+                + pendingProtectionRequests.filter(request => request.legalOfficerAddress === address).length;
+            return map;
+        }, {} as Record<string, number>);
     }
 }

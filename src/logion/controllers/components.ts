@@ -1007,9 +1007,14 @@ export interface components {
       /** @description Accepted items should be published automatically on opening */
       autoPublish?: boolean;
     };
+    FetchWorkloadsView: {
+      legalOfficerAddresses?: (string)[];
+    };
     WorkloadView: {
-      /** @description The number of pending tasks */
-      workload?: number;
+      /** @description The number of pending tasks per legal officer (the address is used as key) */
+      workloads?: {
+        [key: string]: number | undefined;
+      };
     };
   };
   responses: never;
