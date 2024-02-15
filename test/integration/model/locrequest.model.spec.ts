@@ -239,6 +239,16 @@ describe('LocRequestRepository - read accesses', () => {
         expect(results).toEqual([ false, false, false ]);
     })
 
+    it("finds workload", async () => {
+        const query: FetchLocRequestsSpecification = {
+            expectedOwnerAddress: [ ALICE, BOB ],
+            expectedStatuses: [ "REVIEW_PENDING" ],
+        }
+        const requests = await repository.findBy(query);
+        checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-21", "loc-22", "loc-23");
+
+    })
+
     function checkDelivery(delivered: Record<string, LocFileDelivered[]>) {
         expect(delivered[hash.toHex()].length).toEqual(3);
         expect(delivered[hash.toHex()][0].owner).toEqual("5Eewz58eEPS81847EezkiFENE3kG8fxrx1BdRWyFJAudPC6m");

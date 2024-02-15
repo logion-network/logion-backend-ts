@@ -1850,12 +1850,28 @@
                     }
                 }
             },
+            "FetchWorkloadsView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficerAddresses": {
+                        "type": "array",
+                        "items": {
+                            "type": "string",
+                            "description": "A legal officer address"
+                        }
+                    }
+                }
+            },
             "WorkloadView": {
                 "type": "object",
                 "properties": {
-                    "workload": {
-                        "type": "number",
-                        "description": "The number of pending tasks"
+                    "workloads": {
+                        "type": "object",
+                        "description": "The number of pending tasks per legal officer (the address is used as key)",
+                        "additionalProperties": {
+                            "type": "number",
+                            "description": "The number of pending tasks"
+                        }
                     }
                 }
             }

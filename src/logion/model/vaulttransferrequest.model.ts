@@ -136,7 +136,7 @@ export class FetchVaultTransferRequestsSpecification {
 
     constructor(builder: {
         expectedRequesterAddress?: string,
-        expectedLegalOfficerAddress?: string,
+        expectedLegalOfficerAddress?: string | string[],
         expectedStatuses?: VaultTransferRequestStatus[],
     }) {
         this.expectedRequesterAddress = builder.expectedRequesterAddress || null;
@@ -145,7 +145,7 @@ export class FetchVaultTransferRequestsSpecification {
     }
 
     readonly expectedRequesterAddress: string | null;
-    readonly expectedLegalOfficerAddress: string | null;
+    readonly expectedLegalOfficerAddress: string | string[] | null;
     readonly expectedStatuses: VaultTransferRequestStatus[];
 }
 
@@ -177,7 +177,11 @@ export class VaultTransferRequestRepository {
         }
 
         if(specification.expectedLegalOfficerAddress !== null) {
-            where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            if(typeof specification.expectedLegalOfficerAddress === "string") {
+                where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            } else {
+                where("request.legal_officer_address IN (:...expectedLegalOfficerAddress)", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+            }
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 

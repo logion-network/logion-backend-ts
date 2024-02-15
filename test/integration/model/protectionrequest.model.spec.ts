@@ -10,6 +10,7 @@ import {
 } from "../../../src/logion/model/protectionrequest.model.js";
 import { ALICE, BOB } from "../../helpers/addresses.js";
 import { LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
+import { FetchVaultTransferRequestsSpecification } from "../../../src/logion/model/vaulttransferrequest.model";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -93,6 +94,16 @@ describe('ProtectionRequestRepositoryTest', () => {
 
         const results = await repository.findBy(specification);
 
+        expect(results.length).toBe(1);
+        expectStatus(results, 'PENDING');
+    });
+
+    it("finds workload", async () => {
+        const specification = new FetchProtectionRequestsSpecification({
+            expectedLegalOfficerAddress: [ ALICE, BOB ],
+            expectedStatuses: [ "PENDING" ],
+        });
+        const results = await repository.findBy(specification);
         expect(results.length).toBe(1);
         expectStatus(results, 'PENDING');
     });

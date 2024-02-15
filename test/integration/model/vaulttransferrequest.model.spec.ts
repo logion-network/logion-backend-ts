@@ -5,7 +5,7 @@ import {
     VaultTransferRequestRepository,
     VaultTransferRequestStatus,
 } from "../../../src/logion/model/vaulttransferrequest.model.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, BOB } from "../../helpers/addresses.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -55,6 +55,19 @@ describe('VaultTransferRequestRepository queries', () => {
         expect(results.length).toBe(1);
         expectStatus(results, 'PENDING');
     });
+
+    it("finds workload", async () => {
+        const specification = new FetchVaultTransferRequestsSpecification({
+            expectedLegalOfficerAddress: [ ALICE, BOB ],
+            expectedStatuses: [ 'PENDING' ],
+        });
+
+        const results = await repository.findBy(specification);
+
+        expect(results.length).toBe(1);
+        expectStatus(results, 'PENDING');
+    });
+
 });
 
 describe('VaultTransferRequestRepository updates', () => {

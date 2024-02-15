@@ -1713,7 +1713,7 @@ export class LocLink extends Child implements HasIndex, Submitted {
 export interface FetchLocRequestsSpecification {
 
     readonly expectedRequesterAddress?: string;
-    readonly expectedOwnerAddress?: string;
+    readonly expectedOwnerAddress?: string | string[];
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
     readonly expectedIdentityLocType?: IdentityLocType;
@@ -1829,9 +1829,14 @@ export class LocRequestRepository {
                 { expectedRequesterAddress: specification.expectedRequesterAddress });
         }
 
-        if (specification.expectedOwnerAddress) {
-            builder.andWhere("request.owner_address = :expectedOwnerAddress",
-                { expectedOwnerAddress: specification.expectedOwnerAddress });
+        if (specification.expectedOwnerAddress !== undefined) {
+            if(typeof specification.expectedOwnerAddress === "string") {
+                builder.andWhere("request.owner_address = :expectedOwnerAddress",
+                    { expectedOwnerAddress: specification.expectedOwnerAddress });
+            } else {
+                builder.andWhere("request.owner_address IN (:...expectedOwnerAddress)",
+                    { expectedOwnerAddress: specification.expectedOwnerAddress });
+            }
         }
 
         if (specification.expectedStatuses && specification.expectedStatuses.length > 0) {
