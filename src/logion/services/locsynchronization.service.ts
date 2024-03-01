@@ -108,6 +108,13 @@ export class LocSynchronizer {
                 case "sponsor":
                 case "withdrawSponsorship":
                 case "setInvitedContributorSelection":
+                case "importLoc":
+                case "importCollectionItem":
+                case "importTokensRecord":
+                case "importInvitedContributorSelection":
+                case "importVerifiedIssuer":
+                case "importVerifiedIssuerSelection":
+                case "importSponsorship":
                     // Nothing to sync
                     break;
                 default:
