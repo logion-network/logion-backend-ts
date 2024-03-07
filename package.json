@@ -28,7 +28,7 @@
         "@astar-network/astar-sdk-core": "^0.2.5",
         "@logion/node-api": "^0.28.2",
         "@logion/node-exiftool": "^2.3.1",
-        "@logion/rest-api-core": "^0.4.5",
+        "@logion/rest-api-core": "^0.4.6-1",
         "@polkadot/api-contract": "^10.10.1",
         "@polkadot/wasm-crypto": "^7.2.2",
         "alchemy-sdk": "^2.4.3",
