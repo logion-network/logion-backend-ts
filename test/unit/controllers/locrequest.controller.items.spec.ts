@@ -6,7 +6,7 @@ import { LocRequestController } from "../../../src/logion/controllers/locrequest
 import { Container } from "inversify";
 import request from "supertest";
 import { BOB, ALICE_ACCOUNT, ALICE } from "../../helpers/addresses.js";
-import { Mock, It } from "moq.ts";
+import { Mock, It, Times } from "moq.ts";
 import {
     LocRequestAggregateRoot,
     LinkDescription,
@@ -24,11 +24,12 @@ import {
     testData,
     ISSUER,
     setUpVote,
-    mockRequester, mockOwner
+    mockRequester,
+    mockOwner,
+    REQUESTER_ADDRESS,
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import {
-    polkadotAccount,
     SupportedAccountId,
     accountEquals
 } from "../../../src/logion/model/supportedaccountid.model.js";
@@ -38,12 +39,21 @@ const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
 describe('LocRequestController - Items -', () => {
 
-    it('adds file to loc', async () => {
+    it('adds file to loc - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER);
+        mockRequester(locRequest, REQUESTER_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
+        await testAddFileSuccess(app, locRequest, "MANUAL_BY_USER");
+    })
+
+    it('fails to add file to loc - owner', async () => {
+        const locRequest = new Mock<LocRequestAggregateRoot>();
+        mockOwner(locRequest, ALICE_ACCOUNT);
+        mockRequester(locRequest, REQUESTER_ADDRESS);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
-        await testAddFileSuccess(app, locRequest, "MANUAL_BY_OWNER");
+        await testAddFileForbidden(app);
     })
 
     it('adds file to loc - verified issuer', async () => {
@@ -53,11 +63,12 @@ describe('LocRequestController - Items -', () => {
         await testAddFileSuccess(app, locRequest, "MANUAL_BY_USER");
     })
 
-    it('fails to add file to loc with wrong hash', async () => {
+    it('fails to add file to loc with wrong hash - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER);
-        const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
+        mockRequester(locRequest, REQUESTER_ADDRESS);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         const buffer = Buffer.from(SOME_DATA);
         const wrongHash = Hash.of("wrong-hash").toHex();
         await request(app)
@@ -126,10 +137,17 @@ describe('LocRequestController - Items -', () => {
         await testDownloadForbidden(app);
     });
 
-    it('deletes a file', async () => {
+    it('deletes a file - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        const app = setupApp(LocRequestController, container => mockModelForDeleteFile(container, locRequest, 'NOT_ISSUER'))
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, container => mockModelForDeleteFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await testDeleteFileSuccess(app, locRequest, 'NOT_ISSUER');
+    });
+
+    it('fails to delete a file - owner', async () => {
+        const locRequest = new Mock<LocRequestAggregateRoot>();
+        const app = setupApp(LocRequestController, container => mockModelForDeleteFile(container, locRequest, 'NOT_ISSUER'));
+        await testDeleteFileForbidden(app);
     });
 
     it('deletes a file - verified issuer', async () => {
@@ -153,17 +171,24 @@ describe('LocRequestController - Items -', () => {
             .expect(204);
     });
 
-    it('adds a metadata item', async () => {
+    it('adds a metadata item - requester', async () => {
         const locRequest = mockRequestForMetadata();
-        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
-        await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_OWNER");
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
+        await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_USER");
+    });
+
+    it('fails to add a metadata item - owner', async () => {
+        const locRequest = mockRequestForMetadata();
+        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'));
+        await testAddMetadataForbidden(app, locRequest);
     });
 
     it('adds a metadata item - verified issuer', async () => {
         const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const locRequest = mockRequestForMetadata();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER);
+        mockRequester(locRequest, REQUESTER_ADDRESS);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock)
         await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_USER");
     });
@@ -172,20 +197,27 @@ describe('LocRequestController - Items -', () => {
         const locRequest = mockRequestForMetadata();
         const mock = mockAuthenticationForUserOrLegalOfficer(false, "any other address");
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), mock);
-        await testAddMetadataForbidden(app);
+        await testAddMetadataForbidden(app, locRequest);
     });
 
     it('fails to add a metadata item when unselected verified issuer', async () => {
         const locRequest = mockRequestForMetadata();
         const mock = mockAuthenticationForUserOrLegalOfficer(false, "any other address");
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'UNSELECTED'), mock);
-        await testAddMetadataForbidden(app);
+        await testAddMetadataForbidden(app, locRequest);
     });
 
-    it('deletes a metadata item', async () => {
+    it('deletes a metadata item - requester', async () => {
+        const locRequest = mockRequestForMetadata();
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
+        await testDeleteMetadataSuccess(app, locRequest, false);
+    });
+
+    it('fails to delete a metadata item - owner', async () => {
         const locRequest = mockRequestForMetadata();
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'));
-        await testDeleteMetadataSuccess(app, locRequest, false);
+        await testDeleteMetadataForbidden(app, locRequest);
     });
 
     it('deletes a metadata item - verified issuer', async () => {
@@ -209,29 +241,58 @@ describe('LocRequestController - Items -', () => {
             .expect(204);
     });
 
-    it('adds a link', async () => {
+    it('adds a link - requester', async () => {
         const locRequest = mockRequestForLink();
-        const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest))
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest), authenticatedUserMock);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/links`)
             .send({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE })
             .expect(204)
         locRequest.verify(instance => instance.addLink(
             It.Is<LinkDescription>(item => item.target == SOME_LINK_TARGET && item.nature == SOME_LINK_NATURE),
-            It.IsAny<boolean>()
+            It.IsAny<SubmissionType>()
         ))
     });
 
-    it('deletes a link', async () => {
+    it('fails to add a link - owner', async () => {
         const locRequest = mockRequestForLink();
-        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'))
+        mockOwner(locRequest, ALICE_ACCOUNT);
+        mockRequester(locRequest, REQUESTER_ADDRESS);
+        const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest));
+        await request(app)
+            .post(`/api/loc-request/${ REQUEST_ID }/links`)
+            .send({ target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE })
+            .expect(403)
+        locRequest.verify(
+            instance => instance.addLink(It.IsAny<LinkDescription>(), It.IsAny<boolean>()),
+            Times.Never()
+        )
+    });
+
+    it('deletes a link - requester', async () => {
+        const locRequest = mockRequestForLink();
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await request(app)
             .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
             .expect(200)
         locRequest.verify(instance => instance.removeLink(
-            It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)),
             SOME_LINK_TARGET
         ))
+    })
+
+    it('fails to delete a link - owner', async () => {
+        const locRequest = mockRequestForLink();
+        const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'));
+        await request(app)
+            .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
+            .expect(403)
+        locRequest.verify(instance => instance.removeLink(
+            It.IsAny<SupportedAccountId>(),
+            It.IsAny<string>(),
+        ), Times.Never())
     })
 
     it('publishes a link', async () => {
@@ -265,8 +326,6 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
     fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
         .returns(Promise.resolve("cid-42"));
 }
-
-const REQUESTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
 async function testAddFileSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, submissionType: SubmissionType) {
     const buffer = Buffer.from(SOME_DATA);
@@ -302,12 +361,12 @@ function mockModelForDownloadFile(container: Container, issuerMode: SetupIssuerM
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER);
+    mockRequester(request, REQUESTER_ADDRESS);
 
     const hash = SOME_DATA_HASH;
     request.setup(instance => instance.getFile(ItIsHash(hash))).returns({
         ...SOME_FILE,
-        submitter: issuerMode !== "NOT_ISSUER" ? ISSUER : REQUESTER,
+        submitter: issuerMode !== "NOT_ISSUER" ? ISSUER : REQUESTER_ADDRESS,
     });
 
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash.toHex();
@@ -325,7 +384,7 @@ const SOME_FILE: FileDescription = {
     hash: SOME_DATA_HASH,
     oid: SOME_OID,
     nature: "file-nature",
-    submitter: REQUESTER,
+    submitter: REQUESTER_ADDRESS,
     restrictedDelivery: false,
     size: 123,
     status: "DRAFT",
@@ -365,7 +424,7 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER);
+    mockRequester(request, REQUESTER_ADDRESS);
 
     if (issuerMode !== 'NOT_ISSUER') {
         request.setup(instance => instance.removeFile(
@@ -395,11 +454,18 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
         ));
     } else {
         locRequest.verify(instance => instance.removeFile(
-            It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)),
             ItIsHash(SOME_DATA_HASH)
         ));
     }
 }
+
+async function testDeleteFileForbidden(app: Express) {
+    await request(app)
+        .delete(`/api/loc-request/${ REQUEST_ID }/files/${ SOME_DATA_HASH.toHex() }`)
+        .expect(403);
+}
+
 
 function mockModelForConfirmFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
@@ -426,15 +492,15 @@ const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER);
+    mockRequester(request, REQUESTER_ADDRESS);
     request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, ItIsHash(SOME_DATA_NAME_HASH)))
         .returns()
-    request.setup(instance => instance.prePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(REQUESTER.address)))
+    request.setup(instance => instance.prePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(REQUESTER_ADDRESS.address)))
         .returns()
     request.setup(instance => instance.addMetadataItem({
         name: SOME_DATA_NAME,
         value: SOME_DATA_VALUE,
-        submitter: REQUESTER
+        submitter: REQUESTER_ADDRESS
     }, "MANUAL_BY_USER"))
         .returns()
     return request;
@@ -449,11 +515,15 @@ async function testAddMetadataSuccess(app: Express, locRequest: Mock<LocRequestA
         It.Is<MetadataItemDescription>(item => item.name == SOME_DATA_NAME && item.value == SOME_DATA_VALUE), submissionType));
 }
 
-async function testAddMetadataForbidden(app: Express) {
+async function testAddMetadataForbidden(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
     await request(app)
         .post(`/api/loc-request/${ REQUEST_ID }/metadata`)
         .send({ name: SOME_DATA_NAME, value: SOME_DATA_VALUE })
         .expect(403);
+    locRequest.verify(
+        instance => instance.addMetadataItem(It.IsAny<MetadataItemDescription>(), It.IsAny<SubmissionType>()),
+        Times.Never()
+    );
 }
 
 async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocRequestAggregateRoot>, isVerifiedIssuer: boolean) {
@@ -463,8 +533,18 @@ async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocReque
     if(isVerifiedIssuer) {
         locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), ItIsHash(SOME_DATA_NAME_HASH)));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ALICE_ACCOUNT)), ItIsHash(SOME_DATA_NAME_HASH)));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)), ItIsHash(SOME_DATA_NAME_HASH)));
     }
+}
+
+async function testDeleteMetadataForbidden(app: Express, locRequest: Mock<LocRequestAggregateRoot>) {
+    await request(app)
+        .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH.toHex() }`)
+        .expect(403);
+    locRequest.verify(
+        instance => instance.removeMetadataItem(It.IsAny<SupportedAccountId>(), It.IsAny<Hash>()),
+        Times.Never()
+    );
 }
 
 const SOME_LINK_TARGET = '35bac9a0-1516-4f8d-ae9e-9b14abe87e25'
@@ -474,13 +554,15 @@ function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     request.setup(instance => instance.removeLink(ALICE_ACCOUNT, SOME_LINK_TARGET))
         .returns()
-    request.setup(instance => instance.prePublishOrAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(REQUESTER.address)))
+    request.setup(instance => instance.prePublishOrAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(REQUESTER_ADDRESS.address)))
         .returns()
     request.setup(instance => instance.addLink(
-        { target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE, submitter: REQUESTER },
+        { target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE, submitter: REQUESTER_ADDRESS },
         It.IsAny<boolean>()
         ))
         .returns()
+    mockRequester(request, REQUESTER_ADDRESS);
+    mockOwner(request, ALICE_ACCOUNT);
     return request;
 }
 
@@ -491,8 +573,8 @@ function mockModelForAnyItem(container: Container, request: Mock<LocRequestAggre
 }
 
 function mockModelForAddLink(container: Container, request: Mock<LocRequestAggregateRoot>) {
-    const { repository } = buildMocksForUpdate(container, { request });
-
+    const { repository, loc } = buildMocksForUpdate(container, { request });
+    setupSelectedIssuer(loc, 'NOT_ISSUER');
     const linkTargetRequest = mockRequest("OPEN", testData);
     linkTargetRequest.setup(instance => instance.id).returns(SOME_LINK_TARGET)
     repository.setup(instance => instance.findById(SOME_LINK_TARGET))

@@ -617,7 +617,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async addFile(addFileView: AddFileView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+        const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
         const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
         if(request.hasFile(hash)) {
             throw new Error("File already present");
@@ -717,7 +717,7 @@ export class LocRequestController extends ApiController {
     async deleteFile(_body: never, requestId: string, hash: string): Promise<void> {
         let file: FileDescription | undefined;
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             file = request.removeFile(contributor, Hash.fromHex(hash));
         });
         if(file) {
@@ -744,7 +744,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request);
+            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             request.requestFileReview(Hash.fromHex(hash));
         });
 
@@ -1042,7 +1042,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             const linkParams = await this.toLink(addLinkView, contributor);
             const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
             request.addLink(linkParams, submissionType);
@@ -1075,7 +1075,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteLink(_body: never, requestId: string, target: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             request.removeLink(contributor, target);
         });
     }
@@ -1099,7 +1099,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request);
+            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             request.requestLinkReview(target);
         });
 
@@ -1264,7 +1264,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
             request.addMetadataItem(this.toMetadata(addMetadataView, contributor), submissionType);
         });
@@ -1292,7 +1292,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteMetadata(_body: never, requestId: string, nameHash: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             request.removeMetadataItem(contributor, Hash.fromHex(nameHash));
         });
     }
@@ -1316,7 +1316,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request);
+            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
             request.requestMetadataItemReview(Hash.fromHex(nameHash));
         });
 

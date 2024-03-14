@@ -14,9 +14,9 @@ export class LocAuthorizationService {
         private polkadotService: PolkadotService,
     ) {}
 
-    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot, allowInvitedContributor = false): Promise<SupportedAccountId> {
+    async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot, allowInvitedContributor = false, allowOwner = true): Promise<SupportedAccountId> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
-        if (await this.isContributor(request, authenticatedUser)) {
+        if (await this.isContributor(request, authenticatedUser, allowOwner)) {
             return authenticatedUser;
         } else if (allowInvitedContributor && await this.isInvitedContributor(request, authenticatedUser)) {
             return authenticatedUser;
@@ -25,12 +25,20 @@ export class LocAuthorizationService {
         }
     }
 
-    async isContributor(request: LocRequestAggregateRoot, contributor: AuthenticatedUser): Promise<boolean> {
+    async isContributor(request: LocRequestAggregateRoot, contributor: AuthenticatedUser, allowOwner = true): Promise<boolean> {
         return (
-            accountEquals(request.getOwner(), contributor) ||
+            (accountEquals(request.getOwner(), contributor) && this.ownerCanContributeItems(request, allowOwner)) ||
             accountEquals(request.getRequester(), contributor) ||
             await this.isSelectedIssuer(request, contributor)
         );
+    }
+
+    private ownerCanContributeItems(request: LocRequestAggregateRoot, allowOwner: boolean): boolean {
+        if (allowOwner) {
+            return true;
+        }
+        const requester = request.getRequester();
+        return requester === undefined || requester.type !== "Polkadot"
     }
 
     private async isSelectedIssuer(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
