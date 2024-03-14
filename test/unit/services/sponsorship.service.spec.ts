@@ -4,7 +4,7 @@ import { LocRequestRepository, FetchLocRequestsSpecification } from "../../../sr
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
 import { PolkadotService } from "@logion/rest-api-core";
 import { ALICE_ACCOUNT, CHARLY_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
-import { REQUESTER_ADDRESS } from "../controllers/locrequest.controller.shared.js";
+import { POLKADOT_REQUESTER } from "../controllers/locrequest.controller.shared.js";
 import { polkadotAccount, SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
 
@@ -25,7 +25,7 @@ describe("SponsorshipService", () => {
 
     async function testError(sponsorshipId: UUID, expectedError: string, legalOfficer?: SupportedAccountId, requester?: SupportedAccountId) {
         return expectAsyncToThrow(
-            () => service.validateSponsorship(sponsorshipId, legalOfficer ? legalOfficer : ALICE_ACCOUNT, requester ? requester : REQUESTER_ADDRESS),
+            () => service.validateSponsorship(sponsorshipId, legalOfficer ? legalOfficer : ALICE_ACCOUNT, requester ? requester : POLKADOT_REQUESTER),
             expectedError
         )
     }
@@ -48,7 +48,7 @@ describe("SponsorshipService", () => {
 
     it("throws error for wrong Legal Officer", async () => {
         const wrongLegalOfficer = CHARLY_ACCOUNT;
-        await testError(validSponsorship, "This sponsorship is not applicable to your request", wrongLegalOfficer, REQUESTER_ADDRESS)
+        await testError(validSponsorship, "This sponsorship is not applicable to your request", wrongLegalOfficer, POLKADOT_REQUESTER)
     })
 
     it("throws error for wrong Sponsored Account", async () => {
@@ -57,7 +57,7 @@ describe("SponsorshipService", () => {
     })
 
     it("validates a valid sponsorship", async () => {
-        await service.validateSponsorship(validSponsorship, ALICE_ACCOUNT, REQUESTER_ADDRESS);
+        await service.validateSponsorship(validSponsorship, ALICE_ACCOUNT, POLKADOT_REQUESTER);
     })
 })
 
@@ -77,7 +77,7 @@ function mockSponsorship(locId: UUID | undefined): Sponsorship {
         locId,
         sponsor: BOB_ACCOUNT,
         legalOfficer: ALICE_ACCOUNT,
-        sponsoredAccount: REQUESTER_ADDRESS
+        sponsoredAccount: POLKADOT_REQUESTER
     }
 }
 

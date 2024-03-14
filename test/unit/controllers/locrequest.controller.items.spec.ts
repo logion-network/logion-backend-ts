@@ -26,7 +26,7 @@ import {
     setUpVote,
     mockRequester,
     mockOwner,
-    REQUESTER_ADDRESS,
+    POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import {
@@ -42,8 +42,8 @@ describe('LocRequestController - Items -', () => {
     it('adds file to loc - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER_ADDRESS);
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        mockRequester(locRequest, POLKADOT_REQUESTER);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await testAddFileSuccess(app, locRequest, "MANUAL_BY_USER");
     })
@@ -51,7 +51,7 @@ describe('LocRequestController - Items -', () => {
     it('fails to add file to loc - owner', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER_ADDRESS);
+        mockRequester(locRequest, POLKADOT_REQUESTER);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'));
         await testAddFileForbidden(app);
     })
@@ -66,8 +66,8 @@ describe('LocRequestController - Items -', () => {
     it('fails to add file to loc with wrong hash - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER_ADDRESS);
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        mockRequester(locRequest, POLKADOT_REQUESTER);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, container => mockModelForAddFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         const buffer = Buffer.from(SOME_DATA);
         const wrongHash = Hash.of("wrong-hash").toHex();
@@ -139,7 +139,7 @@ describe('LocRequestController - Items -', () => {
 
     it('deletes a file - requester', async () => {
         const locRequest = new Mock<LocRequestAggregateRoot>();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, container => mockModelForDeleteFile(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await testDeleteFileSuccess(app, locRequest, 'NOT_ISSUER');
     });
@@ -173,7 +173,7 @@ describe('LocRequestController - Items -', () => {
 
     it('adds a metadata item - requester', async () => {
         const locRequest = mockRequestForMetadata();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_USER");
     });
@@ -188,7 +188,7 @@ describe('LocRequestController - Items -', () => {
         const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
         const locRequest = mockRequestForMetadata();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER_ADDRESS);
+        mockRequester(locRequest, POLKADOT_REQUESTER);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'SELECTED'), authenticatedUserMock)
         await testAddMetadataSuccess(app, locRequest, "MANUAL_BY_USER");
     });
@@ -209,7 +209,7 @@ describe('LocRequestController - Items -', () => {
 
     it('deletes a metadata item - requester', async () => {
         const locRequest = mockRequestForMetadata();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await testDeleteMetadataSuccess(app, locRequest, false);
     });
@@ -243,7 +243,7 @@ describe('LocRequestController - Items -', () => {
 
     it('adds a link - requester', async () => {
         const locRequest = mockRequestForLink();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest), authenticatedUserMock);
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/links`)
@@ -258,7 +258,7 @@ describe('LocRequestController - Items -', () => {
     it('fails to add a link - owner', async () => {
         const locRequest = mockRequestForLink();
         mockOwner(locRequest, ALICE_ACCOUNT);
-        mockRequester(locRequest, REQUESTER_ADDRESS);
+        mockRequester(locRequest, POLKADOT_REQUESTER);
         const app = setupApp(LocRequestController, (container) => mockModelForAddLink(container, locRequest));
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/links`)
@@ -272,13 +272,13 @@ describe('LocRequestController - Items -', () => {
 
     it('deletes a link - requester', async () => {
         const locRequest = mockRequestForLink();
-        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const authenticatedUserMock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(LocRequestController, (container) => mockModelForAnyItem(container, locRequest, 'NOT_ISSUER'), authenticatedUserMock);
         await request(app)
             .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
             .expect(200)
         locRequest.verify(instance => instance.removeLink(
-            It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)),
+            It.Is<SupportedAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)),
             SOME_LINK_TARGET
         ))
     })
@@ -361,12 +361,12 @@ function mockModelForDownloadFile(container: Container, issuerMode: SetupIssuerM
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER_ADDRESS);
+    mockRequester(request, POLKADOT_REQUESTER);
 
     const hash = SOME_DATA_HASH;
     request.setup(instance => instance.getFile(ItIsHash(hash))).returns({
         ...SOME_FILE,
-        submitter: issuerMode !== "NOT_ISSUER" ? ISSUER : REQUESTER_ADDRESS,
+        submitter: issuerMode !== "NOT_ISSUER" ? ISSUER : POLKADOT_REQUESTER,
     });
 
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash.toHex();
@@ -384,7 +384,7 @@ const SOME_FILE: FileDescription = {
     hash: SOME_DATA_HASH,
     oid: SOME_OID,
     nature: "file-nature",
-    submitter: REQUESTER_ADDRESS,
+    submitter: POLKADOT_REQUESTER,
     restrictedDelivery: false,
     size: 123,
     status: "DRAFT",
@@ -424,7 +424,7 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
 
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER_ADDRESS);
+    mockRequester(request, POLKADOT_REQUESTER);
 
     if (issuerMode !== 'NOT_ISSUER') {
         request.setup(instance => instance.removeFile(
@@ -454,7 +454,7 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
         ));
     } else {
         locRequest.verify(instance => instance.removeFile(
-            It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)),
+            It.Is<SupportedAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)),
             ItIsHash(SOME_DATA_HASH)
         ));
     }
@@ -492,15 +492,15 @@ const SOME_DATA_VALUE = "data value with exotic char !é\"/&'"
 function mockRequestForMetadata(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     mockOwner(request, ALICE_ACCOUNT);
-    mockRequester(request, REQUESTER_ADDRESS);
+    mockRequester(request, POLKADOT_REQUESTER);
     request.setup(instance => instance.removeMetadataItem(ALICE_ACCOUNT, ItIsHash(SOME_DATA_NAME_HASH)))
         .returns()
-    request.setup(instance => instance.prePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(REQUESTER_ADDRESS.address)))
+    request.setup(instance => instance.prePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(POLKADOT_REQUESTER.address)))
         .returns()
     request.setup(instance => instance.addMetadataItem({
         name: SOME_DATA_NAME,
         value: SOME_DATA_VALUE,
-        submitter: REQUESTER_ADDRESS
+        submitter: POLKADOT_REQUESTER
     }, "MANUAL_BY_USER"))
         .returns()
     return request;
@@ -533,7 +533,7 @@ async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocReque
     if(isVerifiedIssuer) {
         locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, ISSUER)), ItIsHash(SOME_DATA_NAME_HASH)));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, REQUESTER_ADDRESS)), ItIsHash(SOME_DATA_NAME_HASH)));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<SupportedAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)), ItIsHash(SOME_DATA_NAME_HASH)));
     }
 }
 
@@ -554,14 +554,14 @@ function mockRequestForLink(): Mock<LocRequestAggregateRoot> {
     const request = mockRequest("OPEN", testData);
     request.setup(instance => instance.removeLink(ALICE_ACCOUNT, SOME_LINK_TARGET))
         .returns()
-    request.setup(instance => instance.prePublishOrAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(REQUESTER_ADDRESS.address)))
+    request.setup(instance => instance.prePublishOrAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(POLKADOT_REQUESTER.address)))
         .returns()
     request.setup(instance => instance.addLink(
-        { target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE, submitter: REQUESTER_ADDRESS },
+        { target: SOME_LINK_TARGET, nature: SOME_LINK_NATURE, submitter: POLKADOT_REQUESTER },
         It.IsAny<boolean>()
         ))
         .returns()
-    mockRequester(request, REQUESTER_ADDRESS);
+    mockRequester(request, POLKADOT_REQUESTER);
     mockOwner(request, ALICE_ACCOUNT);
     return request;
 }
