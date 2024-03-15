@@ -22,37 +22,37 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@astar-network/astar-api-derive@npm:0.2.5":
-  version: 0.2.5
-  resolution: "@astar-network/astar-api-derive@npm:0.2.5"
+"@astar-network/astar-api-derive@npm:0.2.6":
+  version: 0.2.6
+  resolution: "@astar-network/astar-api-derive@npm:0.2.6"
   dependencies:
-    "@astar-network/astar-types": 0.2.5
-    "@babel/runtime": ^7.10.2
+    "@astar-network/astar-types": 0.2.6
+    "@babel/runtime": ^7.23.2
     "@open-web3/orml-types": ^1.0.2-0
     "@polkadot/api-derive": 10.9.1
-  checksum: 4a91d4cb0dfc9f22608998d79327504fe3d65285609034b81d5ff3c8c22324d160cf694890aa2f2686b320de3ee7849f10683bf6afa9319de368977e47b7801d
+  checksum: 2da7e99687e88cf103372ed04a1debb880bf6482b3d9bac4bc194c6fae127f3977c72ae7b813060cde66fc651920acb86379731e0d5ec3b1a36f3b8ffc02728c
   languageName: node
   linkType: hard
 
-"@astar-network/astar-api@npm:^0.2.5":
-  version: 0.2.5
-  resolution: "@astar-network/astar-api@npm:0.2.5"
+"@astar-network/astar-api@npm:^0.2.8":
+  version: 0.2.8
+  resolution: "@astar-network/astar-api@npm:0.2.8"
   dependencies:
-    "@astar-network/astar-api-derive": 0.2.5
-    "@astar-network/astar-types": 0.2.5
-    "@babel/runtime": ^7.10.2
+    "@astar-network/astar-api-derive": 0.2.6
+    "@astar-network/astar-types": 0.2.6
+    "@babel/runtime": ^7.23.2
     "@open-web3/orml-api-derive": ^1.0.2-0
     "@polkadot/api": 10.9.1
   peerDependencies:
     "@polkadot/api": 10.9.1
     "@polkadot/types": 10.9.1
-  checksum: ee79cb264eb540aa4970c53b3effa92fb46d46db113ba560c5b6f5246ead0b5c424fa45fa7c7a643518ac3ba4c5570a398ca37879edc81406a216ae9f268c703
+  checksum: 3dc34f5be1c6f9c69c059918f4a2b129eb96c154574a95bb20ccb734940aa4cebd90b7ba963984f4d4d2ad2c3a4fe190c966571902678d0350d1542c09a710cd
   languageName: node
   linkType: hard
 
-"@astar-network/astar-sdk-core@npm:^0.2.5":
-  version: 0.2.5
-  resolution: "@astar-network/astar-sdk-core@npm:0.2.5"
+"@astar-network/astar-sdk-core@npm:^0.2.8":
+  version: 0.2.8
+  resolution: "@astar-network/astar-sdk-core@npm:0.2.8"
   dependencies:
     "@ethersproject/bignumber": ^5.6.2
     "@polkadot/util": ^12.3.2
@@ -61,26 +61,26 @@ __metadata:
     bn.js: ^5.2.1
     ethers: ^5.6.9
     web3: ^1.7.3
-  checksum: 0577aeb1bc813a0a3f0cd6fb00e4b7710ed47088d4bf50a33499656c88ced866f0e48aad67d02aa1f5e3a7ee9350cf964674174ea388cb705a0e1e23348d4851
+  checksum: 071e56395b947f37a105755039fc83061539b8b262529fd06e56b8367780cd2077c74bcfe05b79400bc3f07711d3c71312c6ff0d508a1592f9f5009a1a429565
   languageName: node
   linkType: hard
 
-"@astar-network/astar-type-definitions@npm:0.2.5":
-  version: 0.2.5
-  resolution: "@astar-network/astar-type-definitions@npm:0.2.5"
+"@astar-network/astar-type-definitions@npm:0.2.6":
+  version: 0.2.6
+  resolution: "@astar-network/astar-type-definitions@npm:0.2.6"
   dependencies:
-    "@babel/runtime": ^7.10.2
+    "@babel/runtime": ^7.23.2
     "@open-web3/orml-type-definitions": ^1.0.2-0
-  checksum: 28fd31697b72d406ae330ee5b8694cb460a2ed259f6f979ec656ead878b544a86a0f37665f29ee7630b3a3eb1c0f642d92bdc269e64087610ba359589cbb1451
+  checksum: 5c59dabd309ea1d75a595cdf35b520e83de8020fa00431adf518568daf97f02cfca2345753ef33bfecf45cdbfd4c0f6bc21d333804b82ec9d3ca3255accbd99d
   languageName: node
   linkType: hard
 
-"@astar-network/astar-types@npm:0.2.5":
-  version: 0.2.5
-  resolution: "@astar-network/astar-types@npm:0.2.5"
+"@astar-network/astar-types@npm:0.2.6":
+  version: 0.2.6
+  resolution: "@astar-network/astar-types@npm:0.2.6"
   dependencies:
-    "@astar-network/astar-type-definitions": 0.2.5
-    "@babel/runtime": ^7.10.2
+    "@astar-network/astar-type-definitions": 0.2.6
+    "@babel/runtime": ^7.23.2
     "@open-web3/api-mobx": ^1.0.2-0
     "@open-web3/orml-types": ^1.0.2-0
     "@polkadot/api": 10.9.1
@@ -90,7 +90,7 @@ __metadata:
     "@polkadot/api": 10.9.1
     "@polkadot/typegen": 10.9.1
     "@polkadot/types": 10.9.1
-  checksum: 2b81d45a881accc5c263bff533930d8159694a11b6ea8ac41b0990098b7463837b49df35dda1b8332f8e9370616a75cd0ea2ce03a8da35b9f31e83d391c38a8f
+  checksum: a78bae436f1e840fe6246ad4e2eb5b900715b52f8fbdd6614f2cd5f3ffe95a28252b21b83f02b4dd619fd965b32817d3133abd59c4db8de3164a595354606973
   languageName: node
   linkType: hard
 
@@ -1146,7 +1146,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@babel/runtime@npm:^7.10.2":
+"@babel/runtime@npm:^7.23.2":
   version: 7.24.0
   resolution: "@babel/runtime@npm:7.24.0"
   dependencies:
@@ -7710,8 +7710,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "logion-backend-ts@workspace:."
   dependencies:
-    "@astar-network/astar-api": ^0.2.5
-    "@astar-network/astar-sdk-core": ^0.2.5
+    "@astar-network/astar-api": ^0.2.8
+    "@astar-network/astar-sdk-core": ^0.2.8
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-api": ^0.28.2
     "@logion/node-exiftool": ^2.3.1
