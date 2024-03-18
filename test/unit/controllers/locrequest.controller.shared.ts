@@ -197,6 +197,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const locAuthorizationService = new LocAuthorizationService(
         container.get(AuthenticationService),
         polkadotService.object(),
+        voteRepository.object(),
     );
     container.bind(LocAuthorizationService).toConstantValue(locAuthorizationService);
 

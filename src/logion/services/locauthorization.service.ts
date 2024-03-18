@@ -5,6 +5,7 @@ import { Request } from 'express';
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot } from '../model/locrequest.model';
 import { SupportedAccountId, accountEquals } from "../model/supportedaccountid.model.js";
+import { VoteRepository } from "../model/vote.model.js";
 
 export class Contribution {
     readonly httpRequest: Request;
@@ -45,9 +46,9 @@ export class LocAuthorizationService {
     constructor(
         private authenticationService: AuthenticationService,
         private polkadotService: PolkadotService,
+        private voteRepository: VoteRepository,
     ) {}
 
-    // async ensureContributor(httpRequest: Request, request: LocRequestAggregateRoot, allowInvitedContributor = false, allowOwner = true): Promise<SupportedAccountId> {
     async ensureContributor(contribution: Contribution): Promise<SupportedAccountId> {
         const { httpRequest, locRequest, allowInvitedContributor } = contribution
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
@@ -60,13 +61,19 @@ export class LocAuthorizationService {
         }
     }
 
-    // async isContributor(request: LocRequestAggregateRoot, contributor: AuthenticatedUser, allowOwner = true): Promise<boolean> {
     async isContributor(contribution: Contribution, contributor: AuthenticatedUser): Promise<boolean> {
         const { locRequest } = contribution;
         return (
             (accountEquals(locRequest.getOwner(), contributor) && contribution.ownerCanContributeItems()) ||
             accountEquals(locRequest.getRequester(), contributor) ||
             await this.isSelectedIssuer(locRequest, contributor)
+        );
+    }
+
+    async isVoterOnLoc(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
+        return (
+            await authenticatedUser.isLegalOfficer() &&
+            await this.voteRepository.findByLocId(request.id!) !== null
         );
     }
 

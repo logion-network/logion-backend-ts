@@ -49,8 +49,6 @@ import { PostalAddress } from "../model/postaladdress.js";
 import { downloadAndClean, toBadRequest } from "../lib/http.js";
 import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import { LocRequestService } from "../services/locrequest.service.js";
-import { VoteRepository } from "../model/vote.model.js";
-import { AuthenticatedUser } from "@logion/authenticator";
 import { LocAuthorizationService, Contribution } from "../services/locauthorization.service.js";
 import { accountEquals, polkadotAccount } from "../model/supportedaccountid.model.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
@@ -147,7 +145,6 @@ export class LocRequestController extends ApiController {
         private directoryService: DirectoryService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestService: LocRequestService,
-        private voteRepository: VoteRepository,
         private locAuthorizationService: LocAuthorizationService,
         private sponsorshipService: SponsorshipService,
     ) {
@@ -426,7 +423,7 @@ export class LocRequestController extends ApiController {
                 contributor: authenticatedUser,
                 voter: false
             }
-        } else if (await this.isVoterOnLoc(request, authenticatedUser)) {
+        } else if (await this.locAuthorizationService.isVoterOnLoc(request, authenticatedUser)) {
             return {
                 contributor: authenticatedUser,
                 voter: true
@@ -434,14 +431,6 @@ export class LocRequestController extends ApiController {
         } else {
             throw forbidden("Authenticated user is not allowed to view the content of this LOC");
         }
-    }
-
-    // TODO Move to loc authorization service
-    private async isVoterOnLoc(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
-        return (
-            await authenticatedUser.isLegalOfficer() &&
-            await this.voteRepository.findByLocId(request.id!) !== null
-        );
     }
 
     static getPublicLoc(spec: OpenAPIV3.Document) {
