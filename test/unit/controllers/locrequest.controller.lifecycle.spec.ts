@@ -16,7 +16,7 @@ import {
     testData,
     testDataWithType,
     userIdentities,
-    REQUESTER_ADDRESS,
+    POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
 import { BOB } from "../../helpers/addresses.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";
@@ -168,7 +168,7 @@ describe("LocRequestController - Life Cycle - Authenticated user opens LOC", () 
     }
 
     it('opens an accepted request', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(REQUESTER_ADDRESS.address))
+        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(POLKADOT_REQUESTER.address))
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/open`)
             .expect(204)
@@ -246,9 +246,9 @@ function mockModelForOpen(container: Container, locType: LocType, userIdentity?:
         userIdentity
     };
     setupRequest(request, REQUEST_ID, locType, "REVIEW_ACCEPTED", data);
-    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address === REQUESTER_ADDRESS.address)))
+    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address === POLKADOT_REQUESTER.address)))
         .returns(true);
-    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address !== REQUESTER_ADDRESS.address)))
+    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address !== POLKADOT_REQUESTER.address)))
         .returns(false);
     request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params === undefined)))
         .returns(false);

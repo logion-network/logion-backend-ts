@@ -22,7 +22,7 @@ import {
     mockLogionIdentityLoc,
     testData,
     checkPrivateData,
-    REQUESTER_ADDRESS,
+    POLKADOT_REQUESTER,
     EXISTING_SPONSORSHIP_ID,
     ETHEREUM_REQUESTER
 } from "./locrequest.controller.shared.js";
@@ -71,7 +71,7 @@ describe('LocRequestController - Creation -', () => {
     });
 
     it('succeeds in creating a draft LOC', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, REQUESTER_ADDRESS.address);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, "Transaction", undefined, true),
@@ -162,7 +162,7 @@ describe('LocRequestController - Creation -', () => {
 });
 
 async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: boolean, locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
-    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? undefined : REQUESTER_ADDRESS.address);
+    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? undefined : POLKADOT_REQUESTER.address);
     const app = setupApp(
         LocRequestController,
         container => mockModelForCreation(container, locType, undefined, hasPolkadotIdentityLoc),
@@ -197,7 +197,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
 }
 
 async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boolean, locType: LocType) {
-    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? ALICE : REQUESTER_ADDRESS.address);
+    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? ALICE : POLKADOT_REQUESTER.address);
     const notificationService = new Mock<NotificationService>();
     const app = setupApp(
         LocRequestController,

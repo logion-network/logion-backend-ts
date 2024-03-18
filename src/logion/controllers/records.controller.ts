@@ -39,7 +39,7 @@ import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service.js";
 import { downloadAndClean } from "../lib/http.js";
 import { GetTokensRecordFileParams, LogionNodeTokensRecordService, TokensRecordService } from "../services/tokensrecord.service.js";
-import { LocAuthorizationService } from "../services/locauthorization.service.js";
+import { LocAuthorizationService, Contribution } from "../services/locauthorization.service.js";
 import { CollectionRepository } from "../model/collection.model.js";
 
 type TokensRecordView = components["schemas"]["TokensRecordView"];
@@ -217,7 +217,7 @@ export class TokensRecordController extends ApiController {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
 
-        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc, true);
+        await this.locAuthorizationService.ensureContributor(Contribution.recordContribution(this.request, collectionLoc));
 
         const recordId = Hash.fromHex(recordIdHex);
         const publishedTokensRecord = await this.logionNodeTokensRecordService.getTokensRecord({
@@ -423,7 +423,7 @@ export class TokensRecordController extends ApiController {
     async getAllItemDeliveries(_body: never, collectionLocId: string, recordIdHex: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
+        await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, collectionLoc));
 
         const recordId = Hash.fromHex(recordIdHex);
         return this.getItemDeliveries({ collectionLocId, recordId });
@@ -447,7 +447,7 @@ export class TokensRecordController extends ApiController {
     async downloadFileSource(_body: never, collectionLocId: string, recordIdHex: string, hashHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
-        await this.locAuthorizationService.ensureContributor(this.request, collectionLoc);
+        await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, collectionLoc));
 
         const recordId = Hash.fromHex(recordIdHex);
         const hash = Hash.fromHex(hashHex);

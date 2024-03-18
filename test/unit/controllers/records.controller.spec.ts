@@ -490,7 +490,7 @@ function mockModel(
     container.bind(TokensRecordService).toConstantValue(new NonTransactionalTokensRecordService(tokensRecordRepository.object()));
 
     const locAuthorityService = new Mock<LocAuthorizationService>();
-    locAuthorityService.setup(instance => instance.ensureContributor(It.IsAny(), It.IsAny())).returnsAsync(ALICE_ACCOUNT);
+    locAuthorityService.setup(instance => instance.ensureContributor(It.IsAny())).returnsAsync(ALICE_ACCOUNT);
     locAuthorityService.setup(instance => instance.isContributor(It.IsAny(), It.IsAny())).returnsAsync(true);
     container.bind(LocAuthorizationService).toConstantValue(locAuthorityService.object());
 }

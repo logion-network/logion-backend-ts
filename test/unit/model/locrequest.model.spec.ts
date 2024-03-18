@@ -30,7 +30,7 @@ import { UUID } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
-import { REQUESTER_ADDRESS } from "../controllers/locrequest.controller.shared.js";
+import { POLKADOT_REQUESTER } from "../controllers/locrequest.controller.shared.js";
 
 const SUBMITTER: SupportedAccountId = {
     type: "Polkadot",
@@ -91,11 +91,11 @@ describe("LocRequestFactory", () => {
         const description = createDescription('Transaction', requesterAddress, requesterIdentityLocId);
         givenLocDescription(description);
         const metadata: MetadataItemParams[] = [
-            { name: "data01", value: "value01", submitter: REQUESTER_ADDRESS },
-            { name: "data02", value: "value02", submitter: REQUESTER_ADDRESS },
+            { name: "data01", value: "value01", submitter: POLKADOT_REQUESTER },
+            { name: "data02", value: "value02", submitter: POLKADOT_REQUESTER },
         ];
         const links: LinkParams[] = [
-            { target: "3eb0334a-3524-4eb0-bf44-e44176b72d3e", nature: "some linked loc", submitter: REQUESTER_ADDRESS }
+            { target: "3eb0334a-3524-4eb0-bf44-e44176b72d3e", nature: "some linked loc", submitter: POLKADOT_REQUESTER }
         ];
         await whenCreatingLoc(metadata, links);
         thenRequestCreatedWithDescription(description, "OPEN");
@@ -985,7 +985,7 @@ describe("LocRequestAggregateRoot (links)", () => {
             {
                 target: "target-1",
                 nature: "nature-1",
-                submitter: REQUESTER_ADDRESS,
+                submitter: POLKADOT_REQUESTER,
             },
             {
                 target: "target-2",

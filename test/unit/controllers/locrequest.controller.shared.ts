@@ -38,7 +38,7 @@ import { SponsorshipService } from "../../../src/logion/services/sponsorship.ser
 import { validAccountId } from "@logion/rest-api-core/dist/TestUtil.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
-export const REQUESTER_ADDRESS = validAccountId("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+export const POLKADOT_REQUESTER = validAccountId("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
 export const ETHEREUM_REQUESTER: SupportedAccountId = {
     type: "Ethereum",
     address: "0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6"
@@ -99,7 +99,7 @@ export const userIdentities: Record<IdentityLocation, UserPrivateData> = {
 
 export function testDataWithType(locType: LocType, draft?: boolean): Partial<LocRequestDescription & { draft: boolean }> {
     return {
-        requesterAddress: REQUESTER_ADDRESS,
+        requesterAddress: POLKADOT_REQUESTER,
         requesterIdentityLoc: locType === "Identity" ? undefined : userIdentities["Polkadot"].identityLocId,
         ownerAddress: ALICE,
         description: "I want to open a case",
@@ -197,6 +197,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     const locAuthorizationService = new LocAuthorizationService(
         container.get(AuthenticationService),
         polkadotService.object(),
+        voteRepository.object(),
     );
     container.bind(LocAuthorizationService).toConstantValue(locAuthorizationService);
 
