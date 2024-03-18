@@ -4,6 +4,9 @@
  */
 
 
+/** WithRequired type helpers */
+type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
 export type paths = Record<string, never>;
 
 export type webhooks = Record<string, never>;
@@ -16,12 +19,12 @@ export interface components {
       fees?: components["schemas"]["FeesView"];
     };
     /**
-     * ItemLifecycleView 
+     * ItemLifecycleView
      * @description All item's lifecycle attributes
      */
     ItemLifecycleView: {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The date-time of addition (chain time)
        */
       addedOn?: string;
@@ -30,35 +33,35 @@ export interface components {
       /** @description If status is 'REVIEW_REJECTED', the reason of the rejection */
       rejectReason?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The date-time of review
        */
       reviewedOn?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The date-time of acknowledge (chain time)
        */
       acknowledgedByOwnerOn?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The date-time of acknowledge by verified issuer (chain time)
        */
       acknowledgedByVerifiedIssuerOn?: string;
     };
     ItemDeliveriesResponse: {
-      [key: string]: (components["schemas"]["CheckLatestItemDeliveryResponse"])[] | undefined;
+      [key: string]: components["schemas"]["CheckLatestItemDeliveryResponse"][];
     };
     CollectionDeliveriesResponse: {
-      [key: string]: (components["schemas"]["CheckCollectionDeliveryResponse"])[] | undefined;
+      [key: string]: components["schemas"]["CheckCollectionDeliveryResponse"][];
     };
     CollectionFileDeliveriesResponse: {
-      deliveries?: (components["schemas"]["CheckCollectionDeliveryResponse"])[];
+      deliveries?: components["schemas"]["CheckCollectionDeliveryResponse"][];
     };
     CheckLatestDeliveryResponse: {
       /** @description The hash of the latest delivered copy */
       copyHash?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The date/time at which the delivered copy was generated on
        */
       generatedOn?: string;
@@ -85,7 +88,7 @@ export interface components {
       };
     };
     /**
-     * CreateProtectionRequestView 
+     * CreateProtectionRequestView
      * @description A Protection Request to create
      */
     CreateProtectionRequestView: {
@@ -98,13 +101,13 @@ export interface components {
       /** @description The SS58 address of the other legal officer the request was submitted to */
       otherLegalOfficerAddress: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc: string;
     };
     /**
-     * AcceptProtectionRequestView 
+     * AcceptProtectionRequestView
      * @description Parameters for Protection Request's acceptance
      */
     UpdateProtectionRequestView: {
@@ -112,22 +115,22 @@ export interface components {
       otherLegalOfficerAddress?: string;
     };
     /**
-     * FetchProtectionRequestsResponseView 
+     * FetchProtectionRequestsResponseView
      * @description The fetched Protection Requests
      */
     FetchProtectionRequestsResponseView: {
       /** @description The Protection Requests matching provided specification */
-      requests?: (components["schemas"]["ProtectionRequestView"])[];
+      requests?: components["schemas"]["ProtectionRequestView"][];
     };
     /**
-     * FetchProtectionRequestsSpecificationView 
+     * FetchProtectionRequestsSpecificationView
      * @description The specification for fetching Protection Requests
      */
     FetchProtectionRequestsSpecificationView: {
       /** @description The statuses of expected Protection Requests */
       statuses?: ("ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED" | "CANCELLED" | "REJECTED_CANCELLED" | "ACCEPTED_CANCELLED")[];
       /**
-       * @description The kind of protection request to be returned 
+       * @description The kind of protection request to be returned
        * @enum {string}
        */
       kind?: "ANY" | "PROTECTION_ONLY" | "RECOVERY";
@@ -137,15 +140,15 @@ export interface components {
       legalOfficerAddress?: string;
     };
     /**
-     * FetchTransactionsResponseView 
+     * FetchTransactionsResponseView
      * @description The fetched transactions
      */
     FetchTransactionsResponseView: {
       /** @description The transactions matching provided specification */
-      transactions?: (components["schemas"]["TransactionView"])[];
+      transactions?: components["schemas"]["TransactionView"][];
     };
     /**
-     * FetchTransactionsSpecificationView 
+     * FetchTransactionsSpecificationView
      * @description The specification for fetching Tokenization Requests
      */
     FetchTransactionsSpecificationView: {
@@ -153,25 +156,25 @@ export interface components {
       address?: string;
     };
     /**
-     * LegalOfficerDecisionView 
+     * LegalOfficerDecisionView
      * @description Legal Officer decision
      */
     LegalOfficerDecisionView: {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')
        */
       decisionOn?: string;
       /** @description If status is 'REJECTED', the reason of the rejection */
       rejectReason?: string;
       /**
-       * @description The decision status 
+       * @description The decision status
        * @enum {string}
        */
       status?: "ACCEPTED" | "PENDING" | "REJECTED";
     };
     /**
-     * PostalAddressView 
+     * PostalAddressView
      * @description A postal address
      */
     PostalAddressView: {
@@ -187,20 +190,20 @@ export interface components {
       postalCode?: string;
     };
     /**
-     * ProtectionRequestView 
+     * ProtectionRequestView
      * @description Information about the created Protection Request
      */
     ProtectionRequestView: {
       /** @description If this request is a recovery request, tells the address to recover */
       addressToRecover?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       createdOn?: string;
       decision?: components["schemas"]["LegalOfficerDecisionView"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of created Protection Request
        */
       id?: string;
@@ -213,12 +216,12 @@ export interface components {
       /** @description The SS58 address of the requester */
       requesterAddress?: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
       /**
-       * @description The status 
+       * @description The status
        * @enum {string}
        */
       status?: "ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED" | "CANCELLED" | "REJECTED_CANCELLED" | "ACCEPTED_CANCELLED";
@@ -228,7 +231,7 @@ export interface components {
       userPostalAddress?: components["schemas"]["PostalAddressView"];
     };
     /**
-     * RecoveryInfoView 
+     * RecoveryInfoView
      * @description The new (recovery) and old (to recover) account data
      */
     RecoveryInfoView: {
@@ -238,7 +241,7 @@ export interface components {
       recoveryAccount?: components["schemas"]["ProtectionRequestView"];
     };
     /**
-     * RejectProtectionRequestView 
+     * RejectProtectionRequestView
      * @description The Protection Request to reject
      */
     RejectProtectionRequestView: {
@@ -246,7 +249,7 @@ export interface components {
       rejectReason?: string;
     };
     /**
-     * RejectTokenRequestView 
+     * RejectTokenRequestView
      * @description The Tokenization Request to reject
      */
     RejectTokenRequestView: {
@@ -254,7 +257,7 @@ export interface components {
       rejectReason?: string;
     };
     /**
-     * FeesView 
+     * FeesView
      * @description The fee breakdown for a given extrinsic
      */
     FeesView: {
@@ -276,17 +279,17 @@ export interface components {
       total?: string;
     };
     /**
-     * TransactionView 
+     * TransactionView
      * @description A transaction altering one or two account's balance
      */
     TransactionView: {
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the transaction
        */
       id?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The timestamp of the transaction
        */
       createdOn?: string;
@@ -318,13 +321,13 @@ export interface components {
         details?: string;
       };
       /**
-       * @description The transaction's type 
+       * @description The transaction's type
        * @enum {string}
        */
       type?: "EXTRINSIC" | "VAULT_OUT" | "LEGAL_FEE" | "STORAGE_FEE" | "CERTIFICATE_FEE" | "OTHER_FEES" | "VALUE_FEE" | "RESERVE" | "COLLECTION_ITEM_FEE" | "TOKENS_RECORD_FEE";
     };
     /**
-     * UserIdentityView 
+     * UserIdentityView
      * @description Physical person identification data
      */
     UserIdentityView: {
@@ -338,22 +341,22 @@ export interface components {
       phoneNumber?: string;
     };
     /**
-     * @description The request's status 
+     * @description The request's status
      * @enum {string}
      */
     LocRequestStatus: "OPEN" | "REVIEW_PENDING" | "REVIEW_REJECTED" | "REVIEW_ACCEPTED" | "CLOSED" | "DRAFT";
     /**
-     * @description The LOC's type 
+     * @description The LOC's type
      * @enum {string}
      */
     LocType: "Identity" | "Transaction" | "Collection";
     /**
-     * @description The Identity LOC's type 
+     * @description The Identity LOC's type
      * @enum {string}
      */
     IdentityLocType: "Polkadot" | "Logion" | "Ethereum" | "Bech32";
     /**
-     * @description The address type 
+     * @description The address type
      * @enum {string}
      */
     AddressType: "Polkadot" | "Ethereum" | "Bech32";
@@ -374,7 +377,7 @@ export interface components {
       tokensRecordFee?: string;
     };
     /**
-     * BaseLocView 
+     * BaseLocView
      * @description Base LOC attributes
      */
     BaseLocView: {
@@ -396,19 +399,19 @@ export interface components {
     };
     OpenLocView: {
       /** @description The metadata attached to this LOC */
-      metadata?: (components["schemas"]["AddMetadataView"])[];
+      metadata?: components["schemas"]["AddMetadataView"][];
       /** @description The metadata attached to this LOC */
-      links?: (components["schemas"]["AddLinkView"])[];
+      links?: components["schemas"]["AddLinkView"][];
     } & components["schemas"]["BaseLocView"];
     /**
-     * CreateLocRequestView 
+     * CreateLocRequestView
      * @description A LOC Request to create
      */
     CreateLocRequestView: {
       /** @description The address of the requester (this is only taken into account when created by the owner, which is needed when replacing a voided LOC) */
       requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
@@ -418,11 +421,11 @@ export interface components {
       sponsorshipId?: string;
     } & components["schemas"]["BaseLocView"];
     /**
-     * @description The request's status 
+     * @description The request's status
      * @enum {string}
      */
     ItemStatus: "DRAFT" | "REVIEW_PENDING" | "REVIEW_ACCEPTED" | "REVIEW_REJECTED" | "PUBLISHED" | "ACKNOWLEDGED";
-    LocFileView: {
+    LocFileView: WithRequired<{
       /** @description The file's name */
       name?: string;
       /** @description The file's hash */
@@ -437,15 +440,15 @@ export interface components {
       contentType?: string;
       /** @description Account from which storage fees were withdrawn. */
       storageFeePaidBy?: string;
-    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
-    LocMetadataItemView: {
+    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"], "status">;
+    LocMetadataItemView: WithRequired<{
       /** @description The item's name */
       name?: string;
       /** @description The item's name hash */
       nameHash: string;
       /** @description The item's value */
       value?: string;
-    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
+    } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"], "status" | "nameHash">;
     LocLinkView: {
       /** @description The link's target */
       target?: string;
@@ -453,7 +456,7 @@ export interface components {
       nature?: string;
     } & components["schemas"]["ItemLifecycleView"] & components["schemas"]["Submittable"];
     /**
-     * LocRequestView 
+     * LocRequestView
      * @description An existing LOC Request
      */
     LocRequestView: {
@@ -462,7 +465,7 @@ export interface components {
       /** @description The address of the requester */
       requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
@@ -473,22 +476,22 @@ export interface components {
       /** @description The postal address of the requester */
       userPostalAddress?: components["schemas"]["PostalAddressView"];
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       createdOn?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The decision timestamp (if status is 'OPEN' or 'REJECTED')
        */
       decisionOn?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The closing timestamp (if status is 'CLOSED')
        */
       closedOn?: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC request, which is also the ID of the LOC
        */
       id?: string;
@@ -496,29 +499,29 @@ export interface components {
       /** @description If status is 'REJECTED', the reason of the rejection */
       rejectReason?: string;
       /**
-       * @description The seal of the given LOC 
+       * @description The seal of the given LOC
        * @example 0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a
        */
       seal?: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester (populated for both LOGION and POLKADOT identity)
        */
       identityLoc?: string;
       /** @description The files attached to this request's LOC */
-      files?: (components["schemas"]["LocFileView"])[];
+      files?: components["schemas"]["LocFileView"][];
       /** @description The links attached to this request's LOC */
-      links?: (components["schemas"]["LocLinkView"])[];
+      links?: components["schemas"]["LocLinkView"][];
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];
       /** @description The metadata attached to this request's LOC */
-      metadata?: (components["schemas"]["LocMetadataItemView"])[];
+      metadata?: components["schemas"]["LocMetadataItemView"][];
       /** @description Data about LOC voiding */
       voidInfo?: {
         /** @description Voiding reason */
         reason?: string;
         /**
-         * Format: date-time 
+         * Format: date-time
          * @description The date-time of voiding (chain time)
          */
         voidedOn?: string;
@@ -527,7 +530,7 @@ export interface components {
       company?: string;
       iDenfy?: {
         /**
-         * @description The status of current iDenfy verification session 
+         * @description The status of current iDenfy verification session
          * @enum {unknown}
          */
         status?: "APPROVED" | "DENIED" | "SUSPECTED" | "EXPIRED" | "PENDING";
@@ -536,7 +539,7 @@ export interface components {
       };
       /** @description The ID of the vote linked to the present LOC, if applicable */
       voteId?: string;
-      selectedIssuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
+      selectedIssuers?: components["schemas"]["VerifiedIssuerIdentity"][];
       /** @description The LOC's template or undefined */
       template?: string;
       /** @description The ID of the sponsorship to use */
@@ -544,7 +547,7 @@ export interface components {
       fees?: components["schemas"]["LocFeesView"];
     };
     /**
-     * LocPublicView 
+     * LocPublicView
      * @description The published attributes of an existing LOC
      */
     LocPublicView: {
@@ -553,33 +556,33 @@ export interface components {
       /** @description The address of the requester */
       requesterAddress?: components["schemas"]["SupportedAccountId"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC identifying the requester
        */
       requesterIdentityLoc?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       createdOn?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The closing timestamp (if status is 'CLOSED')
        */
       closedOn?: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC request, which is also the ID of the LOC
        */
       id?: string;
       /** @description The files attached to this request's LOC */
-      files?: ({
+      files?: {
           /** @description The file's nature */
           nature?: string;
           /** @description The file's hash */
           hash?: string;
           /**
-           * Format: date-time 
+           * Format: date-time
            * @description The date-time of addition (chain time)
            */
           addedOn?: string;
@@ -587,13 +590,13 @@ export interface components {
           submitter?: components["schemas"]["SupportedAccountId"];
           /** @description The file's content type (MIME) */
           contentType?: string;
-        })[];
+        }[];
       /** @description The links attached to this request's LOC */
-      links?: ({
+      links?: {
           /** @description The link's target */
           target?: string;
           /**
-           * Format: date-time 
+           * Format: date-time
            * @description The date-time of addition (chain time)
            */
           addedOn?: string;
@@ -601,11 +604,11 @@ export interface components {
           nature?: string;
           /** @description The address of the submitter */
           submitter?: components["schemas"]["SupportedAccountId"];
-        })[];
+        }[];
       /** @description The type of the LOC to create */
       locType?: components["schemas"]["LocType"];
       /** @description The metadata attached to this request's LOC */
-      metadata?: ({
+      metadata?: {
           /** @description The item's name */
           name?: string;
           /** @description The item's name hash */
@@ -613,17 +616,17 @@ export interface components {
           /** @description The item's value */
           value?: string;
           /**
-           * Format: date-time 
+           * Format: date-time
            * @description The date-time of addition (chain time)
            */
           addedOn?: string;
           /** @description The address of the submitter */
           submitter?: components["schemas"]["SupportedAccountId"];
-        })[];
+        }[];
       /** @description Data about LOC voiding */
       voidInfo?: {
         /**
-         * Format: date-time 
+         * Format: date-time
          * @description The date-time of voiding (chain time)
          */
         voidedOn?: string;
@@ -632,7 +635,7 @@ export interface components {
       template?: string;
     };
     /**
-     * FetchLocRequestsSpecificationView 
+     * FetchLocRequestsSpecificationView
      * @description The specification for fetching LOC Requests
      */
     FetchLocRequestsSpecificationView: {
@@ -641,26 +644,26 @@ export interface components {
       /** @description The SS58 address of the requester in expected LOC Requests */
       requesterAddress?: string;
       /** @description The statuses of expected LOC Requests */
-      statuses?: (components["schemas"]["LocRequestStatus"])[];
+      statuses?: components["schemas"]["LocRequestStatus"][];
       /** @description The type of the LOC to fetch */
-      locTypes?: (components["schemas"]["LocType"])[];
+      locTypes?: components["schemas"]["LocType"][];
       identityLocType?: components["schemas"]["IdentityLocType"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of sponsorship
        */
       sponsorshipId?: string;
     };
     /**
-     * FetchLocRequestsResponseView 
+     * FetchLocRequestsResponseView
      * @description The fetched LOC Requests
      */
     FetchLocRequestsResponseView: {
       /** @description The LOC Requests matching provided specification */
-      requests?: (components["schemas"]["LocRequestView"])[];
+      requests?: components["schemas"]["LocRequestView"][];
     };
     /**
-     * RejectLocRequestView 
+     * RejectLocRequestView
      * @description The info to reject a LOC request
      */
     RejectLocRequestView: {
@@ -690,7 +693,7 @@ export interface components {
       value?: string;
     };
     /**
-     * VoidLocView 
+     * VoidLocView
      * @description The parameters of LOC voiding
      */
     VoidLocView: {
@@ -699,16 +702,16 @@ export interface components {
     };
     CreateCollectionItemView: {
       /**
-       * @description The id of the collection item 
+       * @description The id of the collection item
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       itemId?: string;
       /** @description The description of the item */
       description?: string;
       /** @description The files */
-      files?: (components["schemas"]["CollectionItemFileView"])[];
+      files?: components["schemas"]["CollectionItemFileView"][];
       /** @description The terms and conditions */
-      termsAndConditions?: (components["schemas"]["TermsAndConditionsElementView"])[];
+      termsAndConditions?: components["schemas"]["TermsAndConditionsElementView"][];
       token?: components["schemas"]["CollectionItemTokenView"];
     };
     CollectionItemFileView: {
@@ -721,7 +724,7 @@ export interface components {
       uploaded?: boolean;
     };
     /**
-     * @description A hash 
+     * @description A hash
      * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
      */
     HashView: string;
@@ -740,38 +743,38 @@ export interface components {
     };
     CollectionItemView: {
       /**
-       * @description The id of the collection loc 
+       * @description The id of the collection loc
        * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
        */
       collectionLocId?: string;
       /**
-       * @description The id of the collection item 
+       * @description The id of the collection item
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       itemId?: string;
       /** @description The description of the item */
       description?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       addedOn?: string;
       /** @description The files present in DB */
-      files?: (components["schemas"]["CollectionItemFileView"])[];
+      files?: components["schemas"]["CollectionItemFileView"][];
       /** @description The terms and conditions */
-      termsAndConditions?: (components["schemas"]["TermsAndConditionsElementView"])[];
+      termsAndConditions?: components["schemas"]["TermsAndConditionsElementView"][];
       token?: components["schemas"]["CollectionItemTokenView"];
     };
     CollectionItemsView: {
       /** @description The items of a given collection */
-      items?: (components["schemas"]["CollectionItemView"])[];
+      items?: components["schemas"]["CollectionItemView"][];
     };
     CloseView: {
       /** @description Published items should be acknowledged automatically before closing */
       autoAck?: boolean;
     };
     /**
-     * CreateVaultTransferRequestView 
+     * CreateVaultTransferRequestView
      * @description A Protection Request to create
      */
     CreateVaultTransferRequestView: {
@@ -789,38 +792,38 @@ export interface components {
       index?: number;
     };
     /**
-     * FetchVaultTransferRequestsResponseView 
+     * FetchVaultTransferRequestsResponseView
      * @description The fetched Protection Requests
      */
     FetchVaultTransferRequestsResponseView: {
       /** @description The Protection Requests matching provided specification */
-      requests?: (components["schemas"]["VaultTransferRequestView"])[];
+      requests?: components["schemas"]["VaultTransferRequestView"][];
     };
     /**
-     * VaultTransferRequestStatusView 
-     * @description The status of a Vault Transfer Request 
+     * VaultTransferRequestStatusView
+     * @description The status of a Vault Transfer Request
      * @enum {unknown}
      */
     VaultTransferRequestStatusView: "ACCEPTED" | "PENDING" | "REJECTED" | "CANCELLED" | "REJECTED_CANCELLED";
     /**
-     * FetchVaultTransferRequestsSpecificationView 
+     * FetchVaultTransferRequestsSpecificationView
      * @description The specification for fetching Vault Transfer Requests
      */
     FetchVaultTransferRequestsSpecificationView: {
       /** @description The statuses of expected Vault Transfer Requests */
-      statuses?: (components["schemas"]["VaultTransferRequestStatusView"])[];
+      statuses?: components["schemas"]["VaultTransferRequestStatusView"][];
       /** @description The SS58 address of the requester in expected Vault Transfer Requests */
       requesterAddress?: string;
       /** @description The SS58 address of the legal officer in expected Vault Transfer Requests */
       legalOfficerAddress?: string;
     };
     /**
-     * VaultTransferRequestDecisionDecisionView 
+     * VaultTransferRequestDecisionDecisionView
      * @description Legal Officer decision
      */
     VaultTransferRequestDecisionDecisionView: {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The decision timestamp (if status is 'ACCEPTED' or 'REJECTED')
        */
       decisionOn?: string;
@@ -828,18 +831,18 @@ export interface components {
       rejectReason?: string;
     };
     /**
-     * VaultTransferRequestView 
+     * VaultTransferRequestView
      * @description Information about the created Protection Request
      */
     VaultTransferRequestView: {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       createdOn?: string;
       decision?: components["schemas"]["VaultTransferRequestDecisionDecisionView"];
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of created Protection Request
        */
       id?: string;
@@ -858,7 +861,7 @@ export interface components {
       requesterPostalAddress?: components["schemas"]["PostalAddressView"];
     };
     /**
-     * RejectVaultTransferRequestView 
+     * RejectVaultTransferRequestView
      * @description The Protection Request to reject
      */
     RejectVaultTransferRequestView: {
@@ -866,18 +869,18 @@ export interface components {
       rejectReason?: string;
     };
     /**
-     * CreateSofRequestView 
+     * CreateSofRequestView
      * @description A Statement of Facts Request to create
      */
     CreateSofRequestView: {
       /**
-       * Format: uuid 
-       * @description The ID of the LOC 
+       * Format: uuid
+       * @description The ID of the LOC
        * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
        */
       locId?: string;
       /**
-       * @description The ID of the collection item, if the LOC is a collection 
+       * @description The ID of the collection item, if the LOC is a collection
        * @example 0xecdc3920d5cb4d6721f65c6c36f35996faf34eccf8f7948d69004483fddf19e6
        */
       itemId?: string;
@@ -902,34 +905,34 @@ export interface components {
       url?: string;
     };
     /**
-     * FetchVotesResponseView 
+     * FetchVotesResponseView
      * @description The fetched votes
      */
     FetchVotesResponseView: {
-      votes?: (components["schemas"]["VoteView"])[];
+      votes?: components["schemas"]["VoteView"][];
     };
     /** @description Provides the info about a vote */
     VoteView: {
       /** @description The ID of the vote */
       voteId?: string;
       /**
-       * Format: uuid 
+       * Format: uuid
        * @description The ID of the LOC the vote is based on
        */
       locId?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       createdOn?: string;
       /**
-       * @description Tells if the vote was closed. 
+       * @description Tells if the vote was closed.
        * @enum {string}
        */
       status?: "PENDING" | "APPROVED" | "REJECTED";
       /** @description Each represents the vote of a voter, additional ballots are expected as long as the vote is not closed. */
       ballots?: {
-        [key: string]: ("Yes" | "No") | undefined;
+        [key: string]: "Yes" | "No";
       };
     };
     UpdateCollectionFile: {
@@ -937,7 +940,7 @@ export interface components {
       restrictedDelivery?: boolean;
     };
     VerifiedIssuersIdentityResponse: {
-      issuers?: (components["schemas"]["VerifiedIssuerIdentity"])[];
+      issuers?: components["schemas"]["VerifiedIssuerIdentity"][];
     };
     /** @description The identity data of a verified issuer. */
     VerifiedIssuerIdentity: {
@@ -951,14 +954,14 @@ export interface components {
     };
     CreateTokensRecordView: {
       /**
-       * @description The id of the tokens record 
+       * @description The id of the tokens record
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       recordId?: string;
       /** @description The description of the item */
       description?: string;
       /** @description The files */
-      files?: (components["schemas"]["TokensRecordFileView"])[];
+      files?: components["schemas"]["TokensRecordFileView"][];
     };
     TokensRecordFileView: {
       hash?: components["schemas"]["HashView"];
@@ -971,32 +974,32 @@ export interface components {
     };
     TokensRecordView: {
       /**
-       * @description The id of the collection loc 
+       * @description The id of the collection loc
        * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
        */
       collectionLocId?: string;
       /**
-       * @description The id of the collection item 
+       * @description The id of the collection item
        * @example 0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705
        */
       recordId?: string;
       /** @description The description of the item */
       description?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description The creation timestamp
        */
       addedOn?: string;
       /** @description The files present in DB */
-      files?: (components["schemas"]["TokensRecordFileView"])[];
+      files?: components["schemas"]["TokensRecordFileView"][];
     };
     TokensRecordsView: {
       /** @description The items of a given collection */
-      records?: (components["schemas"]["TokensRecordView"])[];
+      records?: components["schemas"]["TokensRecordView"][];
     };
     ReviewItemView: {
       /**
-       * @description The review's outcome 
+       * @description The review's outcome
        * @enum {string}
        */
       decision: "ACCEPT" | "REJECT";
@@ -1008,12 +1011,12 @@ export interface components {
       autoPublish?: boolean;
     };
     FetchWorkloadsView: {
-      legalOfficerAddresses?: (string)[];
+      legalOfficerAddresses?: string[];
     };
     WorkloadView: {
       /** @description The number of pending tasks per legal officer (the address is used as key) */
       workloads?: {
-        [key: string]: number | undefined;
+        [key: string]: number;
       };
     };
   };
@@ -1023,6 +1026,8 @@ export interface components {
   headers: never;
   pathItems: never;
 }
+
+export type $defs = Record<string, never>;
 
 export type external = Record<string, never>;
 

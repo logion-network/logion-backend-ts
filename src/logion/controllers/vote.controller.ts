@@ -13,7 +13,7 @@ import { VoteRepository, VoteAggregateRoot, Ballot, VoteResult } from "../model/
 
 type VoteView = components["schemas"]["VoteView"];
 type FetchVotesResponseView = components["schemas"]["FetchVotesResponseView"];
-type BallotsMap = { [key: string]: ("Yes" | "No") | undefined };
+type BallotsMap = { [key: string]: ("Yes" | "No") };
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Votes';
