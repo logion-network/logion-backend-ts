@@ -51,7 +51,7 @@ import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import { LocRequestService } from "../services/locrequest.service.js";
 import { VoteRepository } from "../model/vote.model.js";
 import { AuthenticatedUser } from "@logion/authenticator";
-import { LocAuthorizationService } from "../services/locauthorization.service.js";
+import { LocAuthorizationService, Contribution } from "../services/locauthorization.service.js";
 import { accountEquals, polkadotAccount } from "../model/supportedaccountid.model.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
 import { Hash } from "../lib/crypto/hashing.js";
@@ -421,7 +421,7 @@ export class LocRequestController extends ApiController {
 
     private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: SupportedAccountId, voter: boolean} > {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        if (await this.locAuthorizationService.isContributor(request, authenticatedUser)) {
+        if (await this.locAuthorizationService.isContributor(Contribution.locContribution(this.request, request), authenticatedUser)) {
             return {
                 contributor: authenticatedUser,
                 voter: false
@@ -436,6 +436,7 @@ export class LocRequestController extends ApiController {
         }
     }
 
+    // TODO Move to loc authorization service
     private async isVoterOnLoc(request: LocRequestAggregateRoot, authenticatedUser: AuthenticatedUser): Promise<boolean> {
         return (
             await authenticatedUser.isLegalOfficer() &&
@@ -617,7 +618,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async addFile(addFileView: AddFileView, requestId: string): Promise<void> {
         const request = requireDefined(await this.locRequestRepository.findById(requestId));
-        const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+        const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
         const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
         if(request.hasFile(hash)) {
             throw new Error("File already present");
@@ -717,7 +718,7 @@ export class LocRequestController extends ApiController {
     async deleteFile(_body: never, requestId: string, hash: string): Promise<void> {
         let file: FileDescription | undefined;
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             file = request.removeFile(contributor, Hash.fromHex(hash));
         });
         if(file) {
@@ -744,7 +745,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             request.requestFileReview(Hash.fromHex(hash));
         });
 
@@ -810,7 +811,7 @@ export class LocRequestController extends ApiController {
     async prePublishOrAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(request.canPrePublishOrAcknowledgeFile(hash, contributor)) {
                 request.prePublishOrAcknowledgeFile(hash, contributor);
             } else {
@@ -837,7 +838,7 @@ export class LocRequestController extends ApiController {
     async cancelPrePublishOrAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(request.canPrePublishOrAcknowledgeFile(hash, contributor)) {
                 request.cancelPrePublishOrAcknowledgeFile(hash, contributor);
             } else {
@@ -864,7 +865,7 @@ export class LocRequestController extends ApiController {
     async preAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeFile(hash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -891,7 +892,7 @@ export class LocRequestController extends ApiController {
     async cancelPreAcknowledgeFile(_body: never, requestId: string, hashHex: string) {
         const hash = Hash.fromHex(hashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeFile(hash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -1042,7 +1043,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addLink(addLinkView: AddLinkView, requestId: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             const linkParams = await this.toLink(addLinkView, contributor);
             const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
             request.addLink(linkParams, submissionType);
@@ -1075,7 +1076,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteLink(_body: never, requestId: string, target: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             request.removeLink(contributor, target);
         });
     }
@@ -1099,7 +1100,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             request.requestLinkReview(target);
         });
 
@@ -1163,7 +1164,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async prePublishOrAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
                 request.prePublishOrAcknowledgeLink(target, contributor);
             } else {
@@ -1189,7 +1190,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async cancelPrePublishOrAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if (request.canPrePublishOrAcknowledgeLink(target, contributor)) {
                 request.cancelPrePublishOrAcknowledgeLink(target, contributor);
             } else {
@@ -1215,7 +1216,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async preAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeLink(target, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -1241,7 +1242,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async cancelPreAcknowledgeLink(_body: never, requestId: string, target: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeLink(target, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -1264,7 +1265,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async addMetadata(addMetadataView: AddMetadataView, requestId: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             const submissionType = accountEquals(contributor, request.getOwner()) ? "MANUAL_BY_OWNER" : "MANUAL_BY_USER";
             request.addMetadataItem(this.toMetadata(addMetadataView, contributor), submissionType);
         });
@@ -1292,7 +1293,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async deleteMetadata(_body: never, requestId: string, nameHash: string): Promise<void> {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             request.removeMetadataItem(contributor, Hash.fromHex(nameHash));
         });
     }
@@ -1316,7 +1317,7 @@ export class LocRequestController extends ApiController {
             if (request.status !== 'OPEN') {
                 throw badRequest("LOC must be OPEN for requesting item review");
             }
-            await this.locAuthorizationService.ensureContributor(this.request, request, false, false);
+            await this.locAuthorizationService.ensureContributor(Contribution.itemContribution(this.request, request));
             request.requestMetadataItemReview(Hash.fromHex(nameHash));
         });
 
@@ -1381,7 +1382,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async prePublishOrAcknowledgeMetadataItem(_body: never, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             const hash = Hash.fromHex(nameHash);
             if(request.canPrePublishOrAcknowledgeMetadataItem(hash, contributor)) {
                 request.prePublishOrAcknowledgeMetadataItem(hash, contributor);
@@ -1408,7 +1409,7 @@ export class LocRequestController extends ApiController {
     @SendsResponse()
     async cancelPrePublishOrAcknowledgeMetadataItem(_body: never, requestId: string, nameHash: string) {
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             const hash = Hash.fromHex(nameHash);
             if(request.canPrePublishOrAcknowledgeMetadataItem(hash, contributor)) {
                 request.cancelPrePublishOrAcknowledgeMetadataItem(hash, contributor);
@@ -1436,7 +1437,7 @@ export class LocRequestController extends ApiController {
     async preAcknowledgeMetadataItem(_body: never, requestId: string, nameHashHex: string) {
         const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -1463,7 +1464,7 @@ export class LocRequestController extends ApiController {
     async cancelPreAcknowledgeMetadataItem(_body: never, requestId: string, nameHashHex: string) {
         const nameHash = Hash.fromHex(nameHashHex);
         await this.locRequestService.update(requestId, async request => {
-            const contributor = await this.locAuthorizationService.ensureContributor(this.request, request);
+            const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, request));
             if(!request.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
                 throw unauthorized("Only owner or Verified Issuer are allowed to acknowledge");
             } else {
@@ -1491,7 +1492,7 @@ export class LocRequestController extends ApiController {
             () => badRequest("Missing locId"));
         const loc = requireDefined(await this.locRequestRepository.findById(locId),
             () => badRequest("LOC not found"));
-        const contributor = await this.locAuthorizationService.ensureContributor(this.request, loc);
+        const contributor = await this.locAuthorizationService.ensureContributor(Contribution.locContribution(this.request, loc));
 
         let description = `Statement of Facts for LOC ${ new UUID(locId).toDecimalString() }`;
         let linkNature = `Original LOC`;
