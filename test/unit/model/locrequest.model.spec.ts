@@ -147,6 +147,34 @@ describe("LocRequestFactory", () => {
         thenRequestCreatedWithDescription(description, "REVIEW_PENDING");
     });
 
+    it("fails to create Collection LOC request without collection params", async () => {
+        givenRequestId(uuid());
+        const requesterAddress = "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW";
+        const requesterIdentityLocId = mockRequesterIdentityLoc(requesterAddress);
+        const description = createDescription('Collection', requesterAddress, requesterIdentityLocId);
+        givenLocDescription({
+            ...description,
+            collectionParams: undefined,
+        });
+        await expectAsyncToThrow(() => whenCreatingLocRequest(false), "Missing Collection Params.");
+    });
+
+    it("fails to create Collection LOC request without collection upper bound", async () => {
+        givenRequestId(uuid());
+        const requesterAddress = "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW";
+        const requesterIdentityLocId = mockRequesterIdentityLoc(requesterAddress);
+        const description = createDescription('Collection', requesterAddress, requesterIdentityLocId);
+        givenLocDescription({
+            ...description,
+            collectionParams: {
+                lastBlockSubmission: undefined,
+                maxSize: undefined,
+                canUpload: true,
+            }
+        });
+        await expectAsyncToThrow(() => whenCreatingLocRequest(false), "Missing Collection upper bound.");
+    });
+
     it("creates an open Collection LOC with requester having POLKADOT identity", async () => {
         givenRequestId(uuid());
         const requesterAddress = "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW";
@@ -295,7 +323,14 @@ describe("LocRequestFactory", () => {
                 valueFee: locType === "Collection" ? 100n : undefined,
                 collectionItemFee: locType === "Collection" ? 50n : undefined,
                 tokensRecordFee: locType === "Collection" ? 50n : undefined,
-            }
+            },
+            collectionParams: locType === "Collection" ?
+                {
+                    lastBlockSubmission: undefined,
+                    maxSize: 1000,
+                    canUpload: false
+                } :
+                undefined
         };
     }
 });

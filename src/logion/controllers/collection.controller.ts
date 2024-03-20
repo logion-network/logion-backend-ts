@@ -184,6 +184,21 @@ export class CollectionController extends ApiController {
             throw badRequest("Cannot replace existing item, you may try to cancel it first");
         }
 
+        const collection = requireDefined(await this.locRequestRepository.findById(collectionLocId));
+        if (collection.collectionCanUpload !== undefined
+            && !collection.collectionCanUpload
+            && body.files !== undefined
+            && body.files.length > 0
+        ) {
+            throw badRequest("Collection does not accept item files");
+        }
+        if (collection.collectionMaxSize !== undefined) {
+            const size = await this.collectionRepository.countBy(collectionLocId);
+            if (size >= collection.collectionMaxSize) {
+                throw badRequest("Collection has too many items");
+            }
+        }
+
         const description = requireDefined(body.description);
         const item = this.collectionFactory.newItem({
             collectionLocId,

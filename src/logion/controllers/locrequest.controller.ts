@@ -18,7 +18,8 @@ import {
     StoredFile,
     LinkParams,
     SubmissionType,
-    LocFees
+    LocFees,
+    CollectionParams
 } from "../model/locrequest.model.js";
 import {
     getRequestBody,
@@ -130,6 +131,7 @@ type OpenLocView = components["schemas"]["OpenLocView"];
 type CloseView = components["schemas"]["CloseView"];
 type OpenView = components["schemas"]["OpenView"];
 type LocFeesView = components["schemas"]["LocFeesView"];
+type CollectionParamsView = components["schemas"]["CollectionParamsView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -208,6 +210,7 @@ export class LocRequestController extends ApiController {
             template: createLocRequestView.template,
             sponsorshipId,
             fees: this.toLocFees(createLocRequestView.fees, locType),
+            collectionParams: this.toCollectionParams(createLocRequestView.collectionParams),
         }
         let request: LocRequestAggregateRoot;
         if (accountEquals(authenticatedUser, owner)) {
@@ -252,6 +255,18 @@ export class LocRequestController extends ApiController {
         };
     }
 
+    private toCollectionParams(view: CollectionParamsView | undefined): CollectionParams | undefined {
+        if (view === undefined) {
+            return undefined;
+        } else {
+            return {
+                lastBlockSubmission: view.lastBlockSubmission === undefined ? undefined : BigInt(view.lastBlockSubmission),
+                maxSize: view.maxSize,
+                canUpload: view.canUpload !== undefined && view.canUpload
+            }
+        }
+    }
+
     static createOpenLoc(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/open"].post!;
         operationObject.summary = "Creates a new LOC";
@@ -289,6 +304,7 @@ export class LocRequestController extends ApiController {
             company: openLocView.company,
             template: openLocView.template,
             fees: this.toLocFees(openLocView.fees, locType),
+            collectionParams: this.toCollectionParams(openLocView.collectionParams),
         }
         const metadata = openLocView.metadata?.map(item => this.toMetadata(item, requesterAddress));
         const links = openLocView.links ?

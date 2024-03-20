@@ -667,6 +667,24 @@
                     }
                 }
             },
+            "CollectionParamsView": {
+                "type": "object",
+                "properties": {
+                    "lastBlockSubmission": {
+                        "type": "string",
+                        "description": "The last block that will accept an item submission"
+                    },
+                    "maxSize": {
+                        "type": "number",
+                        "description": "The maximum size of the collection"
+                    },
+                    "canUpload": {
+                        "type": "boolean",
+                        "description": "true if items can contain files",
+                        "required": true
+                    }
+                }
+            },
             "BaseLocView": {
                 "type": "object",
                 "properties": {
@@ -700,6 +718,9 @@
                     },
                     "fees": {
                         "$ref": "#/components/schemas/LocFeesView"
+                    },
+                    "collectionParams": {
+                        "$ref": "#/components/schemas/CollectionParamsView"
                     }
                 },
                 "title": "BaseLocView",
@@ -1012,6 +1033,9 @@
                     },
                     "fees": {
                         "$ref": "#/components/schemas/LocFeesView"
+                    },
+                    "collectionParams": {
+                        "$ref": "#/components/schemas/CollectionParamsView"
                     }
                 },
                 "title": "LocRequestView",
@@ -1152,6 +1176,9 @@
                     "template": {
                         "type": "string",
                         "description": "The LOC's template or undefined"
+                    },
+                    "collectionParams": {
+                        "$ref": "#/components/schemas/CollectionParamsView"
                     }
                 },
                 "title": "LocPublicView",

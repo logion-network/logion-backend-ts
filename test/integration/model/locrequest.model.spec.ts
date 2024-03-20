@@ -107,6 +107,14 @@ describe('LocRequestRepository - read accesses', () => {
         expect(await repository.existsBy(query)).toBeTrue();
     })
 
+    it("finds collection with params", async() => {
+        const request = await repository.findById(COLLECTION_WITH_PARAMS);
+        const { collectionParams } = request!.getDescription();
+        expect(collectionParams?.lastBlockSubmission).toEqual(10000000n);
+        expect(collectionParams?.maxSize).toEqual(9999);
+        expect(collectionParams?.canUpload).toBeTrue();
+    })
+
     it("finds loc with files, metadata and links", async () => {
         const request = await repository.findById(LOC_WITH_FILES);
         checkDescription([request!], "Transaction", "loc-10");
@@ -462,3 +470,4 @@ function checkDescription(requests: LocRequestAggregateRoot[], expectedLocType: 
 
 const LOC_WITH_FILES = "2b287596-f9d5-8030-b606-d1da538cb37f";
 const LOGION_TRANSACTION_LOC_ID = "f93bc0d2-f443-49ff-a9de-a6331167b267";
+const COLLECTION_WITH_PARAMS = "d0460773-5b63-4fba-be29-283f3cd5fe8f";

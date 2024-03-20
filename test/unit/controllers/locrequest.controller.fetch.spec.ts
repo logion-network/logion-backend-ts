@@ -7,7 +7,7 @@ import {
     FileDescription,
     LinkDescription,
     MetadataItemDescription,
-    LocType, LocRequestDescription,
+    LocType, LocRequestDescription, CollectionParams,
 } from "../../../src/logion/model/locrequest.model.js";
 import moment from "moment";
 import {
@@ -96,12 +96,12 @@ describe('LocRequestController - Fetch -', () => {
 
     it('succeeds to get single Collection Loc request with Polkadot Identity', async () => {
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection','Polkadot'))
-        await testGet(app, userIdentities["Polkadot"])
+        await testGet(app, userIdentities["Polkadot"], true)
     });
 
     it('succeeds to get single Collection Loc request with Logion Identity', async () => {
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection','Logion'))
-        await testGet(app, userIdentities["Logion"])
+        await testGet(app, userIdentities["Logion"], true)
     });
 
     it('succeeds to get single Identity Loc request', async () => {
@@ -183,10 +183,20 @@ function mockModelForGetSingle(
             testDataWithUserIdentityWithType(locType) :
             identityLocation === "Polkadot" ? testDataWithType(locType) :
                 testDataWithLogionIdentity;
-    const description: Partial<LocRequestDescription> = {
+    let description: Partial<LocRequestDescription> = {
         ...data,
         requesterAddress: SUBMITTER
     };
+    if (locType === "Collection") {
+        description = {
+            ...description,
+            collectionParams: {
+                lastBlockSubmission: 10000n,
+                maxSize: 999,
+                canUpload: true,
+            }
+        }
+    }
     setupRequest(request, REQUEST_ID, "Transaction", "CLOSED", description,
         [ testFile ],
         [ testMetadataItem ],
@@ -242,7 +252,7 @@ const testMetadataItem: MetadataItemDescription = {
     acknowledgedByVerifiedIssuerOn: moment(),
 }
 
-async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData) {
+async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData, expectedCollectionParams = false) {
     await request(app)
         .get(`/api/loc-request/${ REQUEST_ID }`)
         .expect(200)
@@ -282,5 +292,13 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(metadataItem.acknowledgedByOwnerOn).toBeDefined()
             expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeDefined()
             checkPrivateData(response, expectedUserPrivateData);
+            const collectionParams = response.body.collectionParams;
+            if (expectedCollectionParams) {
+                expect(collectionParams.lastBlockSubmission).toEqual("10000")
+                expect(collectionParams.maxSize).toEqual(999)
+                expect(collectionParams.canUpload).toBeTrue()
+            } else {
+                expect(collectionParams).toBeUndefined();
+            }
         });
 }

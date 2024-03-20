@@ -1,7 +1,13 @@
 import { requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { IdenfyService } from "../../services/idenfy/idenfy.service.js";
-import { LocRequestAggregateRoot, LocRequestRepository, ItemLifecycle, LocFees } from "../../model/locrequest.model.js";
+import {
+    LocRequestAggregateRoot,
+    LocRequestRepository,
+    ItemLifecycle,
+    LocFees,
+    CollectionParams
+} from "../../model/locrequest.model.js";
 import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
@@ -22,6 +28,7 @@ type PostalAddressView = components["schemas"]["PostalAddressView"];
 type VerifiedIssuerIdentity = components["schemas"]["VerifiedIssuerIdentity"];
 type FeesView = components["schemas"]["FeesView"];
 type LocFeesView = components["schemas"]["LocFeesView"];
+type CollectionParamsView = components["schemas"]["CollectionParamsView"];
 
 @injectable()
 export class LocRequestAdapter {
@@ -114,6 +121,7 @@ export class LocRequestAdapter {
             template: locDescription.template,
             sponsorshipId: locDescription.sponsorshipId?.toString(),
             fees: this.toLocFeesView(locDescription.fees),
+            collectionParams: this.toCollectionParamsView(locDescription.collectionParams),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {
@@ -170,6 +178,18 @@ export class LocRequestAdapter {
             legalFee: fees.legalFee?.toString(),
             collectionItemFee: fees.collectionItemFee?.toString(),
             tokensRecordFee: fees.tokensRecordFee?.toString(),
+        }
+    }
+
+    toCollectionParamsView(collectionParams: CollectionParams | undefined): CollectionParamsView | undefined {
+        if (!collectionParams) {
+            return undefined;
+        }
+        const { lastBlockSubmission, maxSize, canUpload } = collectionParams;
+        return {
+            lastBlockSubmission: lastBlockSubmission?.toString(),
+            maxSize,
+            canUpload,
         }
     }
 }

@@ -389,6 +389,10 @@ export class CollectionRepository {
         return this.repository.findOneBy({ collectionLocId, itemId: itemId.toHex() });
     }
 
+    public async countBy(collectionLocId: string): Promise<number> {
+        return this.repository.countBy({ collectionLocId })
+    }
+
     public async findAllBy(collectionLocId: string): Promise<CollectionItemAggregateRoot[]> {
         const builder = this.repository.createQueryBuilder("item")
             .leftJoinAndSelect("item.files", "file")
