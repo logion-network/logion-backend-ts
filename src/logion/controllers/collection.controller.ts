@@ -190,7 +190,7 @@ export class CollectionController extends ApiController {
             && body.files !== undefined
             && body.files.length > 0
         ) {
-            throw badRequest("Collection cannot upload");
+            throw badRequest("Collection does not accept item files");
         }
         if (collection.collectionMaxSize !== undefined) {
             const size = await this.collectionRepository.countBy(collectionLocId);
