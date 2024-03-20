@@ -37,7 +37,7 @@ export class Contribution {
     }
 
     public static recordContribution(httpRequest: Request, locRequest: LocRequestAggregateRoot): Contribution {
-        return new Contribution(httpRequest, locRequest, true, false);
+        return new Contribution(httpRequest, locRequest, true, true);
     }
 }
 @injectable()

@@ -158,6 +158,8 @@ export class TokensRecordController extends ApiController {
     @HttpPost('/:collectionLocId/record')
     @Async()
     async submitItemPublicData(body: CreateTokensRecordView, collectionLocId: string): Promise<void> {
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId));
+        await this.locAuthorizationService.ensureContributor(Contribution.recordContribution(this.request, collectionLoc));
         const recordId = Hash.fromHex(requireDefined(body.recordId));
         const existingItem = await this.tokensRecordRepository.findBy(collectionLocId, recordId);
         if(existingItem) {
