@@ -89,7 +89,7 @@ describe("CollectionRepository", () => {
 
         const deliveredList = collectionItem?.getFile(Hash.fromHex("0x979ff1da4670561bf3f521a1a1d4aad097d617d2fa2c0e75d52efe90e7b7ce83")).delivered!;
         expect(deliveredList.length).toBe(2)
-        
+
         const delivered1 = deliveredList.find(delivered => delivered.deliveredFileHash === "0x38c79034a97d8827559f883790d52a1527f6e7d37e66ac8e70bafda216fda6d7");
         expect(delivered1?.generatedOn).toBeDefined()
         expect(delivered1?.owner).toBe("0x900edc98db53508e6742723988B872dd08cd09c2")
@@ -180,5 +180,9 @@ describe("CollectionRepository", () => {
         expect(items.length).toBe(2);
         expect(items[0].itemId).toBe("0xf35e4bcbc1b0ce85af90914e04350cce472a2f01f00c0f7f8bc5c7ba04da2bf2");
         expect(items[1].itemId).toBe("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
+    })
+
+    it("counts", async () => {
+        expect(await repository.countBy("296d3d8f-057f-445c-b4c8-59aa7d2d21de")).toEqual(2);
     })
 })

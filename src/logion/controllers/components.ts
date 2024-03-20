@@ -376,6 +376,14 @@ export interface components {
       /** @description The fee to be charged on tokens record creation */
       tokensRecordFee?: string;
     };
+    CollectionParamsView: {
+      /** @description The last block that will accept an item submission */
+      lastBlockSubmission?: string;
+      /** @description The maximum size of the collection */
+      maxSize?: number;
+      /** @description true if items can contain files */
+      canUpload?: boolean;
+    };
     /**
      * BaseLocView
      * @description Base LOC attributes
@@ -396,6 +404,7 @@ export interface components {
       /** @description The LOC's template or undefined */
       template?: string;
       fees?: components["schemas"]["LocFeesView"];
+      collectionParams?: components["schemas"]["CollectionParamsView"];
     };
     OpenLocView: {
       /** @description The metadata attached to this LOC */
@@ -545,6 +554,7 @@ export interface components {
       /** @description The ID of the sponsorship to use */
       sponsorshipId?: string;
       fees?: components["schemas"]["LocFeesView"];
+      collectionParams?: components["schemas"]["CollectionParamsView"];
     };
     /**
      * LocPublicView
@@ -633,6 +643,7 @@ export interface components {
       };
       /** @description The LOC's template or undefined */
       template?: string;
+      collectionParams?: components["schemas"]["CollectionParamsView"];
     };
     /**
      * FetchLocRequestsSpecificationView

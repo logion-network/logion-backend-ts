@@ -43,6 +43,12 @@ export interface LocFees {
     readonly tokensRecordFee?: bigint;
 }
 
+export interface CollectionParams {
+    lastBlockSubmission: bigint | undefined;
+    maxSize: number | undefined;
+    canUpload: boolean;
+}
+
 export interface LocRequestDescription {
     readonly requesterAddress?: SupportedAccountId;
     readonly requesterIdentityLoc?: string;
@@ -57,6 +63,7 @@ export interface LocRequestDescription {
     readonly template?: string;
     readonly sponsorshipId?: UUID;
     readonly fees: LocFees;
+    readonly collectionParams?: CollectionParams;
 }
 
 export interface LocRequestDecision {
@@ -524,6 +531,11 @@ export class LocRequestAggregateRoot {
             template: this.template,
             sponsorshipId: this.sponsorshipId ? new UUID(this.sponsorshipId) : undefined,
             fees: this.fees ? this.fees.to() : {},
+            collectionParams: this.locType === "Collection" ? {
+                lastBlockSubmission: this.collectionLastBlockSubmission ? BigInt(this.collectionLastBlockSubmission) : undefined,
+                maxSize: this.collectionMaxSize,
+                canUpload: this.collectionCanUpload || false,
+            } : undefined,
         };
     }
 
@@ -1468,6 +1480,15 @@ export class LocRequestAggregateRoot {
     @Column(() => EmbeddableLocFees, { prefix: "" })
     fees?: EmbeddableLocFees;
 
+    @Column({ type: "bigint", name: "collection_last_block_submission", nullable: true })
+    collectionLastBlockSubmission?: string;
+
+    @Column({ type: "integer", name: "collection_max_size", nullable: true })
+    collectionMaxSize?: number;
+
+    @Column({ type: "boolean", name: "collection_can_upload", nullable: true })
+    collectionCanUpload?: boolean;
+
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
     _metadataToDelete: LocMetadataItem[] = [];
@@ -2021,6 +2042,7 @@ export class LocRequestFactory {
     private async createLocRequest(params: NewUserLocRequestParameters, submissionType: SubmissionType): Promise<LocRequestAggregateRoot> {
         const { description } = params;
 
+        this.ensureCorrectCollectionParams(description);
         const request = new LocRequestAggregateRoot();
         request.id = params.id;
 
@@ -2057,6 +2079,9 @@ export class LocRequestFactory {
             requireDefined(description.fees.tokensRecordFee, () => new Error("Collection LOC must have a tokens record fee"));
         }
         request.fees = EmbeddableLocFees.from(description.fees);
+        request.collectionLastBlockSubmission = description.collectionParams?.lastBlockSubmission?.toString();
+        request.collectionMaxSize = description.collectionParams?.maxSize;
+        request.collectionCanUpload = description.collectionParams?.canUpload;
         return request;
     }
 
@@ -2086,6 +2111,19 @@ export class LocRequestFactory {
             || !userIdentity.phoneNumber
         ) {
             throw new Error("Logion Identity LOC request must contain first name, last name, email and phone number.")
+        }
+    }
+
+    private ensureCorrectCollectionParams(description: LocRequestDescription) {
+        const { locType } = description;
+        if (locType !== 'Collection' && description.collectionParams !== undefined) {
+            throw badRequest("Collection Params are for collections only.");
+        }
+        if (locType === 'Collection') {
+            const collectionParams = requireDefined(description.collectionParams, () => Error("Missing Collection Params."));
+            if (collectionParams.lastBlockSubmission === undefined) {
+                requireDefined(collectionParams.maxSize, () => Error("Missing Collection upper bound."));
+            }
         }
     }
 }
