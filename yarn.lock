@@ -1149,9 +1149,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.28.4-1":
-  version: 0.28.4-1
-  resolution: "@logion/node-api@npm:0.28.4-1"
+"@logion/node-api@npm:^0.28.4-2":
+  version: 0.28.4-2
+  resolution: "@logion/node-api@npm:0.28.4-2"
   dependencies:
     "@polkadot/api": ^10.12.2
     "@polkadot/util": ^12.6.2
@@ -1159,7 +1159,7 @@ __metadata:
     "@types/uuid": ^9.0.2
     fast-sha256: ^1.3.0
     uuid: ^9.0.0
-  checksum: c790f99a0f85bdd8aa3d7f40e2b37b6f4a228b5e0753ce3565a9674a681ad4409f6aa53b735bb220890543d0287b3ef2fcee02feb3e997ce44a27824b6d33512
+  checksum: 79a5eab9ad18f5fb6f5b04f77bd1a7b8999331cef7eb0a3cc372f8aa1a2872e315d5ce8f49714277a60150b00d9f4c8979d0e6e0aefdd600041730f3e9fcdce4
   languageName: node
   linkType: hard
 
@@ -6738,7 +6738,7 @@ __metadata:
     "@astar-network/astar-api": ^0.2.8
     "@astar-network/astar-sdk-core": ^0.2.8
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.28.4-1
+    "@logion/node-api": ^0.28.4-2
     "@logion/node-exiftool": ^2.3.1
     "@logion/rest-api-core": ^0.4.7-1
     "@polkadot/api-contract": ^10.10.1
