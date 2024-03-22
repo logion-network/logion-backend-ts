@@ -64,7 +64,7 @@ export class EmbeddableBlock {
     @Column("bigint", {name: "block_number"})
     blockNumber?: string;
 
-    @Column("varchar", {name: "chain_type", length: 4, default: "Solo"})
+    @Column("varchar", {name: "chain_type", length: 4})
     chainType?: string;
 
     toBlock(): Block {
