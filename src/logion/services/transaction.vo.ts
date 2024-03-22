@@ -1,11 +1,12 @@
 import { Moment } from "moment";
-import { Fees } from "@logion/node-api";
+import { ChainType, Fees } from "@logion/node-api";
 import { TransactionType } from "../model/transaction.model";
 import { NULL_FEES } from "../model/fees.js";
 
 export class BlockWithTransactions {
 
     blockNumber?: bigint = undefined;
+    chainType?: ChainType = undefined;
     timestamp?: Moment = undefined;
     transactions: Transaction[] = [];
 
@@ -19,6 +20,11 @@ export class BlockWithTransactionsBuilder {
 
     blockNumber(blockNumber: bigint) {
         this._block.blockNumber = blockNumber;
+        return this;
+    }
+
+    chainType(chainType: ChainType) {
+        this._block.chainType = chainType;
         return this;
     }
 

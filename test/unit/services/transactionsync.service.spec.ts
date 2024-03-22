@@ -36,6 +36,7 @@ describe("TransactionSync", () => {
         const blockWithTransaction = new BlockWithTransactionsBuilder()
                 .timestamp(moment())
                 .blockNumber(42n)
+                .chainType("Solo")
                 .transactions(transactions)
                 .build();
         transactionExtractor.setup(instance => instance.extractBlockWithTransactions(block.object()))

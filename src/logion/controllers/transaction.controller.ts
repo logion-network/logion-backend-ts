@@ -1,7 +1,7 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, HttpPut, Async } from 'dinoloop';
 import { OpenAPIV3 } from 'express-oas-generator';
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses } from '@logion/rest-api-core';
+import { addTag, setControllerTag, getRequestBody, getDefaultResponses, PolkadotService } from '@logion/rest-api-core';
 
 import { components } from './components.js';
 import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model.js";
@@ -28,7 +28,9 @@ type FetchTransactionsResponseView = components["schemas"]["FetchTransactionsRes
 export class TransactionController extends ApiController {
 
     constructor(
-        private transactionRepository: TransactionRepository) {
+        private transactionRepository: TransactionRepository,
+        private polkadotService: PolkadotService,
+    ) {
         super();
     }
 
@@ -46,7 +48,11 @@ export class TransactionController extends ApiController {
     @Async()
     @HttpPut('')
     async fetchTransactions(body: FetchTransactionsSpecificationView): Promise<FetchTransactionsResponseView> {
-        const transactions = await this.transactionRepository.findByAddress(body.address!)
+        const logion = await this.polkadotService.readyApi();
+        const transactions = await this.transactionRepository.findBy({
+            address: body.address!,
+            chainType: logion.chainType,
+        });
         return {
             transactions: transactions.map(this.toView)
         }

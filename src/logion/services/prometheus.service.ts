@@ -47,7 +47,7 @@ export class PrometheusService {
 
     private async initMetrics() {
         const lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
-        const lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : 0n;
+        const lastSynced = lastSyncPoint !== null ? lastSyncPoint.block!.toBlock().blockNumber : 0n;
         this.setLastSynchronizedBlock(lastSynced);
     }
 }

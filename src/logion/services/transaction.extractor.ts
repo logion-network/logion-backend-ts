@@ -30,7 +30,8 @@ export class TransactionExtractor {
             return undefined;
         }
         const blockBuilder = BlockWithTransactions.builder()
-            .blockNumber(block.number);
+            .blockNumber(block.number)
+            .chainType(block.chain);
         logger.info("Looking at block %d", block.number);
         const transactions: Transaction[] = [];
         for (let index = 0; index < block.extrinsics.length; index++) {

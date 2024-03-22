@@ -2,6 +2,7 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
+import { Block, EmbeddableBlock } from './block.model.js';
 
 export const TRANSACTIONS_SYNC_POINT_NAME = "Transaction";
 
@@ -9,18 +10,18 @@ export const TRANSACTIONS_SYNC_POINT_NAME = "Transaction";
 export class SyncPointAggregateRoot {
 
     update(params: {
-        blockNumber: bigint,
+        block: Block,
         updatedOn: Moment
     }) {
-        this.latestHeadBlockNumber = params.blockNumber.toString();
+        this.block = EmbeddableBlock.from(params.block);
         this.updatedOn = params.updatedOn.toDate();
     }
 
     @PrimaryColumn()
     name?: string;
 
-    @Column("bigint", {name: "latest_head_block_number"})
-    latestHeadBlockNumber?: string;
+    @Column(() => EmbeddableBlock, { prefix: "" })
+    block?: EmbeddableBlock;
 
     @Column("timestamp without time zone", {name: "updated_on"})
     updatedOn?: Date;
@@ -49,13 +50,13 @@ export class SyncPointFactory {
 
     newSyncPoint(params: {
         name: string,
-        latestHeadBlockNumber: bigint,
+        block: Block,
         createdOn: Moment,
     }): SyncPointAggregateRoot {
-        const { name, latestHeadBlockNumber, createdOn } = params;
+        const { name, block, createdOn } = params;
         const root = new SyncPointAggregateRoot();
         root.name = name;
-        root.latestHeadBlockNumber = latestHeadBlockNumber.toString();
+        root.block = EmbeddableBlock.from(block);
         root.updatedOn = createdOn.toDate();
         return root;
     }

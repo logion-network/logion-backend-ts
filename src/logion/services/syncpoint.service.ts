@@ -2,6 +2,7 @@ import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { Moment } from "moment";
 import { SyncPointAggregateRoot, SyncPointRepository } from "../model/syncpoint.model.js";
+import { Block } from "../model/block.model.js";
 
 export abstract class SyncPointService {
 
@@ -14,7 +15,7 @@ export abstract class SyncPointService {
     }
 
     async update(name: string, values: {
-        blockNumber: bigint,
+        block: Block,
         updatedOn: Moment,
     }) {
         const syncPoint = requireDefined(await this.syncPointRepository.findByName(name));
@@ -49,7 +50,7 @@ export class TransactionalSyncPointService extends SyncPointService {
 
     @DefaultTransactional()
     override async update(name: string, values: {
-        blockNumber: bigint,
+        block: Block,
         updatedOn: Moment,
     }) {
         return super.update(name, values);

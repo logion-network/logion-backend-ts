@@ -5,6 +5,7 @@ import {
 } from "../../../src/logion/model/transaction.model.js";
 import moment from "moment";
 import { EmbeddableFees } from "../../../src/logion/model/fees.js";
+import { Block, EmbeddableBlock } from "../../../src/logion/model/block.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -23,29 +24,29 @@ describe('TransactionRepository', () => {
     });
 
     it("finds transactions of 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg", async () => {
-        const transactions = await repository.findByAddress("5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg");
+        const transactions = await repository.findBy({ address: "5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg", chainType: "Solo" });
         expect(transactions.length).toBe(2); // 2 and 3 in SQL file
     });
 
     it("finds transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", async () => {
-        const transactions = await repository.findByAddress("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
+        const transactions = await repository.findBy({ address: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", chainType: "Solo" });
         expect(transactions.length).toBe(2); // 1 and 4 in SQL file
     });
 
     it("finds transactions of 5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", async () => {
-        const transactions = await repository.findByAddress("5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo");
+        const transactions = await repository.findBy({ address: "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", chainType: "Solo" });
         expect(transactions.length).toBe(1); // 1 in SQL file
     });
 
     it("finds no transaction for Unknown", async () => {
-        const transactions = await repository.findByAddress("Unknown");
+        const transactions = await repository.findBy({ address: "Unknown", chainType: "Solo" });
         expect(transactions.length).toBe(0);
     });
 
     it("saves transaction", async () => {
         // Given
         const transaction = new TransactionAggregateRoot();
-        transaction.blockNumber = "4";
+        transaction.block = EmbeddableBlock.from(Block.soloBlock(4n)),
         transaction.extrinsicIndex = 1;
         transaction.from = "from-address";
         transaction.transferValue = "1";
@@ -63,7 +64,8 @@ describe('TransactionRepository', () => {
         // Then
         await checkNumOfRows(`SELECT *
                               FROM transaction
-                              WHERE block_number = ${ transaction.blockNumber }
+                              WHERE block_number = ${ transaction.block.blockNumber }
+                                AND chain_type = '${ transaction.block.chainType }'
                                 AND extrinsic_index = ${ transaction.extrinsicIndex }`, 1)
     })
 });
