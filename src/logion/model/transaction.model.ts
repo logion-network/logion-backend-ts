@@ -1,9 +1,10 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
-import { Fees } from '@logion/node-api';
+import { ChainType, Fees } from '@logion/node-api';
 import { EmbeddableFees, NULL_FEES } from './fees.js';
 import { Party, asParty } from '../services/transaction.vo.js';
+import { Block, EmbeddableBlock } from './block.model.js';
 
 export type TransactionType = "EXTRINSIC"
     | "VAULT_OUT"
@@ -36,7 +37,7 @@ function asTransactionType(type?: string): TransactionType {
 
 export interface TransactionDescription {
     readonly id: string;
-    readonly blockNumber: bigint,
+    readonly block: Block;
     readonly extrinsicIndex: number,
     readonly from: string;
     readonly to: string | null;
@@ -72,7 +73,7 @@ export class TransactionAggregateRoot {
 
         return {
             id: this.id!,
-            blockNumber: BigInt(this.blockNumber!),
+            block: this.block!.toBlock(),
             extrinsicIndex: this.extrinsicIndex!,
             from: this.from!,
             to: this.to || null,
@@ -92,8 +93,8 @@ export class TransactionAggregateRoot {
     @PrimaryColumn({ type: "uuid", name: "id", default: () => "gen_random_uuid()", generated: "uuid" })
     id?: string;
 
-    @Column("bigint", {name: "block_number"})
-    blockNumber?: string;
+    @Column(() => EmbeddableBlock, { prefix: "" })
+    block?: EmbeddableBlock;
 
     @Column("integer", {name: "extrinsic_index"})
     extrinsicIndex?: number;
@@ -161,17 +162,13 @@ export class TransactionRepository {
         await this.repository.save(root);
     }
 
-    async findByAddress(address: string): Promise<TransactionAggregateRoot[]> {
+    async findBy(spec: { address: string, chainType: ChainType }): Promise<TransactionAggregateRoot[]> {
         const builder = this.repository.createQueryBuilder("transaction");
-        builder.where("(transaction.from_address = :address AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'FROM'))", { address });
-        builder.orWhere("(transaction.to_address = :address AND transaction.successful IS TRUE AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'TO'))", { address });
+        builder.where("(transaction.chain_type = :chainType AND transaction.from_address = :address AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'FROM'))", spec);
+        builder.orWhere("(transaction.chain_type = :chainType AND transaction.to_address = :address AND transaction.successful IS TRUE AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'TO'))", spec);
         builder.orderBy("transaction.block_number", "DESC");
         builder.addOrderBy("transaction.extrinsic_index", "DESC");
         return builder.getMany();
-    }
-
-    async deleteAll(): Promise<void> {
-        return this.repository.clear();
     }
 }
 
@@ -179,10 +176,10 @@ export class TransactionRepository {
 export class TransactionFactory {
 
     newTransaction(description: TransactionDescription): TransactionAggregateRoot {
-        const { blockNumber, extrinsicIndex } = description;
+        const { block, extrinsicIndex } = description;
         const transaction = new TransactionAggregateRoot();
         transaction.id = description.id;
-        transaction.blockNumber = blockNumber.toString();
+        transaction.block = EmbeddableBlock.from(block);
         transaction.extrinsicIndex = extrinsicIndex;
 
         transaction.from = description.from;

@@ -17,6 +17,7 @@ import { SyncPointService } from "./syncpoint.service.js";
 import { VoteSynchronizer } from "./votesynchronization.service.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { Adapters } from "@logion/node-api";
+import { Block } from "../model/block.model.js";
 
 const { logger } = Log;
 
@@ -39,46 +40,93 @@ export class BlockConsumer {
     ) {}
 
     async consumeNewBlocks(now: () => Moment): Promise<void> {
+        //
+        // If we consider the blockchain as an array of blocks,
+        // below algorithm considers the following indexing scheme:
+        //
+        // |0     last|       head| <-- Block numbers
+        // +-+------+-+---------+-+
+        // | |      | |         | | <-- Blocks
+        // +-+------+-+---------+-+
+        //
+        // `last` is the last block that has been synchronized.
+        // `head` is the chain's current head.
+        // As a result, `last` is -1 when nothing has been synced yet.
+        // The total number of blocks to sync is `head` - `last`.
+        //
+        // Also, when computing the size of a batch, the batch size is
+        // `last` + `BATCH_SIZE` because the first block of the batch
+        // is `last` + 1 and the last block is `last` + `BATCH_SIZE`.
+        // If `last` + `BATCH_SIZE` is greater than `head`,
+        // then `head` is the number of the last block to include in the batch.
+        //
         const headHash = await this.blockService.getHeadBlockHash();
         const headBlock = await this.blockService.getBlockByHash(headHash);
-        const head = this.blockService.getBlockNumber(headBlock.block);
+        const head = new Block({
+            blockNumber: this.blockService.getBlockNumber(headBlock.signedBlock.block),
+            chainType: headBlock.chainType,
+        });
 
         let lastSyncPoint = await this.syncPointRepository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
-        let lastSynced = lastSyncPoint !== null ? BigInt(lastSyncPoint.latestHeadBlockNumber!) : head - 1n;
-        if (lastSynced === head) {
+        if (head.equalTo(lastSyncPoint?.block?.toBlock())) {
             return;
         }
 
-        if (lastSynced > head) {
-            throw new Error("Out-of-sync error: last synced block number greater than head number");
+        const lastBlock = this.getLastBlock({ head, lastSynced: lastSyncPoint?.block?.toBlock() });
+        if (lastBlock.value === undefined) {
+            throw new Error(`Out-of-sync error: ${ lastBlock.error }`);
         }
 
-        const blocksToSync = head - lastSynced;
+        const blocksToSync = head.blockNumber - lastBlock.value.blockNumber;
         let totalProcessedBlocks: bigint = 0n;
-        let nextStop = this.nextStopNumber(lastSynced, head);
-        const progressRateLogger = new ProgressRateLogger(now(), lastSynced, head, logger, 100n);
+        let nextStop = this.getNextStop(lastBlock.value.blockNumber, head.blockNumber);
+        const progressRateLogger = new ProgressRateLogger(now(), lastBlock.value.blockNumber, head.blockNumber, logger, 100n);
+        let currentLast = lastBlock.value;
         while(totalProcessedBlocks < blocksToSync) {
-            const nextBatchSize = nextStop - lastSynced;
+            const nextBatchSize = nextStop - currentLast.blockNumber;
             const nextStopHash = await this.blockService.getBlockHash(nextStop);
             const blocks = await this.blockService.getBlocksUpTo(nextStopHash, nextBatchSize);
 
             for(let i = 0; i < blocks.length; ++i) {
                 const block = blocks[i];
-                const blockNumber = this.blockService.getBlockNumber(block.block);
+                const blockNumber = this.blockService.getBlockNumber(block.signedBlock.block);
                 progressRateLogger.log(now(), blockNumber);
-                if(!this.isEmptyBlock(block)) {
-                    const extendedBlock = await this.blockService.getExtendedBlockByHash(block.block.hash);
+                if(!this.isEmptyBlock(block.signedBlock)) {
+                    const extendedBlock = await this.blockService.getExtendedBlockByHash(block.signedBlock.hash);
                     await this.processBlock(extendedBlock);
                 }
             }
 
-            const blockNumber = this.blockService.getBlockNumber(blocks[blocks.length - 1].block);
-            lastSyncPoint = await this.sync(lastSyncPoint, now(), blockNumber);
-            lastSynced = blockNumber;
-            this.prometheusService.setLastSynchronizedBlock(lastSynced);
-
+            const batchLastBlockNumber = this.blockService.getBlockNumber(blocks[blocks.length - 1].signedBlock.block);
+            currentLast = currentLast.at(batchLastBlockNumber);
             totalProcessedBlocks += BigInt(blocks.length);
-            nextStop = this.nextStopNumber(lastSynced, head);
+            nextStop = this.getNextStop(currentLast.blockNumber, head.blockNumber);
+
+            lastSyncPoint = await this.sync(lastSyncPoint, now(), currentLast);
+            this.prometheusService.setLastSynchronizedBlock(currentLast.blockNumber);
+        }
+    }
+
+    private getLastBlock(args: { head: Block, lastSynced?: Block }): { error?: string, value?: Block } {
+        const { head, lastSynced } = args;
+        if(lastSynced?.chainType === "Para" && head.chainType === "Solo") {
+            return {
+                error: "cannot revert back from solo to para",
+            };
+        } else if((lastSynced?.chainType === head.chainType) && lastSynced.blockNumber > head.blockNumber) {
+            return {
+                error: "last synced block number greater than head number",
+            };
+        } else {
+            if(lastSynced === undefined || head.chainType !== lastSynced.chainType) {
+                return {
+                    value: head.at(-1n),
+                };
+            } else {
+                return {
+                    value: lastSynced,
+                }
+            }
         }
     }
 
@@ -139,25 +187,25 @@ export class BlockConsumer {
         return extrinsics;
     }
 
-    private async sync(lastSyncPoint: SyncPointAggregateRoot | null, now: Moment, head: bigint): Promise<SyncPointAggregateRoot> {
+    private async sync(lastSyncPoint: SyncPointAggregateRoot | null, now: Moment, block: Block): Promise<SyncPointAggregateRoot> {
         let current = lastSyncPoint;
         if(current === null) {
             current = this.syncPointFactory.newSyncPoint({
                 name: TRANSACTIONS_SYNC_POINT_NAME,
-                latestHeadBlockNumber: head,
+                block,
                 createdOn: now
             });
             await this.syncPointService.add(current);
         } else {
             await this.syncPointService.update(TRANSACTIONS_SYNC_POINT_NAME, {
-                blockNumber: head,
+                block,
                 updatedOn: now
             });
         }
         return current;
     }
 
-    private nextStopNumber(lastSynced: bigint, head: bigint): bigint {
-        return [lastSynced + BATCH_SIZE, head].reduce((m, e) => e < m ? e : m);   
+    private getNextStop(last: bigint, head: bigint): bigint {
+        return last + BATCH_SIZE > head ? head : last + BATCH_SIZE;
     }
 }

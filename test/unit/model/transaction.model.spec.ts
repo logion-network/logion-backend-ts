@@ -5,6 +5,7 @@ import {
     TransactionFactory,
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
+import { Block, EmbeddableBlock } from "../../../src/logion/model/block.model.js";
 
 describe("TransactionAggregateRoot", () => {
 
@@ -46,7 +47,7 @@ function aNotSuccessfulTransaction(): TransactionAggregateRoot {
 
 function aTransaction(): TransactionAggregateRoot {
     let transaction = new TransactionAggregateRoot();
-    transaction.blockNumber = "1";
+    transaction.block = EmbeddableBlock.from(Block.soloBlock(1n));
     transaction.extrinsicIndex = 1;
     transaction.from = "from";
     transaction.to = "to";
@@ -60,7 +61,7 @@ describe("TransactionFactory", () => {
 
     const description: TransactionDescription = {
         id: "some-id",
-        blockNumber: 123456n,
+        block: Block.soloBlock(123456n),
         extrinsicIndex: 5,
         from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
         to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
@@ -76,7 +77,6 @@ describe("TransactionFactory", () => {
     };
 
     it("creates expected successful root", () => {
-        const blockNumber = 123456n;
         const extrinsicIndex = 5;
 
         const successfulDescription = {
@@ -85,14 +85,14 @@ describe("TransactionFactory", () => {
         };
         const transaction = new TransactionFactory().newTransaction(successfulDescription);
         expect(transaction.getDescription()).toEqual(successfulDescription);
-        expect(transaction.blockNumber).toBe(blockNumber.toString());
+        expect(transaction.block?.blockNumber).toBe(description.block.blockNumber.toString());
+        expect(transaction.block?.chainType).toBe(description.block.chainType);
         expect(transaction.extrinsicIndex).toBe(extrinsicIndex);
         expect(transaction.successful).toBeTrue();
         expect(transaction.errorName).toBeUndefined();
     });
 
     it("creates expected not successful root", () => {
-        const blockNumber = 123456n;
         const extrinsicIndex = 5;
 
         const notSuccessfulDescription = {
@@ -101,7 +101,8 @@ describe("TransactionFactory", () => {
         };
         const transaction = new TransactionFactory().newTransaction(notSuccessfulDescription);
         expect(transaction.getDescription()).toEqual(notSuccessfulDescription);
-        expect(transaction.blockNumber).toBe(blockNumber.toString());
+        expect(transaction.block?.blockNumber).toBe(description.block.blockNumber.toString());
+        expect(transaction.block?.chainType).toBe(description.block.chainType);
         expect(transaction.extrinsicIndex).toBe(extrinsicIndex);
         expect(transaction.successful).toBeFalse();
         expect(transaction.errorSection).toEqual(notSuccessfulDescription.error.section)

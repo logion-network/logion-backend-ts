@@ -1,5 +1,6 @@
 -- 1: successful from 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY to 5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo
 INSERT INTO transaction (block_number,
+                         chain_type,
                          extrinsic_index,
                          created_on,
                          from_address,
@@ -13,6 +14,7 @@ INSERT INTO transaction (block_number,
                          successful,
                          type)
 VALUES (1,
+        'Solo',
         1,
         '2021-07-19 15:17:11.000000',
         '5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY',
@@ -28,6 +30,7 @@ VALUES (1,
 
 -- 2: failed from 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg to 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY
 INSERT INTO transaction (block_number,
+                         chain_type,
                          extrinsic_index,
                          created_on,
                          from_address,
@@ -44,6 +47,7 @@ INSERT INTO transaction (block_number,
                          error_details,
                          type)
 VALUES (2,
+        'Solo',
         1,
         '2021-07-20 15:17:11.000000',
         '5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg',
@@ -62,6 +66,7 @@ VALUES (2,
 
 --- 3: Tokens record fees (requester side)
 INSERT INTO transaction (block_number,
+                         chain_type,
                          extrinsic_index,
                          created_on,
                          from_address,
@@ -77,6 +82,7 @@ INSERT INTO transaction (block_number,
                          type,
                          hidden_from)
 VALUES (3,
+        'Solo',
         1,
         '2021-07-21 15:17:11.000000',
         '5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg',
@@ -94,6 +100,7 @@ VALUES (3,
 
 --- 4: Tokens record fees (beneficiary side)
 INSERT INTO transaction (block_number,
+                         chain_type,
                          extrinsic_index,
                          created_on,
                          from_address,
@@ -108,6 +115,7 @@ INSERT INTO transaction (block_number,
                          type,
                          hidden_from)
 VALUES (3,
+        'Solo',
         1,
         '2021-07-21 15:17:11.000000',
         '5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg',

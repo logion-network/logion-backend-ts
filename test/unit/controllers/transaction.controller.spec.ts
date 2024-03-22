@@ -1,15 +1,16 @@
-import { Fees, Lgnt } from "@logion/node-api";
-import { TestApp } from '@logion/rest-api-core';
+import { ChainType, Fees, Lgnt, LogionNodeApiClass } from "@logion/node-api";
+import { PolkadotService, TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { TransactionController } from '../../../src/logion/controllers/transaction.controller.js';
 import { Container } from "inversify";
-import { Mock } from "moq.ts";
+import { It, Mock } from "moq.ts";
 import {
     TransactionRepository,
     TransactionAggregateRoot,
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
 import { ALICE } from "../../helpers/addresses.js";
+import { Block } from "../../../src/logion/model/block.model.js";
 
 describe('TransactionController', () => {
 
@@ -67,7 +68,10 @@ const TIMESTAMP = "2021-06-10T16:25:23.668294";
 function transactionDescription(fees: Fees): TransactionDescription {
     return {
         id: "9464ca21-d290-4515-ac4d-80c4fa3f6508",
-        blockNumber: 42n,
+        block: new Block({
+            blockNumber: 42n,
+            chainType: "Solo",
+        }),
         extrinsicIndex: 1,
         from: ALICE,
         to: null,
@@ -83,6 +87,11 @@ function transactionDescription(fees: Fees): TransactionDescription {
 }
 
 function mockModelForFetch(container: Container): void {
+    const polkadotService = new Mock<PolkadotService>();
+    const logion = new Mock<LogionNodeApiClass>();
+    logion.setup(instance => instance.chainType).returns("Solo");
+    polkadotService.setup(instance => instance.readyApi()).returnsAsync(logion.object());
+    container.bind(PolkadotService).toConstantValue(polkadotService.object());
 
     const successfulTransactionFees = new Fees({
         inclusionFee: Lgnt.fromCanonical(3n),
@@ -108,8 +117,11 @@ function mockModelForFetch(container: Container): void {
 
     const repository = new Mock<TransactionRepository>();
     const transactions: TransactionAggregateRoot[] = [ successfulTransaction.object(), failedTransaction.object() ];
-    repository.setup(instance => instance.findByAddress(ALICE))
-        .returns(Promise.resolve(transactions));
+    repository.setup(instance => instance.findBy(
+        It.Is<{ address: string, chainType: ChainType }>(
+            spec => spec.address === ALICE && spec.chainType === "Solo"
+        )
+    )).returns(Promise.resolve(transactions));
 
     container.bind(TransactionRepository).toConstantValue(repository.object());
 }

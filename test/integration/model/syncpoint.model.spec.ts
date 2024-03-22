@@ -5,6 +5,7 @@ import {
     SyncPointRepository,
     TRANSACTIONS_SYNC_POINT_NAME,
 } from "../../../src/logion/model/syncpoint.model.js";
+import { Block, EmbeddableBlock } from '../../../src/logion/model/block.model.js';
 
 const { connect, disconnect, query, executeScript } = TestDb;
 
@@ -25,7 +26,8 @@ describe('SyncPointRepository', () => {
     it("finds transactions sync point", async () => {
         const syncPoint = await repository.findByName(TRANSACTIONS_SYNC_POINT_NAME);
         expect(syncPoint).toBeDefined();
-        expect(syncPoint!.latestHeadBlockNumber).toBe("89964");
+        expect(syncPoint!.block?.blockNumber).toBe("89964");
+        expect(syncPoint!.block?.chainType).toBe("Solo");
         expect(syncPoint!.updatedOn).toEqual(moment("2021-08-25T14:38:09.514126").toDate());
     });
 
@@ -33,7 +35,7 @@ describe('SyncPointRepository', () => {
         // Given
         const syncPoint = new SyncPointAggregateRoot();
         syncPoint.name = 'AnotherSyncPoint'
-        syncPoint.latestHeadBlockNumber = "123"
+        syncPoint.block = EmbeddableBlock.from(Block.soloBlock(123n));
         syncPoint.updatedOn = moment().toDate()
         // When
         await repository.save(syncPoint)

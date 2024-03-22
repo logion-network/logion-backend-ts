@@ -5,6 +5,7 @@ import { TransactionExtractor } from "./transaction.extractor.js";
 import { TransactionService } from "./transaction.service.js";
 import { BlockWithTransactions, Transaction } from './transaction.vo.js';
 import { BlockExtrinsics } from "./types/responses/Block.js";
+import { Block } from "../model/block.model.js";
 
 @injectable()
 export class TransactionSynchronizer {
@@ -32,7 +33,10 @@ export class TransactionSynchronizer {
         const description: TransactionDescription = {
             ...transaction,
             id: uuid(),
-            blockNumber: blockWithTransactions.blockNumber!,
+            block: new Block({
+                blockNumber: blockWithTransactions.blockNumber!,
+                chainType: blockWithTransactions.chainType!,
+            }),
             createdOn,
         };
         return this.transactionFactory.newTransaction(description);
