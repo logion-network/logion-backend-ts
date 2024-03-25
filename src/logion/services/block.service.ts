@@ -1,5 +1,5 @@
 import { injectable } from "inversify";
-import { Block, Hash, SignedBlock } from '@polkadot/types/interfaces';
+import { Block, BlockHash, SignedBlock } from '@polkadot/types/interfaces';
 import { SignedBlockExtended } from '@polkadot/api-derive/type/types';
 import { PolkadotService } from "@logion/rest-api-core";
 
@@ -29,12 +29,12 @@ export class BlockExtrinsicsService {
         return BigInt(block.header.number.toString());
     }
 
-    async getHeadBlockHash(): Promise<Hash> {
+    async getHeadBlockHash(): Promise<BlockHash> {
         const api = await this.polkadotService.readyApi();
         return await api.polkadot.rpc.chain.getFinalizedHead();
     }
 
-    async getBlocksUpTo(hash: Hash, maxBlocks: bigint): Promise<SignedBlockAndChainType[]> {
+    async getBlocksUpTo(hash: BlockHash, maxBlocks: bigint): Promise<SignedBlockAndChainType[]> {
         const arrayLength = Number(maxBlocks);
         const blocks = new Array<SignedBlockAndChainType>(arrayLength);
         let nextHash = hash;
@@ -48,12 +48,12 @@ export class BlockExtrinsicsService {
         return blocks;
     }
 
-    async getBlockHash(blockNumber: bigint): Promise<Hash> {
+    async getBlockHash(blockNumber: bigint): Promise<BlockHash> {
         const api = await this.polkadotService.readyApi();
         return await api.polkadot.rpc.chain.getBlockHash(blockNumber);
     }
 
-    async getBlockByHash(hash: Hash): Promise<SignedBlockAndChainType> {
+    async getBlockByHash(hash: BlockHash): Promise<SignedBlockAndChainType> {
         const api = await this.polkadotService.readyApi();
         const block = await api.polkadot.rpc.chain.getBlock(hash);
         if (block === undefined) {
@@ -66,7 +66,7 @@ export class BlockExtrinsicsService {
         }
     }
 
-    async getExtendedBlockByHash(hash: Hash): Promise<SignedBlockExtended> {
+    async getExtendedBlockByHash(hash: BlockHash): Promise<SignedBlockExtended> {
         const api = await this.polkadotService.readyApi();
         const block = await api.polkadot.derive.chain.getBlock(hash);
         if (block === undefined) {
