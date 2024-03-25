@@ -92,7 +92,7 @@ export class BlockConsumer {
                 const blockNumber = this.blockService.getBlockNumber(block.signedBlock.block);
                 progressRateLogger.log(now(), blockNumber);
                 if(!this.isEmptyBlock(block.signedBlock)) {
-                    const extendedBlock = await this.blockService.getExtendedBlockByHash(block.signedBlock.hash);
+                    const extendedBlock = await this.blockService.getExtendedBlockByHash(block.signedBlock.block.hash);
                     await this.processBlock(extendedBlock);
                 }
             }
