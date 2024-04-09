@@ -9,6 +9,7 @@ import {
     getDefaultResponses,
 } from "@logion/rest-api-core";
 import { WorkloadService } from "../services/workload.service.js";
+import { ValidAccountId } from "@logion/node-api";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Workload';
@@ -46,8 +47,9 @@ export class WorkloadController extends ApiController {
     @Async()
     async getWorkloads(body: FetchWorkloadsView): Promise<WorkloadView> {
         await this.authenticationService.authenticatedUser(this.request);
+        const legalOfficers = body.legalOfficerAddresses?.map((address) => ValidAccountId.polkadot(address)) || []
         return {
-            workloads: await this.workloadService.workloadOf(body.legalOfficerAddresses || []),
+            workloads: await this.workloadService.workloadOf(legalOfficers),
         }
     }
 }

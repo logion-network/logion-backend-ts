@@ -31,7 +31,7 @@ describe("NotificationService", () => {
         const expectedText = [
             "Dear Legal Officer,",
             "The following user has requested your protection:",
-            "John Doe(5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY)",
+            "John Doe(vQxHAE33LeJYV69GCB4o4YcCgnDu8y99u5hy2751fRdxjX9kz)",
             ""
         ].join("\n")
         expect(actualText.length).toEqual(expectedText.length)
@@ -84,7 +84,7 @@ describe("NotificationService", () => {
         notificationService.templatePath = "test/resources/mail";
         let message = notificationService.renderMessage(
             "loc-requested",
-            { loc: { requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY" } });
+            { loc: { requesterAddress: { address: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY" }}});
         expect(message.subject).toEqual("SUBJECT")
         expect(message.text).toEqual([
             "Begin",

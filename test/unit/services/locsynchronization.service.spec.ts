@@ -16,7 +16,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
 
@@ -343,25 +343,25 @@ function thenCollectionItemSaved() {
 }
 
 function givenLocRequestExpectsMetadataItemAcknowledged() {
-    locRequest.setup(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenMetadataAcknowledged() {
-    locRequest.verify(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeMetadataItem(IS_EXPECTED_NAME_HASH, ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsFileAcknowledged() {
-    locRequest.setup(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenFileAcknowledged() {
-    locRequest.verify(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeFile(ItIsHash(FILE_HASH), ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME));
 }
 
 function givenLocRequestExpectsLinkAcknowledged() {
-    locRequest.setup(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME)).returns(undefined);
+    locRequest.setup(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME)).returns(undefined);
 }
 
 function thenLinkAcknowledged() {
-    locRequest.verify(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE), IS_BLOCK_TIME));
+    locRequest.verify(instance => instance.preAcknowledgeLink(IS_EXPECTED_TARGET, ItIsAccount(ALICE_ACCOUNT), IS_BLOCK_TIME));
 }

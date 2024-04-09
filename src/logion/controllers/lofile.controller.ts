@@ -19,7 +19,7 @@ import { getUploadedFile } from "./fileupload.js";
 import { downloadAndClean } from "../lib/http.js";
 import { components } from "./components.js";
 import { LoFileService } from "../services/lofile.service.js";
-import { Hash } from "@logion/node-api";
+import { Hash, ValidAccountId } from "@logion/node-api";
 
 type FileUploadData = components["schemas"]["FileUploadData"];
 
@@ -69,14 +69,15 @@ export class LoFileController extends ApiController {
     @SendsResponse()
     async uploadFile(body: FileUploadData, legalOfficerAddress: string, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
+        authenticatedUser.require(user => user.is(legalOfficer));
 
         const file = await getUploadedFile(this.request, Hash.fromHex(requireDefined(body.hash, () => badRequest("No hash found for upload file"))));
-        const existingLoFile = await this.loFileRepository.findById({ id, legalOfficerAddress } );
+        const existingLoFile = await this.loFileRepository.findById({ id, legalOfficer } );
         if (existingLoFile) {
             const oidToRemove = existingLoFile.oid;
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
-            await this.loFileService.updateLoFile({ id, legalOfficerAddress }, async loFile => {
+            await this.loFileService.updateLoFile({ id, legalOfficer }, async loFile => {
                 loFile.update({
                     contentType: file.mimetype,
                     oid
@@ -87,7 +88,7 @@ export class LoFileController extends ApiController {
             const oid = await this.fileStorageService.importFileInDB(file.tempFilePath, id);
             const loFile = this.loFileFactory.newLoFile({
                 id,
-                legalOfficerAddress,
+                legalOfficer,
                 contentType: file.mimetype,
                 oid,
             })
@@ -112,9 +113,10 @@ export class LoFileController extends ApiController {
     @SendsResponse()
     async downloadFile(_body: never, legalOfficerAddress: string, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
+        authenticatedUser.require(user => user.is(legalOfficer));
         const file = requireDefined(
-            await this.loFileRepository.findById({ id, legalOfficerAddress }),
+            await this.loFileRepository.findById({ id, legalOfficer }),
             () => badRequest(`LO has not yet uploaded file with id ${ id }`)
         )
         const tempFilePath = "/tmp/download-" + id;

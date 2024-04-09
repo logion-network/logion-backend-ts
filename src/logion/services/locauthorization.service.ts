@@ -1,10 +1,10 @@
 import { AuthenticatedUser } from "@logion/authenticator";
-import { UUID } from "@logion/node-api";
+import { UUID, ValidAccountId } from "@logion/node-api";
 import { AuthenticationService, forbidden, PolkadotService } from '@logion/rest-api-core';
 import { Request } from 'express';
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot } from '../model/locrequest.model';
-import { SupportedAccountId, accountEquals } from "../model/supportedaccountid.model.js";
+import { accountEquals } from "../model/supportedaccountid.model.js";
 import { VoteRepository } from "../model/vote.model.js";
 
 export class Contribution {
@@ -49,13 +49,13 @@ export class LocAuthorizationService {
         private voteRepository: VoteRepository,
     ) {}
 
-    async ensureContributor(contribution: Contribution): Promise<SupportedAccountId> {
+    async ensureContributor(contribution: Contribution): Promise<ValidAccountId> {
         const { httpRequest, locRequest, allowInvitedContributor } = contribution
         const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
         if (await this.isContributor(contribution, authenticatedUser)) {
-            return authenticatedUser;
+            return authenticatedUser.toValidAccountId();
         } else if (allowInvitedContributor && await this.isInvitedContributor(locRequest, authenticatedUser)) {
-            return authenticatedUser;
+            return authenticatedUser.toValidAccountId();
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");
         }
@@ -64,8 +64,8 @@ export class LocAuthorizationService {
     async isContributor(contribution: Contribution, contributor: AuthenticatedUser): Promise<boolean> {
         const { locRequest } = contribution;
         return (
-            (accountEquals(locRequest.getOwner(), contributor) && contribution.ownerCanContributeItems()) ||
-            accountEquals(locRequest.getRequester(), contributor) ||
+            (accountEquals(locRequest.getOwner(), contributor.toValidAccountId()) && contribution.ownerCanContributeItems()) ||
+            accountEquals(locRequest.getRequester(), contributor.toValidAccountId()) ||
             await this.isSelectedIssuer(locRequest, contributor)
         );
     }

@@ -1,12 +1,19 @@
 import { injectable } from 'inversify';
 import { ApiController, Controller, HttpPut, Async } from 'dinoloop';
 import { OpenAPIV3 } from 'express-oas-generator';
-import { addTag, setControllerTag, getRequestBody, getDefaultResponses, PolkadotService } from '@logion/rest-api-core';
+import {
+    addTag,
+    setControllerTag,
+    getRequestBody,
+    getDefaultResponses,
+    PolkadotService,
+    requireDefined
+} from '@logion/rest-api-core';
 
 import { components } from './components.js';
 import { TransactionRepository, TransactionAggregateRoot } from "../model/transaction.model.js";
 import { toFeesView } from './adapters/locrequestadapter.js';
-import { Lgnt } from "@logion/node-api";
+import { Lgnt, ValidAccountId } from "@logion/node-api";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Transactions';
@@ -49,8 +56,9 @@ export class TransactionController extends ApiController {
     @HttpPut('')
     async fetchTransactions(body: FetchTransactionsSpecificationView): Promise<FetchTransactionsResponseView> {
         const logion = await this.polkadotService.readyApi();
+        const account = ValidAccountId.polkadot(requireDefined(body.address));
         const transactions = await this.transactionRepository.findBy({
-            address: body.address!,
+            account,
             chainType: logion.chainType,
         });
         return {
@@ -70,8 +78,8 @@ export class TransactionController extends ApiController {
         }
         return {
             id: description.id,
-            from: description.from,
-            to: description.to || undefined,
+            from: description.from.address,
+            to: description.to?.address || undefined,
             createdOn: description.createdOn,
             pallet: description.pallet,
             method: description.method,

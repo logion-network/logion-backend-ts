@@ -6,6 +6,7 @@ import { TransactionService } from "./transaction.service.js";
 import { BlockWithTransactions, Transaction } from './transaction.vo.js';
 import { BlockExtrinsics } from "./types/responses/Block.js";
 import { Block } from "../model/block.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 @injectable()
 export class TransactionSynchronizer {
@@ -30,6 +31,8 @@ export class TransactionSynchronizer {
 
     private toEntity(blockWithTransactions: BlockWithTransactions, transaction: Transaction): TransactionAggregateRoot {
         const createdOn = blockWithTransactions.timestamp!.toISOString();
+        const from = ValidAccountId.polkadot(transaction.from);
+        const to = transaction.to ? ValidAccountId.polkadot(transaction.to) : null;
         const description: TransactionDescription = {
             ...transaction,
             id: uuid(),
@@ -37,6 +40,8 @@ export class TransactionSynchronizer {
                 blockNumber: blockWithTransactions.blockNumber!,
                 chainType: blockWithTransactions.chainType!,
             }),
+            from,
+            to,
             createdOn,
         };
         return this.transactionFactory.newTransaction(description);

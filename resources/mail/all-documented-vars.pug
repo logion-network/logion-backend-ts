@@ -35,7 +35,7 @@
 | #{otherLegalOfficer.postalAddress.country};
 |
 | === Protection ===
-| #{protection.requesterAddress};
+| #{protection.requesterAddress.address};
 | #{protection.otherLegalOfficerAddress};
 | #{protection.addressToRecover};
 | #{protection.createdOn};
@@ -47,7 +47,7 @@
 |
 | === LOC ===
 | #{loc.id};
-| #{loc.requesterAddress};
+| #{loc.requesterAddress.address};
 | #{loc.requesterIdentityLoc};
 | #{loc.ownerAddress};
 | #{loc.description};
@@ -71,7 +71,7 @@
 |
 | === Vault Transfer ===
 | #{vaultTransfer.id};
-| #{vaultTransfer.requesterAddress};
+| #{vaultTransfer.requesterAddress.address};
 | #{vaultTransfer.createdOn};
 | #{vaultTransfer.destination};
 | #{vaultTransfer.amount};

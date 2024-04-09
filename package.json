@@ -26,9 +26,9 @@
     "dependencies": {
         "@astar-network/astar-api": "^0.2.8",
         "@astar-network/astar-sdk-core": "^0.2.8",
-        "@logion/node-api": "^0.28.4",
+        "@logion/node-api": "^0.29.0-3",
         "@logion/node-exiftool": "^2.3.1",
-        "@logion/rest-api-core": "^0.4.7",
+        "@logion/rest-api-core": "^0.4.8-5",
         "@polkadot/api-contract": "^10.12.4",
         "@polkadot/wasm-crypto": "^7.3.2",
         "alchemy-sdk": "^3.2.0",

@@ -2,7 +2,7 @@ import { TestApp } from "@logion/rest-api-core";
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Mock, It, Times } from "moq.ts";
 import {
     NewLocRequestParameters,
@@ -71,7 +71,7 @@ describe('LocRequestController - Creation -', () => {
     });
 
     it('succeeds in creating a draft LOC', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER.address);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, POLKADOT_REQUESTER);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, "Transaction", undefined, true),
@@ -103,6 +103,7 @@ describe('LocRequestController - Creation -', () => {
             .post('/api/loc-request')
             .send({
                 ...testDataWithLogionIdentity,
+                ownerAddress: testDataWithLogionIdentity.ownerAddress?.address,
                 fees: { legalFee: testDataWithLogionIdentity.fees?.legalFee?.toString() },
             })
             .expect(200)
@@ -139,7 +140,7 @@ describe('LocRequestController - Creation -', () => {
 
     it('fails to create an ID LOC Request with an already used sponsorship ID', async () => {
 
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, ETHEREUM_REQUESTER.address);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ETHEREUM_REQUESTER);
         const app = setupApp(
             LocRequestController,
             container => mockModelForCreation(container, "Identity"),
@@ -162,7 +163,7 @@ describe('LocRequestController - Creation -', () => {
 });
 
 async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: boolean, locType: LocType, expectedStatus: number, expectedErrorMessage?: string, hasPolkadotIdentityLoc: boolean = false) {
-    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? undefined : POLKADOT_REQUESTER.address);
+    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? undefined : POLKADOT_REQUESTER);
     const app = setupApp(
         LocRequestController,
         container => mockModelForCreation(container, locType, undefined, hasPolkadotIdentityLoc),
@@ -197,7 +198,7 @@ async function testLocRequestCreationWithEmbeddedUserIdentity(isLegalOfficer: bo
 }
 
 async function testLocRequestCreationWithPolkadotIdentityLoc(isLegalOfficer: boolean, locType: LocType) {
-    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? ALICE : POLKADOT_REQUESTER.address);
+    const mock = mockAuthenticationForUserOrLegalOfficer(isLegalOfficer, isLegalOfficer ? ALICE_ACCOUNT : POLKADOT_REQUESTER);
     const notificationService = new Mock<NotificationService>();
     const app = setupApp(
         LocRequestController,
@@ -242,7 +243,7 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
         params.description.requesterAddress?.address === testData.requesterAddress?.address &&
         params.description.requesterAddress?.type === testData.requesterAddress?.type &&
-        params.description.ownerAddress == ALICE &&
+        params.description.ownerAddress.equals(ALICE_ACCOUNT) &&
         params.description.description == testData.description &&
         params.draft
     )))
@@ -254,7 +255,7 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
     factory.setup(instance => instance.newLocRequest(It.Is<NewUserLocRequestParameters>(params =>
         params.description.requesterAddress?.address === testData.requesterAddress?.address &&
         params.description.requesterAddress?.type === testData.requesterAddress?.type &&
-        params.description.ownerAddress == ALICE &&
+        params.description.ownerAddress.equals(ALICE_ACCOUNT) &&
         params.description.description == testData.description &&
         !params.draft
     )))
@@ -264,7 +265,7 @@ function mockModelForCreation(container: Container, locType: LocType, notificati
 
     const requestByLO = mockRequest("REVIEW_PENDING", hasPolkadotIdentityLoc ? testDataWithType(locType) : testDataWithUserIdentityWithType(locType));
     factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
-        params.description.ownerAddress == ALICE &&
+        params.description.ownerAddress.equals(ALICE_ACCOUNT) &&
         params.description.description == testData.description
     )))
         .returns(Promise.resolve(requestByLO.object()));
@@ -290,7 +291,7 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     const request = mockRequest("REVIEW_PENDING", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
     factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
-        params.description.ownerAddress == ALICE
+        params.description.ownerAddress.equals(ALICE_ACCOUNT)
     )))
         .returns(Promise.resolve(request.object()));
 

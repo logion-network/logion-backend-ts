@@ -13,7 +13,7 @@ import {
     LegalOfficerDecision,
     LegalOfficerDecisionDescription,
 } from '../../../src/logion/model/protectionrequest.model.js';
-import { ALICE, BOB, CHARLY } from '../../helpers/addresses.js';
+import { ALICE, BOB, CHARLY, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
@@ -24,6 +24,8 @@ import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
 import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
 import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
@@ -34,7 +36,7 @@ describe('createProtectionRequest', () => {
         const app = setupApp(
             ProtectionRequestController,
             mockModelForRequest,
-            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER_ADDRESS))
+            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER))
         );
 
         await request(app)
@@ -54,11 +56,11 @@ describe('createProtectionRequest', () => {
     });
 
     it('success with valid recovery request', async () => {
-        const addressToRecover = "toRecover";
+        const addressToRecover = "vQvrwS6w8eXorsbsH4cp6YdNtEegZYH9CvhHZizV2p9dPGyDJ";
         const app = setupApp(
             ProtectionRequestController,
             container => mockModelForRecovery(container, addressToRecover),
-            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER_ADDRESS))
+            mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, REQUESTER))
         );
 
         await request(app)
@@ -107,7 +109,7 @@ function mockModelForRequest(container: Container): void {
     mockProtectionRequestModel(container, false, null);
 }
 
-function mockProtectionRequestModel(container: Container, isRecovery: boolean, addressToRecover: string | null): void {
+function mockProtectionRequestModel(container: Container, isRecovery: boolean, addressToRecover: ValidAccountId | null): void {
     const repository = new Mock<ProtectionRequestRepository>();
     repository.setup(instance => instance.save)
         .returns(() => Promise.resolve());
@@ -120,12 +122,24 @@ function mockProtectionRequestModel(container: Container, isRecovery: boolean, a
     root.setup(instance => instance.requesterIdentityLocId)
         .returns(identityLoc.id)
 
-    factory.setup(instance => instance.newProtectionRequest(
+    if (addressToRecover === null) {
+        factory.setup(instance => instance.newProtectionRequest(
             It.Is<NewProtectionRequestParameters>(params => {
-                return params.addressToRecover === addressToRecover
-                && params.isRecovery === isRecovery
-                && params.requesterAddress === REQUESTER_ADDRESS})))
-        .returns(Promise.resolve(root.object()));
+                return params.addressToRecover === null
+                    && params.isRecovery === isRecovery
+                    && params.requesterAddress.equals(REQUESTER)
+            })))
+            .returns(Promise.resolve(root.object()));
+    } else {
+        factory.setup(instance => instance.newProtectionRequest(
+            It.Is<NewProtectionRequestParameters>(params => {
+                return params.addressToRecover !== null
+                    && params.addressToRecover?.equals(addressToRecover)
+                    && params.isRecovery === isRecovery
+                    && params.requesterAddress.equals(REQUESTER)
+            })))
+            .returns(Promise.resolve(root.object()));
+    }
     container.bind(ProtectionRequestFactory).toConstantValue(factory.object());
     mockNotificationAndDirectoryService(container);
 
@@ -164,7 +178,7 @@ function mockIdentityLoc(): LocRequestAggregateRoot {
 }
 
 function mockModelForRecovery(container: Container, addressToRecover: string): void {
-    mockProtectionRequestModel(container, true, addressToRecover);
+    mockProtectionRequestModel(container, true, ValidAccountId.polkadot(addressToRecover));
 }
 
 describe('fetchProtectionRequests', () => {
@@ -175,7 +189,7 @@ describe('fetchProtectionRequests', () => {
         await request(app)
             .put('/api/protection-request')
             .send({
-                requesterAddress: "",
+                requesterAddress: REQUESTER.address,
                 statuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(200)
@@ -183,9 +197,10 @@ describe('fetchProtectionRequests', () => {
             .then(response => {
                 expect(response.body.requests).toBeDefined();
                 expect(response.body.requests.length).toBe(1);
-                expect(response.body.requests[0].requesterAddress).toBe(REQUESTER_ADDRESS);
+                expect(response.body.requests[0].requesterAddress).toBe(REQUESTER.address);
                 expect(response.body.requests[0].requesterIdentityLoc).toBe(REQUESTER_IDENTITY_LOC_ID);
-                expect(response.body.requests[0].legalOfficerAddress).toBe(ALICE);
+                expect(response.body.requests[0].legalOfficerAddress).toBe(ALICE_ACCOUNT.address);
+                expect(response.body.requests[0].otherLegalOfficerAddress).toBe(BOB_ACCOUNT.address);
                 expect(response.body.requests[0].userIdentity.firstName).toBe("John");
                 expect(response.body.requests[0].userIdentity.lastName).toBe("Doe");
                 expect(response.body.requests[0].userIdentity.email).toBe("john.doe@logion.network");
@@ -210,8 +225,8 @@ describe('fetchProtectionRequests', () => {
         await request(app)
             .put('/api/protection-request')
             .send({
-                requesterAddress: "",
-                legalOfficerAddress: [ ALICE ],
+                requesterAddress: REQUESTER.address,
+                legalOfficerAddress: ALICE,
                 decisionStatuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(401);
@@ -220,7 +235,7 @@ describe('fetchProtectionRequests', () => {
 
 });
 
-const REQUESTER_ADDRESS = "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY";
+const REQUESTER = ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
 const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 const REJECT_REASON = "Illegal";
@@ -258,7 +273,7 @@ function mockModelForFetch(container: Container): void {
 }
 
 function authenticatedLLONotProtectingUser() {
-    const authenticatedUser = mockLegalOfficerOnNode(BOB);
+    const authenticatedUser = mockLegalOfficerOnNode(BOB_ACCOUNT);
     return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
 }
 
@@ -501,7 +516,7 @@ function mockNotificationAndDirectoryService(container: Container) {
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
-        .returns(Promise.resolve(ALICE));
+        .returns(Promise.resolve(ALICE_ACCOUNT));
     container.bind(DirectoryService).toConstantValue(directoryService.object())
 }
 
@@ -509,21 +524,25 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
 
     const identityLoc = mockIdentityLoc();
     const description: ProtectionRequestDescription = {
-        requesterAddress: REQUESTER_ADDRESS,
+        requesterAddress: REQUESTER,
         requesterIdentityLocId: identityLoc.id!,
-        legalOfficerAddress: ALICE,
+        legalOfficerAddress: ALICE_ACCOUNT,
         isRecovery: false,
-        otherLegalOfficerAddress: "",
+        otherLegalOfficerAddress: BOB_ACCOUNT,
         createdOn: moment.now().toString(),
         addressToRecover: null,
     }
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>()
     protectionRequest.setup(instance => instance.id).returns(REQUEST_ID)
-    protectionRequest.setup(instance => instance.requesterAddress).returns(description.requesterAddress)
+    protectionRequest.setup(instance => instance.requesterAddress).returns(description.requesterAddress.getAddress(DB_SS58_PREFIX))
     protectionRequest.setup(instance => instance.requesterIdentityLocId).returns(description.requesterIdentityLocId)
     protectionRequest.setup(instance => instance.isRecovery).returns(description.isRecovery)
-    protectionRequest.setup(instance => instance.otherLegalOfficerAddress).returns(description.otherLegalOfficerAddress)
+    protectionRequest.setup(instance => instance.otherLegalOfficerAddress).returns(description.otherLegalOfficerAddress.getAddress(DB_SS58_PREFIX))
     protectionRequest.setup(instance => instance.getDescription()).returns(description)
+    protectionRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT)
+    protectionRequest.setup(instance => instance.getOtherLegalOfficer()).returns(BOB_ACCOUNT)
+    protectionRequest.setup(instance => instance.getRequester()).returns(REQUESTER)
+    protectionRequest.setup(instance => instance.getAddressToRecover()).returns(null)
     return protectionRequest
 }
 

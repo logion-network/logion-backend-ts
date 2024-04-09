@@ -12,20 +12,20 @@ import {
 import request from "supertest";
 import { writeFile } from "fs/promises";
 import { LoFileService, NonTransactionalLoFileService } from "../../../src/logion/services/lofile.service.js";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp.js";
 import { Hash } from "@logion/node-api";
 
 const existingFile: LoFileDescription = {
     id: 'file1',
-    legalOfficerAddress: ALICE,
+    legalOfficer: ALICE_ACCOUNT,
     contentType: 'text/plain',
     oid: 123
 }
 const newFile: LoFileDescription = {
     id: 'file2',
-    legalOfficerAddress: ALICE,
+    legalOfficer: ALICE_ACCOUNT,
     contentType: 'text/plain',
     oid: 456
 }
@@ -106,7 +106,7 @@ describe("LoFileController", () => {
     });
 
     it("fails to upload an new file if different LO", async () => {
-        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const authenticatedUser = mockAuthenticatedUser(false, BOB_ACCOUNT);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
 
         const app = setupApp(LoFileController, mockModel, mock);
@@ -123,7 +123,7 @@ describe("LoFileController", () => {
     });
 
     it("fails to upload an existing file if different LO", async () => {
-        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const authenticatedUser = mockAuthenticatedUser(false, BOB_ACCOUNT);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
 
         const app = setupApp(LoFileController, mockModel, mock);
@@ -140,7 +140,7 @@ describe("LoFileController", () => {
     });
 
     it("fails to download if different LO", async () => {
-        const authenticatedUser = mockAuthenticatedUser(false, BOB);
+        const authenticatedUser = mockAuthenticatedUser(false, BOB_ACCOUNT);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
 
         const app = setupApp(LoFileController, mockModel, mock);
@@ -178,13 +178,13 @@ function mockModel(container: Container): void {
     repository.setup(instance => instance
         .findById(It.Is<LegalOfficerSettingId>(param =>
             param.id === existingFile.id &&
-            param.legalOfficerAddress === existingFile.legalOfficerAddress
+            param.legalOfficer.equals(existingFile.legalOfficer)
         )))
         .returns(Promise.resolve(existingEntity.object()));
     repository.setup(instance => instance
         .findById(It.Is<LegalOfficerSettingId>(param =>
             param.id === newFile.id &&
-            param.legalOfficerAddress === newFile.legalOfficerAddress
+            param.legalOfficer.equals(newFile.legalOfficer)
         )))
         .returns(Promise.resolve(null))
     repository.setup(instance => instance.save(It.IsAny<LoFileAggregateRoot>()))

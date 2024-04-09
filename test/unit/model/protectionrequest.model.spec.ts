@@ -6,7 +6,7 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot, ProtectionRequestStatus,
 } from '../../../src/logion/model/protectionrequest.model.js';
-import { BOB, CHARLY, ALICE } from '../../helpers/addresses.js';
+import { CHARLY, ALICE_ACCOUNT, BOB_ACCOUNT } from '../../helpers/addresses.js';
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -16,6 +16,8 @@ import {
 import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity.js";
 import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
+import { ValidAccountId } from "@logion/node-api";
+import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
 describe('ProtectionRequestFactoryTest', () => {
 
@@ -138,10 +140,10 @@ const userPostalAddress = {
     country: "Belgium",
 };
 const description: ProtectionRequestDescription = {
-    requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+    requesterAddress: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
     requesterIdentityLocId: "80124e8a-a7d8-456f-a7be-deb4e0983e87",
-    legalOfficerAddress: ALICE,
-    otherLegalOfficerAddress: BOB,
+    legalOfficerAddress: ALICE_ACCOUNT,
+    otherLegalOfficerAddress: BOB_ACCOUNT,
     createdOn: moment().toISOString(),
     isRecovery: false,
     addressToRecover: null,
@@ -159,9 +161,8 @@ async function newProtectionRequestUsingFactory(status?: ProtectionRequestStatus
     }
     identityLoc.userIdentity = EmbeddableUserIdentity.from(userIdentity);
     identityLoc.userPostalAddress = EmbeddablePostalAddress.from(userPostalAddress);
-    identityLoc.requesterAddress = description.requesterAddress;
-    identityLoc.requesterAddressType = "Polkadot";
-    identityLoc.ownerAddress = description.legalOfficerAddress;
+    identityLoc.requester = EmbeddableNullableAccountId.from(description.requesterAddress);
+    identityLoc.ownerAddress = description.legalOfficerAddress.address;
 
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findById(It.IsAny<string>()))

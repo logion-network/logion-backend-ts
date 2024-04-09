@@ -19,10 +19,10 @@
 | #{walletUser.firstName} #{walletUser.lastName}
 |
 |
-if loc.requesterAddress
+if loc.requesterAddress.address
     | Identification key:
     | *******************
-    | #{loc.requesterAddress}
+    | #{loc.requesterAddress.address}
 else if loc.requesterIdentityLoc
     | Identification LOC:
     | *******************

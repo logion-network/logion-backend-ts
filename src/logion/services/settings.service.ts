@@ -10,8 +10,8 @@ export abstract class SettingService {
     ) {}
 
     async createOrUpdate(params: SettingDescription) {
-        const { id, legalOfficerAddress, value } = params;
-        let setting = await this.settingRepository.findById({ id, legalOfficerAddress });
+        const { id, legalOfficer, value } = params;
+        let setting = await this.settingRepository.findById({ id, legalOfficer });
         if(setting) {
             setting.update(value);
         } else {

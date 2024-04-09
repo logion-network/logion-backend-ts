@@ -10,6 +10,7 @@ import {
     AuthenticationService
 } from "@logion/rest-api-core";
 import { VoteRepository, VoteAggregateRoot, Ballot, VoteResult } from "../model/vote.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 type VoteView = components["schemas"]["VoteView"];
 type FetchVotesResponseView = components["schemas"]["FetchVotesResponseView"];
@@ -51,7 +52,7 @@ export class VoteController extends ApiController {
     @HttpGet('/:legalOfficerAddress')
     async fetchVotes(_body: never, legalOfficerAddress: string): Promise<FetchVotesResponseView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        authenticatedUser.require(user => user.is(ValidAccountId.polkadot(legalOfficerAddress)));
         const votes = await this.voteRepository.findAll();
         return {
             votes: votes.map(vote => this.toView(vote))

@@ -1,5 +1,6 @@
 import { PostalAddress } from "./postaladdress.js";
 import { UserIdentity } from "./useridentity.js";
+import { ValidAccountId } from "@logion/node-api";
 
 interface LegalOfficerPostalAddress extends PostalAddress {
     readonly company: string
@@ -15,6 +16,6 @@ export interface LegalOfficer {
 
 export interface LegalOfficerSettingId {
     id: string,
-    legalOfficerAddress: string,
+    legalOfficer: ValidAccountId,
 }
 

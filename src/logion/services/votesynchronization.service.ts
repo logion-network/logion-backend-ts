@@ -4,7 +4,7 @@ import { injectable } from "inversify";
 import { VoteFactory } from "../model/vote.model.js";
 import { VoteService } from "./vote.service.js";
 import { JsonExtrinsic, toString, extractUuid, findEventsData } from "./types/responses/Extrinsic.js";
-import { Adapters } from "@logion/node-api";
+import { Adapters, ValidAccountId } from "@logion/node-api";
 
 const { logger } = Log;
 
@@ -64,7 +64,7 @@ export class VoteSynchronizer {
             const closed = data[2].isTrue;
             const approved = data[3].isTrue;
 
-            const voter = Adapters.asString(ballot.voter);
+            const voter = ValidAccountId.polkadot(Adapters.asString(ballot.voter));
             const result = Adapters.asString(ballot.status);
             logger.info(`Adding ballot for voter ${voter} to vote ${voteId}`);
             await this.voteService.update(voteId, async vote => {

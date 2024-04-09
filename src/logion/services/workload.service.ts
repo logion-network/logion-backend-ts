@@ -2,6 +2,7 @@ import { injectable } from "inversify";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 import { FetchVaultTransferRequestsSpecification, VaultTransferRequestRepository } from "../model/vaulttransferrequest.model.js";
 import { FetchProtectionRequestsSpecification, ProtectionRequestRepository } from "../model/protectionrequest.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 @injectable()
 export class WorkloadService {
@@ -13,7 +14,7 @@ export class WorkloadService {
     ) {
     }
 
-    async workloadOf(addresses: string[]): Promise<Record<string, number>> {
+    async workloadOf(addresses: ValidAccountId[]): Promise<Record<string, number>> {
         const pendingLocRequests = await this.locRequestRepository.findBy({
             expectedOwnerAddress: addresses,
             expectedStatuses: [ "REVIEW_PENDING" ],
@@ -26,10 +27,10 @@ export class WorkloadService {
             expectedLegalOfficerAddress: addresses,
             expectedStatuses: [ "PENDING" ],
         }));
-        return addresses.reduce((map, address) => {
-            map[address] = pendingLocRequests.filter(request => request.ownerAddress === address).length
-                + pendingVaultTransferRequests.filter(request => request.legalOfficerAddress === address).length
-                + pendingProtectionRequests.filter(request => request.legalOfficerAddress === address).length;
+        return addresses.reduce((map, account) => {
+            map[account.address] = pendingLocRequests.filter(request => request.getOwner().equals(account)).length
+                + pendingVaultTransferRequests.filter(request => request.getLegalOfficer().equals(account)).length
+                + pendingProtectionRequests.filter(request => request.getLegalOfficer().equals(account)).length;
             return map;
         }, {} as Record<string, number>);
     }

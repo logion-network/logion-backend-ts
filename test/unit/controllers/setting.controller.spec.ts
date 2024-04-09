@@ -10,8 +10,9 @@ import {
     SettingDescription
 } from '../../../src/logion/model/setting.model.js';
 import { NonTransactionalSettingService, SettingService } from '../../../src/logion/services/settings.service.js';
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
+import { ItIsAccount } from "../../helpers/Mock.js";
 
 const { setupApp } = TestApp;
 
@@ -60,7 +61,7 @@ function mockForList(container: Container) {
     setting.setup(instance => instance.legalOfficerAddress).returns(ALICE);
     setting.setup(instance => instance.value).returns(settingValue);
 
-    settingRepository.setup(instance => instance.findByLegalOfficer(ALICE)).returnsAsync([ setting.object() ]);
+    settingRepository.setup(instance => instance.findByLegalOfficer(ItIsAccount(ALICE_ACCOUNT))).returnsAsync([ setting.object() ]);
 }
 
 function createAndBindMocks(container: Container) {
@@ -79,13 +80,13 @@ function mockForCreate(container: Container) {
     createAndBindMocks(container);
 
     settingFactory.setup(instance => instance
-        .newSetting(It.Is<SettingDescription>(args => args.id === settingId && args.legalOfficerAddress === ALICE && args.value === settingValue)))
+        .newSetting(It.Is<SettingDescription>(args => args.id === settingId && args.legalOfficer.equals(ALICE_ACCOUNT) && args.value === settingValue)))
         .returns(setting.object());
-    
+
     settingRepository.setup(instance => instance
-        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficerAddress === ALICE)))
+        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficer.equals(ALICE_ACCOUNT))))
         .returnsAsync(null);
-    settingRepository.setup(instance => instance.save(setting.object())).returnsAsync();    
+    settingRepository.setup(instance => instance.save(setting.object())).returnsAsync();
 }
 
 const settingId = "some-id";
@@ -97,7 +98,7 @@ function mockForUpdate(container: Container) {
     setting.setup(instance => instance.update(settingValue)).returns();
 
     settingRepository.setup(instance => instance
-        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficerAddress === ALICE)))
+        .findById(It.Is<LegalOfficerSettingId>(args => args.id === settingId && args.legalOfficer.equals(ALICE_ACCOUNT))))
         .returnsAsync(setting.object());
     settingRepository.setup(instance => instance.save(setting.object())).returnsAsync();
 }

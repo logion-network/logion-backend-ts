@@ -13,8 +13,7 @@ import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
-import { Fees } from "@logion/node-api";
-import { SupportedAccountId } from "../../model/supportedaccountid.model.js";
+import { Fees, ValidAccountId } from "@logion/node-api";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -40,7 +39,7 @@ export class LocRequestAdapter {
         private verifiedIssuerSelectionRepository: VerifiedIssuerSelectionRepository,
     ) {}
 
-    async toView(request: LocRequestAggregateRoot, viewer: SupportedAccountId, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
+    async toView(request: LocRequestAggregateRoot, viewer: ValidAccountId, userPrivateDataArg?: UserPrivateData): Promise<LocRequestView> {
         let userPrivateData: UserPrivateData;
         if(userPrivateDataArg) {
             userPrivateData = userPrivateDataArg;
@@ -75,7 +74,7 @@ export class LocRequestAdapter {
             id,
             requesterAddress: locDescription.requesterAddress,
             requesterIdentityLoc: locDescription.requesterIdentityLoc,
-            ownerAddress: locDescription.ownerAddress,
+            ownerAddress: locDescription.ownerAddress.address,
             description: locDescription.description,
             locType: locDescription.locType,
             identityLoc: userPrivateData.identityLocId,

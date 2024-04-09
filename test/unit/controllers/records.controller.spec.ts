@@ -1,7 +1,12 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { TypesTokensRecord as ChainTokensRecord, TypesTokensRecordFile as ChainTokensRecordFile, Hash } from "@logion/node-api";
+import {
+    TypesTokensRecord as ChainTokensRecord,
+    TypesTokensRecordFile as ChainTokensRecordFile,
+    Hash,
+    ValidAccountId
+} from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import moment from "moment";
 import request from "supertest";
@@ -13,7 +18,7 @@ import { FileStorageService } from "../../../src/logion/services/file.storage.se
 import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { TokensRecordController } from "../../../src/logion/controllers/records.controller.js";
 import {
     TokensRecordRepository,
@@ -26,10 +31,11 @@ import { GetTokensRecordFileParams, GetTokensRecordParams, LogionNodeTokensRecor
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { CollectionItemAggregateRoot, CollectionItemDescription, CollectionRepository } from "../../../src/logion/model/collection.model.js";
 import { ItIsHash } from "../../helpers/Mock.js";
+import { DB_SS58_PREFIX, EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
-const collectionLocOwner = ALICE;
-const collectionRequester = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
+const collectionLocOwner = ALICE_ACCOUNT;
+const collectionRequester = ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
 const itemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const timestamp = moment();
 
@@ -295,7 +301,7 @@ describe("TokensRecordController", () => {
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of related item's underlying token");
+                expect(response.body.errorMessage).toBe("vQx5kESPn8dWyX4KxMCKqUyCaWUwtui1isX6PVNcZh2Ghjitr does not seem to be the owner of related item's underlying token");
             });
     })
 
@@ -415,8 +421,8 @@ function mockModel(
 
     container.bind(TokensRecordRepository).toConstantValue(tokensRecordRepository.object())
 
-    collectionLoc.ownerAddress = collectionLocOwner;
-    collectionLoc.requesterAddress = collectionRequester;
+    collectionLoc.ownerAddress = collectionLocOwner.getAddress(DB_SS58_PREFIX);
+    collectionLoc.requester = EmbeddableNullableAccountId.from(collectionRequester);
     collectionLoc.locType = "Collection";
     collectionLoc.status = "CLOSED";
     locRequestRepository.setup(instance => instance.findById(collectionLocId))

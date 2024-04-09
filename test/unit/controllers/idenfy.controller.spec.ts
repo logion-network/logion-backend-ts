@@ -8,7 +8,7 @@ import { IdenfyController } from "../../../src/logion/controllers/idenfy.control
 import { LocRequestAggregateRoot, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
 import { IdenfyService, IdenfyVerificationCreation } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { mockRequester } from "./locrequest.controller.shared.js";
-import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { ValidAccountId } from "@logion/node-api";
 import express, { Express } from 'express';
 import { Dino } from 'dinoloop';
 import { ApplicationErrorController } from "@logion/rest-api-core/dist/ApplicationErrorController.js";
@@ -54,7 +54,7 @@ describe("IdenfyController", () => {
 
 function mockVerification(container: Container, requester: string) {
     const locRequest = new Mock<LocRequestAggregateRoot>();
-    mockRequester(locRequest, polkadotAccount(requester));
+    mockRequester(locRequest, ValidAccountId.polkadot(requester));
 
     const repository = new Mock<LocRequestRepository>();
     repository.setup(instance => instance.findById(REQUEST_ID)).returnsAsync(locRequest.object());

@@ -37,7 +37,7 @@ import {
     forbidden,
     unauthorized,
 } from "@logion/rest-api-core";
-import { LocType, UUID } from "@logion/node-api";
+import { LocType, UUID, ValidAccountId } from "@logion/node-api";
 
 import { UserIdentity } from "../model/useridentity.js";
 import { FileStorageService } from "../services/file.storage.service.js";
@@ -51,7 +51,7 @@ import { downloadAndClean, toBadRequest } from "../lib/http.js";
 import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
 import { LocRequestService } from "../services/locrequest.service.js";
 import { LocAuthorizationService, Contribution } from "../services/locauthorization.service.js";
-import { accountEquals, polkadotAccount } from "../model/supportedaccountid.model.js";
+import { accountEquals, validAccountId } from "../model/supportedaccountid.model.js";
 import { SponsorshipService } from "../services/sponsorship.service.js";
 import { Hash } from "../lib/crypto/hashing.js";
 import { toBigInt } from "../lib/convert.js";
@@ -125,7 +125,6 @@ type AddFileView = components["schemas"]["AddFileView"];
 type AddLinkView = components["schemas"]["AddLinkView"];
 type AddMetadataView = components["schemas"]["AddMetadataView"];
 type CreateSofRequestView = components["schemas"]["CreateSofRequestView"];
-type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 type ReviewItemView = components["schemas"]["ReviewItemView"];
 type OpenLocView = components["schemas"]["OpenLocView"];
 type CloseView = components["schemas"]["CloseView"];
@@ -170,15 +169,13 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
         const locType = requireDefined(createLocRequestView.locType);
-        const owner = polkadotAccount(ownerAddress);
-        const requesterAddress = !accountEquals(authenticatedUser, owner) ? {
-            type: authenticatedUser.type,
-            address: authenticatedUser.address,
-        } : createLocRequestView.requesterAddress;
+        const requesterAddress = !accountEquals(authenticatedUser.toValidAccountId(), ownerAddress) ?
+            authenticatedUser.toValidAccountId() :
+            validAccountId(createLocRequestView.requesterAddress)
         const sponsorshipId = createLocRequestView.sponsorshipId ? new UUID(createLocRequestView.sponsorshipId) : undefined;
         if (sponsorshipId) {
             try {
-                await this.sponsorshipService.validateSponsorship(sponsorshipId, owner, authenticatedUser);
+                await this.sponsorshipService.validateSponsorship(sponsorshipId, ownerAddress, authenticatedUser.toValidAccountId());
             } catch (e) {
                 throw badRequest("" + e);
             }
@@ -213,7 +210,7 @@ export class LocRequestController extends ApiController {
             collectionParams: this.toCollectionParams(createLocRequestView.collectionParams),
         }
         let request: LocRequestAggregateRoot;
-        if (accountEquals(authenticatedUser, owner)) {
+        if (accountEquals(authenticatedUser.toValidAccountId(), ownerAddress)) {
             request = await this.locRequestFactory.newLOLocRequest({
                 id: uuid(),
                 description,
@@ -230,7 +227,7 @@ export class LocRequestController extends ApiController {
         if (request.status === "REVIEW_PENDING") {
             this.notify("LegalOfficer", "loc-requested", request.getDescription(), userIdentity)
         }
-        return this.locRequestAdapter.toView(request, authenticatedUser, { userIdentity, userPostalAddress, identityLocId });
+        return this.locRequestAdapter.toView(request, authenticatedUser.toValidAccountId(), { userIdentity, userPostalAddress, identityLocId });
     }
 
     private toLocFees(view: LocFeesView | undefined, locType: LocType): LocFees {
@@ -284,7 +281,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
         const locType = requireDefined(openLocView.locType);
-        const requesterAddress = polkadotAccount(authenticatedUser.address);
+        const requesterAddress = authenticatedUser.toValidAccountId();
         const requesterIdentityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(requesterAddress, ownerAddress);
         if (requesterIdentityLoc && locType === "Identity") {
             throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");
@@ -318,7 +315,7 @@ export class LocRequestController extends ApiController {
             links,
         })
         await this.locRequestService.addNewRequest(request);
-        return this.locRequestAdapter.toView(request, authenticatedUser);
+        return this.locRequestAdapter.toView(request, authenticatedUser.toValidAccountId());
     }
 
     private async existsValidLogionIdentityLoc(identityLocId:string | undefined): Promise<boolean> {
@@ -330,7 +327,7 @@ export class LocRequestController extends ApiController {
             identityLoc.locType === 'Identity' &&
             identityLoc.status === 'CLOSED' &&
             identityLoc.getVoidInfo() === null &&
-            !identityLoc.requesterAddress;
+            identityLoc.getRequester() === undefined;
     }
 
     private fromUserIdentityView(userIdentityView: UserIdentityView | undefined): UserIdentity | undefined {
@@ -358,17 +355,6 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    static fetchRequests(spec: OpenAPIV3.Document) {
-        const operationObject = spec.paths["/api/loc-request"].put!;
-        operationObject.summary = "Lists LOC Requests based on a given specification";
-        operationObject.description = "The authenticated user must be either expected requester or expected owner.";
-        operationObject.requestBody = getRequestBody({
-            description: "The specification for fetching LOC Requests",
-            view: "FetchLocRequestsSpecificationView",
-        });
-        operationObject.responses = getDefaultResponses("FetchLocRequestsResponseView");
-    }
-
     static cancelCreateOpenLoc(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/loc-request/open/{requestId}"].delete!;
         operationObject.summary = "Cancels new open LOC";
@@ -383,7 +369,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestRepository.findById(requestId);
         if(request && request.id) {
-            if(!request.isRequester(authenticatedUser)) {
+            if(!request.isRequester(authenticatedUser.toValidAccountId())) {
                 throw unauthorized("Only requester can cancel request");
             }
             await this.locRequestService.deleteOpen(request.id);
@@ -391,14 +377,27 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
+    static fetchRequests(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request"].put!;
+        operationObject.summary = "Lists LOC Requests based on a given specification";
+        operationObject.description = "The authenticated user must be either expected requester or expected owner.";
+        operationObject.requestBody = getRequestBody({
+            description: "The specification for fetching LOC Requests",
+            view: "FetchLocRequestsSpecificationView",
+        });
+        operationObject.responses = getDefaultResponses("FetchLocRequestsResponseView");
+    }
+
     @HttpPut('')
     @Async()
     async fetchRequests(specificationView: FetchLocRequestsSpecificationView): Promise<FetchLocRequestsResponseView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(authenticatedUser => authenticatedUser.isOneOf([ specificationView.requesterAddress, specificationView.ownerAddress ]));
+        const requester = specificationView.requesterAddress ? ValidAccountId.polkadot(specificationView.requesterAddress) : undefined;
+        const owner = specificationView.ownerAddress ? ValidAccountId.polkadot(specificationView.ownerAddress) : undefined;
+        authenticatedUser.require(authenticatedUser => authenticatedUser.isOneOf([ requester, owner ]));
         const specification: FetchLocRequestsSpecification = {
-            expectedRequesterAddress: specificationView.requesterAddress,
-            expectedOwnerAddress: specificationView.ownerAddress,
+            expectedRequesterAddress: requester,
+            expectedOwnerAddress: owner ? [ owner ] : undefined,
             expectedStatuses: requireDefined(specificationView.statuses),
             expectedLocTypes: specificationView.locTypes,
             expectedIdentityLocType: specificationView.identityLocType,
@@ -406,7 +405,7 @@ export class LocRequestController extends ApiController {
         }
         const requests = Promise.all((await this.locRequestRepository.findBy(specification)).map(async request => {
             const userPrivateData = await this.locRequestAdapter.findUserPrivateData(request);
-            return this.locRequestAdapter.toView(request, authenticatedUser, userPrivateData);
+            return this.locRequestAdapter.toView(request, authenticatedUser.toValidAccountId(), userPrivateData);
         }));
         return requests.then(requestViews => Promise.resolve({requests: requestViews}))
     }
@@ -432,16 +431,16 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: SupportedAccountId, voter: boolean} > {
+    private async ensureContributorOrVoter(request: LocRequestAggregateRoot): Promise<{ contributor: ValidAccountId, voter: boolean} > {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         if (await this.locAuthorizationService.isContributor(Contribution.locContribution(this.request, request), authenticatedUser)) {
             return {
-                contributor: authenticatedUser,
+                contributor: authenticatedUser.toValidAccountId(),
                 voter: false
             }
         } else if (await this.locAuthorizationService.isVoterOnLoc(request, authenticatedUser)) {
             return {
-                contributor: authenticatedUser,
+                contributor: authenticatedUser.toValidAccountId(),
                 voter: true
             }
         } else {
@@ -472,7 +471,7 @@ export class LocRequestController extends ApiController {
         const view: LocPublicView = {
             id: request.id,
             requesterAddress: locDescription.requesterAddress,
-            ownerAddress: locDescription.ownerAddress,
+            ownerAddress: locDescription.ownerAddress.address,
             createdOn: locDescription.createdOn || undefined,
             closedOn: request.closedOn || undefined,
             files: request.getFiles().map(file => ({
@@ -523,7 +522,7 @@ export class LocRequestController extends ApiController {
     async rejectLocRequest(rejectLocRequestView: RejectLocRequestView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             request.reject(rejectLocRequestView.rejectReason!, moment());
         });
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
@@ -543,7 +542,7 @@ export class LocRequestController extends ApiController {
     async acceptLocRequest(body: OpenView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             request.accept(moment());
             if (!request.canOpen(request.getRequester())) {
                 request.preOpen(body.autoPublish || false);
@@ -566,7 +565,7 @@ export class LocRequestController extends ApiController {
     async submitLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
             request.submit();
         });
         const { userIdentity } = await this.locRequestAdapter.findUserPrivateData(request);
@@ -586,7 +585,7 @@ export class LocRequestController extends ApiController {
     async cancelLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestService.deleteDraftRejectedOrAccepted(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
         });
         for(const file of request.files || []) {
             this.fileStorageService.deleteFile(file);
@@ -606,7 +605,7 @@ export class LocRequestController extends ApiController {
     async reworkLocRequest(_ignoredBody: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
             request.rework();
         });
     }
@@ -653,7 +652,7 @@ export class LocRequestController extends ApiController {
         }
     }
 
-    toFile(addFileView: AddFileView, submitter: SupportedAccountId, storedFile?: StoredFile): FileParams {
+    toFile(addFileView: AddFileView, submitter: ValidAccountId, storedFile?: StoredFile): FileParams {
         const hash = Hash.fromHex(requireDefined(addFileView.hash, () => badRequest("No hash found for upload file")));
         const file = storedFile ? storedFile : {
             name: "not-yet-uploaded",
@@ -782,7 +781,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const hash = Hash.fromHex(hashHex);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             if (view.decision === "ACCEPT") {
                 request.acceptFile(hash);
             } else {
@@ -921,7 +920,7 @@ export class LocRequestController extends ApiController {
     async openLoc(body: OpenView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => request.canOpen(user), "LOC must be opened by Polkadot requester");
+            authenticatedUser.require(user => request.canOpen(user.toValidAccountId()), "LOC must be opened by Polkadot requester");
             request.preOpen(body.autoPublish || false);
         });
         this.response.sendStatus(204);
@@ -941,7 +940,7 @@ export class LocRequestController extends ApiController {
     async cancelOpenLoc(_body: never, requestId: string, @QueryParam() autoPublish: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => request.canOpen(user), "LOC must be opened by Polkadot requester");
+            authenticatedUser.require(user => request.canOpen(user.toValidAccountId()), "LOC must be opened by Polkadot requester");
             request.cancelPreOpen(autoPublish === "true" || false);
         });
         this.response.sendStatus(204);
@@ -961,7 +960,7 @@ export class LocRequestController extends ApiController {
     async closeLoc(body: CloseView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             try {
                 request.preClose(body.autoAck || false);
             } catch(e) {
@@ -985,7 +984,7 @@ export class LocRequestController extends ApiController {
     async cancelCloseLoc(_body: never, requestId: string, @QueryParam() autoAck: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             request.cancelPreClose(autoAck === "true");
         });
         this.response.sendStatus(204);
@@ -1009,7 +1008,7 @@ export class LocRequestController extends ApiController {
     async voidLoc(body: VoidLocView, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             request.preVoid(body.reason || "");
         });
         this.response.sendStatus(204);
@@ -1029,7 +1028,7 @@ export class LocRequestController extends ApiController {
     async cancelVoidLoc(_body: never, requestId: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             request.cancelPreVoid();
         });
         this.response.sendStatus(204);
@@ -1056,7 +1055,7 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    async toLink(addLinkView: AddLinkView, submitter: SupportedAccountId): Promise<LinkParams> {
+    async toLink(addLinkView: AddLinkView, submitter: ValidAccountId): Promise<LinkParams> {
         // Note: this check (LOC exists in local backend) is stricter than the one done on-chain (LOC exists on chain)
         const targetRequest = requireDefined(await this.locRequestRepository.findById(addLinkView.target!));
         return {
@@ -1136,7 +1135,7 @@ export class LocRequestController extends ApiController {
     async reviewLink(view: ReviewItemView, requestId: string, target: string) {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             if (view.decision === "ACCEPT") {
                 request.acceptLink(target);
             } else {
@@ -1277,7 +1276,7 @@ export class LocRequestController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    toMetadata(addMetadataView: AddMetadataView, submitter: SupportedAccountId): MetadataItemParams {
+    toMetadata(addMetadataView: AddMetadataView, submitter: ValidAccountId): MetadataItemParams {
         const name = requireLength(addMetadataView, "name", 3, 255);
         const value = requireLength(addMetadataView, "value", 1, 4096);
         return { name, value, submitter }
@@ -1354,7 +1353,7 @@ export class LocRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const hash = Hash.fromHex(nameHash);
         const request = await this.locRequestService.update(requestId, async request => {
-            authenticatedUser.require(user => user.is(request.ownerAddress));
+            authenticatedUser.require(user => user.is(request.getOwner()));
             if (view.decision === "ACCEPT") {
                 request.acceptMetadataItem(hash);
             } else {
@@ -1509,8 +1508,8 @@ export class LocRequestController extends ApiController {
             description = `${ description } - ${ itemId }`
             linkNature = `${ linkNature } - Collection Item: ${ itemId }`
         }
-        const ownerAddress = requireDefined(loc.ownerAddress);
-        const requesterIdentityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(contributor, loc.ownerAddress!)
+        const ownerAddress = loc.getOwner();
+        const requesterIdentityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(contributor, loc.getOwner())
         const requestDescription: LocRequestDescription = {
             requesterAddress: contributor,
             requesterIdentityLoc: requesterIdentityLoc?.id,

@@ -1,10 +1,12 @@
 import { injectable } from 'inversify';
 import { Column, Entity, PrimaryColumn, Repository } from "typeorm";
 import { appDataSource, requireDefined } from "@logion/rest-api-core";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 
 export interface VerifiedIssuerSelectionId {
     locRequestId: string;
-    issuer: string;
+    issuer: ValidAccountId;
 }
 
 @Entity("issuer_selection")
@@ -13,7 +15,7 @@ export class VerifiedIssuerAggregateRoot {
     get id(): VerifiedIssuerSelectionId {
         return {
             locRequestId: requireDefined(this.locRequestId),
-            issuer: requireDefined(this.issuer),
+            issuer: this.getIssuer(),
         };
     }
 
@@ -32,6 +34,10 @@ export class VerifiedIssuerAggregateRoot {
 
     @Column("boolean", { default: true })
     selected?: boolean;
+
+    getIssuer(): ValidAccountId {
+        return ValidAccountId.polkadot(this.issuer || "");
+    }
 }
 
 export interface FindBySpecification extends Partial<VerifiedIssuerSelectionId> {
@@ -52,11 +58,18 @@ export class VerifiedIssuerSelectionRepository {
     }
 
     async findById(id: VerifiedIssuerSelectionId): Promise<VerifiedIssuerAggregateRoot | null> {
-        return await this.repository.findOneBy(id);
+        return await this.repository.findOneBy({
+            ...id,
+            issuer: id.issuer.getAddress(DB_SS58_PREFIX),
+        });
     }
 
     async findBy(spec: FindBySpecification): Promise<VerifiedIssuerAggregateRoot[]> {
-        return this.repository.findBy(spec);
+        const dbSpec = {
+            ...spec,
+            issuer: spec.issuer?.getAddress(DB_SS58_PREFIX),
+        }
+        return this.repository.findBy(dbSpec);
     }
 
     async unselectAll(issuer: string) {
@@ -75,7 +88,7 @@ export class VerifiedIssuerSelectionFactory {
 
         const root = new VerifiedIssuerAggregateRoot();
         root.locRequestId = locRequestId;
-        root.issuer = issuer;
+        root.issuer = issuer.getAddress(DB_SS58_PREFIX);
 
         root.identityLocId = identityLocId;
         root.selected = true;

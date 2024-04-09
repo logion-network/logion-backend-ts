@@ -32,6 +32,8 @@ describe("TransactionSync", () => {
         // Given
         const block = new Mock<BlockExtrinsics>();
         const transaction = new Mock<Transaction>();
+        transaction.setup(instance => instance.from).returns("14Gjs1TD93gnwEBfDMHoCgsuf1s2TVKUP6Z1qKmAZnZ8cW5q");
+        transaction.setup(instance => instance.to).returns(null);
         const transactions = [ transaction.object() ];
         const blockWithTransaction = new BlockWithTransactionsBuilder()
                 .timestamp(moment())

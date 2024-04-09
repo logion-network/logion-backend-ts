@@ -18,15 +18,16 @@ import {
     userIdentities,
     POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
-import { BOB } from "../../helpers/addresses.js";
+import { BOB, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";
+import { ValidAccountId } from "@logion/node-api";
 
 const { setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
 
 describe('LocRequestController - Life Cycle - Authenticated LLO is **NOT** LOC owner', () => {
 
     function authenticatedLLONotLocOwner() {
-        const authenticatedUser = mockLegalOfficerOnNode(BOB); // Alice is LOC owner
+        const authenticatedUser = mockLegalOfficerOnNode(BOB_ACCOUNT); // Alice is LOC owner
         return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
     }
 
@@ -163,19 +164,19 @@ describe('LocRequestController - Life Cycle - Authenticated LLO is LOC owner', (
 
 describe("LocRequestController - Life Cycle - Authenticated user opens LOC", () => {
 
-    function authenticatePolkadotRequester(address: string) {
-        return mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, address));
+    function authenticatePolkadotRequester(account: ValidAccountId) {
+        return mockAuthenticationWithAuthenticatedUser(mockAuthenticatedUser(true, account));
     }
 
     it('opens an accepted request', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(POLKADOT_REQUESTER.address))
+        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(POLKADOT_REQUESTER))
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/open`)
             .expect(204)
     })
 
     it('fails to open an accepted request when not requester', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester("5CdRcqWggMitHtaGq1iFMqJCySfb8k31GSxC32txLe6KPP7z"))
+        const app = setupApp(LocRequestController, container => mockModelForOpen(container, "Transaction"), authenticatePolkadotRequester(ValidAccountId.polkadot("5CdRcqWggMitHtaGq1iFMqJCySfb8k31GSxC32txLe6KPP7z")))
         await request(app)
             .post(`/api/loc-request/${ REQUEST_ID }/open`)
             .expect(401)
@@ -283,6 +284,8 @@ function mockModelForCancel(container: Container) {
 
 function mockModelForRework(container: Container) {
     const { request } = buildMocksForUpdate(container);
-    setupRequest(request, REQUEST_ID, "Identity", "REVIEW_REJECTED");
+    setupRequest(request, REQUEST_ID, "Identity", "REVIEW_REJECTED", {
+        requesterAddress: POLKADOT_REQUESTER
+    });
     request.setup(instance => instance.rework()).returns(undefined);
 }

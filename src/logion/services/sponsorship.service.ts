@@ -1,8 +1,8 @@
 import { injectable } from "inversify";
-import { Sponsorship, UUID } from "@logion/node-api";
+import { Sponsorship, UUID, ValidAccountId } from "@logion/node-api";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 import { PolkadotService } from "@logion/rest-api-core";
-import { accountEquals, SupportedAccountId } from "../model/supportedaccountid.model.js";
+import { accountEquals, validAccountId } from "../model/supportedaccountid.model.js";
 
 @injectable()
 export class SponsorshipService {
@@ -17,7 +17,7 @@ export class SponsorshipService {
         return (await this.polkadotService.readyApi()).queries.getSponsorship(sponsorshipId);
     }
 
-    async validateSponsorship(sponsorshipId: UUID, legalOfficer: SupportedAccountId, requester: SupportedAccountId): Promise<void> {
+    async validateSponsorship(sponsorshipId: UUID, legalOfficer: ValidAccountId, requester: ValidAccountId): Promise<void> {
         const sponsorship = await this.getSponsorship(sponsorshipId);
         if (sponsorship === undefined) {
             throw new Error("Sponsorship not found")
@@ -28,8 +28,8 @@ export class SponsorshipService {
         if (await this.locRequestRepository.existsBy({ expectedSponsorshipId: sponsorshipId })) {
             throw Error("This sponsorship is already used in a draft/requested LOC")
         }
-        if (!accountEquals(sponsorship.legalOfficer, legalOfficer) ||
-            !accountEquals(sponsorship.sponsoredAccount, requester)) {
+        if (!accountEquals(validAccountId(sponsorship.legalOfficer), legalOfficer) ||
+            !accountEquals(validAccountId(sponsorship.sponsoredAccount), requester)) {
             throw Error("This sponsorship is not applicable to your request")
         }
     }

@@ -2,12 +2,13 @@ import { TestApp } from "@logion/rest-api-core";
 import { LocRequestController } from "../../../src/logion/controllers/locrequest.controller.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE, BOB, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import {
     FileDescription,
     LinkDescription,
     MetadataItemDescription,
-    LocType, LocRequestDescription, CollectionParams,
+    LocType,
+    LocRequestDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import moment from "moment";
 import {
@@ -32,7 +33,7 @@ import {
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
 import { Fees, Hash, Lgnt } from "@logion/node-api";
-import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
@@ -43,7 +44,7 @@ describe('LocRequestController - Fetch -', () => {
         await request(app)
             .put('/api/loc-request')
             .send({
-                requesterAddress: testDataWithUserIdentity.requesterAddress,
+                requesterAddress: testDataWithUserIdentity.requesterAddress?.address,
                 statuses: [ "OPEN", "REJECTED" ]
             })
             .expect(200)
@@ -55,7 +56,7 @@ describe('LocRequestController - Fetch -', () => {
                 expect(request1.id).toBe(REQUEST_ID);
                 expect(request1.requesterAddress.address).toEqual(testData.requesterAddress?.address);
                 expect(request1.requesterAddress.type).toEqual(testData.requesterAddress?.type);
-                expect(request1.ownerAddress).toBe(ALICE);
+                expect(request1.ownerAddress).toBe(ALICE_ACCOUNT.address);
                 expect(request1.status).toBe("REVIEW_REJECTED");
                 expect(request1.rejectReason).toBe(REJECT_REASON);
                 const userIdentity = request1.userIdentity;
@@ -74,7 +75,7 @@ describe('LocRequestController - Fetch -', () => {
         await request(app)
             .put('/api/loc-request')
             .send({
-                requesterAddress: testData.requesterAddress,
+                requesterAddress: testData.requesterAddress?.address,
                 statuses: [ "OPEN", "REJECTED" ]
             })
             .expect(401)
@@ -110,7 +111,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('fails to get single LOC if not contributor', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, "any other address");
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, { address: "0x6ef154673a6379b2CDEDeD6aF1c0d705c3c8272a", type: "Ethereum" });
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -118,7 +119,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('succeeds to get single LOC if verified issuer', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'SELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -127,7 +128,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('succeeds to get single LOC when LLO with Vote', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB_ACCOUNT);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_ISSUER', true), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -136,7 +137,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('fails to get single LOC if unselected verified issuer', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER.address);
+        const mock = mockAuthenticationForUserOrLegalOfficer(false, ISSUER);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'UNSELECTED'), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -144,7 +145,7 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('fails to get single LOC when LLO without Vote', async () => {
-        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB);
+        const mock = mockAuthenticationForUserOrLegalOfficer(true, BOB_ACCOUNT);
         const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity','EmbeddedInLoc', 'NOT_ISSUER', false), mock);
         await request(app)
             .get(`/api/loc-request/${ REQUEST_ID }`)
@@ -210,7 +211,7 @@ function mockModelForGetSingle(
     setUpVote(voteRepository, voteExists);
 }
 
-const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+const SUBMITTER = ValidAccountId.polkadot("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
 
 const FILE_FEES = new Fees({ inclusionFee: Lgnt.fromCanonical(42n), storageFee: Lgnt.fromCanonical(24n) });
 const testFile: FileDescription = {
@@ -266,7 +267,8 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(file.nature).toBe(testFile.nature)
             expect(file.hash).toBe(testFile.hash.toHex())
             expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
-            expect(file.submitter).toEqual(SUBMITTER)
+            expect(file.submitter.address).toEqual(SUBMITTER.address)
+            expect(file.submitter.type).toEqual(SUBMITTER.type)
             expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
             expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
             expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
@@ -277,7 +279,8 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)
             expect(link.addedOn).toBe(testLink.addedOn?.toISOString())
-            expect(link.submitter).toEqual(SUBMITTER)
+            expect(link.submitter.address).toEqual(SUBMITTER.address)
+            expect(link.submitter.type).toEqual(SUBMITTER.type)
             expect(link.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             expect(link.status).toBe(testMetadataItem.status)
             expect(link.acknowledgedByOwnerOn).toBeDefined()
@@ -286,7 +289,8 @@ async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData
             expect(metadataItem.name).toBe(testMetadataItem.name)
             expect(metadataItem.value).toBe(testMetadataItem.value)
             expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
-            expect(metadataItem.submitter).toEqual(SUBMITTER)
+            expect(metadataItem.submitter.address).toEqual(SUBMITTER.address)
+            expect(metadataItem.submitter.type).toEqual(SUBMITTER.type)
             expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
             expect(metadataItem.status).toBe(testMetadataItem.status)
             expect(metadataItem.acknowledgedByOwnerOn).toBeDefined()

@@ -3,6 +3,8 @@ import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource, Log, badRequest, requireDefined } from "@logion/rest-api-core";
 import { LocRequestRepository } from "./locrequest.model.js";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 
 const { logger } = Log;
 
@@ -126,13 +128,13 @@ export class ProtectionRequestAggregateRoot {
 
     getDescription(): ProtectionRequestDescription {
         return {
-            requesterAddress: this.requesterAddress || "",
+            requesterAddress: ValidAccountId.polkadot(this.requesterAddress || ""),
             requesterIdentityLocId: this.requesterIdentityLocId || "",
-            legalOfficerAddress: this.legalOfficerAddress || "",
-            otherLegalOfficerAddress: this.otherLegalOfficerAddress || "",
+            legalOfficerAddress: ValidAccountId.polkadot(this.legalOfficerAddress || ""),
+            otherLegalOfficerAddress: ValidAccountId.polkadot(this.otherLegalOfficerAddress || ""),
             createdOn: this.createdOn!,
             isRecovery: this.isRecovery!,
-            addressToRecover: this.addressToRecover || null,
+            addressToRecover: this.addressToRecover ? ValidAccountId.polkadot(this.addressToRecover) : null,
         };
     }
 
@@ -146,13 +148,33 @@ export class ProtectionRequestAggregateRoot {
             rejectReason,
         }
     }
+
+    getLegalOfficer(): ValidAccountId {
+        return ValidAccountId.polkadot(this.legalOfficerAddress || "")
+    }
+
+    getOtherLegalOfficer(): ValidAccountId {
+        return ValidAccountId.polkadot(this.otherLegalOfficerAddress || "")
+    }
+
+    getRequester(): ValidAccountId {
+        return ValidAccountId.polkadot(this.requesterAddress || "")
+    }
+
+    getAddressToRecover(): ValidAccountId | null {
+        if (this.addressToRecover !== undefined && this.addressToRecover !== null) {
+            return ValidAccountId.polkadot(this.addressToRecover)
+        } else {
+            return null;
+        }
+    }
 }
 
 export class FetchProtectionRequestsSpecification {
 
     constructor(builder: {
-        expectedRequesterAddress?: string,
-        expectedLegalOfficerAddress?: string | string[],
+        expectedRequesterAddress?: ValidAccountId,
+        expectedLegalOfficerAddress?: ValidAccountId[],
         expectedStatuses?: ProtectionRequestStatus[],
         kind?: ProtectionRequestKind,
     }) {
@@ -162,8 +184,8 @@ export class FetchProtectionRequestsSpecification {
         this.kind = builder.kind || 'ANY';
     }
 
-    readonly expectedRequesterAddress: string | null;
-    readonly expectedLegalOfficerAddress: string | string[] | null;
+    readonly expectedRequesterAddress: ValidAccountId | null;
+    readonly expectedLegalOfficerAddress: ValidAccountId[] | null;
     readonly kind: ProtectionRequestKind;
     readonly expectedStatuses: ProtectionRequestStatus[];
 }
@@ -190,16 +212,22 @@ export class ProtectionRequestRepository {
 
         let where = (a: string, b?: ObjectLiteral) => builder.where(a, b);
 
-        if(specification.expectedRequesterAddress !== null) {
-            where("request.requester_address = :expectedRequesterAddress", {expectedRequesterAddress: specification.expectedRequesterAddress});
+        if (specification.expectedRequesterAddress !== null) {
+            where("request.requester_address = :expectedRequesterAddress",
+                { expectedRequesterAddress: specification.expectedRequesterAddress.getAddress(DB_SS58_PREFIX) }
+            );
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
-        if(specification.expectedLegalOfficerAddress !== null) {
-            if(typeof specification.expectedLegalOfficerAddress === "string") {
-                where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+        if (specification.expectedLegalOfficerAddress !== null) {
+            if (specification.expectedLegalOfficerAddress.length === 1) {
+                where("request.legal_officer_address = :expectedLegalOfficerAddress",
+                    { expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress[0].getAddress(DB_SS58_PREFIX) }
+                );
             } else {
-                where("request.legal_officer_address IN (:...expectedLegalOfficerAddress)", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+                where("request.legal_officer_address IN (:...expectedLegalOfficerAddresses)",
+                    { expectedLegalOfficerAddresses: specification.expectedLegalOfficerAddress.map(account => account.getAddress(DB_SS58_PREFIX)) }
+                );
             }
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
@@ -221,13 +249,13 @@ export class ProtectionRequestRepository {
 }
 
 export interface ProtectionRequestDescription {
-    readonly requesterAddress: string,
+    readonly requesterAddress: ValidAccountId,
     readonly requesterIdentityLocId: string,
-    readonly legalOfficerAddress: string,
-    readonly otherLegalOfficerAddress: string,
+    readonly legalOfficerAddress: ValidAccountId,
+    readonly otherLegalOfficerAddress: ValidAccountId,
     readonly createdOn: string,
     readonly isRecovery: boolean,
-    readonly addressToRecover: string | null,
+    readonly addressToRecover: ValidAccountId | null,
 }
 
 export interface LegalOfficerDecisionDescription {
@@ -237,13 +265,13 @@ export interface LegalOfficerDecisionDescription {
 
 export interface NewProtectionRequestParameters {
     readonly id: string;
-    readonly requesterAddress: string,
+    readonly requesterAddress: ValidAccountId,
     readonly requesterIdentityLoc: string,
-    readonly legalOfficerAddress: string,
-    readonly otherLegalOfficerAddress: string,
+    readonly legalOfficerAddress: ValidAccountId,
+    readonly otherLegalOfficerAddress: ValidAccountId,
     readonly createdOn: string,
     readonly isRecovery: boolean,
-    readonly addressToRecover: string | null,
+    readonly addressToRecover: ValidAccountId | null,
 }
 
 @injectable()
@@ -266,15 +294,15 @@ export class ProtectionRequestFactory {
         root.id = params.id;
         root.status = 'PENDING';
         root.decision = new LegalOfficerDecision();
-        root.requesterAddress = params.requesterAddress;
+        root.requesterAddress = params.requesterAddress.getAddress(DB_SS58_PREFIX);
         root.requesterIdentityLocId = identityLoc.id;
-        root.legalOfficerAddress = params.legalOfficerAddress;
-        root.otherLegalOfficerAddress = params.otherLegalOfficerAddress;
+        root.legalOfficerAddress = params.legalOfficerAddress.getAddress(DB_SS58_PREFIX);
+        root.otherLegalOfficerAddress = params.otherLegalOfficerAddress.getAddress(DB_SS58_PREFIX);
         root.createdOn = params.createdOn;
         root.isRecovery = params.isRecovery;
         if(root.isRecovery) {
             root.addressToRecover = requireDefined(
-                params.addressToRecover,
+                params.addressToRecover?.getAddress(DB_SS58_PREFIX),
                 () => badRequest("Recovery requires an address to recover")
             );
         }

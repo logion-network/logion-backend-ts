@@ -14,11 +14,9 @@ import { IdenfyVerificationSession } from "../../../../src/logion/services/idenf
 import { NonTransactionalLocRequestService } from "../../../../src/logion/services/locrequest.service.js";
 import { Readable } from "stream";
 import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
-import {
-    accountEquals,
-    polkadotAccount
-} from "../../../../src/logion/model/supportedaccountid.model.js";
+import { accountEquals } from "../../../../src/logion/model/supportedaccountid.model.js";
 import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
+import { ValidAccountId } from "@logion/node-api";
 
 describe("DisabledIdenfyService", () => {
 
@@ -115,7 +113,7 @@ const IDENFY_API_KEY = "api-key";
 const IDENFY_API_SECRET = "api-secret";
 const IDENFY_SIGNING_KEY = "signing-key";
 const IDENFY_SCAN_REF = "3af0b5c9-8ef3-4815-8796-5ab3ed942917";
-const LOC_OWNER_ACCOUNT = polkadotAccount(ALICE);
+const LOC_OWNER_ACCOUNT = ValidAccountId.polkadot(ALICE);
 const VERIFICATION_CREATION: IdenfyVerificationCreation = {
     successUrl: `${ BASE_URL }/user/idenfy?result=success&locId=${ REQUEST_ID }`,
     errorUrl: `${ BASE_URL }/user/idenfy?result=error&locId=${ REQUEST_ID }`,

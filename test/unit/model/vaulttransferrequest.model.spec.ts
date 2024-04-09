@@ -6,7 +6,8 @@ import {
     VaultTransferRequestFactory,
     VaultTransferRequestAggregateRoot,
 } from '../../../src/logion/model/vaulttransferrequest.model.js';
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ValidAccountId } from "@logion/node-api";
 
 describe('VaultTransferRequestFactory', () => {
 
@@ -101,10 +102,10 @@ describe('VaultTransferRequestAggregateRoot', () => {
 
 const description: VaultTransferRequestDescription = {
     id: uuid(),
-    requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-    legalOfficerAddress: ALICE,
-    origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-    destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
+    requesterAddress: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
+    legalOfficerAddress: ALICE_ACCOUNT,
+    origin: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
+    destination: ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"),
     createdOn: moment().toISOString(),
     amount: 10000n,
     timepoint: {
