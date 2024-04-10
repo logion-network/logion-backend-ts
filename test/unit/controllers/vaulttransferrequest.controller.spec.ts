@@ -237,7 +237,7 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     mockOtherDependencies(container, repository);
 }
 
-const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE);
+const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE_ACCOUNT.address);
 
 function mockOtherDependencies(container: Container, repository: Mock<VaultTransferRequestRepository>) {
     notificationService = new Mock<NotificationService>();

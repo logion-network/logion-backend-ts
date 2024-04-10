@@ -6,7 +6,7 @@ import {
     VaultTransferRequestFactory,
     VaultTransferRequestAggregateRoot,
 } from '../../../src/logion/model/vaulttransferrequest.model.js';
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { ValidAccountId } from "@logion/node-api";
 
 describe('VaultTransferRequestFactory', () => {

@@ -4,7 +4,8 @@ import { Mock } from "moq.ts";
 import request from "supertest";
 import { VoteController } from "../../../src/logion/controllers/vote.controller.js";
 import { VoteRepository, VoteAggregateRoot, Ballot } from "../../../src/logion/model/vote.model.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { setupApp } = TestApp;
 
@@ -25,7 +26,7 @@ describe("VoteController", () => {
                 expect(response.body.votes[0].voteId).toEqual(VOTE_ID);
                 expect(response.body.votes[0].locId).toEqual(LOC_ID);
                 expect(response.body.votes[0].createdOn).toEqual(CREATED_ON);
-                expect(response.body.votes[0].ballots[ALICE]).toEqual("Yes");
+                expect(response.body.votes[0].ballots[ALICE_ACCOUNT.address]).toEqual("Yes");
                 expect(response.body.votes[0].status).toEqual("APPROVED");
             })
     })
@@ -41,7 +42,7 @@ function mockForFetch(container: Container) {
     const ballot = new Ballot();
     ballot.vote = vote.object();
     ballot.voteId = VOTE_ID;
-    ballot.voterAddress = ALICE;
+    ballot.voterAddress = ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX);
     ballot.result = "Yes";
     ballots.push(ballot);
     vote.setup(instance => instance.ballots).returns(ballots);

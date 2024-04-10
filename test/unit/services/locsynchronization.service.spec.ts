@@ -16,7 +16,7 @@ import { DirectoryService } from "../../../src/logion/services/directory.service
 import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
 
@@ -214,11 +214,11 @@ function givenLocExtrinsic(method: string, args: TypesJsonObject) {
     });
     locExtrinsic.setup(instance => instance.error).returns(() => null);
     locExtrinsic.setup(instance => instance.partialFee()).returnsAsync("42");
-    locExtrinsic.setup(instance => instance.signer).returns(ALICE);
+    locExtrinsic.setup(instance => instance.signer).returns(ALICE_ACCOUNT.address);
     if(method === "addFile") {
         locExtrinsic.setup(instance => instance.storageFee).returns({
             fee: 24n,
-            withdrawnFrom: ALICE
+            withdrawnFrom: ALICE_ACCOUNT.address
         });
     }
 }
@@ -319,7 +319,7 @@ function thenLinkUpdated() {
 
 function givenLocRequestExpectsFileUpdated() {
     locRequest.setup(instance => instance.setFileAddedOn(ItIsHash(FILE_HASH), IS_BLOCK_TIME)).returns(undefined);
-    locRequest.setup(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE)).returns(undefined);
+    locRequest.setup(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE_ACCOUNT.address)).returns(undefined);
 }
 
 const FILE_HASH = Hash.fromHex("0x37f1c3d493ad2320d7cc935446c9e094249b5070988820b864b417b708695ed7");
@@ -327,7 +327,7 @@ const IS_EXPECTED_FEES = It.Is<Fees>(fees => fees.inclusionFee.canonical === 42n
 
 function thenFileUpdated() {
     locRequest.verify(instance => instance.setFileAddedOn(ItIsHash(FILE_HASH), IS_BLOCK_TIME));
-    locRequest.verify(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE));
+    locRequest.verify(instance => instance.setFileFees(ItIsHash(FILE_HASH), IS_EXPECTED_FEES, ALICE_ACCOUNT.address));
 }
 
 function givenLocRequestExpectsVoid() {

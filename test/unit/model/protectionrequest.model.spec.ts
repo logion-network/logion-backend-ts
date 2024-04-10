@@ -6,7 +6,7 @@ import {
     ProtectionRequestFactory,
     ProtectionRequestAggregateRoot, ProtectionRequestStatus,
 } from '../../../src/logion/model/protectionrequest.model.js';
-import { CHARLY, ALICE_ACCOUNT, BOB_ACCOUNT } from '../../helpers/addresses.js';
+import { CHARLY_ACCOUNT, ALICE_ACCOUNT, BOB_ACCOUNT } from '../../helpers/addresses.js';
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -17,7 +17,7 @@ import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity.j
 import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
 import { ValidAccountId } from "@logion/node-api";
-import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { EmbeddableNullableAccountId, DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 describe('ProtectionRequestFactoryTest', () => {
 
@@ -119,8 +119,8 @@ describe('ProtectionRequestAggregateRootTest', () => {
 
     it("updates", async () => {
         const request = await newProtectionRequestUsingFactory();
-        request.updateOtherLegalOfficer(CHARLY);
-        expect(request.otherLegalOfficerAddress).toEqual(CHARLY);
+        request.updateOtherLegalOfficer(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX));
+        expect(request.otherLegalOfficerAddress).toEqual(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX));
     });
 });
 

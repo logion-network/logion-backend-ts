@@ -18,7 +18,7 @@ import {
     userIdentities,
     POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
-import { BOB, BOB_ACCOUNT } from "../../helpers/addresses.js";
+import { BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";
 import { ValidAccountId } from "@logion/node-api";
 

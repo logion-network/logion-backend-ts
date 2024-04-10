@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -2045,8 +2045,8 @@ function givenRequestWithStatus(status: LocRequestStatus) {
     request.requester = EmbeddableNullableAccountId.from(SUBMITTER)
 }
 
-const OWNER = ALICE;
 const OWNER_ACCOUNT = ALICE_ACCOUNT;
+const OWNER = OWNER_ACCOUNT.address;
 
 let request: LocRequestAggregateRoot;
 

@@ -2,7 +2,7 @@ import {
     ProtectionRequestDescription,
     LegalOfficerDecisionDescription
 } from "../../../src/logion/model/protectionrequest.model.js";
-import { BOB, ALICE, ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
 import { LocRequestDescription, LocRequestDecision } from "../../../src/logion/model/locrequest.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
@@ -28,9 +28,9 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
         additionalDetails: "some details",
         node: "http://localhost:8080",
         userIdentity: {
-            firstName: address === BOB ? "Bob": "Alice",
+            firstName: address === BOB_ACCOUNT.address ? "Bob": "Alice",
             lastName: "Network",
-            email: address === BOB ? "bob@logion.network" : "alice@logion.network",
+            email: address === BOB_ACCOUNT.address ? "bob@logion.network" : "alice@logion.network",
             phoneNumber: "123465",
         },
         postalAddress: {
@@ -81,8 +81,8 @@ const vaultTransfer: VaultTransferRequestDescription = {
 };
 
 export function notificationData() {
-    const lo = notifiedLegalOfficer(ALICE);
-    const otherLo = notifiedLegalOfficer(BOB);
+    const lo = notifiedLegalOfficer(ALICE_ACCOUNT.address);
+    const otherLo = notifiedLegalOfficer(BOB_ACCOUNT.address);
     return {
         protection: notifiedProtection,
         legalOfficer: lo,

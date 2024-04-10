@@ -13,7 +13,7 @@ import {
     LegalOfficerDecision,
     LegalOfficerDecisionDescription,
 } from '../../../src/logion/model/protectionrequest.model.js';
-import { ALICE, BOB, CHARLY, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
+import { ALICE, BOB, CHARLY, BOB_ACCOUNT, ALICE_ACCOUNT, CHARLY_ACCOUNT } from '../../helpers/addresses.js';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
@@ -250,7 +250,7 @@ function mockModelForFetch(container: Container): void {
         decisionOn: DECISION_TIMESTAMP
     })
 
-    protectionRequest.setup(instance => instance.legalOfficerAddress).returns(ALICE);
+    protectionRequest.setup(instance => instance.legalOfficerAddress).returns(ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX));
     protectionRequest.setup(instance => instance.createdOn).returns(TIMESTAMP);
     protectionRequest.setup(instance => instance.isRecovery).returns(false);
     protectionRequest.setup(instance => instance.addressToRecover).returns(null);
@@ -443,7 +443,7 @@ describe("User", () => {
             .expect(204);
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "protection-updated", It.IsAny<any>()))
-        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.Is<string>(value => value === CHARLY)))
+        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.Is<string>(value => value === CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX))))
         repository.verify(instance => instance.save(protectionRequest.object()));
     });
 
@@ -513,7 +513,7 @@ function mockNotificationAndDirectoryService(container: Container) {
     const directoryService = new Mock<DirectoryService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
-        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+        .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
@@ -560,7 +560,7 @@ function mockModelForUserCancel(container: Container, protectionRequest: Mock<Pr
 
 function mockModelForUserUpdate(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>): void {
     mockModelForUser(container, protectionRequest, repository);
-    protectionRequest.setup(instance => instance.updateOtherLegalOfficer(CHARLY))
+    protectionRequest.setup(instance => instance.updateOtherLegalOfficer(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX)))
         .returns(undefined);
 }
 

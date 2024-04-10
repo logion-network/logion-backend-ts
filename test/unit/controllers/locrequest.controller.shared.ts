@@ -1,7 +1,7 @@
 import { LocRequestAdapter, UserPrivateData } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -242,7 +242,7 @@ function mockOtherDependencies(container: Container, existingMocks?: {
     const directoryService = new Mock<DirectoryService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
-        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+        .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
@@ -313,7 +313,7 @@ export function setupRequest(
         .returns({
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
-            ownerAddress: description.ownerAddress || ALICE,
+            ownerAddress: description.ownerAddress || ALICE_ACCOUNT.address,
             requesterAddress: description.requesterAddress,
             requesterIdentityLoc: description.requesterIdentityLoc,
         } as LocRequestDescription);
@@ -401,7 +401,7 @@ export function setupLocFetch(locId: string, locBatch: Mock<LocBatch>, nodeApi: 
     const locIdUuid = new UUID(locId);
     nodeApi.setup(instance => instance.batch.locs(It.Is<UUID[]>(ids => ids.length === 1 && ids[0].toString() === locIdUuid.toString())))
         .returns(locBatch.object());
-    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE)).returnsAsync([]);
+    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE_ACCOUNT.address)).returnsAsync([]);
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {

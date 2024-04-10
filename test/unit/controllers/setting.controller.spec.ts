@@ -13,6 +13,7 @@ import { NonTransactionalSettingService, SettingService } from '../../../src/log
 import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 import { ItIsAccount } from "../../helpers/Mock.js";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { setupApp } = TestApp;
 
@@ -58,7 +59,7 @@ function mockForList(container: Container) {
     createAndBindMocks(container);
 
     setting.setup(instance => instance.id).returns(settingId);
-    setting.setup(instance => instance.legalOfficerAddress).returns(ALICE);
+    setting.setup(instance => instance.legalOfficerAddress).returns(ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX));
     setting.setup(instance => instance.value).returns(settingValue);
 
     settingRepository.setup(instance => instance.findByLegalOfficer(ItIsAccount(ALICE_ACCOUNT))).returnsAsync([ setting.object() ]);

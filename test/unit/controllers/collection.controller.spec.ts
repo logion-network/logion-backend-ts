@@ -31,7 +31,7 @@ import {
 import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import {
     LocRequestService,
     NonTransactionalLocRequestService

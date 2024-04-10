@@ -6,7 +6,7 @@ import {
 } from '../../../src/logion/model/protectionrequest.model.js';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
 import { ProtectionSynchronizer } from '../../../src/logion/services/protectionsynchronization.service.js';
-import { ALICE, BOB, ALICE_ACCOUNT } from '../../helpers/addresses.js';
+import { BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { NonTransactionalProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { ValidAccountId } from "@logion/node-api";
@@ -32,8 +32,8 @@ let directoryService: Mock<DirectoryService>;
 function givenCreateRecoveryExtrinsic() {
     locExtrinsic = new Mock<JsonExtrinsic>();
     const legalOfficers = [
-        ALICE,
-        BOB,
+        ALICE_ACCOUNT.address,
+        BOB_ACCOUNT.address,
     ];
     locExtrinsic.setup(instance => instance.call).returns({
         section: "verifiedRecovery",
