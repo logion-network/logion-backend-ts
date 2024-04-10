@@ -1,6 +1,7 @@
 import { TestDb } from "@logion/rest-api-core";
 import { SettingRepository, SettingAggregateRoot } from "../../../src/logion/model/setting.model.js";
-import { ALICE, BOB, CHARLY } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, CHARLY_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { connect, disconnect, executeScript } = TestDb;
 
@@ -19,12 +20,12 @@ describe("LoFileRepository", () => {
     });
 
     it("finds by id", async () => {
-        const setting = await repository.findById({ id: "setting-1", legalOfficerAddress: ALICE });
+        const setting = await repository.findById({ id: "setting-1", legalOfficer: ALICE_ACCOUNT });
         expect(setting?.value).toEqual("value-1");
     })
 
     it("finds by legal officer", async () => {
-        const settings = await repository.findByLegalOfficer(ALICE);
+        const settings = await repository.findByLegalOfficer(ALICE_ACCOUNT);
         checkArray(settings, ["value-1", "value-2"])
     })
 
@@ -32,10 +33,10 @@ describe("LoFileRepository", () => {
         const setting = new SettingAggregateRoot();
         setting.id = "setting-3";
         setting.value = "value-3";
-        setting.legalOfficerAddress = CHARLY;
+        setting.legalOfficerAddress = CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX);
         await repository.save(setting);
 
-        const settings = await repository.findByLegalOfficer(CHARLY);
+        const settings = await repository.findByLegalOfficer(CHARLY_ACCOUNT);
         checkArray(settings, ["charly-value-1", "charly-value-2", "value-3"])
     })
 
@@ -44,10 +45,10 @@ describe("LoFileRepository", () => {
         const setting = new SettingAggregateRoot();
         setting.id = "setting-2";
         setting.value = "new-value-2";
-        setting.legalOfficerAddress = BOB;
+        setting.legalOfficerAddress = BOB_ACCOUNT.getAddress(DB_SS58_PREFIX);
         await repository.save(setting);
 
-        const settings = await repository.findByLegalOfficer(BOB);
+        const settings = await repository.findByLegalOfficer(BOB_ACCOUNT);
         checkArray(settings, ["bob-value-1", "new-value-2"])
     })
 

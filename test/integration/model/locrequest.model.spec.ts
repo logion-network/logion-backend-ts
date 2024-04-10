@@ -11,19 +11,20 @@ import {
     LocFileDelivered,
     EmbeddableLocFees,
 } from "../../../src/logion/model/locrequest.model.js";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
 import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
-import { polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
-import { Hash, UUID } from "@logion/node-api";
+import { Hash, UUID, ValidAccountId } from "@logion/node-api";
+import { EmbeddableNullableAccountId, DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
-const SUBMITTER = polkadotAccount("5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw");
+const SUBMITTER = ValidAccountId.polkadot("129ZYz7x64MKMrW3SQsTBUCRMLCAmRaYeXEzkRmd9qoGbqQi");
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
 const hash = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
 const anotherHash = Hash.fromHex("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
 const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";
 const VOID_REASON = "Some reason";
+const requester = ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
 
 describe('LocRequestRepository - read accesses', () => {
 
@@ -41,7 +42,7 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("find by owner, status and type", async () => {
         const query: FetchLocRequestsSpecification = {
-            expectedOwnerAddress: ALICE,
+            expectedOwnerAddress: [ ALICE_ACCOUNT ],
             expectedStatuses: [ "OPEN", "REVIEW_PENDING" ],
             expectedLocTypes: [ "Transaction" ]
         }
@@ -87,15 +88,16 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("find by requester and status", async () => {
         const query: FetchLocRequestsSpecification = {
-            expectedRequesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+            expectedRequesterAddress: requester,
             expectedStatuses: [ "REVIEW_REJECTED" ],
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, "Transaction", "loc-7")
 
-        expect(requests[0].getDescription().requesterAddress?.address).toBe("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+        expect(requests[0].getDescription().requesterAddress?.address).toBe(requester.address);
         expect(requests[0].getDescription().requesterAddress?.type).toBe("Polkadot");
-        expect(requests[0].getDescription().ownerAddress).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY");
+        expect(requests[0].getDescription().ownerAddress.address).toBe(ALICE_ACCOUNT.address);
+        expect(requests[0].getDescription().ownerAddress.type).toBe("Polkadot");
         expect(requests[0].getDescription().userIdentity).toEqual({
             firstName: 'John',
             lastName: 'Doe',
@@ -153,8 +155,8 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("finds by requester and owner", async () => {
         const query: FetchLocRequestsSpecification = {
-            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            expectedRequesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+            expectedOwnerAddress: [ ALICE_ACCOUNT ],
+            expectedRequesterAddress: requester,
         }
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-4", "loc-7", "loc-10", "loc-11", "loc-21", "loc-24");
@@ -192,8 +194,8 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("finds LOC with restricted deliveries based on criteria", async () => {
         const query: FetchLocRequestsSpecification = {
-            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
-            expectedRequesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
+            expectedOwnerAddress: [ ALICE_ACCOUNT ],
+            expectedRequesterAddress: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
             expectedStatuses: ["CLOSED"],
             expectedLocTypes:["Identity"],
         };
@@ -239,9 +241,10 @@ describe('LocRequestRepository - read accesses', () => {
     })
 
     it("existsBy returns false on non-existent data", async () => {
+        const unknown = ValidAccountId.polkadot("vQxd7xqHPutXFzb1eD6y757J4vfv6BCvYXZ7KPn9ZUFGHSHF6");
         const results: boolean[] = await Promise.all([
-            repository.existsBy({ "expectedOwnerAddress": "Unknown" }),
-            repository.existsBy({ "expectedRequesterAddress": "Unknown" }),
+            repository.existsBy({ "expectedOwnerAddress": [ unknown ] }),
+            repository.existsBy({ "expectedRequesterAddress": unknown }),
             repository.existsBy({ "expectedSponsorshipId": new UUID("b293fccf-0972-4d20-b04e-757db329ec57") })
         ]);
         expect(results).toEqual([ false, false, false ]);
@@ -249,7 +252,7 @@ describe('LocRequestRepository - read accesses', () => {
 
     it("finds workload", async () => {
         const query: FetchLocRequestsSpecification = {
-            expectedOwnerAddress: [ ALICE, BOB ],
+            expectedOwnerAddress: [ ALICE_ACCOUNT, BOB_ACCOUNT ],
             expectedStatuses: [ "REVIEW_PENDING" ],
         }
         const requests = await repository.findBy(query);
@@ -379,7 +382,7 @@ describe('LocRequestRepository - LOC correctly ordered', () => {
     it("deletes a draft LocRequest aggregate", async () => {
         const locs = await repository.findBy({
             expectedLocTypes: ["Collection", "Identity", "Transaction"],
-            expectedOwnerAddress: "5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY",
+            expectedOwnerAddress: [ ALICE_ACCOUNT ],
             expectedStatuses: ["CLOSED", "OPEN", "REVIEW_REJECTED", "REVIEW_PENDING"]
         });
 
@@ -402,8 +405,8 @@ describe('LocRequestRepository - LOC correctly ordered', () => {
 function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
-    locRequest.requesterAddress = "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"
-    locRequest.ownerAddress = BOB
+    locRequest.requester = EmbeddableNullableAccountId.from(requester)
+    locRequest.ownerAddress = BOB_ACCOUNT.getAddress(DB_SS58_PREFIX);
     locRequest.description = "I want to open a case"
     locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()

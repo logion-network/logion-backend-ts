@@ -8,9 +8,10 @@ import {
     ProtectionRequestKind,
     ProtectionRequestStatus,
 } from "../../../src/logion/model/protectionrequest.model.js";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
-import { FetchVaultTransferRequestsSpecification } from "../../../src/logion/model/vaulttransferrequest.model";
+import { ValidAccountId } from "@logion/node-api";
+import { EmbeddableNullableAccountId, DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -40,7 +41,7 @@ describe('ProtectionRequestRepositoryTest', () => {
     });
 
     it("findByRequesterAddressOnly", async () => {
-        let requesterAddress = "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW";
+        let requesterAddress = ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         const specification = new FetchProtectionRequestsSpecification({
             expectedRequesterAddress: requesterAddress
         });
@@ -100,7 +101,7 @@ describe('ProtectionRequestRepositoryTest', () => {
 
     it("finds workload", async () => {
         const specification = new FetchProtectionRequestsSpecification({
-            expectedLegalOfficerAddress: [ ALICE, BOB ],
+            expectedLegalOfficerAddress: [ ALICE_ACCOUNT, BOB_ACCOUNT ],
             expectedStatuses: [ "PENDING" ],
         });
         const results = await repository.findBy(specification);
@@ -127,9 +128,8 @@ describe('ProtectionRequestRepositoryTest', () => {
         const identityLoc = new LocRequestAggregateRoot();
         identityLoc.id = "80124e8a-a7d8-456f-a7be-deb4e0983e87";
         identityLoc.status = "CLOSED"
-        identityLoc.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'
-        identityLoc.requesterAddressType = 'Polkadot'
-        identityLoc.ownerAddress = BOB
+        identityLoc.requester = EmbeddableNullableAccountId.from(ValidAccountId.polkadot('5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q'))
+        identityLoc.ownerAddress = BOB_ACCOUNT.getAddress(DB_SS58_PREFIX)
         identityLoc.userIdentity = new EmbeddableUserIdentity()
         identityLoc.userIdentity.email = 'john.doe@logion.network'
         identityLoc.userIdentity.phoneNumber = '+1234897'
@@ -144,12 +144,12 @@ describe('ProtectionRequestRepositoryTest', () => {
         const protectionRequest = new ProtectionRequestAggregateRoot()
         protectionRequest.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639'
         protectionRequest.isRecovery = false
-        protectionRequest.requesterAddress = identityLoc.requesterAddress;
+        protectionRequest.requesterAddress = identityLoc.getRequester()?.getAddress(DB_SS58_PREFIX);
         protectionRequest.requesterIdentityLocId = identityLoc.id;
 
         protectionRequest.status = 'PENDING'
-        protectionRequest.legalOfficerAddress = BOB
-        protectionRequest.otherLegalOfficerAddress = ALICE
+        protectionRequest.legalOfficerAddress = BOB_ACCOUNT.getAddress(DB_SS58_PREFIX);
+        protectionRequest.otherLegalOfficerAddress = ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX);
         // When
         await repository.save(protectionRequest)
         // Then

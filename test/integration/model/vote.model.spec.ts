@@ -1,6 +1,7 @@
 import { TestDb } from "@logion/rest-api-core";
-import { ALICE, BOB } from "@logion/rest-api-core/dist/TestApp.js";
 import { VoteRepository, VoteAggregateRoot, Ballot } from "../../../src/logion/model/vote.model.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { connect, disconnect, executeScript } = TestDb;
 
@@ -31,7 +32,7 @@ describe("VoteRepository", () => {
         expect(vote?.createdOn?.toISOString()).toEqual("2022-09-30T22:00:00.000Z")
         expect(vote?.status).toEqual("REJECTED");
         expect(vote?.ballots?.length).toEqual(2);
-        expect(vote?.ballots?.find(ballot => ballot.voterAddress === ALICE && ballot.result === "Yes")).toBeDefined();
-        expect(vote?.ballots?.find(ballot => ballot.voterAddress === BOB && ballot.result === "No")).toBeDefined();
+        expect(vote?.ballots?.find(ballot => ballot.voterAddress === ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX) && ballot.result === "Yes")).toBeDefined();
+        expect(vote?.ballots?.find(ballot => ballot.voterAddress === BOB_ACCOUNT.getAddress(DB_SS58_PREFIX) && ballot.result === "No")).toBeDefined();
     });
 })
