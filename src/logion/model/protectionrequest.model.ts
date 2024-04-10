@@ -82,14 +82,14 @@ export class ProtectionRequestAggregateRoot {
         }
     }
 
-    updateOtherLegalOfficer(address: string) {
+    updateOtherLegalOfficer(account: ValidAccountId) {
         if(this.status === 'ACTIVATED') {
             throw badRequest("Cannot update the LO of an already activated protection")
         }
         if (this.isRecovery) {
             throw badRequest("Cannot update the LO of a recovery request")
         }
-        this.otherLegalOfficerAddress = address;
+        this.otherLegalOfficerAddress = account.getAddress(DB_SS58_PREFIX);
     }
 
     @PrimaryColumn({ type: "uuid" })

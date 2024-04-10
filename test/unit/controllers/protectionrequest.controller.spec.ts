@@ -443,7 +443,7 @@ describe("User", () => {
             .expect(204);
 
         notificationService.verify(instance => instance.notify("alice@logion.network", "protection-updated", It.IsAny<any>()))
-        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.Is<string>(value => value === CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX))))
+        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.Is<ValidAccountId>(value => value.equals(CHARLY_ACCOUNT))))
         repository.verify(instance => instance.save(protectionRequest.object()));
     });
 
@@ -457,7 +457,7 @@ describe("User", () => {
                 otherLegalOfficerAddress: CHARLY
             })
             .expect(401);
-        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.IsAny<string>()), Times.Never())
+        protectionRequest.verify(instance => instance.updateOtherLegalOfficer(It.IsAny<ValidAccountId>()), Times.Never())
     });
 
 })
@@ -560,7 +560,7 @@ function mockModelForUserCancel(container: Container, protectionRequest: Mock<Pr
 
 function mockModelForUserUpdate(container: Container, protectionRequest: Mock<ProtectionRequestAggregateRoot>, repository: Mock<ProtectionRequestRepository>): void {
     mockModelForUser(container, protectionRequest, repository);
-    protectionRequest.setup(instance => instance.updateOtherLegalOfficer(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX)))
+    protectionRequest.setup(instance => instance.updateOtherLegalOfficer(It.Is<ValidAccountId>(value => value.equals(CHARLY_ACCOUNT))))
         .returns(undefined);
 }
 

@@ -355,9 +355,10 @@ export class ProtectionRequestController extends ApiController {
     @SendsResponse()
     async update(updateProtectionRequestView: UpdateProtectionRequestView, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const otherLegalOfficerAddress = ValidAccountId.polkadot(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.getRequester()));
-            request.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
+            request.updateOtherLegalOfficer(otherLegalOfficerAddress);
         });
         this.notify("LegalOfficer", 'protection-updated', request.getDescription());
         this.response.sendStatus(204);

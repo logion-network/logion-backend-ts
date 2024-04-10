@@ -119,7 +119,7 @@ describe('ProtectionRequestAggregateRootTest', () => {
 
     it("updates", async () => {
         const request = await newProtectionRequestUsingFactory();
-        request.updateOtherLegalOfficer(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX));
+        request.updateOtherLegalOfficer(CHARLY_ACCOUNT);
         expect(request.otherLegalOfficerAddress).toEqual(CHARLY_ACCOUNT.getAddress(DB_SS58_PREFIX));
     });
 });
