@@ -72,7 +72,7 @@ export class VoteController extends ApiController {
     private mapBallots(ballots: Ballot[]): BallotsMap {
         const ballotsMap: BallotsMap = {};
         for(const ballot of ballots) {
-            ballotsMap[ballot.voterAddress || "?"] = ballot.result as VoteResult;
+            ballotsMap[ballot.getVoter().address] = ballot.result as VoteResult;
         }
         return ballotsMap;
     }

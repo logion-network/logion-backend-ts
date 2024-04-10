@@ -81,6 +81,10 @@ export class Ballot extends Child {
     @ManyToOne(() => VoteAggregateRoot, request => request.ballots)
     @JoinColumn({ name: "vote_id" })
     vote?: VoteAggregateRoot;
+
+    getVoter(): ValidAccountId {
+        return ValidAccountId.polkadot(this.voterAddress || "");
+    }
 }
 
 @injectable()
