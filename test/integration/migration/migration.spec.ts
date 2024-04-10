@@ -1,8 +1,5 @@
-import { Log, TestDb } from "@logion/rest-api-core";
-import { MigrationInterface, QueryRunner } from "typeorm";
-
-const { logger } = Log;
-const { connect, disconnect, queryRunner, allMigrations } = TestDb;
+import { TestDb } from "@logion/rest-api-core";
+const { connect, disconnect, queryRunner, runAllMigrations, revertAllMigrations } = TestDb;
 
 describe('Migration', () => {
 
@@ -17,17 +14,6 @@ describe('Migration', () => {
         await disconnect();
     });
 
-    async function testMigrationUp(migration: MigrationInterface, runner: QueryRunner) {
-        logger.info("Migrating UP %s ", migration.name)
-        await migration.up(runner)
-    }
-
-    async function runAllMigrations(runner: QueryRunner) {
-        for (const migration of allMigrations()) {
-            await testMigrationUp(migration, runner);
-        }
-    }
-
     it("executes all up()", async () => {
 
         // Given
@@ -35,32 +21,25 @@ describe('Migration', () => {
         const tablesBefore = await runner.getTables();
 
         // When
-        await runAllMigrations(runner)
+        await runAllMigrations()
 
         // Then
         const tablesAfter = await runner.getTables();
-        expect(tablesAfter.length - tablesBefore.length).toBe(NUM_OF_TABLES);
+        expect(tablesAfter.length - tablesBefore.length - 1).toBe(NUM_OF_TABLES);
     })
-
-    async function testMigrationDown(migration: MigrationInterface, runner: QueryRunner) {
-        logger.info("Migrating DOWN %s ", migration.name)
-        await migration.down(runner)
-    }
 
     it("executes all down()", async () => {
 
         // Given
-        const runner = queryRunner()
-        await runAllMigrations(runner)
-        const tablesBefore = await runner.getTables()
+        await runAllMigrations();
+        const runner = queryRunner();
+        const tablesBefore = await runner.getTables();
 
         // When
-        for (const migration of allMigrations().reverse()) {
-            await testMigrationDown(migration, runner);
-        }
+        await revertAllMigrations();
 
         // Then
         const tablesAfter = await runner.getTables();
-        expect(tablesBefore.length - tablesAfter.length).toBe(NUM_OF_TABLES)
+        expect(tablesBefore.length - tablesAfter.length).toBe(NUM_OF_TABLES);
     })
 })
