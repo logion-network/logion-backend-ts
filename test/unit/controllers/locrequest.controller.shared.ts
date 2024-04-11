@@ -29,22 +29,15 @@ import {
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
-import { Hash, LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType, ValidAccountId } from "@logion/node-api";
+import { Hash, LocBatch, LogionNodeApiClass, UUID, ValidAccountId, AnyAccountId } from "@logion/node-api";
 import { VerifiedIssuerSelectionRepository } from "../../../src/logion/model/verifiedissuerselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
-import {
-    SupportedAccountId,
-    EmbeddableNullableAccountId
-} from "../../../src/logion/model/supportedaccountid.model.js";
+import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
-import { validAccountId } from "@logion/rest-api-core/dist/TestUtil.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
-export const POLKADOT_REQUESTER = validAccountId("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
-export const ETHEREUM_REQUESTER: SupportedAccountId = {
-    type: "Ethereum",
-    address: "0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6"
-}
+export const POLKADOT_REQUESTER = ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+export const ETHEREUM_REQUESTER = new AnyAccountId("0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6", "Ethereum").toValidAccountId();
 
 export const EXISTING_SPONSORSHIP_ID = new UUID("274d0149-7721-456c-ab7a-f12e77d2ee64");
 
@@ -207,8 +200,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(SponsorshipService).toConstantValue(sponsorshipService?.object());
     sponsorshipService.setup(instance => instance.validateSponsorship(
         It.IsAny<UUID>(),
-        It.IsAny<SupportedAccountId>(),
-        It.IsAny<SupportedAccountId>()
+        It.IsAny<ValidAccountId>(),
+        It.IsAny<ValidAccountId>()
     )).returnsAsync();
 
     return {
@@ -219,7 +212,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         notificationService,
         collectionRepository,
         voteRepository,
-        verifiedIssuerSelectionRepository: verifiedIssuerSelectionRepository,
+        verifiedIssuerSelectionRepository,
         nodeApi,
         loc,
         sponsorshipService,
@@ -318,8 +311,11 @@ export function setupRequest(
             requesterIdentityLoc: description.requesterIdentityLoc,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
+    request.setup(instance => instance.getFiles()).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
+    request.setup(instance => instance.getMetadataItems()).returns(metadataItems);
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
+    request.setup(instance => instance.getLinks()).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
     mockOwner(request, description.ownerAddress || ALICE_ACCOUNT)
     if (description.requesterAddress) {
@@ -375,12 +371,17 @@ export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, 
 
 export const testData = testDataWithType("Transaction");
 
-export function checkPrivateData(response: request.Response, expectedUserPrivateData: UserPrivateData) {
-    expect(response.body.identityLoc).toEqual(expectedUserPrivateData.identityLocId);
+export function checkPrivateData(response: request.Response, expectedUserPrivateData: UserPrivateData | undefined) {
     const userIdentity = response.body.userIdentity;
-    expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity);
     const userPostalAddress = response.body.userPostalAddress;
-    expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
+    if (expectedUserPrivateData) {
+        expect(response.body.identityLoc).toEqual(expectedUserPrivateData.identityLocId);
+        expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity);
+        expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
+    } else {
+        expect(userIdentity).toBeUndefined();
+        expect(userPostalAddress).toBeUndefined();
+    }
 }
 
 export function buildMocksForFetch(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -401,7 +402,7 @@ export function setupLocFetch(locId: string, locBatch: Mock<LocBatch>, nodeApi: 
     const locIdUuid = new UUID(locId);
     nodeApi.setup(instance => instance.batch.locs(It.Is<UUID[]>(ids => ids.length === 1 && ids[0].toString() === locIdUuid.toString())))
         .returns(locBatch.object());
-    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE_ACCOUNT.address)).returnsAsync([]);
+    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE_ACCOUNT)).returnsAsync([]);
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -423,8 +424,9 @@ export function setupSelectedIssuer(
         loc.setup(instance => instance.getLocsVerifiedIssuers()).returnsAsync({
             [ new UUID(REQUEST_ID).toDecimalString() ]: [
                 {
-                    address: ISSUER.address
-                } as unknown as VerifiedIssuerType
+                    account: ISSUER,
+                    identityLocId: new UUID(),
+                }
             ]
         });
     } else {

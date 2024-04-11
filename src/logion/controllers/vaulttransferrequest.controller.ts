@@ -124,13 +124,13 @@ export class VaultTransferRequestController extends ApiController {
 
     private async userAuthorizedAndProtected(origin: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<UserData> {
         const user = await this.authenticationService.authenticatedUser(this.request);
-        const data = await this.getProtectionAndRecoveryData(user.toValidAccountId(), origin, legalOfficerAddress);
+        const data = await this.getProtectionAndRecoveryData(user.validAccountId, origin, legalOfficerAddress);
 
         user.require(user =>
-            user.toValidAccountId().equals(origin) ||
+            user.validAccountId.equals(origin) ||
             data.activeRecovery !== undefined && origin === data.activeRecovery.addressToRecover);
 
-        return this.getUserDataFromProtection(user.toValidAccountId(), origin, legalOfficerAddress, data.activeRecovery, data.activeProtection);
+        return this.getUserDataFromProtection(user.validAccountId, origin, legalOfficerAddress, data.activeRecovery, data.activeProtection);
     }
 
     private async getProtectionAndRecoveryData(requester: ValidAccountId, origin: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<{
@@ -139,7 +139,7 @@ export class VaultTransferRequestController extends ApiController {
     }> {
         const activeRecovery = await this.findActiveRecovery(requester, legalOfficerAddress);
         const api = await this.polkadotService.readyApi();
-        const activeProtection = await api.queries.getRecoveryConfig(origin.address);
+        const activeProtection = await api.queries.getRecoveryConfig(origin);
 
         if(!activeRecovery && !activeProtection) {
             throw badRequest("Requester is not protected");
@@ -347,7 +347,7 @@ export class VaultTransferRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
 
         const request = await this.vaultTransferRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.toValidAccountId().equals(request.getDescription().requesterAddress));
+            authenticatedUser.require(user => user.validAccountId.equals(request.getDescription().requesterAddress));
             request.cancel(moment());
         });
 
@@ -366,7 +366,7 @@ export class VaultTransferRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
 
         const request = await this.vaultTransferRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.toValidAccountId().equals(request.getDescription().requesterAddress));
+            authenticatedUser.require(user => user.validAccountId.equals(request.getDescription().requesterAddress));
             request.resubmit();
         });
 

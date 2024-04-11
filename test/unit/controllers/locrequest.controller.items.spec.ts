@@ -29,10 +29,6 @@ import {
     POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
-import {
-    SupportedAccountId,
-    accountEquals
-} from "../../../src/logion/model/supportedaccountid.model.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
@@ -278,7 +274,7 @@ describe('LocRequestController - Items -', () => {
             .delete(`/api/loc-request/${ REQUEST_ID }/links/${ SOME_LINK_TARGET }`)
             .expect(200)
         locRequest.verify(instance => instance.removeLink(
-            It.Is<ValidAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)),
+            It.Is<ValidAccountId>(account => account.equals(POLKADOT_REQUESTER)),
             SOME_LINK_TARGET
         ))
     })
@@ -428,12 +424,12 @@ function mockModelForDeleteFile(container: Container, request: Mock<LocRequestAg
 
     if (issuerMode !== 'NOT_ISSUER') {
         request.setup(instance => instance.removeFile(
-            It.Is<ValidAccountId>(account => accountEquals(account, ISSUER)),
+            It.Is<ValidAccountId>(account => account.equals(ISSUER)),
             SOME_DATA_HASH
         )).returns(SOME_FILE);
     } else {
         request.setup(instance => instance.removeFile(
-            It.Is<ValidAccountId>(account => accountEquals(account, ALICE_ACCOUNT)),
+            It.Is<ValidAccountId>(account => account.equals(ALICE_ACCOUNT)),
             SOME_DATA_HASH
         )).returns(SOME_FILE);
     }
@@ -449,12 +445,12 @@ async function testDeleteFileSuccess(app: Express, locRequest: Mock<LocRequestAg
         .expect(200);
     if(issuerMode !== 'NOT_ISSUER') {
         locRequest.verify(instance => instance.removeFile(
-            It.Is<ValidAccountId>(account => accountEquals(account, ISSUER)),
+            It.Is<ValidAccountId>(account => account.equals(ISSUER)),
             ItIsHash(SOME_DATA_HASH)
         ));
     } else {
         locRequest.verify(instance => instance.removeFile(
-            It.Is<ValidAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)),
+            It.Is<ValidAccountId>(account => account.equals(POLKADOT_REQUESTER)),
             ItIsHash(SOME_DATA_HASH)
         ));
     }
@@ -471,7 +467,7 @@ function mockModelForConfirmFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getFile(ItIsHash(SOME_DATA_HASH))).returns({ submitter: ALICE_ACCOUNT } as FileDescription);
-    request.setup(instance => instance.canPrePublishOrAcknowledgeFile(ItIsHash(SOME_DATA_HASH), It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPrePublishOrAcknowledgeFile(ItIsHash(SOME_DATA_HASH), It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.prePublishOrAcknowledgeFile(ItIsHash(SOME_DATA_HASH), ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -480,7 +476,7 @@ function mockModelForAckFile(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getFile(ItIsHash(SOME_DATA_HASH))).returns({ submitter: ALICE_ACCOUNT } as FileDescription);
-    request.setup(instance => instance.canPreAcknowledgeFile(ItIsHash(SOME_DATA_HASH), It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPreAcknowledgeFile(ItIsHash(SOME_DATA_HASH), It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.preAcknowledgeFile(ItIsHash(SOME_DATA_HASH), ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -531,9 +527,9 @@ async function testDeleteMetadataSuccess(app: Express, locRequest: Mock<LocReque
         .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH.toHex() }`)
         .expect(200);
     if(isVerifiedIssuer) {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<ValidAccountId>(account => accountEquals(account, ISSUER)), ItIsHash(SOME_DATA_NAME_HASH)));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<ValidAccountId>(account => account.equals(ISSUER)), ItIsHash(SOME_DATA_NAME_HASH)));
     } else {
-        locRequest.verify(instance => instance.removeMetadataItem(It.Is<ValidAccountId>(account => accountEquals(account, POLKADOT_REQUESTER)), ItIsHash(SOME_DATA_NAME_HASH)));
+        locRequest.verify(instance => instance.removeMetadataItem(It.Is<ValidAccountId>(account => account.equals(POLKADOT_REQUESTER)), ItIsHash(SOME_DATA_NAME_HASH)));
     }
 }
 
@@ -542,7 +538,7 @@ async function testDeleteMetadataForbidden(app: Express, locRequest: Mock<LocReq
         .delete(`/api/loc-request/${ REQUEST_ID }/metadata/${ SOME_DATA_NAME_HASH.toHex() }`)
         .expect(403);
     locRequest.verify(
-        instance => instance.removeMetadataItem(It.IsAny<SupportedAccountId>(), It.IsAny<Hash>()),
+        instance => instance.removeMetadataItem(It.IsAny<ValidAccountId>(), It.IsAny<Hash>()),
         Times.Never()
     );
 }
@@ -587,7 +583,7 @@ function mockModelForConfirmMetadata(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: ALICE_ACCOUNT } as MetadataItemDescription);
-    request.setup(instance => instance.canPrePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPrePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.prePublishOrAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -596,7 +592,7 @@ function mockModelForAckMetadata(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getMetadataItem(ItIsHash(SOME_DATA_NAME_HASH))).returns({ submitter: ALICE_ACCOUNT } as MetadataItemDescription);
-    request.setup(instance => instance.canPreAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPreAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.preAcknowledgeMetadataItem(ItIsHash(SOME_DATA_NAME_HASH), ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -605,7 +601,7 @@ function mockModelForConfirmLink(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getLink(SOME_LINK_TARGET)).returns({ submitter: ALICE_ACCOUNT } as LinkDescription);
-    request.setup(instance => instance.canPrePublishOrAcknowledgeLink(SOME_LINK_TARGET, It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPrePublishOrAcknowledgeLink(SOME_LINK_TARGET, It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.prePublishOrAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }
@@ -614,7 +610,7 @@ function mockModelForAckLink(container: Container) {
     const { request, repository } = buildMocksForUpdate(container);
     setupRequest(request, REQUEST_ID, "Transaction", "OPEN", testData);
     request.setup(instance => instance.getLink(SOME_LINK_TARGET)).returns({ submitter: ALICE_ACCOUNT } as LinkDescription);
-    request.setup(instance => instance.canPreAcknowledgeLink(SOME_LINK_TARGET, It.IsAny<SupportedAccountId>())).returns(true);
+    request.setup(instance => instance.canPreAcknowledgeLink(SOME_LINK_TARGET, It.IsAny<ValidAccountId>())).returns(true);
     request.setup(instance => instance.preAcknowledgeLink(SOME_LINK_TARGET, ItIsAccount(ALICE_ACCOUNT))).returns();
     mockPolkadotIdentityLoc(repository, false);
 }

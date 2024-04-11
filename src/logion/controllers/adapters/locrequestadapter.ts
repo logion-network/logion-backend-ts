@@ -13,7 +13,7 @@ import { UserIdentity } from "../../model/useridentity.js";
 import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
-import { Fees, ValidAccountId } from "@logion/node-api";
+import { Fees, ValidAccountId, AccountId } from "@logion/node-api";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -28,6 +28,7 @@ type VerifiedIssuerIdentity = components["schemas"]["VerifiedIssuerIdentity"];
 type FeesView = components["schemas"]["FeesView"];
 type LocFeesView = components["schemas"]["LocFeesView"];
 type CollectionParamsView = components["schemas"]["CollectionParamsView"];
+type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 
 @injectable()
 export class LocRequestAdapter {
@@ -72,7 +73,7 @@ export class LocRequestAdapter {
 
         const view: LocRequestView = {
             id,
-            requesterAddress: locDescription.requesterAddress,
+            requesterAddress: this.toSupportedAccountId(locDescription.requesterAddress),
             requesterIdentityLoc: locDescription.requesterIdentityLoc,
             ownerAddress: locDescription.ownerAddress.address,
             description: locDescription.description,
@@ -89,7 +90,7 @@ export class LocRequestAdapter {
                 name: file.name,
                 hash: file.hash.toHex(),
                 nature: file.nature,
-                submitter: file.submitter,
+                submitter: this.toSupportedAccountId(file.submitter),
                 restrictedDelivery: file.restrictedDelivery,
                 contentType: file.contentType,
                 size: file.size.toString(),
@@ -101,14 +102,14 @@ export class LocRequestAdapter {
                 name: item.name,
                 nameHash: item.nameHash.toHex(),
                 value: item.value,
-                submitter: item.submitter,
+                submitter: this.toSupportedAccountId(item.submitter),
                 fees: toFeesView(item.fees),
                 ...toLifecycleView(item),
             })),
             links: request.getLinks(viewer).map(link => ({
                 target: link.target,
                 nature: link.nature,
-                submitter: link.submitter,
+                submitter: this.toSupportedAccountId(link.submitter),
                 fees: toFeesView(link.fees),
                 ...toLifecycleView(link),
             })),
@@ -189,6 +190,16 @@ export class LocRequestAdapter {
             lastBlockSubmission: lastBlockSubmission?.toString(),
             maxSize,
             canUpload,
+        }
+    }
+
+    toSupportedAccountId(account: AccountId | undefined): SupportedAccountId | undefined {
+        if (account === undefined) {
+            return undefined;
+        }
+        return {
+            address: account.address,
+            type: account.type,
         }
     }
 }

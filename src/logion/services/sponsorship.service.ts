@@ -2,7 +2,7 @@ import { injectable } from "inversify";
 import { Sponsorship, UUID, ValidAccountId } from "@logion/node-api";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 import { PolkadotService } from "@logion/rest-api-core";
-import { accountEquals, validAccountId } from "../model/supportedaccountid.model.js";
+import { validAccountId } from "../model/supportedaccountid.model.js";
 
 @injectable()
 export class SponsorshipService {
@@ -28,8 +28,8 @@ export class SponsorshipService {
         if (await this.locRequestRepository.existsBy({ expectedSponsorshipId: sponsorshipId })) {
             throw Error("This sponsorship is already used in a draft/requested LOC")
         }
-        if (!accountEquals(validAccountId(sponsorship.legalOfficer), legalOfficer) ||
-            !accountEquals(validAccountId(sponsorship.sponsoredAccount), requester)) {
+        if (!legalOfficer.equals(validAccountId(sponsorship.legalOfficer)) ||
+            !requester.equals(validAccountId(sponsorship.sponsoredAccount))) {
             throw Error("This sponsorship is not applicable to your request")
         }
     }

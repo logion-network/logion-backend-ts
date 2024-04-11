@@ -1,8 +1,5 @@
-import { components } from "../controllers/components.js";
 import { Column } from "typeorm";
 import { ValidAccountId, AnyAccountId, AccountType, AccountId } from "@logion/node-api";
-
-export type SupportedAccountId = components["schemas"]["SupportedAccountId"];
 
 export class EmbeddableNullableAccountId {
 
@@ -54,13 +51,6 @@ export class EmbeddableAccountId {
         embeddable.address = validAccountId.getAddress(DB_SS58_PREFIX);
         return embeddable;
     }
-}
-
-export function accountEquals(left: ValidAccountId | undefined, right: ValidAccountId | undefined): boolean {
-    if (left === undefined || right === undefined) {
-        return false;
-    }
-    return left.equals(right);
 }
 
 export function validAccountId(account: AccountId | undefined): ValidAccountId | undefined {

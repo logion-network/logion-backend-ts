@@ -1,5 +1,5 @@
 import { AuthenticationService, TestApp } from "@logion/rest-api-core";
-import { ALICE, AuthenticationServiceMock, BOB, mockAuthenticationWithCondition } from "@logion/rest-api-core/dist/TestApp.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import bodyParser from "body-parser";
 import { Container } from "inversify";
 import request from "supertest";
@@ -19,7 +19,7 @@ const { setupApp } = TestApp;
 describe("IdenfyController", () => {
 
     it("creates verification session for LOC requester", async () => {
-        const app = setupApp(IdenfyController, container => mockVerification(container, ALICE));
+        const app = setupApp(IdenfyController, container => mockVerification(container, ALICE_ACCOUNT.address));
 
         await request(app)
             .post(`/api/idenfy/verification-session/${ REQUEST_ID }`)
@@ -32,7 +32,7 @@ describe("IdenfyController", () => {
     });
 
     it("fails at creating verification session for others", async () => {
-        const app = setupApp(IdenfyController, container => mockVerification(container, BOB));
+        const app = setupApp(IdenfyController, container => mockVerification(container, BOB_ACCOUNT.address));
 
         await request(app)
             .post(`/api/idenfy/verification-session/${ REQUEST_ID }`)

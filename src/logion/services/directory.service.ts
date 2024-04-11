@@ -39,6 +39,6 @@ export class DirectoryService {
 
     async isLegalOfficerAddressOnNode(account: ValidAccountId): Promise<boolean> {
         const authorityService = await this.authorityService;
-        return (await authorityService.isLegalOfficerOnNode(account.address))
+        return (await authorityService.isLegalOfficerOnNode(account))
     }
 }

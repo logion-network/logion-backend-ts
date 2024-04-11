@@ -119,7 +119,7 @@ export class ProtectionRequestController extends ApiController {
         const requesterIdentityLoc = requireDefined(body.requesterIdentityLoc);
         const request = await this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
-            requesterAddress: requester.toValidAccountId(),
+            requesterAddress: requester.validAccountId,
             requesterIdentityLoc,
             legalOfficerAddress,
             otherLegalOfficerAddress: ValidAccountId.polkadot(body.otherLegalOfficerAddress),

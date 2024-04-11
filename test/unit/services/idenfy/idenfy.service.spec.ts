@@ -14,9 +14,7 @@ import { IdenfyVerificationSession } from "../../../../src/logion/services/idenf
 import { NonTransactionalLocRequestService } from "../../../../src/logion/services/locrequest.service.js";
 import { Readable } from "stream";
 import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
-import { accountEquals } from "../../../../src/logion/model/supportedaccountid.model.js";
 import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
-import { ValidAccountId } from "@logion/node-api";
 
 describe("DisabledIdenfyService", () => {
 
@@ -74,7 +72,7 @@ describe("EnabledIdenfyService", () => {
                 && file.contentType === EXPECTED_FILES[fileType].contentType
                 && file.nature === EXPECTED_FILES[fileType].nature
                 && file.name === EXPECTED_FILES[fileType].name
-                && accountEquals(file.submitter, LOC_OWNER_ACCOUNT)
+                && file.submitter.equals(LOC_OWNER_ACCOUNT)
             ), "MANUAL_BY_USER"));
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));

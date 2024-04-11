@@ -21,7 +21,6 @@ import {
 import { AMOUNT_PRECISION, EmbeddableStorageFees } from "./fees.js";
 import {
     EmbeddableAccountId,
-    accountEquals,
     EmbeddableNullableAccountId,
     DB_SS58_PREFIX
 } from "./supportedaccountid.model.js";
@@ -628,7 +627,7 @@ export class LocRequestAggregateRoot {
     }
 
     isOwner(account?: ValidAccountId) {
-        return accountEquals(account, this.getOwner());
+        return this.getOwner().equals(account);
     }
 
     canPreAcknowledgeFile(hash: Hash, contributor: ValidAccountId): boolean {
@@ -638,11 +637,11 @@ export class LocRequestAggregateRoot {
 
     private canPreAcknowledge(submitted: Submitted, contributor: ValidAccountId): boolean {
         const owner = this.getOwner();
-        if (accountEquals(contributor, owner)) {
+        if (contributor.equals(owner)) {
             return true;
         }
         const submitter = submitted.submitter?.toValidAccountId();
-        return this.isVerifiedIssuer(submitter) && accountEquals(contributor, submitter);
+        return this.isVerifiedIssuer(submitter) && contributor.equals(submitter);
     }
 
     preAcknowledgeFile(hash: Hash, contributor: ValidAccountId, acknowledgedOn?: Moment) {
@@ -678,19 +677,19 @@ export class LocRequestAggregateRoot {
     private canPrePublishOrAcknowledge(submitted: Submitted, contributor: ValidAccountId): boolean {
         const submitter = submitted.submitter?.toValidAccountId();
         const owner = this.getOwner();
-        if (submitter?.type !== "Polkadot" && accountEquals(owner, contributor)) {
+        if (submitter?.type !== "Polkadot" && owner.equals(contributor)) {
             return true;
         }
         const requester = this.getRequester();
         if(this.isVerifiedIssuer(submitter) ||  this.isRequester(submitter)) {
-            return accountEquals(contributor, requester);
+            return contributor.equals(requester);
         } else {
-            return accountEquals(contributor, owner);
+            return contributor.equals(owner);
         }
     }
 
     isRequester(account?: ValidAccountId) {
-        return accountEquals(account, this.getRequester());
+        return account && account.equals(this.getRequester());
     }
 
     isVerifiedIssuer(account?: ValidAccountId) {
@@ -756,14 +755,19 @@ export class LocRequestAggregateRoot {
     }
 
     private itemViewable(itemStatus: ItemStatus | undefined, itemSubmitter: EmbeddableAccountId | undefined, viewerAddress?: ValidAccountId): boolean {
-        return itemStatus === 'ACKNOWLEDGED' ||
-            accountEquals(viewerAddress, this.getOwner()) ||
-            accountEquals(viewerAddress, itemSubmitter?.toValidAccountId()) ||
-            (accountEquals(viewerAddress, this.getRequester()) && this.notAcknowledgedItemViewableByRequester(itemStatus, itemSubmitter));
+        if (itemStatus === 'ACKNOWLEDGED') {
+            return true
+        }
+        if (viewerAddress === undefined) {
+            return false;
+        }
+        return viewerAddress.equals(this.getOwner()) ||
+            viewerAddress.equals(itemSubmitter?.toValidAccountId()) ||
+            (viewerAddress.equals(this.getRequester()) && this.notAcknowledgedItemViewableByRequester(itemStatus, itemSubmitter));
     }
 
     private notAcknowledgedItemViewableByRequester(itemStatus: ItemStatus | undefined, itemSubmitter: EmbeddableAccountId | undefined) {
-        return accountEquals(itemSubmitter?.toValidAccountId(), this.getOwner())
+        return this.getOwner().equals(itemSubmitter?.toValidAccountId())
             || (itemStatus === "REVIEW_ACCEPTED" || itemStatus === "PUBLISHED"); // submitted by verified issuer
     }
 
@@ -951,7 +955,7 @@ export class LocRequestAggregateRoot {
     }
 
     private canRemove(address: ValidAccountId, item: Submitted): boolean {
-        return accountEquals(address, item.submitter?.toValidAccountId())
+        return address.equals(item.submitter?.toValidAccountId())
             && (item.lifecycle?.status === "DRAFT" || item.lifecycle?.status === "REVIEW_REJECTED");
     }
 

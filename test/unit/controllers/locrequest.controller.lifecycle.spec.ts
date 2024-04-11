@@ -19,7 +19,6 @@ import {
     POLKADOT_REQUESTER,
 } from "./locrequest.controller.shared.js";
 import { BOB_ACCOUNT } from "../../helpers/addresses.js";
-import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model";
 import { ValidAccountId } from "@logion/node-api";
 
 const { setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;
@@ -210,7 +209,7 @@ function mockModelForAccept(container: Container, notificationService: Mock<Noti
     const { request } = buildMocksForDecision(container, notificationService);
     request.setup(instance => instance.accept(It.Is<string>(It.IsAny<Moment>())))
         .returns();
-    request.setup(instance => instance.canOpen(It.IsAny<SupportedAccountId>()))
+    request.setup(instance => instance.canOpen(It.IsAny<ValidAccountId>()))
         .returns(true);
 }
 
@@ -247,11 +246,11 @@ function mockModelForOpen(container: Container, locType: LocType, userIdentity?:
         userIdentity
     };
     setupRequest(request, REQUEST_ID, locType, "REVIEW_ACCEPTED", data);
-    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address === POLKADOT_REQUESTER.address)))
+    request.setup(instance => instance.canOpen(It.Is<ValidAccountId>(params => params.address === POLKADOT_REQUESTER.address)))
         .returns(true);
-    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params.address !== POLKADOT_REQUESTER.address)))
+    request.setup(instance => instance.canOpen(It.Is<ValidAccountId>(params => params.address !== POLKADOT_REQUESTER.address)))
         .returns(false);
-    request.setup(instance => instance.canOpen(It.Is<SupportedAccountId>(params => params === undefined)))
+    request.setup(instance => instance.canOpen(It.Is<ValidAccountId>(params => params === undefined)))
         .returns(false);
     request.setup(instance => instance.preOpen(It.IsAny())).returns();
 }

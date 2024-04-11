@@ -37,6 +37,24 @@ import { ValidAccountId } from "@logion/node-api";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 
+describe('LocRequestController - Public Fetch', () => {
+
+    it('succeeds to get single Transaction Loc request with Polkadot Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction', 'Polkadot'))
+        await testGetPublic(app)
+    });
+
+    it('succeeds to get single Collection Loc request with Polkadot Identity', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection', 'Polkadot'))
+        await testGetPublic(app)
+    });
+
+    it('succeeds to get single Identity Loc request', async () => {
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Identity', 'EmbeddedInLoc'))
+        await testGetPublic(app)
+    });
+})
+
 describe('LocRequestController - Fetch -', () => {
 
     it('succeeds to fetch loc requests with embedded user identity', async () => {
@@ -86,17 +104,17 @@ describe('LocRequestController - Fetch -', () => {
     });
 
     it('succeeds to get single Transaction Loc request with Polkadot Identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Polkadot'))
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction', 'Polkadot'))
         await testGet(app, userIdentities["Polkadot"])
     });
 
     it('succeeds to get single Transaction Loc request with Logion Identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction','Logion'))
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Transaction', 'Logion'))
         await testGet(app, userIdentities["Logion"])
     });
 
     it('succeeds to get single Collection Loc request with Polkadot Identity', async () => {
-        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection','Polkadot'))
+        const app = setupApp(LocRequestController, container => mockModelForGetSingle(container, 'Collection', 'Polkadot'))
         await testGet(app, userIdentities["Polkadot"], true)
     });
 
@@ -254,47 +272,68 @@ const testMetadataItem: MetadataItemDescription = {
 }
 
 async function testGet(app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData, expectedCollectionParams = false) {
+    const url = `/api/loc-request/${ REQUEST_ID }`;
+    return _testGet(url, app, expectedUserPrivateData, true, expectedCollectionParams)
+}
+
+async function testGetPublic(app: ReturnType<typeof setupApp>) {
+    const url = `/api/loc-request/${ REQUEST_ID }/public`;
+    return _testGet(url, app, undefined, false, false)
+}
+
+async function _testGet(url: string, app: ReturnType<typeof setupApp>, expectedUserPrivateData: UserPrivateData | undefined, expectPrivateFields: boolean, expectedCollectionParams: boolean) {
     await request(app)
-        .get(`/api/loc-request/${ REQUEST_ID }`)
+        .get(url)
         .expect(200)
         .expect('Content-Type', /application\/json/)
         .then(response => {
             expect(response.body.id).toBe(REQUEST_ID);
-            expect(response.body.voteId).toBe(VOTE_ID);
-            expect(response.body.fees.legalFee).toBeDefined();
+
             const file = response.body.files[0]
-            expect(file.name).toBe(testFile.name)
+            const link = response.body.links[0]
+            const metadataItem = response.body.metadata[0]
+
+            if (expectPrivateFields) {
+                expect(response.body.voteId).toBe(VOTE_ID);
+                expect(response.body.fees.legalFee).toBeDefined();
+
+                expect(file.name).toBe(testFile.name)
+                expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
+                expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
+                expect(file.status).toBe(testFile.status)
+                expect(file.acknowledgedByOwnerOn).toBeDefined()
+                expect(file.acknowledgedByVerifiedIssuerOn).toBeDefined()
+                expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
+
+                expect(link.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
+                expect(link.status).toBe(testLink.status)
+                expect(link.acknowledgedByOwnerOn).toBeDefined()
+                expect(link.acknowledgedByVerifiedIssuerOn).toBeDefined()
+
+                expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
+                expect(metadataItem.status).toBe(testMetadataItem.status)
+                expect(metadataItem.acknowledgedByOwnerOn).toBeDefined()
+                expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeDefined()
+            }
+
             expect(file.nature).toBe(testFile.nature)
             expect(file.hash).toBe(testFile.hash.toHex())
             expect(file.addedOn).toBe(testFile.addedOn?.toISOString())
             expect(file.submitter.address).toEqual(SUBMITTER.address)
             expect(file.submitter.type).toEqual(SUBMITTER.type)
-            expect(file.fees.inclusion).toBe(FILE_FEES.inclusionFee.toString())
-            expect(file.fees.storage).toBe(FILE_FEES.storageFee?.toString())
-            expect(file.storageFeePaidBy).toBe(testData.requesterAddress?.address)
-            expect(file.status).toBe(testFile.status)
-            expect(file.acknowledgedByOwnerOn).toBeDefined()
-            expect(file.acknowledgedByVerifiedIssuerOn).toBeDefined()
-            const link = response.body.links[0]
+
             expect(link.nature).toBe(testLink.nature)
             expect(link.target).toBe(testLink.target)
             expect(link.addedOn).toBe(testLink.addedOn?.toISOString())
             expect(link.submitter.address).toEqual(SUBMITTER.address)
             expect(link.submitter.type).toEqual(SUBMITTER.type)
-            expect(link.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
-            expect(link.status).toBe(testMetadataItem.status)
-            expect(link.acknowledgedByOwnerOn).toBeDefined()
-            expect(link.acknowledgedByVerifiedIssuerOn).toBeDefined()
-            const metadataItem = response.body.metadata[0]
+
             expect(metadataItem.name).toBe(testMetadataItem.name)
             expect(metadataItem.value).toBe(testMetadataItem.value)
             expect(metadataItem.addedOn).toBe(testMetadataItem.addedOn?.toISOString())
             expect(metadataItem.submitter.address).toEqual(SUBMITTER.address)
             expect(metadataItem.submitter.type).toEqual(SUBMITTER.type)
-            expect(metadataItem.fees.inclusion).toBe(DATA_LINK_FEES.inclusionFee.toString())
-            expect(metadataItem.status).toBe(testMetadataItem.status)
-            expect(metadataItem.acknowledgedByOwnerOn).toBeDefined()
-            expect(metadataItem.acknowledgedByVerifiedIssuerOn).toBeDefined()
+
             checkPrivateData(response, expectedUserPrivateData);
             const collectionParams = response.body.collectionParams;
             if (expectedCollectionParams) {

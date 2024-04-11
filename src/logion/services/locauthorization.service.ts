@@ -4,7 +4,6 @@ import { AuthenticationService, forbidden, PolkadotService } from '@logion/rest-
 import { Request } from 'express';
 import { injectable } from 'inversify';
 import { LocRequestAggregateRoot } from '../model/locrequest.model';
-import { accountEquals } from "../model/supportedaccountid.model.js";
 import { VoteRepository } from "../model/vote.model.js";
 
 export class Contribution {
@@ -51,21 +50,21 @@ export class LocAuthorizationService {
 
     async ensureContributor(contribution: Contribution): Promise<ValidAccountId> {
         const { httpRequest, locRequest, allowInvitedContributor } = contribution
-        const authenticatedUser = await this.authenticationService.authenticatedUser(httpRequest);
-        if (await this.isContributor(contribution, authenticatedUser)) {
-            return authenticatedUser.toValidAccountId();
-        } else if (allowInvitedContributor && await this.isInvitedContributor(locRequest, authenticatedUser)) {
-            return authenticatedUser.toValidAccountId();
+        const authenticatedAccount = (await this.authenticationService.authenticatedUser(httpRequest)).validAccountId;
+        if (await this.isContributor(contribution, authenticatedAccount)) {
+            return authenticatedAccount;
+        } else if (allowInvitedContributor && await this.isInvitedContributor(locRequest, authenticatedAccount)) {
+            return authenticatedAccount;
         } else {
             throw forbidden("Authenticated user is not allowed to contribute to this LOC");
         }
     }
 
-    async isContributor(contribution: Contribution, contributor: AuthenticatedUser): Promise<boolean> {
+    async isContributor(contribution: Contribution, contributor: ValidAccountId): Promise<boolean> {
         const { locRequest } = contribution;
         return (
-            (accountEquals(locRequest.getOwner(), contributor.toValidAccountId()) && contribution.ownerCanContributeItems()) ||
-            accountEquals(locRequest.getRequester(), contributor.toValidAccountId()) ||
+            (locRequest.getOwner().equals(contributor) && contribution.ownerCanContributeItems()) ||
+            contributor.equals(locRequest.getRequester()) ||
             await this.isSelectedIssuer(locRequest, contributor)
         );
     }
@@ -77,23 +76,23 @@ export class LocAuthorizationService {
         );
     }
 
-    private async isSelectedIssuer(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
-        if (!submitter.isPolkadot()) {
+    private async isSelectedIssuer(request: LocRequestAggregateRoot, submitter: ValidAccountId): Promise<boolean> {
+        if (submitter.type !== "Polkadot") {
             return false;
         }
         const api = await this.polkadotService.readyApi();
         const locId = new UUID(request.id);
         const issuers = (await api.batch.locs([ locId ]).getLocsVerifiedIssuers())[ locId.toDecimalString() ];
-        const selectedParticipant = issuers.find(issuer => issuer.address === submitter.address);
+        const selectedParticipant = issuers.find(issuer => issuer.account.equals(submitter));
         return selectedParticipant !== undefined;
     }
 
-    private async isInvitedContributor(request: LocRequestAggregateRoot, submitter: AuthenticatedUser): Promise<boolean> {
-        if (!submitter.isPolkadot()) {
+    private async isInvitedContributor(request: LocRequestAggregateRoot, submitter: ValidAccountId): Promise<boolean> {
+        if (submitter.type !== "Polkadot") {
             return false;
         }
         const api = await this.polkadotService.readyApi();
         const locId = new UUID(request.id);
-        return await api.queries.isInvitedContributorOf(submitter.address, locId);
+        return await api.queries.isInvitedContributorOf(submitter, locId);
     }
 }

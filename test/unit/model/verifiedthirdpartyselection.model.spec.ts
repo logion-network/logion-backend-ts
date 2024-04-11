@@ -16,7 +16,7 @@ function buildSelection(): VerifiedIssuerAggregateRoot {
     return factory.newSelection(SELECTION_ID, ISSUER_LOC_ID);
 }
 
-const ISSUER= ValidAccountId.polkadot("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
+const ISSUER = ValidAccountId.polkadot("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
 const SELECTION_ID: VerifiedIssuerSelectionId = {
     locRequestId: "98c54013-af47-409f-b90d-edcdb71e7cb9",
     issuer: ISSUER,

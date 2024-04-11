@@ -42,7 +42,7 @@ const timestamp = moment();
 const ITEM_TOKEN_OWNER = "0x900edc98db53508e6742723988B872dd08cd09c3";
 
 const recordId = Hash.fromHex("0x59772b9c70d6cc244274937445f7c5b56ec6fe0a11292c4ed68848655515a1e6");
-const recordSubmitter = "5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb";
+const recordSubmitter = ValidAccountId.polkadot("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
 const SOME_DATA = 'some data';
 const SOME_DATA_HASH = Hash.fromHex('0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee');
 const FILE_NAME = "'a-file.pdf'";

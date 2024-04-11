@@ -215,7 +215,7 @@ describe("TransactionExtractor", () => {
             blockNumber: 1739n,
             fee: 0n,
             transferValue: 200000000000000000n,
-            from: "5GsjmoJBjbKpjQiUHeVmSHuUvgonLvJUyLSHfbKDRYz4GK3V",
+            from: "vQx6Y5fTinEKDENnSUzDC73bdN4Yo2D2PUCq9xaKQKHzS63dr",
             to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
         });
         await expectTransaction(transferParams, 0);
