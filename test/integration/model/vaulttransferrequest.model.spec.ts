@@ -5,7 +5,9 @@ import {
     VaultTransferRequestRepository,
     VaultTransferRequestStatus,
 } from "../../../src/logion/model/vaulttransferrequest.model.js";
-import { ALICE, BOB } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -35,7 +37,7 @@ describe('VaultTransferRequestRepository queries', () => {
     });
 
     it("findByRequesterAddressOnly", async () => {
-        let requesterAddress = "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW";
+        let requesterAddress = ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
         const specification = new FetchVaultTransferRequestsSpecification({
             expectedRequesterAddress: requesterAddress
         });
@@ -58,7 +60,7 @@ describe('VaultTransferRequestRepository queries', () => {
 
     it("finds workload", async () => {
         const specification = new FetchVaultTransferRequestsSpecification({
-            expectedLegalOfficerAddress: [ ALICE, BOB ],
+            expectedLegalOfficerAddress: [ ALICE_ACCOUNT, BOB_ACCOUNT ],
             expectedStatuses: [ 'PENDING' ],
         });
 
@@ -88,7 +90,7 @@ describe('VaultTransferRequestRepository updates', () => {
         const request = new VaultTransferRequestAggregateRoot();
         request.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639';
         request.requesterAddress = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
-        request.legalOfficerAddress = ALICE;
+        request.legalOfficerAddress = ALICE_ACCOUNT.getAddress(DB_SS58_PREFIX);
         request.origin = '5HQqkmkt6KqxQACPQ2uvH4mHrXouTSbtyT9XWJj8TUaaCE7q';
         request.destination = '5FHneW46xGXgs5mUiveU4sbTyGBzmstUspZC92UhjJM694ty';
         request.amount = '10000';

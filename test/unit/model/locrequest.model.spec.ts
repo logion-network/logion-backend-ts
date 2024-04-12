@@ -1,5 +1,5 @@
 import { v4 as uuid } from "uuid";
-import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import moment, { Moment } from "moment";
 import {
     LocRequestDescription,
@@ -26,21 +26,15 @@ import {
     PublicSeal,
     LATEST_SEAL_VERSION
 } from "../../../src/logion/services/seal.service.js";
-import { UUID } from "@logion/node-api";
+import { UUID, ValidAccountId } from "@logion/node-api";
 import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/services/idenfy/idenfy.types.js";
-import { SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { POLKADOT_REQUESTER } from "../controllers/locrequest.controller.shared.js";
+import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 
-const SUBMITTER: SupportedAccountId = {
-    type: "Polkadot",
-    address: "5DDGQertEH5qvKVXUmpT3KNGViCX582Qa2WWb8nGbkmkRHvw"
-};
+const SUBMITTER = ValidAccountId.polkadot("vQtS4iX2RGv5ERHZVg7Xsi54Qw5wXkQkK4tuNt7nTVVn8F6AN");
 
-const VERIFIED_ISSUER: SupportedAccountId = {
-    type: "Polkadot",
-    address: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"
-};
+const VERIFIED_ISSUER = ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
 
 const PUBLIC_SEAL: PublicSeal = {
     hash: Hash.fromHex("0x48aedf4e08e46b24970d97db566bfa6668581cc2f37791bac0c9817a4508607a"),
@@ -66,8 +60,9 @@ describe("LocRequestFactory", () => {
         const requesterIdentityLoc = new Mock<LocRequestAggregateRoot>();
         requesterIdentityLoc.setup(instance => instance.id).returns(requesterIdentityLocId);
         if (requesterAddress) {
-            requesterIdentityLoc.setup(instance => instance.requesterAddress).returns(requesterAddress);
-            requesterIdentityLoc.setup(instance => instance.requesterAddressType).returns("Polkadot");
+            const requester = ValidAccountId.polkadot(requesterAddress);
+            requesterIdentityLoc.setup(instance => instance.requester).returns(EmbeddableNullableAccountId.from(requester));
+            requesterIdentityLoc.setup(instance => instance.getRequester()).returns(requester);
         }
         repository.setup(instance => instance.findById(requesterIdentityLocId)).returns(Promise.resolve(requesterIdentityLoc.object()));
         return requesterIdentityLocId;
@@ -306,9 +301,9 @@ describe("LocRequestFactory", () => {
 
     function createDescription(locType: LocType, requesterAddress?: string, requesterIdentityLoc?: string, userIdentity?: UserIdentity, userPostalAddress?: PostalAddress, seal?: PublicSeal): LocRequestDescription {
         return {
-            requesterAddress: requesterAddress ? { type: "Polkadot", address: requesterAddress } : undefined,
+            requesterAddress: requesterAddress !== undefined ? ValidAccountId.polkadot(requesterAddress) : undefined,
             requesterIdentityLoc,
-            ownerAddress: ALICE,
+            ownerAddress: ALICE_ACCOUNT,
             description: "Mrs ALice, I want to sell my last art work",
             createdOn: moment().toISOString(),
             userIdentity,
@@ -735,7 +730,7 @@ describe("LocRequestAggregateRoot (metadata)", () => {
 
     it("submitter removes previously added metadata item", () => testRemovesItem(SUBMITTER));
 
-    function testRemovesItem(remover: SupportedAccountId) {
+    function testRemovesItem(remover: ValidAccountId) {
         givenRequestWithStatus('OPEN');
         const items: MetadataItemParams[] = [
             {
@@ -1270,7 +1265,7 @@ describe("LocRequestAggregateRoot (files)", () => {
 
     it("submitter removes previously added files", () => testRemovesFile(SUBMITTER));
 
-    function testRemovesFile(remover: SupportedAccountId) {
+    function testRemovesFile(remover: ValidAccountId) {
         givenRequestWithStatus('OPEN');
         const files: FileParams[] = [
             {
@@ -2047,12 +2042,11 @@ function givenRequestWithStatus(status: LocRequestStatus) {
     request.metadata = [];
     request.links = [];
     request.ownerAddress = OWNER;
-    request.requesterAddress = SUBMITTER.address;
-    request.requesterAddressType = SUBMITTER.type;
+    request.requester = EmbeddableNullableAccountId.from(SUBMITTER)
 }
 
-const OWNER = ALICE;
 const OWNER_ACCOUNT = ALICE_ACCOUNT;
+const OWNER = OWNER_ACCOUNT.address;
 
 let request: LocRequestAggregateRoot;
 
@@ -2263,7 +2257,7 @@ function whenSettingMetadataItemAddedOn(nameHash: Hash, addedOn:Moment) {
     request.setMetadataItemAddedOn(nameHash, addedOn);
 }
 
-function whenConfirmingMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+function whenConfirmingMetadataItem(nameHash: Hash, contributor: ValidAccountId) {
     request.prePublishOrAcknowledgeMetadataItem(nameHash, contributor);
 }
 
@@ -2284,7 +2278,7 @@ function whenSettingFileAddedOn(hash: Hash, addedOn:Moment) {
     request.setFileAddedOn(hash, addedOn);
 }
 
-function whenConfirmingFile(hash: Hash, contributor: SupportedAccountId) {
+function whenConfirmingFile(hash: Hash, contributor: ValidAccountId) {
     request.prePublishOrAcknowledgeFile(hash, contributor);
 }
 
@@ -2305,7 +2299,7 @@ function whenSettingLinkAddedOn(target: string, addedOn:Moment) {
     request.setLinkAddedOn(target, addedOn);
 }
 
-function whenConfirmingLink(target: string, contributor: SupportedAccountId) {
+function whenConfirmingLink(target: string, contributor: ValidAccountId) {
     request.prePublishOrAcknowledgeLink(target, contributor);
 }
 
@@ -2325,15 +2319,15 @@ function thenExposesLocCreatedDate(expectedDate: Moment) {
     expect(request.getLocCreatedDate().isSame(expectedDate)).toBe(true);
 }
 
-function whenRemovingMetadataItem(remover: SupportedAccountId, nameHash: Hash) {
+function whenRemovingMetadataItem(remover: ValidAccountId, nameHash: Hash) {
     request.removeMetadataItem(remover, nameHash);
 }
 
-function whenRemovingLink(remover: SupportedAccountId, target: string) {
+function whenRemovingLink(remover: ValidAccountId, target: string) {
     request.removeLink(remover, target);
 }
 
-function whenRemovingFile(remover: SupportedAccountId, hash: Hash) {
+function whenRemovingFile(remover: ValidAccountId, hash: Hash) {
     removedFile = request.removeFile(remover, hash);
 }
 
@@ -2450,7 +2444,7 @@ function thenStatusIs(expectedStatus: LocRequestStatus) {
     expect(request.status).toBe(expectedStatus);
 }
 
-function givenAcceptedLocWithAllAccepted(submitter: SupportedAccountId) {
+function givenAcceptedLocWithAllAccepted(submitter: ValidAccountId) {
     givenRequestWithStatus("DRAFT");
 
     const fileHash = Hash.of("hash1");
@@ -2490,7 +2484,7 @@ function givenAcceptedLocWithAllAccepted(submitter: SupportedAccountId) {
     return { itemNameHash, fileHash, requesterLinkTarget };
 }
 
-function givenOpenLocWithAllAccepted(submitter: SupportedAccountId) {
+function givenOpenLocWithAllAccepted(submitter: ValidAccountId) {
     const items = givenAcceptedLocWithAllAccepted(submitter);
 
     request.preOpen(false);

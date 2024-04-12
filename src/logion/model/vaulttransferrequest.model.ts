@@ -2,6 +2,8 @@ import { Entity, PrimaryColumn, Column, Repository, Unique, ObjectLiteral } from
 import { injectable } from 'inversify';
 import { Moment } from 'moment';
 import { appDataSource } from "@logion/rest-api-core";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 
 export type VaultTransferRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'CANCELLED' | 'REJECTED_CANCELLED';
 
@@ -36,11 +38,11 @@ export class VaultTransferRequestAggregateRoot {
 
     setDescription(description: VaultTransferRequestDescription): void {
         this.id = description.id;
-        this.requesterAddress = description.requesterAddress;
-        this.legalOfficerAddress = description.legalOfficerAddress;
+        this.requesterAddress = description.requesterAddress.getAddress(DB_SS58_PREFIX);
+        this.legalOfficerAddress = description.legalOfficerAddress.getAddress(DB_SS58_PREFIX);
         this.createdOn = description.createdOn;
-        this.origin = description.origin;
-        this.destination = description.destination;
+        this.origin = description.origin.getAddress(DB_SS58_PREFIX);
+        this.destination = description.destination.getAddress(DB_SS58_PREFIX);
         this.amount = description.amount.toString();
         this.blockNumber = description.timepoint.blockNumber.toString();
         this.extrinsicIndex = description.timepoint.extrinsicIndex;
@@ -49,11 +51,11 @@ export class VaultTransferRequestAggregateRoot {
     getDescription(): VaultTransferRequestDescription {
         return {
             id: this.id!,
-            requesterAddress: this.requesterAddress!,
-            legalOfficerAddress: this.legalOfficerAddress!,
+            requesterAddress: this.getRequester(),
+            legalOfficerAddress: this.getLegalOfficer(),
             createdOn: this.createdOn!,
-            origin: this.origin!,
-            destination: this.destination!,
+            origin: this.getOrigin(),
+            destination: this.getDestination(),
             amount: BigInt(this.amount || "0"),
             timepoint: {
                 blockNumber: BigInt(this.blockNumber!),
@@ -130,13 +132,29 @@ export class VaultTransferRequestAggregateRoot {
 
     @Column(() => VaultTransferRequestDecision, { prefix: "" })
     decision?: VaultTransferRequestDecision;
+
+    getRequester(): ValidAccountId {
+        return ValidAccountId.polkadot(this.requesterAddress || "")
+    }
+
+    getLegalOfficer(): ValidAccountId {
+        return ValidAccountId.polkadot(this.legalOfficerAddress || "")
+    }
+
+    getOrigin(): ValidAccountId {
+        return ValidAccountId.polkadot(this.origin || "")
+    }
+
+    getDestination(): ValidAccountId {
+        return ValidAccountId.polkadot(this.destination || "")
+    }
 }
 
 export class FetchVaultTransferRequestsSpecification {
 
     constructor(builder: {
-        expectedRequesterAddress?: string,
-        expectedLegalOfficerAddress?: string | string[],
+        expectedRequesterAddress?: ValidAccountId,
+        expectedLegalOfficerAddress?: ValidAccountId[],
         expectedStatuses?: VaultTransferRequestStatus[],
     }) {
         this.expectedRequesterAddress = builder.expectedRequesterAddress || null;
@@ -144,8 +162,8 @@ export class FetchVaultTransferRequestsSpecification {
         this.expectedStatuses = builder.expectedStatuses || [];
     }
 
-    readonly expectedRequesterAddress: string | null;
-    readonly expectedLegalOfficerAddress: string | string[] | null;
+    readonly expectedRequesterAddress: ValidAccountId | null;
+    readonly expectedLegalOfficerAddress: ValidAccountId[] | null;
     readonly expectedStatuses: VaultTransferRequestStatus[];
 }
 
@@ -171,16 +189,22 @@ export class VaultTransferRequestRepository {
 
         let where = (a: string, b?: ObjectLiteral) => builder.where(a, b);
 
-        if(specification.expectedRequesterAddress !== null) {
-            where("request.requester_address = :expectedRequesterAddress", {expectedRequesterAddress: specification.expectedRequesterAddress});
+        if (specification.expectedRequesterAddress !== null) {
+            where("request.requester_address = :expectedRequesterAddress",
+                { expectedRequesterAddress: specification.expectedRequesterAddress.getAddress(DB_SS58_PREFIX) }
+            );
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
-        if(specification.expectedLegalOfficerAddress !== null) {
-            if(typeof specification.expectedLegalOfficerAddress === "string") {
-                where("request.legal_officer_address = :expectedLegalOfficerAddress", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+        if (specification.expectedLegalOfficerAddress !== null) {
+            if (specification.expectedLegalOfficerAddress.length === 1) {
+                where("request.legal_officer_address = :expectedLegalOfficerAddress",
+                    { expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress[0].getAddress(DB_SS58_PREFIX) }
+                );
             } else {
-                where("request.legal_officer_address IN (:...expectedLegalOfficerAddress)", {expectedLegalOfficerAddress: specification.expectedLegalOfficerAddress});
+                where("request.legal_officer_address IN (:...expectedLegalOfficerAddresses)",
+                    { expectedLegalOfficerAddresses: specification.expectedLegalOfficerAddress.map(account => account.getAddress(DB_SS58_PREFIX)) }
+                );
             }
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
@@ -200,11 +224,11 @@ export interface Timepoint {
 
 export interface VaultTransferRequestDescription {
     readonly id: string,
-    readonly requesterAddress: string,
-    readonly legalOfficerAddress: string,
+    readonly requesterAddress: ValidAccountId,
+    readonly legalOfficerAddress: ValidAccountId,
     readonly createdOn: string,
-    readonly origin: string,
-    readonly destination: string,
+    readonly origin: ValidAccountId,
+    readonly destination: ValidAccountId,
     readonly amount: bigint,
     readonly timepoint: Timepoint,
 }

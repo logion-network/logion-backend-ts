@@ -1,7 +1,7 @@
 import { TestApp } from "@logion/rest-api-core";
 import { Container } from "inversify";
 import { Mock, It } from "moq.ts";
-import { CollectionItem, Hash, ItemFile } from "@logion/node-api";
+import { CollectionItem, Hash, ItemFile, ValidAccountId } from "@logion/node-api";
 import { writeFile } from "fs/promises";
 import { CollectionController } from "../../../src/logion/controllers/collection.controller.js";
 import {
@@ -31,17 +31,20 @@ import {
 import { fileExists } from "../../helpers/filehelper.js";
 import { OwnershipCheckService } from "../../../src/logion/services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../../../src/logion/services/restricteddelivery.service.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import {
     LocRequestService,
     NonTransactionalLocRequestService
 } from "../../../src/logion/services/locrequest.service.js";
-import { polkadotAccount, EmbeddableSupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import {
+    EmbeddableAccountId,
+    EmbeddableNullableAccountId
+} from "../../../src/logion/model/supportedaccountid.model.js";
 import { ItIsHash } from "../../helpers/Mock.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
-const collectionLocOwner = ALICE;
-const collectionRequester = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
+const collectionLocOwner = ALICE_ACCOUNT;
+const collectionRequester = ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
 const itemId = Hash.fromHex("0x818f1c9cd44ed4ca11f2ede8e865c02a82f9f8a158d8d17368a6818346899705");
 const timestamp = moment();
 
@@ -377,7 +380,7 @@ function testDownloadFiles(fileType: FileType) {
             .expect(403)
             .expect('Content-Type', /application\/json/)
             .then(response => {
-                expect(response.body.errorMessage).toBe("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY does not seem to be the owner of this item's underlying token");
+                expect(response.body.errorMessage).toBe("vQx5kESPn8dWyX4KxMCKqUyCaWUwtui1isX6PVNcZh2Ghjitr does not seem to be the owner of this item's underlying token");
             });
     })
 }
@@ -580,7 +583,7 @@ function mockModel(
         }
         collectionFile.request = collectionLoc;
         collectionFile.requestId = collectionLocId;
-        collectionFile.submitter = EmbeddableSupportedAccountId.from(polkadotAccount(collectionRequester));
+        collectionFile.submitter = EmbeddableAccountId.from(collectionRequester);
         collectionFile.index = 0;
         collectionFile.name = FILE_NAME;
         collectionFile.contentType = CONTENT_TYPE;
@@ -669,8 +672,8 @@ function mockModel(
     }
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())
 
-    collectionLoc.ownerAddress = collectionLocOwner;
-    collectionLoc.requesterAddress = collectionRequester;
+    collectionLoc.ownerAddress = collectionLocOwner.address;
+    collectionLoc.requester = EmbeddableNullableAccountId.from(collectionRequester);
     collectionLoc.locType = "Collection";
     collectionLoc.status = "CLOSED";
     locRequestRepository.setup(instance => instance.findById(collectionLocId))

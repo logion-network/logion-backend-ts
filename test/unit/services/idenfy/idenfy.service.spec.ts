@@ -4,7 +4,7 @@ import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository, F
 import { AxiosFactory } from "src/logion/services/axiosfactory.service.js";
 import { FileStorageService } from "src/logion/services/file.storage.service.js";
 import { LocRequestService } from "src/logion/services/locrequest.service.js";
-import { ALICE } from "../../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../../helpers/addresses.js";
 import {
     DisabledIdenfyService,
     EnabledIdenfyService,
@@ -14,10 +14,6 @@ import { IdenfyVerificationSession } from "../../../../src/logion/services/idenf
 import { NonTransactionalLocRequestService } from "../../../../src/logion/services/locrequest.service.js";
 import { Readable } from "stream";
 import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
-import {
-    accountEquals,
-    polkadotAccount
-} from "../../../../src/logion/model/supportedaccountid.model.js";
 import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
 
 describe("DisabledIdenfyService", () => {
@@ -76,7 +72,7 @@ describe("EnabledIdenfyService", () => {
                 && file.contentType === EXPECTED_FILES[fileType].contentType
                 && file.nature === EXPECTED_FILES[fileType].nature
                 && file.name === EXPECTED_FILES[fileType].name
-                && accountEquals(file.submitter, LOC_OWNER_ACCOUNT)
+                && file.submitter.equals(LOC_OWNER_ACCOUNT)
             ), "MANUAL_BY_USER"));
         }
         locRequestRepository.verify(instance => instance.save(locRequest.object()));
@@ -115,7 +111,7 @@ const IDENFY_API_KEY = "api-key";
 const IDENFY_API_SECRET = "api-secret";
 const IDENFY_SIGNING_KEY = "signing-key";
 const IDENFY_SCAN_REF = "3af0b5c9-8ef3-4815-8796-5ab3ed942917";
-const LOC_OWNER_ACCOUNT = polkadotAccount(ALICE);
+const LOC_OWNER_ACCOUNT = ALICE_ACCOUNT;
 const VERIFICATION_CREATION: IdenfyVerificationCreation = {
     successUrl: `${ BASE_URL }/user/idenfy?result=success&locId=${ REQUEST_ID }`,
     errorUrl: `${ BASE_URL }/user/idenfy?result=error&locId=${ REQUEST_ID }`,

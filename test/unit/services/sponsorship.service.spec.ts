@@ -1,11 +1,10 @@
 import { Mock, It } from "moq.ts";
-import { UUID, Sponsorship, LogionNodeApiClass } from "@logion/node-api";
+import { UUID, Sponsorship, LogionNodeApiClass, ValidAccountId } from "@logion/node-api";
 import { LocRequestRepository, FetchLocRequestsSpecification } from "../../../src/logion/model/locrequest.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
 import { PolkadotService } from "@logion/rest-api-core";
 import { ALICE_ACCOUNT, CHARLY_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { POLKADOT_REQUESTER } from "../controllers/locrequest.controller.shared.js";
-import { polkadotAccount, SupportedAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { expectAsyncToThrow } from "../../helpers/asynchelper.js";
 
 const locRequestRepository: Mock<LocRequestRepository> = new Mock<LocRequestRepository>();
@@ -23,7 +22,7 @@ describe("SponsorshipService", () => {
 
     const service = createService();
 
-    async function testError(sponsorshipId: UUID, expectedError: string, legalOfficer?: SupportedAccountId, requester?: SupportedAccountId) {
+    async function testError(sponsorshipId: UUID, expectedError: string, legalOfficer?: ValidAccountId, requester?: ValidAccountId) {
         return expectAsyncToThrow(
             () => service.validateSponsorship(sponsorshipId, legalOfficer ? legalOfficer : ALICE_ACCOUNT, requester ? requester : POLKADOT_REQUESTER),
             expectedError
@@ -52,7 +51,7 @@ describe("SponsorshipService", () => {
     })
 
     it("throws error for wrong Sponsored Account", async () => {
-        const wrongRequester = polkadotAccount("5GnPfHk6Y6qsqSYQ5V6rRSaWxHf86QW1b2DQDGft1FjDT2iN");
+        const wrongRequester = ValidAccountId.polkadot("5GnPfHk6Y6qsqSYQ5V6rRSaWxHf86QW1b2DQDGft1FjDT2iN");
         await testError(validSponsorship, "This sponsorship is not applicable to your request", ALICE_ACCOUNT, wrongRequester)
     })
 

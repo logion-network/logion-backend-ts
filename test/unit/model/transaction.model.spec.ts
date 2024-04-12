@@ -1,4 +1,4 @@
-import { Fees, Lgnt } from "@logion/node-api";
+import { Fees, Lgnt, ValidAccountId } from "@logion/node-api";
 import moment from "moment";
 import {
     TransactionAggregateRoot,
@@ -6,14 +6,15 @@ import {
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
 import { Block, EmbeddableBlock } from "../../../src/logion/model/block.model.js";
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 describe("TransactionAggregateRoot", () => {
 
     it("provides expected description when successful", () => {
         const transaction = aSuccessfulTransaction();
         const description = transaction.getDescription();
-        expect(description.from).toBe(transaction.from!);
-        expect(description.to).toBe(transaction.to!);
+        expect(description.from.getAddress(DB_SS58_PREFIX)).toBe(transaction.from!);
+        expect(description.to?.getAddress(DB_SS58_PREFIX)).toBe(transaction.to!);
         expect(description.createdOn).toBe(transaction.createdOn!);
         expect(description.transferValue.toString()).toBe(transaction.transferValue!);
         expect(description.error).toBeUndefined()
@@ -22,8 +23,8 @@ describe("TransactionAggregateRoot", () => {
     it("provides expected description when not successful", () => {
         const transaction = aNotSuccessfulTransaction();
         const description = transaction.getDescription();
-        expect(description.from).toBe(transaction.from!);
-        expect(description.to).toBe(transaction.to!);
+        expect(description.from.getAddress(DB_SS58_PREFIX)).toBe(transaction.from!);
+        expect(description.to?.getAddress(DB_SS58_PREFIX)).toBe(transaction.to!);
         expect(description.createdOn).toBe(transaction.createdOn!);
         expect(description.transferValue.toString()).toBe(transaction.transferValue!);
         expect(description.error).toEqual({ section: "aSection", name: "aName", details: "someDetails" })
@@ -49,8 +50,8 @@ function aTransaction(): TransactionAggregateRoot {
     let transaction = new TransactionAggregateRoot();
     transaction.block = EmbeddableBlock.from(Block.soloBlock(1n));
     transaction.extrinsicIndex = 1;
-    transaction.from = "from";
-    transaction.to = "to";
+    transaction.from = "5FbJzFZxa9VuLmdwBzY1nhS5nRbmFC1YrtCARRo8n94pPrqH";
+    transaction.to = "5FgoYarSuwBEW8924ksWt3mDox7fhG7mnzmjRNWgvSiH1kuD";
     transaction.createdOn = moment().toISOString();
     transaction.transferValue = "123456";
     transaction.type = "EXTRINSIC";
@@ -63,8 +64,8 @@ describe("TransactionFactory", () => {
         id: "some-id",
         block: Block.soloBlock(123456n),
         extrinsicIndex: 5,
-        from: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-        to: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+        from: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
+        to: ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"),
         fees: new Fees({ inclusionFee: Lgnt.fromCanonical(12n) }),
         transferValue: 34n,
         tip: 56n,

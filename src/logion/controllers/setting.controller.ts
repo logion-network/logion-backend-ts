@@ -4,6 +4,7 @@ import { SettingRepository } from '../model/setting.model.js';
 import { addTag, AuthenticationService, getDefaultResponsesWithAnyBody, setControllerTag, setPathParameters } from '@logion/rest-api-core';
 import { OpenAPIV3 } from "express-oas-generator";
 import { SettingService } from '../services/settings.service.js';
+import { ValidAccountId } from "@logion/node-api";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Settings';
@@ -43,8 +44,9 @@ export class SettingController extends ApiController {
     @HttpGet('/:legalOfficerAddress')
     async fetchSettings(_body: never, legalOfficerAddress: string): Promise<{settings: Record<string, string>}> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        authenticatedUser.require(user => user.is(legalOfficerAddress));
-        const settings = await this.settingRepository.findByLegalOfficer(legalOfficerAddress);
+        const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
+        authenticatedUser.require(user => user.is(legalOfficer));
+        const settings = await this.settingRepository.findByLegalOfficer(legalOfficer);
         const responseBody: Record<string, string> = {};
         for(const setting of settings) {
             responseBody[setting.id!] = setting.value!;
@@ -67,8 +69,9 @@ export class SettingController extends ApiController {
     @HttpPut('/:legalOfficerAddress/:id')
     async createOrUpdate(body: { value: string }, legalOfficerAddress: string, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
-        authenticatedUser.require(user => user.is(legalOfficerAddress));
+        const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
+        authenticatedUser.require(user => user.is(legalOfficer));
         const value = body.value;
-        await this.settingService.createOrUpdate({ id, legalOfficerAddress, value });
+        await this.settingService.createOrUpdate({ id, legalOfficer, value });
     }
 }

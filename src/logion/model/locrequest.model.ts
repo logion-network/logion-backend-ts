@@ -3,7 +3,7 @@ import moment, { Moment } from "moment";
 import { Entity, PrimaryColumn, Column, Repository, ManyToOne, JoinColumn, OneToMany, Unique, Index } from "typeorm";
 import { WhereExpressionBuilder } from "typeorm/query-builder/WhereExpressionBuilder.js";
 import { EntityManager } from "typeorm/entity-manager/EntityManager.js";
-import { Fees, UUID, Lgnt } from "@logion/node-api";
+import { Fees, UUID, Lgnt, ValidAccountId } from "@logion/node-api";
 import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api-core";
 
 import { components } from "../controllers/components.js";
@@ -20,10 +20,9 @@ import {
 } from "../services/idenfy/idenfy.types.js";
 import { AMOUNT_PRECISION, EmbeddableStorageFees } from "./fees.js";
 import {
-    SupportedAccountId,
-    EmbeddableSupportedAccountId,
-    accountEquals,
-    polkadotAccount
+    EmbeddableAccountId,
+    EmbeddableNullableAccountId,
+    DB_SS58_PREFIX
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
 import { Hash, HashTransformer } from "../lib/crypto/hashing.js";
@@ -50,9 +49,9 @@ export interface CollectionParams {
 }
 
 export interface LocRequestDescription {
-    readonly requesterAddress?: SupportedAccountId;
+    readonly requesterAddress?: ValidAccountId;
     readonly requesterIdentityLoc?: string;
-    readonly ownerAddress: string;
+    readonly ownerAddress: ValidAccountId;
     readonly description: string;
     readonly createdOn: string;
     readonly userIdentity: UserIdentity | undefined;
@@ -74,7 +73,7 @@ export interface LocRequestDecision {
 interface FileDescriptionMandatoryFields {
     readonly name: string;
     readonly hash: Hash;
-    readonly submitter: SupportedAccountId;
+    readonly submitter: ValidAccountId;
     readonly restrictedDelivery: boolean;
     readonly size: number;
 }
@@ -102,7 +101,7 @@ export interface FileDescription extends FileDescriptionMandatoryFields, ItemLif
 }
 
 interface MetadataItemDescriptionMandatoryFields {
-    readonly submitter: SupportedAccountId;
+    readonly submitter: ValidAccountId;
 }
 
 export interface MetadataItemParams extends MetadataItemDescriptionMandatoryFields {
@@ -129,7 +128,7 @@ export interface ItemLifecycle {
 export interface LinkParams {
     readonly target: string;
     readonly nature: string;
-    readonly submitter: SupportedAccountId;
+    readonly submitter: ValidAccountId;
 }
 
 export interface LinkDescription extends LinkParams, ItemLifecycle {
@@ -486,8 +485,8 @@ export class LocRequestAggregateRoot {
         this.mutateAllItems(item => item.lifecycle?.prePublishOrAcknowledge(this.isPublishAcknowledge(item)), this.links, item => item.status === "REVIEW_ACCEPTED");
     }
 
-    private isPublishAcknowledge(item: { submitter?: EmbeddableSupportedAccountId }) {
-        return item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())
+    private isPublishAcknowledge(item: { submitter?: EmbeddableAccountId }) {
+        return item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toValidAccountId())
     }
 
     cancelPreOpen(autoPublish: boolean): void {
@@ -520,7 +519,7 @@ export class LocRequestAggregateRoot {
         return {
             requesterAddress: this.getRequester(),
             requesterIdentityLoc: this.requesterIdentityLocId,
-            ownerAddress: this.ownerAddress!,
+            ownerAddress: this.getOwner(),
             description: this.description!,
             createdOn: this.createdOn!,
             userIdentity,
@@ -539,11 +538,8 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    getRequester(): SupportedAccountId | undefined {
-        return (this.requesterAddressType === "Polkadot" || this.requesterAddressType === "Ethereum") ? {
-            address: this.requesterAddress!,
-            type: this.requesterAddressType!,
-        } : undefined
+    getRequester(): ValidAccountId | undefined {
+        return this.requester?.toValidAccountId();
     }
 
     getDecision(): LocRequestDecision | undefined {
@@ -570,7 +566,7 @@ export class LocRequestAggregateRoot {
         file.contentType = fileDescription.contentType;
         file.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
         file.nature = fileDescription.nature;
-        file.submitter = EmbeddableSupportedAccountId.from(fileDescription.submitter);
+        file.submitter = EmbeddableAccountId.from(fileDescription.submitter);
         file.size = fileDescription.size.toString();
         file.restrictedDelivery = fileDescription.restrictedDelivery;
         file.delivered = [];
@@ -616,57 +612,57 @@ export class LocRequestAggregateRoot {
         this.mutateFile(hash, item => item.lifecycle!.reject(reason));
     }
 
-    prePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+    prePublishOrAcknowledgeFile(hash: Hash, contributor: ValidAccountId) {
         if(!this.canPrePublishOrAcknowledgeFile(hash, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateFile(hash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateFile(hash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toValidAccountId())));
     }
 
-    cancelPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+    cancelPrePublishOrAcknowledgeFile(hash: Hash, contributor: ValidAccountId) {
         if(!this.canPrePublishOrAcknowledgeFile(hash, contributor)) {
             throw new Error("Contributor cannot cancel");
         }
-        this.mutateFile(hash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateFile(hash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toValidAccountId())));
     }
 
-    isOwner(account?: SupportedAccountId) {
-        return accountEquals(account, this.getOwner());
+    isOwner(account?: ValidAccountId) {
+        return this.getOwner().equals(account);
     }
 
-    canPreAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeFile(hash: Hash, contributor: ValidAccountId): boolean {
         const file = this.getFileOrThrow(hash);
         return this.canPreAcknowledge(file, contributor);
     }
 
-    private canPreAcknowledge(submitted: Submitted, contributor: SupportedAccountId): boolean {
+    private canPreAcknowledge(submitted: Submitted, contributor: ValidAccountId): boolean {
         const owner = this.getOwner();
-        if (accountEquals(contributor, owner)) {
+        if (contributor.equals(owner)) {
             return true;
         }
-        const submitter = submitted.submitter?.toSupportedAccountId();
-        return this.isVerifiedIssuer(submitter) && accountEquals(contributor, submitter);
+        const submitter = submitted.submitter?.toValidAccountId();
+        return this.isVerifiedIssuer(submitter) && contributor.equals(submitter);
     }
 
-    preAcknowledgeFile(hash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+    preAcknowledgeFile(hash: Hash, contributor: ValidAccountId, acknowledgedOn?: Moment) {
         if(!this.canPreAcknowledgeFile(hash, contributor)) {
             throw new Error("Contributor cannot ack");
         }
         this.mutateFile(hash, file => file.lifecycle!.preAcknowledge(
-            this.isVerifiedIssuer(file.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(file.submitter?.toValidAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
     }
 
-    cancelPreAcknowledgeFile(hash: Hash, contributor: SupportedAccountId) {
+    cancelPreAcknowledgeFile(hash: Hash, contributor: ValidAccountId) {
         if(!this.canPreAcknowledgeFile(hash, contributor)) {
             throw new Error("Contributor cannot cancel");
         }
         this.mutateFile(hash, file => file.lifecycle!.cancelPreAcknowledge(this.isVerifiedIssuer(contributor)));
     }
 
-    canPrePublishOrAcknowledgeFile(hash: Hash, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeFile(hash: Hash, contributor: ValidAccountId): boolean {
         this.ensureOpen();
         const file = this.getFileOrThrow(hash);
         return this.canPrePublishOrAcknowledge(file, contributor);
@@ -678,25 +674,25 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    private canPrePublishOrAcknowledge(submitted: Submitted, contributor: SupportedAccountId): boolean {
-        const submitter = submitted.submitter?.toSupportedAccountId();
+    private canPrePublishOrAcknowledge(submitted: Submitted, contributor: ValidAccountId): boolean {
+        const submitter = submitted.submitter?.toValidAccountId();
         const owner = this.getOwner();
-        if (submitter?.type !== "Polkadot" && accountEquals(owner, contributor)) {
+        if (submitter?.type !== "Polkadot" && owner.equals(contributor)) {
             return true;
         }
         const requester = this.getRequester();
         if(this.isVerifiedIssuer(submitter) ||  this.isRequester(submitter)) {
-            return accountEquals(contributor, requester);
+            return contributor.equals(requester);
         } else {
-            return accountEquals(contributor, owner);
+            return contributor.equals(owner);
         }
     }
 
-    isRequester(account?: SupportedAccountId) {
-        return accountEquals(account, this.getRequester());
+    isRequester(account?: ValidAccountId) {
+        return account && account.equals(this.getRequester());
     }
 
-    isVerifiedIssuer(account?: SupportedAccountId) {
+    isVerifiedIssuer(account?: ValidAccountId) {
         return !this.isOwner(account)
             && !this.isRequester(account)
     }
@@ -749,7 +745,7 @@ export class LocRequestAggregateRoot {
             oid: file!.oid,
             cid: file!.cid,
             nature: file!.nature!,
-            submitter: file!.submitter!.toSupportedAccountId(),
+            submitter: file!.submitter!.toValidAccountId(),
             restrictedDelivery: file!.restrictedDelivery || false,
             size: parseInt(file.size!),
             fees: file.fees && file.fees.getDescription(),
@@ -758,20 +754,25 @@ export class LocRequestAggregateRoot {
         };
     }
 
-    private itemViewable(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }, viewerAddress?: SupportedAccountId): boolean {
-        return item.status === 'ACKNOWLEDGED' ||
-            accountEquals(viewerAddress, this.getOwner()) ||
-            accountEquals(viewerAddress, item.submitter) ||
-            (accountEquals(viewerAddress, this.getRequester()) && this.notAcknowledgedItemViewableByRequester(item));
+    private itemViewable(itemStatus: ItemStatus | undefined, itemSubmitter: EmbeddableAccountId | undefined, viewerAddress?: ValidAccountId): boolean {
+        if (itemStatus === 'ACKNOWLEDGED') {
+            return true
+        }
+        if (viewerAddress === undefined) {
+            return false;
+        }
+        return viewerAddress.equals(this.getOwner()) ||
+            viewerAddress.equals(itemSubmitter?.toValidAccountId()) ||
+            (viewerAddress.equals(this.getRequester()) && this.notAcknowledgedItemViewableByRequester(itemStatus, itemSubmitter));
     }
 
-    private notAcknowledgedItemViewableByRequester(item: { status?: ItemStatus, submitter?: { type?: string, address?: string } }) {
-        return accountEquals(item.submitter, this.getOwner())
-            || (item.status === "REVIEW_ACCEPTED" || item.status === "PUBLISHED"); // submitted by verified issuer
+    private notAcknowledgedItemViewableByRequester(itemStatus: ItemStatus | undefined, itemSubmitter: EmbeddableAccountId | undefined) {
+        return this.getOwner().equals(itemSubmitter?.toValidAccountId())
+            || (itemStatus === "REVIEW_ACCEPTED" || itemStatus === "PUBLISHED"); // submitted by verified issuer
     }
 
-    getFiles(viewerAddress?: SupportedAccountId): FileDescription[] {
-        return orderAndMap(this.files?.filter(item => this.itemViewable(item, viewerAddress)), file => this.toFileDescription(file));
+    getFiles(viewerAddress?: ValidAccountId): FileDescription[] {
+        return orderAndMap(this.files?.filter(item => this.itemViewable(item.status, item.submitter, viewerAddress)), file => this.toFileDescription(file));
     }
 
     open(createdOn: Moment, items: LocItems) {
@@ -812,13 +813,13 @@ export class LocRequestAggregateRoot {
     }
 
     private ensureAllItemsAckedOrPublishedOnChain() {
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.metadata)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.metadata)) {
             throw new Error("A metadata item was not yet published nor acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.files)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.files)) {
             throw new Error("A file was not yet published nor acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.links)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())) && !item.lifecycle?.isPublishedOnChain(), this.links)) {
             throw new Error("A link was not yet published nor acknowledged");
         }
     }
@@ -839,24 +840,24 @@ export class LocRequestAggregateRoot {
         }
     }
 
-    private isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(submitter?: EmbeddableSupportedAccountId, lifecycle?: EmbeddableLifecycle) {
-        return this.isVerifiedIssuer(submitter?.toSupportedAccountId()) && !lifecycle?.acknowledgedByVerifiedIssuerOn;
+    private isSubmittedByVerifiedIssuerButNotAcknowledgedOnChain(submitter?: EmbeddableAccountId, lifecycle?: EmbeddableLifecycle) {
+        return this.isVerifiedIssuer(submitter?.toValidAccountId()) && !lifecycle?.acknowledgedByVerifiedIssuerOn;
     }
 
     private ackAllItemsByOwner() {
-        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.metadata);
-        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.files);
-        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()), false), this.links);
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toValidAccountId()), false), this.metadata);
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toValidAccountId()), false), this.files);
+        this.mutateAllItems(item => item.lifecycle?.preAcknowledge(this.isVerifiedIssuer(item.submitter?.toValidAccountId()), false), this.links);
     }
 
     private ensureAllItemsAckedOnChain() {
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.metadata)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())), this.metadata)) {
             throw new Error("A metadata item was not yet acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.files)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())), this.files)) {
             throw new Error("A file was not yet acknowledged");
         }
-        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toSupportedAccountId())), this.links)) {
+        if(this.itemExists(item => !item.lifecycle?.isAcknowledgedOnChain(this.isVerifiedIssuer(item.submitter?.toValidAccountId())), this.links)) {
             throw new Error("A link was not yet acknowledged");
         }
     }
@@ -903,7 +904,7 @@ export class LocRequestAggregateRoot {
         item.nameHash = nameHash;
         item.value = itemDescription.value;
         item.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
-        item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
+        item.submitter = EmbeddableAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.metadata!.push(item);
     }
@@ -917,14 +918,14 @@ export class LocRequestAggregateRoot {
             nameHash: item.nameHash!,
             name: item.name!,
             value: item.value!,
-            submitter: item.submitter!.toSupportedAccountId(),
+            submitter: item.submitter!.toValidAccountId(),
             fees: item.inclusionFee ? new Fees({ inclusionFee: Lgnt.fromCanonical(BigInt(item.inclusionFee)) }) : undefined,
             ...(item.lifecycle!.getDescription()),
         })
     }
 
-    getMetadataItems(viewerAddress?: SupportedAccountId): MetadataItemDescription[] {
-        return orderAndMap(this.metadata?.filter(item => this.itemViewable(item, viewerAddress)), this.toMetadataItemDescription);
+    getMetadataItems(viewerAddress?: ValidAccountId): MetadataItemDescription[] {
+        return orderAndMap(this.metadata?.filter(item => this.itemViewable(item.status, item.submitter, viewerAddress)), this.toMetadataItemDescription);
     }
 
     setMetadataItemAddedOn(nameHash: Hash, addedOn: Moment) {
@@ -937,7 +938,7 @@ export class LocRequestAggregateRoot {
         metadataItem._toUpdate = true;
     }
 
-    removeMetadataItem(remover: SupportedAccountId, nameHash: Hash): void {
+    removeMetadataItem(remover: ValidAccountId, nameHash: Hash): void {
         this.ensureEditable();
         const removedItemIndex: number = this.metadata!.findIndex(link => link.nameHash?.equalTo(nameHash));
         if (removedItemIndex === -1) {
@@ -953,8 +954,8 @@ export class LocRequestAggregateRoot {
         deleteIndexedChild(removedItemIndex, this.metadata!, this._metadataToDelete)
     }
 
-    private canRemove(address: SupportedAccountId, item: Submitted): boolean {
-        return accountEquals(address, item.submitter)
+    private canRemove(address: ValidAccountId, item: Submitted): boolean {
+        return address.equals(item.submitter?.toValidAccountId())
             && (item.lifecycle?.status === "DRAFT" || item.lifecycle?.status === "REVIEW_REJECTED");
     }
 
@@ -972,26 +973,26 @@ export class LocRequestAggregateRoot {
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.reject(reason));
     }
 
-    prePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+    prePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId) {
         if(!this.canPrePublishOrAcknowledgeMetadataItem(nameHash, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateMetadataItem(nameHash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.prePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toValidAccountId())));
     }
 
-    cancelPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+    cancelPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId) {
         if(!this.canPrePublishOrAcknowledgeMetadataItem(nameHash, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateMetadataItem(nameHash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toSupportedAccountId())));
+        this.mutateMetadataItem(nameHash, item => item.lifecycle!.cancelPrePublishOrAcknowledge(item.submitter?.type !== "Polkadot" || this.isOwner(item.submitter.toValidAccountId())));
     }
 
-    canPreAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId): boolean {
         const metadata = this.getMetadataOrThrow(nameHash);
         return this.canPreAcknowledge(metadata, contributor);
     }
 
-    canPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId): boolean {
         this.ensureOpen();
         const metadata = this.getMetadataOrThrow(nameHash);
         return this.canPrePublishOrAcknowledge(metadata, contributor);
@@ -1004,18 +1005,18 @@ export class LocRequestAggregateRoot {
         );
     }
 
-    preAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+    preAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId, acknowledgedOn?: Moment) {
         if(!this.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
             throw new Error("Contributor cannot ack");
         }
         this.mutateMetadataItem(nameHash, item => item.lifecycle!.preAcknowledge(
-            this.isVerifiedIssuer(item.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(item.submitter?.toValidAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
     }
 
-    cancelPreAcknowledgeMetadataItem(nameHash: Hash, contributor: SupportedAccountId) {
+    cancelPreAcknowledgeMetadataItem(nameHash: Hash, contributor: ValidAccountId) {
         if(!this.canPreAcknowledgeMetadataItem(nameHash, contributor)) {
             throw new Error("Contributor cannot cancel");
         }
@@ -1046,7 +1047,7 @@ export class LocRequestAggregateRoot {
         file._toUpdate = true;
     }
 
-    removeFile(removerAddress: SupportedAccountId, hash: Hash): FileDescription {
+    removeFile(removerAddress: ValidAccountId, hash: Hash): FileDescription {
         this.ensureEditable();
         const removedFileIndex: number = this.files!.findIndex(file => file.hash === hash.toHex());
         if (removedFileIndex === -1) {
@@ -1075,7 +1076,7 @@ export class LocRequestAggregateRoot {
         item.target = itemDescription.target;
         item.nature = itemDescription.nature
         item.lifecycle = EmbeddableLifecycle.fromSubmissionType(submissionType);
-        item.submitter = EmbeddableSupportedAccountId.from(itemDescription.submitter);
+        item.submitter = EmbeddableAccountId.from(itemDescription.submitter);
         item._toAdd = true;
         this.links!.push(item);
     }
@@ -1088,14 +1089,14 @@ export class LocRequestAggregateRoot {
         return {
             target: link.target!,
             nature: link.nature!,
-            submitter: link.submitter!.toSupportedAccountId(),
+            submitter: link.submitter!.toValidAccountId(),
             fees: link.inclusionFee ? new Fees({ inclusionFee: Lgnt.fromCanonical(BigInt(link.inclusionFee)) }) : undefined,
             ...(link.lifecycle!.getDescription()),
         }
     }
 
-    getLinks(viewerAddress?: SupportedAccountId): LinkDescription[] {
-        return orderAndMap(this.links?.filter(link => this.itemViewable(link, viewerAddress)), this.toLinkDescription);
+    getLinks(viewerAddress?: ValidAccountId): LinkDescription[] {
+        return orderAndMap(this.links?.filter(link => this.itemViewable(link.status, link.submitter, viewerAddress)), this.toLinkDescription);
     }
 
     setLinkAddedOn(target: string, addedOn: Moment) {
@@ -1108,7 +1109,7 @@ export class LocRequestAggregateRoot {
         link._toUpdate = true;
     }
 
-    removeLink(remover: SupportedAccountId, target: string): void {
+    removeLink(remover: ValidAccountId, target: string): void {
         this.ensureEditable();
         const removedLinkIndex: number = this.links!.findIndex(link => link.target === target);
         if (removedLinkIndex === -1) {
@@ -1138,45 +1139,45 @@ export class LocRequestAggregateRoot {
         this.mutateLink(target, item => item.lifecycle!.reject(reason));
     }
 
-    prePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+    prePublishOrAcknowledgeLink(target: string, contributor: ValidAccountId) {
         if (!this.canPrePublishOrAcknowledgeLink(target, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateLink(target, link => link.lifecycle!.prePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
+        this.mutateLink(target, link => link.lifecycle!.prePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toValidAccountId())));
     }
 
-    cancelPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+    cancelPrePublishOrAcknowledgeLink(target: string, contributor: ValidAccountId) {
         if (!this.canPrePublishOrAcknowledgeLink(target, contributor)) {
             throw new Error("Contributor cannot confirm");
         }
-        this.mutateLink(target, link => link.lifecycle!.cancelPrePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toSupportedAccountId())));
+        this.mutateLink(target, link => link.lifecycle!.cancelPrePublishOrAcknowledge(link.submitter?.type !== "Polkadot" || this.isOwner(link.submitter.toValidAccountId())));
     }
 
-    preAcknowledgeLink(target: string, contributor: SupportedAccountId, acknowledgedOn?: Moment) {
+    preAcknowledgeLink(target: string, contributor: ValidAccountId, acknowledgedOn?: Moment) {
         if(!this.canPreAcknowledgeLink(target, contributor)) {
             throw new Error("Contributor cannot ack");
         }
         this.mutateLink(target, link => link.lifecycle!.preAcknowledge(
-            this.isVerifiedIssuer(link.submitter?.toSupportedAccountId()),
+            this.isVerifiedIssuer(link.submitter?.toValidAccountId()),
             this.isVerifiedIssuer(contributor),
             acknowledgedOn
         ))
     }
 
-    cancelPreAcknowledgeLink(target: string, contributor: SupportedAccountId) {
+    cancelPreAcknowledgeLink(target: string, contributor: ValidAccountId) {
         if(!this.canPreAcknowledgeLink(target, contributor)) {
             throw new Error("Contributor cannot ack");
         }
         this.mutateLink(target, link => link.lifecycle!.cancelPreAcknowledge(this.isVerifiedIssuer(contributor)));
     }
 
-    canPrePublishOrAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
+    canPrePublishOrAcknowledgeLink(target: string, contributor: ValidAccountId): boolean {
         this.ensureOpen();
         const link = this.getLinkOrThrow(target);
         return this.canPrePublishOrAcknowledge(link, contributor);
     }
 
-    canPreAcknowledgeLink(target: string, contributor: SupportedAccountId): boolean {
+    canPreAcknowledgeLink(target: string, contributor: ValidAccountId): boolean {
         const link = this.getLinkOrThrow(target);
         return this.canPreAcknowledge(link, contributor);
     }
@@ -1354,22 +1355,25 @@ export class LocRequestAggregateRoot {
         link.setFee(inclusionFee);
     }
 
-    getOwner(): SupportedAccountId {
-        return polkadotAccount(this.ownerAddress || "");
+    getOwner(): ValidAccountId {
+        return ValidAccountId.polkadot(this.ownerAddress || "");
     }
 
-    canOpen(user: SupportedAccountId | undefined): boolean {
+    canOpen(user: ValidAccountId | undefined): boolean {
+        const requester = this.getRequester();
         return user !== undefined
-            && accountEquals(user, this.getRequester())
+            && requester != undefined
+            && user.equals(requester)
             && user.type === 'Polkadot'
             && (this.status === 'REVIEW_ACCEPTED' || this.status === 'OPEN')
     }
 
-    isValidPolkadotIdentityLocOrThrow(requesterAddress: string, ownerAddress: string) {
+    isValidPolkadotIdentityLocOrThrow(requesterAddress: ValidAccountId, ownerAddress: ValidAccountId) {
+        const requester = this.getRequester();
         const valid = this.locType === "Identity"
-            && this.requesterAddressType === "Polkadot"
-            && this.requesterAddress === requesterAddress
-            && this.ownerAddress === ownerAddress
+            && requester !== undefined
+            && requesterAddress.equals(requester)
+            && ownerAddress.equals(this.getOwner())
             && this.status === "CLOSED"
             && !this.isVoid();
         if (!valid) {
@@ -1383,11 +1387,8 @@ export class LocRequestAggregateRoot {
     @Column({ length: 255 })
     status?: LocRequestStatus;
 
-    @Column({ length: 255, name: "requester_address", nullable: true })
-    requesterAddress?: string;
-
-    @Column({ length: 255, name: "requester_address_type", nullable: true })
-    requesterAddressType?: string;
+    @Column(() => EmbeddableNullableAccountId, { prefix: "requester" })
+    requester?: EmbeddableNullableAccountId;
 
     // NOTE: As of 24-01-2024, the requester identity LOC is always populated for Transaction anc Collection LOCs,
     // regardless of the type identity (POLKADOT or LOGION) of the requester.
@@ -1522,8 +1523,8 @@ export class LocFile extends Child implements HasIndex, Submitted {
     @Column({ length: 255, nullable: true })
     nature?: string;
 
-    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
-    submitter?: EmbeddableSupportedAccountId;
+    @Column(() => EmbeddableAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableAccountId;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.files)
     @JoinColumn({ name: "request_id", referencedColumnName: "id" })
@@ -1646,8 +1647,8 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     @Column("text", { name: "value", default: "", nullable: true })
     value?: string;
 
-    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
-    submitter?: EmbeddableSupportedAccountId;
+    @Column(() => EmbeddableAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableAccountId;
 
     @ManyToOne(() => LocRequestAggregateRoot, request => request.metadata)
     @JoinColumn({ name: "request_id" })
@@ -1679,7 +1680,7 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
 }
 
 interface Submitted {
-    submitter?: EmbeddableSupportedAccountId;
+    submitter?: EmbeddableAccountId;
     lifecycle?: EmbeddableLifecycle;
 }
 
@@ -1711,8 +1712,8 @@ export class LocLink extends Child implements HasIndex, Submitted {
         this._toUpdate = true;
     }
 
-    @Column(() => EmbeddableSupportedAccountId, { prefix: "submitter" })
-    submitter?: EmbeddableSupportedAccountId;
+    @Column(() => EmbeddableAccountId, { prefix: "submitter" })
+    submitter?: EmbeddableAccountId;
 
     @Column(() => EmbeddableLifecycle, { prefix: "" })
     lifecycle?: EmbeddableLifecycle
@@ -1733,8 +1734,8 @@ export class LocLink extends Child implements HasIndex, Submitted {
 
 export interface FetchLocRequestsSpecification {
 
-    readonly expectedRequesterAddress?: string;
-    readonly expectedOwnerAddress?: string | string[];
+    readonly expectedRequesterAddress?: ValidAccountId;
+    readonly expectedOwnerAddress?: ValidAccountId[];
     readonly expectedStatuses?: LocRequestStatus[];
     readonly expectedLocTypes?: LocType[];
     readonly expectedIdentityLocType?: IdentityLocType;
@@ -1847,16 +1848,16 @@ export class LocRequestRepository {
 
         if (specification.expectedRequesterAddress) {
             builder.andWhere("request.requester_address = :expectedRequesterAddress",
-                { expectedRequesterAddress: specification.expectedRequesterAddress });
+                { expectedRequesterAddress: specification.expectedRequesterAddress.getAddress(DB_SS58_PREFIX) });
         }
 
         if (specification.expectedOwnerAddress !== undefined) {
-            if(typeof specification.expectedOwnerAddress === "string") {
+            if(specification.expectedOwnerAddress.length === 1) {
                 builder.andWhere("request.owner_address = :expectedOwnerAddress",
-                    { expectedOwnerAddress: specification.expectedOwnerAddress });
+                    { expectedOwnerAddress: specification.expectedOwnerAddress[0].getAddress(DB_SS58_PREFIX) });
             } else {
-                builder.andWhere("request.owner_address IN (:...expectedOwnerAddress)",
-                    { expectedOwnerAddress: specification.expectedOwnerAddress });
+                builder.andWhere("request.owner_address IN (:...expectedOwnerAddresses)",
+                    { expectedOwnerAddresses: specification.expectedOwnerAddress.map(account => account.getAddress(DB_SS58_PREFIX)) });
             }
         }
 
@@ -1942,16 +1943,16 @@ export class LocRequestRepository {
         return await this.deliveredRepository.findOneBy({ requestId, deliveredFileHash: deliveredFileHash.toHex() })
     }
 
-    async getValidPolkadotIdentityLoc(requesterAddress: SupportedAccountId | undefined, ownerAddress: string): Promise<LocRequestAggregateRoot | undefined> {
-        if (requesterAddress === undefined) {
+    async getValidPolkadotIdentityLoc(requester: ValidAccountId | undefined, owner: ValidAccountId): Promise<LocRequestAggregateRoot | undefined> {
+        if (requester === undefined) {
             return undefined;
         }
 
         const identityLoc = (await this.findBy({
             expectedLocTypes: [ "Identity" ],
-            expectedIdentityLocType: requesterAddress.type,
-            expectedRequesterAddress: requesterAddress.address,
-            expectedOwnerAddress: ownerAddress,
+            expectedIdentityLocType: requester.type,
+            expectedRequesterAddress: requester,
+            expectedOwnerAddress: [ owner ],
             expectedStatuses: [ "CLOSED" ]
         })).find(loc => loc.getVoidInfo() === null);
 
@@ -2052,15 +2053,14 @@ export class LocRequestFactory {
         request.status = params.draft ? "DRAFT" : nonDraftStatus;
 
         if (description.requesterAddress) {
-            request.requesterAddress = description.requesterAddress.address;
-            request.requesterAddressType = description.requesterAddress.type;
+            request.requester = EmbeddableNullableAccountId.from(description.requesterAddress);
         }
         if (description.requesterIdentityLoc) {
             const identityLoc = await this.repository.findById(description.requesterIdentityLoc);
             request._requesterIdentityLoc = identityLoc ? identityLoc : undefined;
             request.requesterIdentityLocId = description.requesterIdentityLoc;
         }
-        request.ownerAddress = description.ownerAddress;
+        request.ownerAddress = description.ownerAddress.getAddress(DB_SS58_PREFIX);
         request.description = description.description;
         request.locType = description.locType;
         request.createdOn = description.createdOn;

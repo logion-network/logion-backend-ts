@@ -10,7 +10,7 @@ import {
     VaultTransferRequestDescription,
     VaultTransferRequestDecision,
 } from '../../../src/logion/model/vaulttransferrequest.model.js';
-import { ALICE, BOB } from '../../helpers/addresses.js';
+import { ALICE, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { VaultTransferRequestController } from '../../../src/logion/controllers/vaulttransferrequest.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
@@ -26,14 +26,15 @@ import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
 import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
-import { LogionNodeApiClass } from '@logion/node-api';
+import { LogionNodeApiClass, ValidAccountId } from '@logion/node-api';
+import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode } = TestApp;
 
 describe('VaultTransferRequestController', () => {
 
     function authenticatedLLONotProtectingVault() {
-        const authenticatedUser = mockLegalOfficerOnNode(BOB);
+        const authenticatedUser = mockLegalOfficerOnNode(BOB_ACCOUNT);
         return mockAuthenticationWithAuthenticatedUser(authenticatedUser);
     }
 
@@ -60,17 +61,17 @@ describe('VaultTransferRequestController', () => {
 describe('VaultTransferRequestController', () => {
 
     it('creates with valid request', async () => {
-        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
         const app = setupApp(VaultTransferRequestController, mockModelForRequest, mock);
 
         await request(app)
             .post('/api/vault-transfer-request')
             .send({
-                requesterAddress: REQUESTER_ADDRESS,
+                requesterAddress: REQUESTER.address,
                 legalOfficerAddress: ALICE,
-                origin: REQUESTER_ADDRESS,
-                destination: DESTINATION,
+                origin: REQUESTER.address,
+                destination: DESTINATION.address,
                 amount: "1000",
                 call: "0x0303005e017e03e2ee7a0a97e2e5df5cd902aa0b976d65eac998889ea40992efc3d254070010a5d4e8",
                 block: "4242",
@@ -101,7 +102,7 @@ describe('VaultTransferRequestController', () => {
         await request(app)
             .put('/api/vault-transfer-request')
             .send({
-                requesterAddress: "",
+                requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
                 statuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(200)
@@ -111,8 +112,8 @@ describe('VaultTransferRequestController', () => {
                 expect(response.body.requests.length).toBe(1);
                 expect(response.body.requests[0].id).toBe(description.id);
                 expect(response.body.requests[0].createdOn).toBe(description.createdOn);
-                expect(response.body.requests[0].origin).toBe(description.origin);
-                expect(response.body.requests[0].destination).toBe(description.destination);
+                expect(response.body.requests[0].origin).toBe(description.origin.address);
+                expect(response.body.requests[0].destination).toBe(description.destination.address);
                 expect(response.body.requests[0].amount).toBe(description.amount.toString());
                 expect(response.body.requests[0].block).toBe(description.timepoint.blockNumber.toString());
                 expect(response.body.requests[0].index).toBe(description.timepoint.extrinsicIndex);
@@ -129,8 +130,8 @@ describe('VaultTransferRequestController', () => {
         await request(app)
             .put('/api/vault-transfer-request')
             .send({
-                requesterAddress: "",
-                legalOfficerAddress: [ ALICE ],
+                requesterAddress: "5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ",
+                legalOfficerAddress: ALICE,
                 decisionStatuses: ["ACCEPTED", "REJECTED"]
             })
             .expect(401);
@@ -167,7 +168,7 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('lets requester cancel', async () => {
-        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
         const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
@@ -188,7 +189,7 @@ describe('VaultTransferRequestController', () => {
     });
 
     it('lets requester resubmit', async () => {
-        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER_ADDRESS);
+        const authenticatedUser = mockAuthenticatedUser(true, REQUESTER);
         const mock = mockAuthenticationWithAuthenticatedUser(authenticatedUser);
         const app = setupApp(VaultTransferRequestController, container => mockModelForAcceptOrCancel(container, true), mock);
 
@@ -214,6 +215,7 @@ const DECISION_TIMESTAMP = moment().toISOString();
 function mockModelForReject(container: Container, verifies: boolean): void {
     const vaultTransferRequest = mockVaultTransferRequest();
     vaultTransferRequest.setup(instance => instance.reject).returns(() => {});
+    vaultTransferRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT);
     const decision = new Mock<VaultTransferRequestDecision>();
     decision.setup(instance => instance.rejectReason)
         .returns(REJECT_REASON)
@@ -235,7 +237,7 @@ function mockModelForReject(container: Container, verifies: boolean): void {
     mockOtherDependencies(container, repository);
 }
 
-const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE);
+const ALICE_LEGAL_OFFICER = notifiedLegalOfficer(ALICE_ACCOUNT.address);
 
 function mockOtherDependencies(container: Container, repository: Mock<VaultTransferRequestRepository>) {
     notificationService = new Mock<NotificationService>();
@@ -246,11 +248,11 @@ function mockOtherDependencies(container: Container, repository: Mock<VaultTrans
 
     const directoryService = new Mock<DirectoryService>();
     directoryService
-        .setup(instance => instance.get(It.IsAny<string>()))
+        .setup(instance => instance.get(It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
-        .returns(Promise.resolve(ALICE));
+        .returns(Promise.resolve(ALICE_ACCOUNT));
     container.bind(DirectoryService).toConstantValue(directoryService.object());
 
     const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
@@ -279,7 +281,7 @@ function mockPolkadotService(): PolkadotService {
 
                     ],
                 });
-            } 
+            }
         }
     } as unknown as LogionNodeApiClass;
     polkadotService.setup(instance => instance.readyApi()).returns(Promise.resolve(api));
@@ -300,24 +302,25 @@ function mockLocRequestRepository(): LocRequestRepository {
 
 function mockVaultTransferRequest(): Mock<VaultTransferRequestAggregateRoot> {
     const vaultTransferRequest = new Mock<VaultTransferRequestAggregateRoot>()
-    vaultTransferRequest.setup(instance => instance.requesterAddress).returns(REQUESTER_ADDRESS)
+    vaultTransferRequest.setup(instance => instance.requesterAddress).returns(REQUESTER.getAddress(DB_SS58_PREFIX))
+    vaultTransferRequest.setup(instance => instance.getRequester()).returns(REQUESTER)
     vaultTransferRequest.setup(instance => instance.getDescription()).returns(description)
     return vaultTransferRequest
 }
 
-const REQUESTER_ADDRESS = "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY";
-const DESTINATION = "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX";
+const REQUESTER = ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
+const DESTINATION = ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
 const TIMESTAMP = "2021-06-10T16:25:23.668294";
 const REJECT_REASON = "Illegal";
 const REQUEST_ID = "716f7a39-b570-42aa-bcf3-52679ce3cb44";
 
 const description: VaultTransferRequestDescription = {
-    requesterAddress: REQUESTER_ADDRESS,
-    legalOfficerAddress: ALICE,
+    requesterAddress: REQUESTER,
+    legalOfficerAddress: ALICE_ACCOUNT,
     id: REQUEST_ID,
     createdOn: moment.now().toString(),
     amount: 1000n,
-    origin: REQUESTER_ADDRESS,
+    origin: REQUESTER,
     destination: DESTINATION,
     timepoint: {
         blockNumber: 4242n,
@@ -345,11 +348,11 @@ const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
 const protectionRequestDescription: ProtectionRequestDescription = {
     addressToRecover: null,
     requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
-    legalOfficerAddress: ALICE,
+    legalOfficerAddress: ALICE_ACCOUNT,
     createdOn: TIMESTAMP,
     isRecovery: false,
-    otherLegalOfficerAddress: BOB,
-    requesterAddress: REQUESTER_ADDRESS,
+    otherLegalOfficerAddress: BOB_ACCOUNT,
+    requesterAddress: REQUESTER,
 };
 
 function mockModelForFetch(container: Container): void {
@@ -389,7 +392,7 @@ function mockVaultTransferRequestModel(container: Container): void {
     root.setup(instance => instance.decision).returns(decision.object());
     factory.setup(instance => instance.newVaultTransferRequest(
             It.Is<VaultTransferRequestDescription>(description =>
-                description.requesterAddress === REQUESTER_ADDRESS)))
+                description.requesterAddress.equals(REQUESTER))))
         .returns(root.object());
     container.bind(VaultTransferRequestFactory).toConstantValue(factory.object());
     mockOtherDependencies(container, repository);
@@ -402,6 +405,7 @@ function mockModelForAcceptOrCancel(container: Container, verifies: boolean): vo
     vaultTransferRequest.setup(instance => instance.accept(It.IsAny())).returns(undefined);
     vaultTransferRequest.setup(instance => instance.cancel(It.IsAny())).returns(undefined);
     vaultTransferRequest.setup(instance => instance.resubmit()).returns(undefined);
+    vaultTransferRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT);
     const decision = new Mock<VaultTransferRequestDecision>();
     decision.setup(instance => instance.decisionOn)
         .returns(DECISION_TIMESTAMP)

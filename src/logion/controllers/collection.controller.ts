@@ -118,10 +118,10 @@ export class CollectionController extends ApiController {
     @HttpGet('/:collectionLocId')
     @Async()
     async getCollectionItems(_body: never, collectionLocId: string): Promise<CollectionItemsView> {
-        const loc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+        const loc = requireDefined((await this.locRequestRepository.findById(collectionLocId)),
             () => badRequest(`No LOC with ID ${collectionLocId}`));
         (await this.authenticationService.authenticatedUser(this.request))
-            .isOneOf([ loc.ownerAddress, loc.requesterAddress ]);
+            .isOneOf([ loc.getOwner(), loc.getRequester() ]);
 
         const collectionItems = await this.collectionRepository.findAllBy(collectionLocId);
         return {
@@ -261,7 +261,7 @@ export class CollectionController extends ApiController {
     async uploadFile(body: FileUploadData, collectionLocId: string, itemIdHex: string): Promise<void> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.requesterAddress);
+        await this.authenticationService.authenticatedUserIs(this.request, collectionLoc.getRequester());
 
         const itemId = Hash.fromHex(itemIdHex);
         const publishedCollectionItem = await this.logionNodeCollectionService.getCollectionItem({
@@ -530,7 +530,7 @@ export class CollectionController extends ApiController {
     async updateCollectionFile(body: UpdateCollectionFile, collectionLocId: string, hash: string): Promise<void> {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         await this.locRequestService.update(collectionLocId, async collection => {
-            authenticated.require(user => user.is(collection.ownerAddress));
+            authenticated.require(user => user.is(collection.getOwner()));
             collection.setFileRestrictedDelivery({
                 hash: Hash.fromHex(hash),
                 restrictedDelivery: body.restrictedDelivery || false
@@ -623,7 +623,7 @@ export class CollectionController extends ApiController {
     async getAllItemDeliveries(_body: never, collectionLocId: string, itemId: string): Promise<ItemDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.getOwner(), collectionLoc.getRequester());
 
         return this.getItemDeliveries({
             collectionLocId,
@@ -647,7 +647,7 @@ export class CollectionController extends ApiController {
     async getAllCollectionFileDeliveries(_body: never, collectionLocId: string, hash: string): Promise<CollectionFileDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.getOwner(), collectionLoc.getRequester());
 
         const deliveries = await this._getAllCollectionFileDeliveries({ collectionLoc, hash: Hash.fromHex(hash) });
         return { deliveries };
@@ -715,7 +715,7 @@ export class CollectionController extends ApiController {
     async getAllCollectionDeliveries(_body: never, collectionLocId: string): Promise<CollectionDeliveriesResponse> {
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest(`Collection ${ collectionLocId } not found`));
-        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.ownerAddress, collectionLoc.requesterAddress);
+        await this.authenticationService.authenticatedUserIsOneOf(this.request, collectionLoc.getOwner(), collectionLoc.getRequester());
 
         return await this._getAllCollectionDeliveries({ collectionLoc });
     }
@@ -749,10 +749,7 @@ export class CollectionController extends ApiController {
         const authenticated = await this.authenticationService.authenticatedUser(this.request);
         const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
             () => badRequest("Collection LOC not found"));
-        authenticated.require(user => user.isOneOf([
-            collectionLoc.ownerAddress,
-            requireDefined(collectionLoc.requesterAddress)
-        ]));
+        authenticated.require(user => user.isOneOf([ collectionLoc.getOwner(), collectionLoc.getRequester() ]));
 
         const itemId = Hash.fromHex(itemIdHex);
         const hash = Hash.fromHex(hashHex);

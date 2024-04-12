@@ -1,6 +1,6 @@
 import { injectable } from "inversify";
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { Vault, Adapters, TypesJsonObject, Fees, Lgnt } from "@logion/node-api";
+import { Vault, Adapters, TypesJsonObject, Fees, Lgnt, ValidAccountId } from "@logion/node-api";
 
 import { BlockWithTransactions, Transaction, TransactionError } from "./transaction.vo.js";
 import { BlockExtrinsics } from "./types/responses/Block.js";
@@ -70,8 +70,9 @@ export class TransactionExtractor {
             transferValue = this.transferValue(extrinsic)
             to = this.to(call)
         } else if(type === ExtrinsicType.TRANSFER_FROM_VAULT && this.error(extrinsic) === undefined) {
-            const otherSignatories = Adapters.asArray(extrinsic.call.args['other_signatories']).map(signatory => Adapters.asString(signatory));
-            const vaultAddress = Vault.getVaultAddress(signer, otherSignatories);
+            const otherSignatories = Adapters.asArray(extrinsic.call.args['other_signatories'])
+                .map(signatory => ValidAccountId.polkadot(Adapters.asString(signatory)));
+            const vaultAddress = Vault.getVaultAccountId(ValidAccountId.polkadot(signer), otherSignatories);
 
             const call = this.extrinsicDataExtractor.getCall(extrinsic);
             const vaultTransferValue = this.transferValue(extrinsic);
@@ -84,7 +85,7 @@ export class TransactionExtractor {
                 tip: 0n,
                 fees: Fees.zero(),
                 reserved: 0n,
-                from: vaultAddress,
+                from: vaultAddress.address,
                 transferValue: vaultTransferValue,
                 to: vaultTransferTo,
                 type: "VAULT_OUT",

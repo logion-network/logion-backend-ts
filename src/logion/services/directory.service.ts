@@ -3,6 +3,7 @@ import { LegalOfficer } from "../model/legalofficer.model.js";
 import axios, { AxiosInstance } from "axios";
 import { badRequest, AuthenticationSystemFactory } from "@logion/rest-api-core";
 import { AuthorityService } from "@logion/authenticator";
+import { ValidAccountId } from "@logion/node-api";
 
 @injectable()
 export class DirectoryService {
@@ -19,24 +20,25 @@ export class DirectoryService {
         this.authorityService = authenticationSystem.then(system => system.authorityService);
     }
 
-    async get(address: string): Promise<LegalOfficer> {
-        return await this.axios.get(`/api/legal-officer/${ address }`)
+    async get(account: ValidAccountId): Promise<LegalOfficer> {
+        return await this.axios.get(`/api/legal-officer/${ account.address }`)
             .then(response => response.data);
     }
 
-    async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<string> {
+    async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<ValidAccountId> {
         if (!address) {
             throw badRequest("Missing Legal Officer address")
         }
-        if (await this.isLegalOfficerAddressOnNode(address)) {
-            return address;
+        const account = ValidAccountId.polkadot(address);
+        if (await this.isLegalOfficerAddressOnNode(account)) {
+            return account;
         } else {
             throw badRequest(`Address ${ address } is not the one of a Legal Officer on this node.`)
         }
     }
 
-    async isLegalOfficerAddressOnNode(address: string): Promise<boolean> {
+    async isLegalOfficerAddressOnNode(account: ValidAccountId): Promise<boolean> {
         const authorityService = await this.authorityService;
-        return (await authorityService.isLegalOfficerOnNode(address))
+        return (await authorityService.isLegalOfficerOnNode(account))
     }
 }

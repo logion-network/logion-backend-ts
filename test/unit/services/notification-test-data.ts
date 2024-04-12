@@ -2,17 +2,18 @@ import {
     ProtectionRequestDescription,
     LegalOfficerDecisionDescription
 } from "../../../src/logion/model/protectionrequest.model.js";
-import { BOB, ALICE } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
 import { LocRequestDescription, LocRequestDecision } from "../../../src/logion/model/locrequest.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
-    requesterAddress: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY",
+    requesterAddress: ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"),
     requesterIdentityLocId: "7a6ca6b7-87ca-4e55-9c5f-422c9f799b74",
-    legalOfficerAddress: ALICE,
-    otherLegalOfficerAddress: BOB,
-    addressToRecover: "5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn",
+    legalOfficerAddress: ALICE_ACCOUNT,
+    otherLegalOfficerAddress: BOB_ACCOUNT,
+    addressToRecover: ValidAccountId.polkadot("5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn"),
     createdOn: "2021-06-10T16:25:23.668294",
     isRecovery: false,
     decision: {
@@ -27,9 +28,9 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
         additionalDetails: "some details",
         node: "http://localhost:8080",
         userIdentity: {
-            firstName: address === BOB ? "Bob": "Alice",
+            firstName: address === BOB_ACCOUNT.address ? "Bob": "Alice",
             lastName: "Network",
-            email: address === BOB ? "bob@logion.network" : "alice@logion.network",
+            email: address === BOB_ACCOUNT.address ? "bob@logion.network" : "alice@logion.network",
             phoneNumber: "123465",
         },
         postalAddress: {
@@ -43,10 +44,13 @@ export function notifiedLegalOfficer(address:string): LegalOfficer {
     };
 }
 
+const requesterAddress = ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
+
 export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDecision } & { id: string } {
     return {
         id: "15ed922d-5960-4147-a73f-97d362cb7c46",
-        ownerAddress: ALICE,
+        ownerAddress: ALICE_ACCOUNT,
+        requesterAddress,
         description: "Some LOC description",
         createdOn: "2021-06-10T16:25:23.668294",
         locType: "Transaction",
@@ -64,10 +68,10 @@ export function notifiedLOC(): LocRequestDescription & { decision: LocRequestDec
 
 const vaultTransfer: VaultTransferRequestDescription = {
     id: "id",
-    requesterAddress: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-    legalOfficerAddress: ALICE,
-    origin: "5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW",
-    destination: "5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX",
+    requesterAddress: requesterAddress,
+    legalOfficerAddress: ALICE_ACCOUNT,
+    origin: requesterAddress,
+    destination: ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"),
     createdOn: "2021-06-10T16:25:23.668294",
     amount: 10000n,
     timepoint: {
@@ -77,8 +81,8 @@ const vaultTransfer: VaultTransferRequestDescription = {
 };
 
 export function notificationData() {
-    const lo = notifiedLegalOfficer(ALICE);
-    const otherLo = notifiedLegalOfficer(BOB);
+    const lo = notifiedLegalOfficer(ALICE_ACCOUNT.address);
+    const otherLo = notifiedLegalOfficer(BOB_ACCOUNT.address);
     return {
         protection: notifiedProtection,
         legalOfficer: lo,

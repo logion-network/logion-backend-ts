@@ -17,7 +17,7 @@ export abstract class VerifiedIssuerSelectionService {
     async selectUnselect(locRequest: LocRequestAggregateRoot, verifiedIssuerLocRequest: LocRequestAggregateRoot, select: boolean) {
         const id: VerifiedIssuerSelectionId = {
             locRequestId: requireDefined(locRequest.id),
-            issuer: requireDefined(verifiedIssuerLocRequest.requesterAddress),
+            issuer: requireDefined(verifiedIssuerLocRequest.getRequester()),
         };
         let selection = await this.verifiedIssuerSelectionRepository.findById(id);
         if(selection) {

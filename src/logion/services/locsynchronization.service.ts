@@ -1,5 +1,5 @@
 import { injectable } from 'inversify';
-import { UUID, Adapters, Fees, Hash, Lgnt } from "@logion/node-api";
+import { UUID, Adapters, Fees, Hash, Lgnt, ValidAccountId } from "@logion/node-api";
 import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
@@ -12,7 +12,6 @@ import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
-import { polkadotAccount } from '../model/supportedaccountid.model.js';
 
 const { logger } = Log;
 
@@ -226,7 +225,7 @@ export class LocSynchronizer {
 
     private async notifyIssuerNominatedDismissed(extrinsic: JsonExtrinsic) {
         const nominated = extrinsic.call.method === "nominateIssuer";
-        const legalOfficerAddress = requireDefined(extrinsic.signer);
+        const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
             const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
@@ -244,9 +243,9 @@ export class LocSynchronizer {
         }
     }
 
-    private async getIssuerIdentityLoc(legalOfficerAddress: string, issuerAddress: string) {
+    private async getIssuerIdentityLoc(legalOfficerAddress: ValidAccountId, issuerAddress: string) {
         const api = await this.polkadotService.readyApi();
-        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
+        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress.address, issuerAddress);
         if(verifiedIssuer.isNone) {
             throw new Error(`${issuerAddress} is not an issuer of LO ${legalOfficerAddress}`);
         }
@@ -260,7 +259,7 @@ export class LocSynchronizer {
     }
 
     private async notifyVerifiedIssuerNominatedDismissed(args: {
-        legalOfficerAddress: string,
+        legalOfficerAddress: ValidAccountId,
         nominated: boolean,
         issuer?: UserIdentity,
     }) {
@@ -282,7 +281,7 @@ export class LocSynchronizer {
     }
 
     private async handleIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
-        const legalOfficerAddress = requireDefined(extrinsic.signer);
+        const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
             const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
@@ -302,7 +301,7 @@ export class LocSynchronizer {
     }
 
     private async notifyVerifiedIssuerSelectedUnselected(args: {
-        legalOfficerAddress: string,
+        legalOfficerAddress: ValidAccountId,
         selected: boolean,
         locRequest: LocRequestAggregateRoot,
         issuer?: UserIdentity,
@@ -342,21 +341,21 @@ export class LocSynchronizer {
     private async confirmAcknowledgedFile(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const hash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['hash']));
-        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        const contributor = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         await this.mutateLoc(locId, async loc => loc.preAcknowledgeFile(hash, contributor, timestamp));
     }
 
     private async confirmAcknowledgedMetadata(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const nameHash = Hash.fromHex(Adapters.asHexString(extrinsic.call.args['name']));
-        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        const contributor = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         await this.mutateLoc(locId, async loc => loc.preAcknowledgeMetadataItem(nameHash, contributor, timestamp));
     }
 
     private async confirmAcknowledgedLink(timestamp: Moment, extrinsic: JsonExtrinsic) {
         const locId = extractUuid('loc_id', extrinsic.call.args);
         const target = extractUuid('target', extrinsic.call.args);
-        const contributor = polkadotAccount(requireDefined(extrinsic.signer));
+        const contributor = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         await this.mutateLoc(locId, async loc => loc.preAcknowledgeLink(target, contributor, timestamp));
     }
 }

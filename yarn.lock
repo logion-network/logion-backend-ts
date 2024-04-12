@@ -1131,11 +1131,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/authenticator@npm:^0.5.5":
-  version: 0.5.5
-  resolution: "@logion/authenticator@npm:0.5.5"
+"@logion/authenticator@npm:^0.5.6-5":
+  version: 0.5.6-5
+  resolution: "@logion/authenticator@npm:0.5.6-5"
   dependencies:
     "@ethersproject/transactions": ^5.7.0
+    "@logion/node-api": ^0.29.0-4
     "@multiversx/sdk-core": ^12.19.1
     "@multiversx/sdk-wallet": ^4.3.0
     ethers: ^6.11.1
@@ -1145,13 +1146,13 @@ __metadata:
     web3-utils: ^4.2.1
   peerDependencies:
     "@logion/node-api": 0.x
-  checksum: 13783c7d56a319eb7dba070f499c5eb9fc86d3db8c130412c98a2ed988196e59d9a1f86464c61fb68f86fa0108563c88e2f34c2c3dfcc251f6050e8ecfb5bf7d
+  checksum: 99485487135cfdb300d756a80cf6f7dc017289af009b17e63824869a0f618f65c95b03a6e87b77d2a07218f3c007cb13a844bec3339d33e05c6e09efa8c8355c
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.28.4":
-  version: 0.28.4
-  resolution: "@logion/node-api@npm:0.28.4"
+"@logion/node-api@npm:^0.29.0-4, @logion/node-api@npm:^0.29.0-5":
+  version: 0.29.0-5
+  resolution: "@logion/node-api@npm:0.29.0-5"
   dependencies:
     "@polkadot/api": ^10.12.2
     "@polkadot/util": ^12.6.2
@@ -1159,7 +1160,7 @@ __metadata:
     "@types/uuid": ^9.0.2
     fast-sha256: ^1.3.0
     uuid: ^9.0.0
-  checksum: 0a2ac1fe3cfb06326a4ca1374b786fafa634830471258d618aafefe0effb2e682a9febe4a301b71e5a9d22c5daaba2beb43f3838ca13ecfea8917da40bb14c3a
+  checksum: 77ff276c92d2613ff9874fa1932c56de62d4d13949b1cbff26ed6b0d3bdaa3c305c1b212e6fc4cb68dccecfc22a47da312531b391e91221b0e8e5c3c087a54d8
   languageName: node
   linkType: hard
 
@@ -1174,11 +1175,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.4.7":
-  version: 0.4.7
-  resolution: "@logion/rest-api-core@npm:0.4.7"
+"@logion/rest-api-core@npm:^0.4.8-7":
+  version: 0.4.8-7
+  resolution: "@logion/rest-api-core@npm:0.4.8-7"
   dependencies:
-    "@logion/authenticator": ^0.5.5
+    "@logion/authenticator": ^0.5.6-5
     dinoloop: ^2.4.0
     express: ^4.18.2
     express-fileupload: ^1.4.0
@@ -1188,7 +1189,7 @@ __metadata:
     swagger-ui-express: ^5.0.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 5fed0d747155c5fdeea3a192c7b9b88b92908c83b50a12a5f4e2c7522c5bcc08dc4b340bac170fa0b2bd7ef71cee624f99c27623ed034d5866fb836800249cc4
+  checksum: 36f38a6a96d71b51c9518c9a53c1240545ad79b6a2efc0cac0d9b56c66e639fb1d806cbfc3fe031250201fc1ab081a1c2625cfe74bf5554edd10b19a175cf32b
   languageName: node
   linkType: hard
 
@@ -6730,9 +6731,9 @@ __metadata:
     "@astar-network/astar-api": ^0.2.8
     "@astar-network/astar-sdk-core": ^0.2.8
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.28.4
+    "@logion/node-api": ^0.29.0-5
     "@logion/node-exiftool": ^2.3.1
-    "@logion/rest-api-core": ^0.4.7
+    "@logion/rest-api-core": ^0.4.8-7
     "@polkadot/api-contract": ^10.12.4
     "@polkadot/wasm-crypto": ^7.3.2
     "@tsconfig/node18": ^1.0.1

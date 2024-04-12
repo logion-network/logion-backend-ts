@@ -1,10 +1,11 @@
 import { injectable } from 'inversify';
 import { Entity, PrimaryColumn, Column, Repository } from "typeorm";
 import { appDataSource } from "@logion/rest-api-core";
-import { ChainType, Fees } from '@logion/node-api';
+import { ChainType, Fees, ValidAccountId } from '@logion/node-api';
 import { EmbeddableFees, NULL_FEES } from './fees.js';
 import { Party, asParty } from '../services/transaction.vo.js';
 import { Block, EmbeddableBlock } from './block.model.js';
+import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 
 export type TransactionType = "EXTRINSIC"
     | "VAULT_OUT"
@@ -39,8 +40,8 @@ export interface TransactionDescription {
     readonly id: string;
     readonly block: Block;
     readonly extrinsicIndex: number,
-    readonly from: string;
-    readonly to: string | null;
+    readonly from: ValidAccountId;
+    readonly to: ValidAccountId | null;
     readonly transferValue: bigint;
     readonly tip: bigint;
     readonly fees: Fees;
@@ -75,8 +76,8 @@ export class TransactionAggregateRoot {
             id: this.id!,
             block: this.block!.toBlock(),
             extrinsicIndex: this.extrinsicIndex!,
-            from: this.from!,
-            to: this.to || null,
+            from: ValidAccountId.polkadot(this.from!),
+            to: this.to ? ValidAccountId.polkadot(this.to) : null,
             transferValue: BigInt(this.transferValue || "0"),
             tip: BigInt(this.tip || "0"),
             fees: this.fees?.getDescription() || NULL_FEES,
@@ -162,10 +163,14 @@ export class TransactionRepository {
         await this.repository.save(root);
     }
 
-    async findBy(spec: { address: string, chainType: ChainType }): Promise<TransactionAggregateRoot[]> {
+    async findBy(spec: { account: ValidAccountId, chainType: ChainType }): Promise<TransactionAggregateRoot[]> {
         const builder = this.repository.createQueryBuilder("transaction");
-        builder.where("(transaction.chain_type = :chainType AND transaction.from_address = :address AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'FROM'))", spec);
-        builder.orWhere("(transaction.chain_type = :chainType AND transaction.to_address = :address AND transaction.successful IS TRUE AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'TO'))", spec);
+        const dbSpec = {
+            chainType: spec.chainType,
+            address: spec.account.getAddress(DB_SS58_PREFIX),
+        }
+        builder.where("(transaction.chain_type = :chainType AND transaction.from_address = :address AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'FROM'))", dbSpec);
+        builder.orWhere("(transaction.chain_type = :chainType AND transaction.to_address = :address AND transaction.successful IS TRUE AND (transaction.hidden_from IS NULL OR transaction.hidden_from <> 'TO'))", dbSpec);
         builder.orderBy("transaction.block_number", "DESC");
         builder.addOrderBy("transaction.extrinsic_index", "DESC");
         return builder.getMany();
@@ -182,8 +187,8 @@ export class TransactionFactory {
         transaction.block = EmbeddableBlock.from(block);
         transaction.extrinsicIndex = extrinsicIndex;
 
-        transaction.from = description.from;
-        transaction.to = description.to;
+        transaction.from = description.from.getAddress(DB_SS58_PREFIX);
+        transaction.to = description.to !== null ? description.to.getAddress(DB_SS58_PREFIX) : null;
         transaction.transferValue = description.transferValue.toString();
         transaction.tip = description.tip.toString();
 

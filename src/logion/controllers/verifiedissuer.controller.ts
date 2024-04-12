@@ -5,7 +5,7 @@ import { addTag, AuthenticationService, badRequest, PolkadotService, setControll
 import { components } from "./components.js";
 import { LocRequestRepository } from "../model/locrequest.model.js";
 
-import { UUID, VerifiedIssuerType } from "@logion/node-api";
+import { UUID, VerifiedIssuerType, ValidAccountId } from "@logion/node-api";
 import { toUserIdentityView } from "./adapters/locrequestadapter.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
@@ -36,22 +36,21 @@ export class VerifiedIssuerController extends ApiController {
     @Async()
     async getLegalOfficerVerifiedIssuersIdentity(): Promise<VerifiedIssuersIdentityResponse> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        await authenticatedUser.requireLegalOfficerOnNode();
-
+        const legalOfficer = (await authenticatedUser.requireLegalOfficerOnNode()).validAccountId;
         const api = await this.polkadotService.readyApi();
-        const issuers = await api.queries.getLegalOfficerVerifiedIssuers(authenticatedUser.address);
+        const issuers = await api.queries.getLegalOfficerVerifiedIssuers(legalOfficer);
 
         return {
-            issuers: await this.toVerifiedIssuersIdentityResponse(authenticatedUser.address, issuers),
+            issuers: await this.toVerifiedIssuersIdentityResponse(legalOfficer, issuers),
         };
     }
 
-    private async toVerifiedIssuersIdentityResponse(legalOfficerAddress: string, issuers: VerifiedIssuerType[]): Promise<VerifiedIssuerIdentity[]> {
+    private async toVerifiedIssuersIdentityResponse(legalOfficerAddress: ValidAccountId, issuers: VerifiedIssuerType[]): Promise<VerifiedIssuerIdentity[]> {
         const issuersIdentity: VerifiedIssuerIdentity[] = [];
         for(const issuer of issuers) {
-            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuer.address);
+            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuer.account);
             issuersIdentity.push({
-                address: issuer.address,
+                address: issuer.account.address,
                 identity: toUserIdentityView(identityLoc.getDescription().userIdentity),
                 identityLocId: identityLoc.id,
             });
@@ -59,11 +58,11 @@ export class VerifiedIssuerController extends ApiController {
         return issuersIdentity;
     }
 
-    private async getIssuerIdentityLoc(legalOfficerAddress: string, issuerAddress: string) {
+    private async getIssuerIdentityLoc(legalOfficer: ValidAccountId, issuer: ValidAccountId) {
         const api = await this.polkadotService.readyApi();
-        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress, issuerAddress);
+        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficer.address, issuer.address);
         if(verifiedIssuer.isNone) {
-            throw badRequest(`${issuerAddress} is not an issuer of LO ${legalOfficerAddress}`);
+            throw badRequest(`${issuer.address} is not an issuer of LO ${legalOfficer.address}`);
         }
 
         const identityLocId = UUID.fromDecimalStringOrThrow(verifiedIssuer.unwrap().identityLoc.toString());

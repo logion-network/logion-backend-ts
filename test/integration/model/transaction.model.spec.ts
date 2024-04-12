@@ -6,6 +6,7 @@ import {
 import moment from "moment";
 import { EmbeddableFees } from "../../../src/logion/model/fees.js";
 import { Block, EmbeddableBlock } from "../../../src/logion/model/block.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
@@ -24,22 +25,26 @@ describe('TransactionRepository', () => {
     });
 
     it("finds transactions of 5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg", async () => {
-        const transactions = await repository.findBy({ address: "5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg", chainType: "Solo" });
+        const account = ValidAccountId.polkadot("5DPPdRwkgigKt2L7jxRfAoV4tfS89KgXsx47Wk3Kat5K6xPg");
+        const transactions = await repository.findBy({ account, chainType: "Solo" });
         expect(transactions.length).toBe(2); // 2 and 3 in SQL file
     });
 
     it("finds transactions of 5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", async () => {
-        const transactions = await repository.findBy({ address: "5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY", chainType: "Solo" });
+        const account = ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
+        const transactions = await repository.findBy({ account, chainType: "Solo" });
         expect(transactions.length).toBe(2); // 1 and 4 in SQL file
     });
 
     it("finds transactions of 5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", async () => {
-        const transactions = await repository.findBy({ address: "5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo", chainType: "Solo" });
+        const account = ValidAccountId.polkadot("5CSbpCKSTvZefZYddesUQ9w6NDye2PHbf12MwBZGBgzGeGoo");
+        const transactions = await repository.findBy({ account, chainType: "Solo" });
         expect(transactions.length).toBe(1); // 1 in SQL file
     });
 
     it("finds no transaction for Unknown", async () => {
-        const transactions = await repository.findBy({ address: "Unknown", chainType: "Solo" });
+        const unknown = ValidAccountId.polkadot("5Hmyf1onCjbo9zaZP1ygMpzvDqdoRG8yiCjCUocGbvnKKCmm");
+        const transactions = await repository.findBy({ account: unknown, chainType: "Solo" });
         expect(transactions.length).toBe(0);
     });
 

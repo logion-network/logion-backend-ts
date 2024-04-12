@@ -1,7 +1,7 @@
 import { LocRequestAdapter, UserPrivateData } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 import { Container } from "inversify";
 import request from "supertest";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Mock, It } from "moq.ts";
 import {
     LocRequestRepository,
@@ -20,29 +20,24 @@ import { NotificationService, Template } from "../../../src/logion/services/noti
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { CollectionRepository } from "../../../src/logion/model/collection.model.js";
-import {
-    LATEST_SEAL_VERSION,
-    PersonalInfoSealService,
-    Seal,
-} from "../../../src/logion/services/seal.service.js";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal, } from "../../../src/logion/services/seal.service.js";
 import { PersonalInfo } from "../../../src/logion/model/personalinfo.model.js";
-import { LocRequestService, NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
+import {
+    LocRequestService,
+    NonTransactionalLocRequestService
+} from "../../../src/logion/services/locrequest.service.js";
 import { DisabledIdenfyService, IdenfyService } from "../../../src/logion/services/idenfy/idenfy.service.js";
 import { VoteRepository, VoteAggregateRoot } from "../../../src/logion/model/vote.model.js";
 import { AuthenticationService, PolkadotService } from "@logion/rest-api-core";
-import { Hash, LocBatch, LogionNodeApiClass, UUID, VerifiedIssuerType } from "@logion/node-api";
+import { Hash, LocBatch, LogionNodeApiClass, UUID, ValidAccountId, AnyAccountId } from "@logion/node-api";
 import { VerifiedIssuerSelectionRepository } from "../../../src/logion/model/verifiedissuerselection.model.js";
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
-import { SupportedAccountId, polkadotAccount } from "../../../src/logion/model/supportedaccountid.model.js";
+import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
-import { validAccountId } from "@logion/rest-api-core/dist/TestUtil.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
-export const POLKADOT_REQUESTER = validAccountId("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
-export const ETHEREUM_REQUESTER: SupportedAccountId = {
-    type: "Ethereum",
-    address: "0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6"
-}
+export const POLKADOT_REQUESTER = ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
+export const ETHEREUM_REQUESTER = new AnyAccountId("0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6", "Ethereum").toValidAccountId();
 
 export const EXISTING_SPONSORSHIP_ID = new UUID("274d0149-7721-456c-ab7a-f12e77d2ee64");
 
@@ -101,7 +96,7 @@ export function testDataWithType(locType: LocType, draft?: boolean): Partial<Loc
     return {
         requesterAddress: POLKADOT_REQUESTER,
         requesterIdentityLoc: locType === "Identity" ? undefined : userIdentities["Polkadot"].identityLocId,
-        ownerAddress: ALICE,
+        ownerAddress: ALICE_ACCOUNT,
         description: "I want to open a case",
         locType,
         draft,
@@ -137,7 +132,7 @@ export const testDataWithUserIdentity = testDataWithUserIdentityWithType("Identi
 
 export const testDataWithLogionIdentity: Partial<LocRequestDescription> = {
     requesterIdentityLoc: userIdentities["Logion"].identityLocId,
-    ownerAddress: ALICE,
+    ownerAddress: ALICE_ACCOUNT,
     description: "I want to open a case",
     locType: "Transaction",
     fees: {
@@ -205,8 +200,8 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
     container.bind(SponsorshipService).toConstantValue(sponsorshipService?.object());
     sponsorshipService.setup(instance => instance.validateSponsorship(
         It.IsAny<UUID>(),
-        It.IsAny<SupportedAccountId>(),
-        It.IsAny<SupportedAccountId>()
+        It.IsAny<ValidAccountId>(),
+        It.IsAny<ValidAccountId>()
     )).returnsAsync();
 
     return {
@@ -217,7 +212,7 @@ export function buildMocks(container: Container, existingMocks?: Partial<Mocks>)
         notificationService,
         collectionRepository,
         voteRepository,
-        verifiedIssuerSelectionRepository: verifiedIssuerSelectionRepository,
+        verifiedIssuerSelectionRepository,
         nodeApi,
         loc,
         sponsorshipService,
@@ -240,10 +235,10 @@ function mockOtherDependencies(container: Container, existingMocks?: {
     const directoryService = new Mock<DirectoryService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
-        .returns(Promise.resolve(notifiedLegalOfficer(ALICE)))
+        .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
-        .returns(Promise.resolve(ALICE));
+        .returns(Promise.resolve(ALICE_ACCOUNT));
     container.bind(DirectoryService).toConstantValue(directoryService.object())
 
     const collectionRepository = existingMocks?.collectionRepository ? existingMocks.collectionRepository : new Mock<CollectionRepository>();
@@ -311,17 +306,22 @@ export function setupRequest(
         .returns({
             ...description,
             createdOn: "2022-08-31T16:01:15.651Z",
-            ownerAddress: description.ownerAddress || ALICE,
+            ownerAddress: description.ownerAddress || ALICE_ACCOUNT.address,
             requesterAddress: description.requesterAddress,
             requesterIdentityLoc: description.requesterIdentityLoc,
         } as LocRequestDescription);
     request.setup(instance => instance.getFiles(It.IsAny())).returns(files);
+    request.setup(instance => instance.getFiles()).returns(files);
     request.setup(instance => instance.getMetadataItems(It.IsAny())).returns(metadataItems);
+    request.setup(instance => instance.getMetadataItems()).returns(metadataItems);
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
+    request.setup(instance => instance.getLinks()).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
-    mockOwner(request, polkadotAccount(description.ownerAddress || ALICE))
+    mockOwner(request, description.ownerAddress || ALICE_ACCOUNT)
     if (description.requesterAddress) {
         mockRequester(request, description.requesterAddress);
+    } else {
+        request.setup(instance => instance.getRequester()).returns(undefined);
     }
 }
 
@@ -371,12 +371,17 @@ export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, 
 
 export const testData = testDataWithType("Transaction");
 
-export function checkPrivateData(response: request.Response, expectedUserPrivateData: UserPrivateData) {
-    expect(response.body.identityLoc).toEqual(expectedUserPrivateData.identityLocId);
+export function checkPrivateData(response: request.Response, expectedUserPrivateData: UserPrivateData | undefined) {
     const userIdentity = response.body.userIdentity;
-    expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity);
     const userPostalAddress = response.body.userPostalAddress;
-    expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
+    if (expectedUserPrivateData) {
+        expect(response.body.identityLoc).toEqual(expectedUserPrivateData.identityLocId);
+        expect(userIdentity).toEqual(expectedUserPrivateData.userIdentity);
+        expect(userPostalAddress).toEqual(expectedUserPrivateData.userPostalAddress);
+    } else {
+        expect(userIdentity).toBeUndefined();
+        expect(userPostalAddress).toBeUndefined();
+    }
 }
 
 export function buildMocksForFetch(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -397,7 +402,7 @@ export function setupLocFetch(locId: string, locBatch: Mock<LocBatch>, nodeApi: 
     const locIdUuid = new UUID(locId);
     nodeApi.setup(instance => instance.batch.locs(It.Is<UUID[]>(ids => ids.length === 1 && ids[0].toString() === locIdUuid.toString())))
         .returns(locBatch.object());
-    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE)).returnsAsync([]);
+    nodeApi.setup(instance => instance.queries.getLegalOfficerVerifiedIssuers(ALICE_ACCOUNT)).returnsAsync([]);
 }
 
 export function buildMocksForUpdate(container: Container, existingMocks?: Partial<Mocks>): Mocks {
@@ -419,8 +424,9 @@ export function setupSelectedIssuer(
         loc.setup(instance => instance.getLocsVerifiedIssuers()).returnsAsync({
             [ new UUID(REQUEST_ID).toDecimalString() ]: [
                 {
-                    address: ISSUER.address
-                } as unknown as VerifiedIssuerType
+                    account: ISSUER,
+                    identityLocId: new UUID(),
+                }
             ]
         });
     } else {
@@ -430,7 +436,7 @@ export function setupSelectedIssuer(
     }
 }
 
-export const ISSUER = polkadotAccount("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
+export const ISSUER = ValidAccountId.polkadot("5FniDvPw22DMW1TLee9N8zBjzwKXaKB2DcvZZCQU5tjmv1kb");
 
 export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean) {
     if (exists) {
@@ -444,7 +450,7 @@ export function setUpVote(voteRepository: Mock<VoteRepository>, exists: boolean)
 
 export const VOTE_ID = "123";
 
-export function mockOwner(locRequest: Mock<LocRequestAggregateRoot>, owner: SupportedAccountId) {
+export function mockOwner(locRequest: Mock<LocRequestAggregateRoot>, owner: ValidAccountId) {
     if (owner.type !== "Polkadot") {
         throw new Error("Mock Setup failure: loc request owner can only be Polkadot account");
     }
@@ -452,8 +458,7 @@ export function mockOwner(locRequest: Mock<LocRequestAggregateRoot>, owner: Supp
     locRequest.setup(instance => instance.getOwner()).returns(owner);
 }
 
-export function mockRequester(locRequest: Mock<LocRequestAggregateRoot>, requester: SupportedAccountId) {
-    locRequest.setup(instance => instance.requesterAddress).returns(requester.address);
-    locRequest.setup(instance => instance.requesterAddressType).returns(requester.type);
+export function mockRequester(locRequest: Mock<LocRequestAggregateRoot>, requester: ValidAccountId) {
+    locRequest.setup(instance => instance.requester).returns(EmbeddableNullableAccountId.from(requester));
     locRequest.setup(instance => instance.getRequester()).returns(requester);
 }

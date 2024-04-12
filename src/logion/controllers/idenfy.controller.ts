@@ -58,7 +58,7 @@ export class IdenfyController extends ApiController {
     async createVerificationSession(idenfyVerificationCreation: IdenfyVerificationCreationView, locId: string): Promise<IdenfyVerificationRedirectView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = requireDefined(await this.locRequestRepository.findById(locId), () => badRequest("LOC not found"));
-        authenticatedUser.require(user => request.requesterAddress === user.address,
+        authenticatedUser.require(user => requireDefined(request.getRequester()).equals(user.validAccountId),
             "Only LOC requester can start an identity verification session");
         return await this.idenfyService.createVerificationSession(request, idenfyVerificationCreation);
     }

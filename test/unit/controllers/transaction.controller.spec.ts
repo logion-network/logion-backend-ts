@@ -1,4 +1,4 @@
-import { ChainType, Fees, Lgnt, LogionNodeApiClass } from "@logion/node-api";
+import { ChainType, Fees, Lgnt, LogionNodeApiClass, ValidAccountId } from "@logion/node-api";
 import { PolkadotService, TestApp } from '@logion/rest-api-core';
 import request from 'supertest';
 import { TransactionController } from '../../../src/logion/controllers/transaction.controller.js';
@@ -9,7 +9,7 @@ import {
     TransactionAggregateRoot,
     TransactionDescription
 } from "../../../src/logion/model/transaction.model.js";
-import { ALICE } from "../../helpers/addresses.js";
+import { ALICE, ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Block } from "../../../src/logion/model/block.model.js";
 
 describe('TransactionController', () => {
@@ -28,7 +28,7 @@ describe('TransactionController', () => {
 
                 const transaction0 = response.body.transactions[0];
                 expect(transaction0.id).toBeDefined();
-                expect(transaction0.from).toBe(ALICE);
+                expect(transaction0.from).toBe(ALICE_ACCOUNT.address);
                 expect(transaction0.to).toBeUndefined();
                 expect(transaction0.pallet).toBe("pallet");
                 expect(transaction0.method).toBe("method");
@@ -45,7 +45,7 @@ describe('TransactionController', () => {
 
                 const transaction1 = response.body.transactions[1];
                 expect(transaction1.id).toBeDefined();
-                expect(transaction1.from).toBe(ALICE);
+                expect(transaction1.from).toBe(ALICE_ACCOUNT.address);
                 expect(transaction1.to).toBeUndefined();
                 expect(transaction1.pallet).toBe("pallet");
                 expect(transaction1.method).toBe("method");
@@ -73,7 +73,7 @@ function transactionDescription(fees: Fees): TransactionDescription {
             chainType: "Solo",
         }),
         extrinsicIndex: 1,
-        from: ALICE,
+        from: ALICE_ACCOUNT,
         to: null,
         createdOn: TIMESTAMP,
         pallet: "pallet",
@@ -118,8 +118,8 @@ function mockModelForFetch(container: Container): void {
     const repository = new Mock<TransactionRepository>();
     const transactions: TransactionAggregateRoot[] = [ successfulTransaction.object(), failedTransaction.object() ];
     repository.setup(instance => instance.findBy(
-        It.Is<{ address: string, chainType: ChainType }>(
-            spec => spec.address === ALICE && spec.chainType === "Solo"
+        It.Is<{ account: ValidAccountId, chainType: ChainType }>(
+            spec => spec.account.equals(ALICE_ACCOUNT) && spec.chainType === "Solo"
         )
     )).returns(Promise.resolve(transactions));
 

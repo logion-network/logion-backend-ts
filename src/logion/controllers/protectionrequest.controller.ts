@@ -30,6 +30,7 @@ import { ProtectionRequestService } from '../services/protectionrequest.service.
 import { LocalsObject } from 'pug';
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
 import { LocRequestRepository } from '../model/locrequest.model.js';
+import { ValidAccountId } from "@logion/node-api";
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
@@ -63,13 +64,13 @@ interface ProtectionRequestPublicFields {
 
     id?: string;
 
-    addressToRecover?: string | null;
+    getAddressToRecover(): ValidAccountId | null;
 
     createdOn?: string;
 
     isRecovery?: boolean;
 
-    requesterAddress?: string;
+    getRequester(): ValidAccountId;
 
     requesterIdentityLocId?: string;
 
@@ -77,9 +78,9 @@ interface ProtectionRequestPublicFields {
 
     decision?: { decisionOn?: string, rejectReason?: string };
 
-    legalOfficerAddress?: string;
+    getLegalOfficer(): ValidAccountId;
 
-    otherLegalOfficerAddress?: string;
+    getOtherLegalOfficer(): ValidAccountId;
 }
 
 @injectable()
@@ -118,13 +119,13 @@ export class ProtectionRequestController extends ApiController {
         const requesterIdentityLoc = requireDefined(body.requesterIdentityLoc);
         const request = await this.protectionRequestFactory.newProtectionRequest({
             id: uuid(),
-            requesterAddress: requester.address,
+            requesterAddress: requester.validAccountId,
             requesterIdentityLoc,
             legalOfficerAddress,
-            otherLegalOfficerAddress: body.otherLegalOfficerAddress,
+            otherLegalOfficerAddress: ValidAccountId.polkadot(body.otherLegalOfficerAddress),
             createdOn: moment().toISOString(),
             isRecovery: body.isRecovery,
-            addressToRecover: body.addressToRecover || null,
+            addressToRecover: body.addressToRecover ? ValidAccountId.polkadot(body.addressToRecover) : null,
         });
         await this.protectionRequestService.add(request);
         const templateId: Template = request.isRecovery ? "recovery-requested" : "protection-requested"
@@ -148,10 +149,12 @@ export class ProtectionRequestController extends ApiController {
     @HttpPut('')
     async fetchProtectionRequests(body: FetchProtectionRequestsSpecificationView): Promise<FetchProtectionRequestsResponseView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        authenticatedUser.require(user => user.isOneOf([ body.legalOfficerAddress, body.requesterAddress ]));
+        const requester = body.requesterAddress ? ValidAccountId.polkadot(body.requesterAddress) : undefined;
+        const legalOfficer = body.legalOfficerAddress ? ValidAccountId.polkadot(body.legalOfficerAddress) : undefined;
+        authenticatedUser.require(user => user.isOneOf([ legalOfficer, requester ]));
         const specification = new FetchProtectionRequestsSpecification({
-            expectedRequesterAddress: body.requesterAddress,
-            expectedLegalOfficerAddress: body.legalOfficerAddress,
+            expectedRequesterAddress: requester,
+            expectedLegalOfficerAddress: legalOfficer ? [ legalOfficer ] : undefined,
             expectedStatuses: body.statuses,
             kind: body.kind,
         });
@@ -169,10 +172,10 @@ export class ProtectionRequestController extends ApiController {
         const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             id: request.id!,
-            requesterAddress: request.requesterAddress || "",
+            requesterAddress: request.getRequester().address,
             requesterIdentityLoc: request.requesterIdentityLocId,
-            legalOfficerAddress: request.legalOfficerAddress || "",
-            otherLegalOfficerAddress: request.otherLegalOfficerAddress || "",
+            legalOfficerAddress: request.getLegalOfficer().address,
+            otherLegalOfficerAddress: request.getOtherLegalOfficer().address,
             userIdentity,
             userPostalAddress,
             decision: {
@@ -181,7 +184,7 @@ export class ProtectionRequestController extends ApiController {
             },
             createdOn: request.createdOn!,
             isRecovery: request.isRecovery || false,
-            addressToRecover: request.addressToRecover || undefined,
+            addressToRecover: request.getAddressToRecover()?.address,
             status: request.status!,
         };
     }
@@ -203,7 +206,7 @@ export class ProtectionRequestController extends ApiController {
     async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.is(request.legalOfficerAddress))
+            authenticatedUser.require(user => user.is(request.getLegalOfficer()))
             request.reject(body.rejectReason!, moment());
         });
         const templateId: Template = request.isRecovery ? "recovery-rejected" : "protection-rejected";
@@ -229,7 +232,7 @@ export class ProtectionRequestController extends ApiController {
     async acceptProtectionRequest(_body: never, id: string): Promise<ProtectionRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.is(request.legalOfficerAddress))
+            authenticatedUser.require(user => user.is(request.getLegalOfficer()))
             request.accept(moment());
         });
         const templateId: Template = request.isRecovery ? "recovery-accepted" : "protection-accepted";
@@ -252,7 +255,7 @@ export class ProtectionRequestController extends ApiController {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
 
         const recovery = await this.protectionRequestRepository.findById(id);
-        authenticatedUser.require(user => user.is(recovery?.legalOfficerAddress));
+        authenticatedUser.require(user => user.is(recovery?.getLegalOfficer()));
         if(recovery === null
             || !recovery.isRecovery
             || recovery.status !== 'PENDING'
@@ -262,10 +265,10 @@ export class ProtectionRequestController extends ApiController {
 
         const addressToRecover = recovery.getDescription().addressToRecover!;
         const recoveryUserPrivateData = await this.locRequestAdapter.getUserPrivateData(recovery.requesterIdentityLocId!)
-        const identityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc({
-            address: addressToRecover,
-            type: "Polkadot"
-        }, requireDefined(recovery?.legalOfficerAddress));
+        const identityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(
+            addressToRecover,
+            recovery.getLegalOfficer()
+        );
         let accountToRecoverUserPrivateData: UserPrivateData | undefined;
         if(identityLoc) {
             const description = identityLoc.getDescription();
@@ -276,16 +279,18 @@ export class ProtectionRequestController extends ApiController {
             };
         }
         return {
-            addressToRecover,
+            addressToRecover: addressToRecover.address,
             recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
             accountToRecover: accountToRecoverUserPrivateData ? this.adapt({
+                getAddressToRecover: () => null,
                 id: "dummy",
-                legalOfficerAddress: recovery?.legalOfficerAddress,
-                requesterAddress: addressToRecover,
+                getLegalOfficer: () => recovery.getLegalOfficer(),
+                getOtherLegalOfficer: () => recovery.getOtherLegalOfficer(),
+                getRequester: () => addressToRecover,
                 requesterIdentityLocId: accountToRecoverUserPrivateData.identityLocId,
                 status: 'ACCEPTED',
                 decision: {
-                    
+
                 }
             }, accountToRecoverUserPrivateData) : undefined,
         };
@@ -305,7 +310,7 @@ export class ProtectionRequestController extends ApiController {
     async resubmit(_body: never, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
             request.resubmit();
         });
         this.notify("LegalOfficer", request.isRecovery ? 'recovery-resubmitted' : 'protection-resubmitted', request.getDescription());
@@ -326,7 +331,7 @@ export class ProtectionRequestController extends ApiController {
     async cancel(_body: never, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
             request.cancel();
         });
         this.notify("LegalOfficer", request.isRecovery ? 'recovery-cancelled' : 'protection-cancelled', request.getDescription());
@@ -350,9 +355,10 @@ export class ProtectionRequestController extends ApiController {
     @SendsResponse()
     async update(updateProtectionRequestView: UpdateProtectionRequestView, id: string): Promise<void> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+        const otherLegalOfficerAddress = ValidAccountId.polkadot(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
         const request = await this.protectionRequestService.update(id, async request => {
-            authenticatedUser.require(user => user.is(request.requesterAddress));
-            request.updateOtherLegalOfficer(requireDefined(updateProtectionRequestView.otherLegalOfficerAddress));
+            authenticatedUser.require(user => user.is(request.getRequester()));
+            request.updateOtherLegalOfficer(otherLegalOfficerAddress);
         });
         this.notify("LegalOfficer", 'protection-updated', request.getDescription());
         this.response.sendStatus(204);

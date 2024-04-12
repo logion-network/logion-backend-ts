@@ -3,6 +3,8 @@ import { injectable } from "inversify";
 import { appDataSource } from "@logion/rest-api-core";
 import moment, { Moment } from "moment";
 import { Child, saveChildren } from "./child.js";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 
 export type VoteStatus = "PENDING" | "APPROVED" | "REJECTED";
 
@@ -36,10 +38,10 @@ export class VoteAggregateRoot {
         }
     }
 
-    addBallot(voterAddress: string, result: VoteResult) {
+    addBallot(voter: ValidAccountId, result: VoteResult) {
         const ballot = new Ballot();
         ballot.voteId = this.voteId;
-        ballot.voterAddress = voterAddress;
+        ballot.voterAddress = voter.getAddress(DB_SS58_PREFIX);
         ballot.result = result;
         ballot.vote = this;
         ballot._toAdd = true;
@@ -79,6 +81,10 @@ export class Ballot extends Child {
     @ManyToOne(() => VoteAggregateRoot, request => request.ballots)
     @JoinColumn({ name: "vote_id" })
     vote?: VoteAggregateRoot;
+
+    getVoter(): ValidAccountId {
+        return ValidAccountId.polkadot(this.voterAddress || "");
+    }
 }
 
 @injectable()
