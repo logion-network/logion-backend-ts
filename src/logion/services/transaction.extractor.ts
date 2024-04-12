@@ -39,7 +39,7 @@ export class TransactionExtractor {
             const type = this.determineType(extrinsic);
             if (type === ExtrinsicType.TIMESTAMP) {
                 blockBuilder.timestamp(this.extrinsicDataExtractor.getTimestamp(extrinsic))
-            } else {
+            } else if(extrinsic.signer) {
                 const blockTransactions = await this.extractTransactions(extrinsic, type, index);
                 blockTransactions.forEach(transaction => transactions.push(transaction));
             }
