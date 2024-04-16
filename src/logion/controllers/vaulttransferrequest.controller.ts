@@ -128,7 +128,7 @@ export class VaultTransferRequestController extends ApiController {
 
         user.require(user =>
             user.validAccountId.equals(origin) ||
-            data.activeRecovery !== undefined && origin === data.activeRecovery.addressToRecover);
+            data.activeRecovery !== undefined && origin.equals(data.activeRecovery.addressToRecover));
 
         return this.getUserDataFromProtection(user.validAccountId, origin, legalOfficerAddress, data.activeRecovery, data.activeProtection);
     }
