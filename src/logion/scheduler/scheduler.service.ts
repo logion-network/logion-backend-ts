@@ -43,7 +43,7 @@ export class Scheduler {
                 logger.error(err.stack);
             }
         )
-        const job = new SimpleIntervalJob({ seconds: 6 }, task);
+        const job = new SimpleIntervalJob({ seconds: 12 }, task);
         this.scheduler.addSimpleIntervalJob(job)
     }
 }

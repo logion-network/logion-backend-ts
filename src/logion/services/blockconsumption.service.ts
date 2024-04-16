@@ -120,7 +120,7 @@ export class BlockConsumer {
         } else {
             if(lastSynced === undefined || head.chainType !== lastSynced.chainType) {
                 return {
-                    value: head.at(-1n),
+                    value: head.at(head.blockNumber - 1n),
                 };
             } else {
                 return {
