@@ -1,6 +1,7 @@
 import axios from "axios";
 import { Log } from "@logion/rest-api-core";
 import { injectable } from "inversify";
+import { ValidAccountId } from "@logion/node-api";
 
 export type MultiversxTokenType =
     'multiversx_devnet_esdt' |
@@ -31,9 +32,12 @@ export class MultiversxChecker {
 
     readonly host: string;
 
-    async isOwnerOf(address: string, tokenId: string): Promise<boolean> {
+    async isOwnerOf(account: ValidAccountId, tokenId: string): Promise<boolean> {
+        if (account.type !== "Bech32") {
+            return false;
+        }
         try {
-            const response = await axios.get(`https://${ this.host }.multiversx.com/accounts/${ address }/nfts/${ tokenId }?fields=balance,identifier,type`);
+            const response = await axios.get(`https://${ this.host }.multiversx.com/accounts/${ account.address }/nfts/${ tokenId }?fields=balance,identifier,type`);
             const type = response.data.type;
             if (type) {
                 if (type === "NonFungibleESDT") {
@@ -43,7 +47,7 @@ export class MultiversxChecker {
                 }
             }
         } catch (e) {
-            logger.warn("Failed to fetch token %s for address %s: %s", tokenId, address, e);
+            logger.warn("Failed to fetch token %s for address %s: %s", tokenId, account.address, e);
         }
         return false;
     }

@@ -1,5 +1,5 @@
 import { AuthenticatedUser } from "@logion/authenticator";
-import { Hash } from "@logion/node-api";
+import { Hash, ValidAccountId } from "@logion/node-api";
 import { HexString } from "@polkadot/util/types";
 import { injectable } from "inversify";
 import { Controller, ApiController, Async, HttpGet, HttpPost, SendsResponse, HttpPut, HttpDelete } from "dinoloop";
@@ -387,7 +387,7 @@ export class CollectionController extends ApiController {
         const token = collectionItem.getDescription().token;
         if(!publishedCollectionItem.restrictedDelivery) {
             throw forbidden("No delivery allowed for this item's files");
-        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
+        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.validAccountId, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return collectionItem;
@@ -477,7 +477,7 @@ export class CollectionController extends ApiController {
         const token = collectionItem.getDescription().token;
         if(!file.restrictedDelivery) {
             throw forbidden("No delivery allowed for this collection's files");
-        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
+        } else if(!token || ! await this.ownershipCheckService.isOwner(authenticated.validAccountId, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         } else {
             return file;
@@ -509,7 +509,7 @@ export class CollectionController extends ApiController {
             throw badRequest(`Collection item ${ collectionLocId } not found on-chain`);
         }
         const token = collectionItem.getDescription().token;
-        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
+        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.validAccountId, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of this item's underlying token`);
         }
     }
@@ -588,7 +588,10 @@ export class CollectionController extends ApiController {
 
         const ownershipMap: Record<string, boolean> = {};
         for(const owner of owners.values()) {
-            ownershipMap[owner] = token !== undefined && await this.ownershipCheckService.isOwner(owner, token);
+            const ownerAccount = ValidAccountId.fromUnknown(owner);
+            ownershipMap[owner] = token !== undefined
+                && ownerAccount !== undefined
+                && await this.ownershipCheckService.isOwner(ownerAccount, token);
         }
 
         const view: ItemDeliveriesResponse = {};

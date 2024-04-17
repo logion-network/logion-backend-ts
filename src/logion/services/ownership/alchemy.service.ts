@@ -1,5 +1,6 @@
 import { injectable } from "inversify";
 import { Network, Alchemy, AlchemySettings, TokenBalance } from "alchemy-sdk";
+import { ValidAccountId } from "@logion/node-api";
 
 export { Network } from "alchemy-sdk";
 
@@ -19,13 +20,16 @@ export class AlchemyChecker {
 
     private alchemy: Alchemy;
 
-    async getOwners(contractAddress: string, tokenId: string): Promise<string[]> {
+    async getOwners(contractAddress: string, tokenId: string): Promise<ValidAccountId[]> {
         const response = await this.alchemy.nft.getOwnersForNft(contractAddress, tokenId);
-        return response.owners;
+        return response.owners.map(ValidAccountId.ethereum);
     }
 
-    async getBalances(address: string, contractAddress: string): Promise<TokenBalance[]> {
-        const balances = await this.alchemy.core.getTokenBalances(address, [contractAddress]);
+    async getBalances(account: ValidAccountId, contractAddress: string): Promise<TokenBalance[]> {
+        if (account.type !== "Ethereum") {
+            return [];
+        }
+        const balances = await this.alchemy.core.getTokenBalances(account.address, [contractAddress]);
         return balances.tokenBalances;
     }
 }
