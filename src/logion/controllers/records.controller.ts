@@ -349,7 +349,7 @@ export class TokensRecordController extends ApiController {
 
         const tokensRecord = await this.getTokensRecordWithFile(collectionLocId, recordId, hash);
 
-        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.address, token)) {
+        if(!token || ! await this.ownershipCheckService.isOwner(authenticated.validAccountId, token)) {
             throw forbidden(`${authenticated.address} does not seem to be the owner of related item's underlying token`);
         } else {
             return tokensRecord;

@@ -6,6 +6,7 @@ import { BigNumber } from 'alchemy-sdk';
 import { MultiversxService } from "./ownership/multiversx.service.js";
 import { CollectionItemTokenDescription } from '../model/collection.model.js';
 import { AstarNetwork, AstarService, AstarTokenId, AstarTokenType } from './ownership/astar.service.js';
+import { ValidAccountId } from "@logion/node-api";
 
 @injectable()
 export class OwnershipCheckService {
@@ -17,8 +18,7 @@ export class OwnershipCheckService {
         private astarService: AstarService,
     ) {}
 
-    async isOwner(address: string, token: CollectionItemTokenDescription): Promise<boolean> {
-        const normalizedAddress = address.toLowerCase();
+    async isOwner(account: ValidAccountId, token: CollectionItemTokenDescription): Promise<boolean> {
         const tokenType = token.type;
         const tokenId = token.id;
         if(!tokenId || !tokenType) {
@@ -27,20 +27,21 @@ export class OwnershipCheckService {
             const network = this.getNetwork(tokenType);
             const checker = this.alchemyService.getChecker(network);
             if(tokenType.includes("erc721") || tokenType.includes("erc1155")) {
-                return this.isOwnerOfErc721OrErc1155(checker, normalizedAddress, tokenId);
+                return this.isOwnerOfErc721OrErc1155(checker, account, tokenId);
             } else if(tokenType.includes("erc20")) {
-                return this.isOwnerOfErc20(checker, normalizedAddress, tokenId);
+                return this.isOwnerOfErc20(checker, account, tokenId);
             } else {
                 throw new Error(`Unsupported Alchemy token ${tokenType}`);
             }
         } else if(tokenType === 'owner') {
-            return normalizedAddress === token.id.toLowerCase();
+            const owner = ValidAccountId.fromUnknown(tokenId)
+            return account.equals(owner);
         } else if(tokenType === 'singular_kusama') {
-            return this.isOwnerOfSingularKusama(address, token.id);
+            return this.isOwnerOfSingularKusama(account, tokenId);
         } else if(tokenType.startsWith("multiversx")) {
             const checker = this.multiversxService.getChecker(tokenType);
             if (checker) {
-                return checker.isOwnerOf(normalizedAddress, token.id);
+                return checker.isOwnerOf(account, token.id);
             } else {
                 throw new Error(`Unsupported MultiversX token ${tokenType}`);
             }
@@ -51,7 +52,7 @@ export class OwnershipCheckService {
             const client = await this.astarService.getClient(network, contractTokenType, contractHash);
             const owner = await client.getOwnerOf(contractTokenId);
             await client.disconnect();
-            return owner === address;
+            return account.equals(owner);
         } else {
             throw new Error(`Unsupported token type ${tokenType}`);
         }
@@ -75,10 +76,13 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, address: string, itemTokenId: string): Promise<boolean> {
+    private async isOwnerOfErc721OrErc1155(checker: AlchemyChecker, account: ValidAccountId, itemTokenId: string): Promise<boolean> {
+        if (account.type !== "Ethereum") {
+            return false;
+        }
         const { contractHash, contractTokenId: tokenId } = this.parseErc721Or1155TokenId(itemTokenId);
         const owners = await checker.getOwners(contractHash, tokenId);
-        return owners.find(owner => owner.toLowerCase() === address) !== undefined;
+        return owners.find(owner => account.equals(owner)) !== undefined;
     }
 
     private parseErc721Or1155TokenId(tokenId: string): { contractHash: string, contractTokenId: string } {
@@ -97,9 +101,12 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfErc20(checker: AlchemyChecker, address: string, itemTokenId: string): Promise<boolean> {
+    private async isOwnerOfErc20(checker: AlchemyChecker, account: ValidAccountId, itemTokenId: string): Promise<boolean> {
+        if (account.type !== "Ethereum") {
+            return false;
+        }
         const { contractHash } = this.parseErc20TokenId(itemTokenId);
-        const balances = await checker.getBalances(address, contractHash);
+        const balances = await checker.getBalances(account, contractHash);
         const balance = balances.find(balance => balance.contractAddress === contractHash && !balance.error);
         return balance !== undefined && balance.tokenBalance !== null && !BigNumber.from(balance.tokenBalance).isZero();
     }
@@ -119,9 +126,9 @@ export class OwnershipCheckService {
         }
     }
 
-    private async isOwnerOfSingularKusama(address: string, tokenId: string): Promise<boolean> {
+    private async isOwnerOfSingularKusama(account: ValidAccountId, tokenId: string): Promise<boolean> {
         const owners = await this.singularService.getOwners(tokenId);
-        return owners.find(owner => owner === address) !== undefined;
+        return owners.find(owner => owner.equals(account)) !== undefined;
     }
 
     private getAstarNetwork(tokenType: string): AstarNetwork {

@@ -1,7 +1,7 @@
 import { options } from "@astar-network/astar-api";
 import { ApiPromise } from "@polkadot/api";
 import { WsProvider } from "@polkadot/rpc-provider";
-import { encodeAddress } from '@polkadot/util-crypto';
+import { ValidAccountId } from "@logion/node-api";
 import { injectable } from 'inversify';
 import { Abi, ContractPromise } from '@polkadot/api-contract';
 import PSP34 from "./psp34.js";
@@ -27,7 +27,7 @@ export class AstarClient {
 
     private contract: ContractPromise;
 
-    async getOwnerOf(tokenId: AstarTokenId): Promise<string | undefined> {
+    async getOwnerOf(tokenId: AstarTokenId): Promise<ValidAccountId | undefined> {
         const gasLimit = this.api.registry.createType(
             "WeightV2",
             this.api.consts.system.blockWeights["maxBlock"],
@@ -54,7 +54,7 @@ export class AstarClient {
                 const result = this.contract.abi.registry.createTypeUnsafe(typeName, [okResult.data]) as any; // eslint-disable-line @typescript-eslint/no-explicit-any
                 if(result.isOk) {
                     const account = result.asOk;
-                    return encodeAddress(account.toString(), 42);
+                    return ValidAccountId.polkadot(account.toString())
                 } else {
                     throw new Error(result.asErr.toString());
                 }

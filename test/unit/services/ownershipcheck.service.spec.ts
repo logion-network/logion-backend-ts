@@ -6,6 +6,7 @@ import { SingularService } from "../../../src/logion/services/ownership/singular
 import { MultiversxService, MultiversxTokenType, MultiversxChecker } from "../../../src/logion/services/ownership/multiversx.service.js";
 import { CollectionItemTokenDescription } from "src/logion/model/collection.model.js";
 import { AstarClient, AstarNetwork, AstarService, AstarTokenId, AstarTokenType } from "src/logion/services/ownership/astar.service.js";
+import { ValidAccountId } from "@logion/node-api";
 
 describe("OwnershipCheckService", () => {
     it("detects ethereum_erc721 ownership", () => testDetectsOwnership(ethereumErc721Item, owner, { network: Network.ETH_MAINNET }));
@@ -54,7 +55,7 @@ type TestConfig = {
     astarContractId?: string;
 };
 
-async function testDetectsOwnership(token: CollectionItemTokenDescription, owner: string, config?: TestConfig) {
+async function testDetectsOwnership(token: CollectionItemTokenDescription, owner: ValidAccountId, config?: TestConfig) {
     const alchemyService = mockAlchemyService(config?.network);
     const singularService = mockSingularService();
     const multiversxService = mockMultiversxService(config?.tokenType);
@@ -74,8 +75,8 @@ function mockAlchemyService(network?: Network): AlchemyService {
             return Promise.resolve([]);
         }
     });
-    checker.setup(instance => instance.getBalances).returns((address: string, _contractHash: string) => {
-        if(contractHash === _contractHash && address === owner) {
+    checker.setup(instance => instance.getBalances).returns((account: ValidAccountId, _contractHash: string) => {
+        if(contractHash === _contractHash && account.equals(owner)) {
             return Promise.resolve([{
                 contractAddress: _contractHash,
                 tokenBalance: "0x01",
@@ -105,7 +106,7 @@ function mockSingularService(): SingularService {
 
 function mockMultiversxService(type: MultiversxTokenType | undefined): MultiversxService {
     const checker = new Mock<MultiversxChecker>();
-    checker.setup(instance => instance.isOwnerOf).returns((address: string, tokenId: string) => address === multiversxOwner && tokenId === multiversxTokenId ? Promise.resolve(true) : Promise.resolve(false));
+    checker.setup(instance => instance.isOwnerOf).returns((account: ValidAccountId, tokenId: string) => account.equals(multiversxOwner) && tokenId === multiversxTokenId ? Promise.resolve(true) : Promise.resolve(false));
     const service = new Mock<MultiversxService>();
     service.setup(instance => instance.getChecker).returns((tokenType: MultiversxTokenType) => tokenType === type ? checker.object() : undefined)
     return service.object();
@@ -126,23 +127,23 @@ function mockAstarService(expectedNetwork: AstarNetwork | undefined, expectedTok
     return service.object();
 }
 
-const owner = "0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84";
+const owner = ValidAccountId.ethereum("0xa6db31d1aee06a3ad7e4e56de3775e80d2f5ea84");
 
 const contractHash = "0x765df6da33c1ec1f83be42db171d7ee334a46df5";
 
 const tokenId = "4391";
 
-const polkadotOwner = "GUo1ZJ9bBCmCt8GZMHRqys1ZdUBCpJKi7CgjH1RkRgVeJNF";
+const polkadotOwner = ValidAccountId.polkadot("GUo1ZJ9bBCmCt8GZMHRqys1ZdUBCpJKi7CgjH1RkRgVeJNF");
 
 const singularTokenId = "15057162-acba02847598b67746-DSTEST1-LUXEMBOURG_HOUSE-00000001";
 
 const multiversxTokenId = "LRCOLL001-e42371-01";
 
-const multiversxOwner = "erd1urwqlj8rp3xlpqvu7stcsjsxyhs3skgy0exvly3hr7g92yjeey3sqpvkyx";
+const multiversxOwner = ValidAccountId.bech32("erd1urwqlj8rp3xlpqvu7stcsjsxyhs3skgy0exvly3hr7g92yjeey3sqpvkyx");
 
 const astarTokenId = { U32: 42 };
 
-const astarOwner = "ajYMsCKsEAhEvHpeA4XqsfiA9v1CdzZPrCfS6pEfeGHW9j8";
+const astarOwner = ValidAccountId.polkadot("ajYMsCKsEAhEvHpeA4XqsfiA9v1CdzZPrCfS6pEfeGHW9j8");
 
 const astarContractId = "XyNVZ92vFrYf4rCj8EoAXMRWRG7okRy7gxhn167HaYQZqTc";
 
@@ -158,7 +159,7 @@ async function testDetectsNoOwnership(token: CollectionItemTokenDescription, con
     expect(result).toBe(false);
 }
 
-const anotherOwner = "0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c";
+const anotherOwner = ValidAccountId.ethereum("0xfbb0e166c6bd0dd29859a5191196a8b3fec48e1c");
 
 const ethereumErc721Item: CollectionItemTokenDescription = {
     type: "ethereum_erc721",
@@ -182,7 +183,7 @@ const goerliErc1155Item: CollectionItemTokenDescription = {
 
 const ownerItem: CollectionItemTokenDescription = {
     type: "owner",
-    id: `${owner}`
+    id: `${owner.address}`
 };
 
 const singularKusamaItem: CollectionItemTokenDescription = {
