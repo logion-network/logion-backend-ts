@@ -1,6 +1,6 @@
 {
     "name": "logion-backend-ts",
-    "version": "0.54.0",
+    "version": "0.55.0",
     "private": true,
     "author": {
         "name": "Logion Team",
@@ -26,9 +26,9 @@
     "dependencies": {
         "@astar-network/astar-api": "^0.2.8",
         "@astar-network/astar-sdk-core": "^0.2.8",
-        "@logion/node-api": "^0.29.0-7",
+        "@logion/node-api": "^0.29.0",
         "@logion/node-exiftool": "^2.3.1",
-        "@logion/rest-api-core": "^0.4.8-7",
+        "@logion/rest-api-core": "^0.5.0",
         "@polkadot/api-contract": "^10.12.4",
         "@polkadot/wasm-crypto": "^7.3.2",
         "alchemy-sdk": "^3.2.0",
