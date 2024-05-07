@@ -180,7 +180,7 @@ export class LocRequestController extends ApiController {
                 throw badRequest("" + e);
             }
         }
-        const requesterIdentityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(requesterAddress, ownerAddress);
+        const requesterIdentityLoc = await this.locRequestRepository.getNonVoidIdentityLoc(requesterAddress, ownerAddress);
         if (locType === "Identity") {
             if (requesterAddress && requesterIdentityLoc) {
                 throw badRequest("Only one Polkadot Identity LOC is allowed per Legal Officer.");

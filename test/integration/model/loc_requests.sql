@@ -83,3 +83,7 @@ VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '15ed922d-5960-414
 -- Open Ethereum Identity locs
 INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type, sponsorship_id, legal_fee)
 VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '0x590E9c11b1c2f20210b9b84dc2417B4A7955d4e6', 'Ethereum', 'loc-28', 'OPEN', 'Identity', '31f59983-229f-43e1-9d11-435f506b722b', 42);
+
+-- Void Identity LOC
+INSERT INTO loc_request (id, owner_address, requester_address, requester_address_type, description, status, loc_type, legal_fee, void_reason, voided_on)
+VALUES (md5(random()::text || clock_timestamp()::text)::uuid, '5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY', '5CfbMJ9iLy1yQgGUdS6sR3gHBBhrAk9cbwxpY5vXcp9jsY4z', 'Polkadot', 'loc-29', 'OPEN', 'Identity', 42, 'Because', '2024-05-07T08:00:00.000');
