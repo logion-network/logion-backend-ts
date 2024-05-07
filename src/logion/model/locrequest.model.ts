@@ -1958,6 +1958,22 @@ export class LocRequestRepository {
 
         return identityLoc;
     }
+
+    async getNonVoidIdentityLoc(requester: ValidAccountId | undefined, owner: ValidAccountId): Promise<LocRequestAggregateRoot | undefined> {
+        if (requester === undefined) {
+            return undefined;
+        }
+
+        const identityLoc = (await this.findBy({
+            expectedLocTypes: [ "Identity" ],
+            expectedIdentityLocType: requester.type,
+            expectedRequesterAddress: requester,
+            expectedOwnerAddress: [ owner ],
+            expectedStatuses: [],
+        })).find(loc => loc.getVoidInfo() === null);
+
+        return identityLoc;
+    }
 }
 
 export interface NewLocRequestParameters {

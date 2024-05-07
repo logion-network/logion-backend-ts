@@ -66,7 +66,7 @@ describe('LocRequestRepository - read accesses', () => {
         const requests = await repository.findBy(query);
         checkDescription(requests, undefined, "loc-1", "loc-2", "loc-3", "loc-4", "loc-5",
             "loc-6", "loc-7", "loc-8", "loc-9", "loc-10", "loc-11", "loc-12", "loc-13", "loc-21", "loc-22", "loc-23",
-            "loc-24", "loc-25", "loc-26", "loc-27");
+            "loc-24", "loc-25", "loc-26", "loc-27", "loc-29");
 
         const requestWithItems = requests.find(request => request.description === "loc-10");
         expect(requestWithItems?.files?.length).toBe(1);
@@ -269,6 +269,30 @@ describe('LocRequestRepository - read accesses', () => {
         expect(delivered[hash.toHex()][2].owner).toEqual("5H9ZP7zyJtmay2Vcstf7SzK8LD1PGe5PJ8q7xakqp4zXFEwz");
         expect(delivered[hash.toHex()][2].deliveredFileHash).toEqual("0x38df2378ed26e20124d8c38a945af1b4a058656aab3b3b1f71a9d8a629cc0d81");
     }
+
+    it("finds valid Polkadot Identity LOC", async() => {
+        const request = await repository.getValidPolkadotIdentityLoc(
+            ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
+            ValidAccountId.polkadot("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"),
+        );
+        expect(request).toBeDefined();
+    })
+
+    it("finds non void Polkadot Identity LOC", async() => {
+        const request = await repository.getNonVoidIdentityLoc(
+            ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"),
+            ValidAccountId.polkadot("5GrwvaEF5zXb26Fz9rcQpDWS57CtERHpNehXCPcNoHGKutQY"),
+        );
+        expect(request).toBeDefined();
+    })
+
+    it("does not find void Polkadot Identity LOC", async() => {
+        const request = await repository.getNonVoidIdentityLoc(
+            ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ"),
+            ValidAccountId.polkadot("5CfbMJ9iLy1yQgGUdS6sR3gHBBhrAk9cbwxpY5vXcp9jsY4z"),
+        );
+        expect(request).not.toBeDefined();
+    })
 })
 
 describe('LocRequestRepository.save()', () => {

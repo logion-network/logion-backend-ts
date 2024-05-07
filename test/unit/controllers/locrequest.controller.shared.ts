@@ -367,6 +367,7 @@ export function mockPolkadotIdentityLoc(repository: Mock<LocRequestRepository>, 
 
     repository.setup(instance => instance.findById(locId)).returnsAsync(identityLocs[0]);
     repository.setup(instance => instance.getValidPolkadotIdentityLoc(It.IsAny(), It.IsAny())).returnsAsync(identityLocs[0]);
+    repository.setup(instance => instance.getNonVoidIdentityLoc(It.IsAny(), It.IsAny())).returnsAsync(identityLocs[0]);
 }
 
 export const testData = testDataWithType("Transaction");
