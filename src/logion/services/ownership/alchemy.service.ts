@@ -40,13 +40,13 @@ export class AlchemyService {
     constructor(factory: AlchemyFactory) {
         this.apiKeys = {};
         if(process.env.GOERLI_ALCHEMY_KEY) {
-            this.apiKeys[Network.ETH_GOERLI] = process.env.GOERLI_ALCHEMY_KEY;
+            this.apiKeys[Network.ETH_SEPOLIA] = process.env.GOERLI_ALCHEMY_KEY;
         }
         if(process.env.ETHEREUM_ALCHEMY_KEY) {
             this.apiKeys[Network.ETH_MAINNET] = process.env.ETHEREUM_ALCHEMY_KEY;
         }
         if(process.env.POLYGON_MUMBAI_ALCHEMY_KEY) {
-            this.apiKeys[Network.MATIC_MUMBAI] = process.env.POLYGON_MUMBAI_ALCHEMY_KEY;
+            this.apiKeys[Network.MATIC_AMOY] = process.env.POLYGON_MUMBAI_ALCHEMY_KEY;
         }
         if(process.env.POLYGON_MAINNET_ALCHEMY_KEY) {
             this.apiKeys[Network.MATIC_MAINNET] = process.env.POLYGON_MAINNET_ALCHEMY_KEY;

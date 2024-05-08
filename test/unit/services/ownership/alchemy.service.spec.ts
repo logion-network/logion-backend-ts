@@ -43,7 +43,7 @@ function buildAlchemyService(): AlchemyService {
     return new AlchemyService(factoryMock.object());
 }
 
-const expectedNetwork = Network.ETH_GOERLI;
+const expectedNetwork = Network.ETH_SEPOLIA;
 const expectedApiKey = "dMRDl5c9KAkuURTKjYgVN5DN06IBRfZG";
 const expectedContractAddress = "0x765df6da33c1ec1f83be42db171d7ee334a46df5";
 const expectedTokenId = "4391";
