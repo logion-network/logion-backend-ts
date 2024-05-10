@@ -66,9 +66,9 @@ export class OwnershipCheckService {
         if(tokenType.startsWith("ethereum_")) {
             return Network.ETH_MAINNET;
         } else if(tokenType.startsWith("goerli_")) {
-            return Network.ETH_GOERLI;
+            return Network.ETH_SEPOLIA;
         } else if(tokenType.startsWith("polygon_mumbai_")) {
-            return Network.MATIC_MUMBAI;
+            return Network.MATIC_AMOY;
         } else if(tokenType.startsWith("polygon_")) {
             return Network.MATIC_MAINNET;
         } else {
