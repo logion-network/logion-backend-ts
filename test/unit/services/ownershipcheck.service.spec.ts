@@ -13,16 +13,29 @@ describe("OwnershipCheckService", () => {
     it("detects no ethereum_erc721 ownership", () => testDetectsNoOwnership(ethereumErc721Item, { network: Network.ETH_MAINNET }));
     it("detects ethereum_erc1155 ownership", () => testDetectsOwnership(ethereumErc1155Item, owner, { network: Network.ETH_MAINNET }));
     it("detects no ethereum_erc1155 ownership", () => testDetectsNoOwnership(ethereumErc1155Item, { network: Network.ETH_MAINNET }));
-
-    it("detects goerli_erc721 ownership", () => testDetectsOwnership(goerliErc721Item, owner, { network: Network.ETH_GOERLI }));
-    it("detects no goerli_erc721 ownership", () => testDetectsNoOwnership(goerliErc721Item, { network: Network.ETH_GOERLI }));
-    it("detects goerli_erc1155 ownership", () => testDetectsOwnership(goerliErc1155Item, owner, { network: Network.ETH_GOERLI }));
-    it("detects no goerli_erc1155 ownership", () => testDetectsNoOwnership(goerliErc1155Item, { network: Network.ETH_GOERLI }));
-
     it("detects ethereum_erc20 ownership", () => testDetectsOwnership(ethereumErc20, owner, { network: Network.ETH_MAINNET }));
     it("detects no ethereum_erc20 ownership", () => testDetectsNoOwnership(ethereumErc20, { network: Network.ETH_MAINNET }));
-    it("detects goerli_erc20 ownership", () => testDetectsOwnership(goerliErc20, owner, { network: Network.ETH_GOERLI }));
-    it("detects no goerli_erc20 ownership", () => testDetectsNoOwnership(goerliErc20, { network: Network.ETH_GOERLI }));
+
+    it("detects goerli_erc721 ownership", () => testDetectsOwnership(goerliErc721Item, owner, { network: Network.ETH_SEPOLIA }));
+    it("detects no goerli_erc721 ownership", () => testDetectsNoOwnership(goerliErc721Item, { network: Network.ETH_SEPOLIA }));
+    it("detects goerli_erc1155 ownership", () => testDetectsOwnership(goerliErc1155Item, owner, { network: Network.ETH_SEPOLIA }));
+    it("detects no goerli_erc1155 ownership", () => testDetectsNoOwnership(goerliErc1155Item, { network: Network.ETH_SEPOLIA }));
+    it("detects goerli_erc20 ownership", () => testDetectsOwnership(goerliErc20, owner, { network: Network.ETH_SEPOLIA }));
+    it("detects no goerli_erc20 ownership", () => testDetectsNoOwnership(goerliErc20, { network: Network.ETH_SEPOLIA }));
+
+    it("detects polygon_erc721 ownership", () => testDetectsOwnership(polygonErc721Item, owner, { network: Network.MATIC_MAINNET }));
+    it("detects no polygon_erc721 ownership", () => testDetectsNoOwnership(polygonErc721Item, { network: Network.MATIC_MAINNET }));
+    it("detects polygon_erc1155 ownership", () => testDetectsOwnership(polygonErc1155Item, owner, { network: Network.MATIC_MAINNET }));
+    it("detects no polygon_erc1155 ownership", () => testDetectsNoOwnership(polygonErc1155Item, { network: Network.MATIC_MAINNET }));
+    it("detects polygon_erc20 ownership", () => testDetectsOwnership(polygonErc20, owner, { network: Network.MATIC_MAINNET }));
+    it("detects no polygon_erc20 ownership", () => testDetectsNoOwnership(polygonErc20, { network: Network.MATIC_MAINNET }));
+
+    it("detects polygon_mumbai_erc721 ownership", () => testDetectsOwnership(mumbaiErc721Item, owner, { network: Network.MATIC_AMOY }));
+    it("detects no polygon_mumbai_erc721 ownership", () => testDetectsNoOwnership(mumbaiErc721Item, { network: Network.MATIC_AMOY }));
+    it("detects polygon_mumbai_erc1155 ownership", () => testDetectsOwnership(mumbaiErc1155Item, owner, { network: Network.MATIC_AMOY }));
+    it("detects no polygon_mumbai_erc1155 ownership", () => testDetectsNoOwnership(mumbaiErc1155Item, { network: Network.MATIC_AMOY }));
+    it("detects polygon_mumbai_erc20 ownership", () => testDetectsOwnership(mumbaiErc20, owner, { network: Network.MATIC_AMOY }));
+    it("detects no polygon_mumbai_erc20 ownership", () => testDetectsNoOwnership(mumbaiErc20, { network: Network.MATIC_AMOY }));
 
     it("detects owner ownership", () => testDetectsOwnership(ownerItem, owner));
     it("detects no owner ownership", () => testDetectsNoOwnership(ownerItem));
@@ -230,3 +243,33 @@ const shibuya: CollectionItemTokenDescription = {
     type: "astar_shibuya_psp34",
     id: JSON.stringify({ contract: astarContractId, id: astarTokenId }),
 }
+
+const polygonErc721Item: CollectionItemTokenDescription = {
+    type: "polygon_erc721",
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+};
+
+const polygonErc1155Item: CollectionItemTokenDescription = {
+    type: "polygon_erc1155",
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+};
+
+const mumbaiErc721Item: CollectionItemTokenDescription = {
+    type: "polygon_mumbai_erc721",
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+};
+
+const mumbaiErc1155Item: CollectionItemTokenDescription = {
+    type: "polygon_mumbai_erc1155",
+    id: `{"contract":"${contractHash}","id":"${tokenId}"}`
+};
+
+const polygonErc20: CollectionItemTokenDescription = {
+    type: "polygon_erc20",
+    id: `{"contract":"${contractHash}"}`
+};
+
+const mumbaiErc20: CollectionItemTokenDescription = {
+    type: "polygon_mumbai_erc20",
+    id: `{"contract":"${contractHash}"}`
+};
