@@ -72,7 +72,8 @@ export class VerifiedIssuerSelectionRepository {
         return this.repository.findBy(dbSpec);
     }
 
-    async unselectAll(issuer: string) {
+    async unselectAll(issuerAccount: ValidAccountId) {
+        const issuer = issuerAccount.getAddress(DB_SS58_PREFIX);
         await this.repository.update({ issuer }, { selected: false });
     }
 }
