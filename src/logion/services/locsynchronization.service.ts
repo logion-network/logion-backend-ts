@@ -227,35 +227,32 @@ export class LocSynchronizer {
         const nominated = extrinsic.call.method === "nominateIssuer";
         const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
-            const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
-            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
-            if(identityLoc) {
-                logger.info("Handling nomination/dismissal of issuer %s", issuerAddress);
-                if(!nominated) {
-                    this.verifiedIssuerSelectionService.unselectAll(issuerAddress);
-                }
-                this.notifyVerifiedIssuerNominatedDismissed({
-                    legalOfficerAddress,
-                    nominated,
-                    issuer: identityLoc.getDescription().userIdentity,
-                });
+            const issuerAccount = ValidAccountId.polkadot(Adapters.asString(extrinsic.call.args["issuer"]));
+            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAccount);
+            logger.info("Handling nomination/dismissal of issuer %s", issuerAccount.address);
+            if(!nominated) {
+                this.verifiedIssuerSelectionService.unselectAll(issuerAccount);
             }
+            this.notifyVerifiedIssuerNominatedDismissed({
+                legalOfficerAddress,
+                nominated,
+                issuer: identityLoc.getDescription().userIdentity,
+            });
         }
     }
 
-    private async getIssuerIdentityLoc(legalOfficerAddress: ValidAccountId, issuerAddress: string) {
-        const api = await this.polkadotService.readyApi();
-        const verifiedIssuer = await api.polkadot.query.logionLoc.verifiedIssuersMap(legalOfficerAddress.address, issuerAddress);
-        if(verifiedIssuer.isNone) {
-            throw new Error(`${issuerAddress} is not an issuer of LO ${legalOfficerAddress}`);
-        }
-
-        const identityLocId = api.adapters.fromLocId(verifiedIssuer.unwrap().identityLoc);
-        const identityLoc = await this.locRequestRepository.findById(identityLocId.toString());
-        if(!identityLoc) {
+    private async getIssuerIdentityLoc(legalOfficerAddress: ValidAccountId, issuerAddress: ValidAccountId): Promise<LocRequestAggregateRoot> {
+        const identityLocs = await this.locRequestRepository.findBy({
+            expectedLocTypes: [ "Identity" ],
+            expectedIdentityLocType: "Polkadot",
+            expectedOwnerAddress: [ legalOfficerAddress ],
+            expectedRequesterAddress: issuerAddress,
+            expectedStatuses: [ "CLOSED" ]
+        });
+        if(identityLocs.length < 1) {
             throw new Error("No Identity LOC available for issuer");
         }
-        return identityLoc;
+        return identityLocs[0];
     }
 
     private async notifyVerifiedIssuerNominatedDismissed(args: {
@@ -283,13 +280,13 @@ export class LocSynchronizer {
     private async handleIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
         const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
         if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
-            const issuerAddress = Adapters.asString(extrinsic.call.args["issuer"]);
-            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAddress);
+            const issuerAccount = ValidAccountId.polkadot(Adapters.asString(extrinsic.call.args["issuer"]));
+            const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAccount);
             const selected = extrinsic.call.args["selected"] as boolean;
             const requestId = extractUuid("loc_id", extrinsic.call.args);
             const locRequest = requireDefined(await this.locRequestRepository.findById(requestId));
 
-            logger.info("Handling selection/unselection of issuer %s", issuerAddress);
+            logger.info("Handling selection/unselection of issuer %s", issuerAccount.address);
             this.verifiedIssuerSelectionService.selectUnselect(locRequest, identityLoc, selected);
             this.notifyVerifiedIssuerSelectedUnselected({
                 legalOfficerAddress,

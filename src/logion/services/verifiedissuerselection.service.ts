@@ -2,6 +2,7 @@ import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 import { LocRequestAggregateRoot } from "../model/locrequest.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionFactory, VerifiedIssuerSelectionId, VerifiedIssuerSelectionRepository } from "../model/verifiedissuerselection.model.js";
+import { ValidAccountId } from "@logion/node-api";
 
 export abstract class VerifiedIssuerSelectionService {
 
@@ -29,8 +30,8 @@ export abstract class VerifiedIssuerSelectionService {
         } // else (!selection && !select) -> skip
     }
 
-    async unselectAll(issuerAddress: string) {
-        await this.verifiedIssuerSelectionRepository.unselectAll(issuerAddress);
+    async unselectAll(issuerAccount: ValidAccountId) {
+        await this.verifiedIssuerSelectionRepository.unselectAll(issuerAccount);
     }
 }
 
@@ -55,8 +56,8 @@ export class TransactionalVerifiedIssuerSelectionService extends VerifiedIssuerS
     }
 
     @DefaultTransactional()
-    async unselectAll(issuerAddress: string) {
-        return super.unselectAll(issuerAddress);
+    async unselectAll(issuerAccount: ValidAccountId) {
+        return super.unselectAll(issuerAccount);
     }
 }
 

@@ -60,7 +60,7 @@ describe("VerifiedIssuerSelectionRepository - write", () => {
     });
 
     it("unselects by issuer LOC ID", async () => {
-        await repository.unselectAll("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX");
+        await repository.unselectAll(ValidAccountId.polkadot("5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX"));
         checkNumOfRows(`SELECT * FROM issuer_selection WHERE issuer = '5EBxoSssqNo23FvsDeUxjyQScnfEiGxJaNwuwqBH2Twe35BX' AND selected IS TRUE`, 0);
     });
 });
