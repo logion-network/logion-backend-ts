@@ -1037,6 +1037,8 @@ export class LocRequestAggregateRoot {
             throw new Error(`Too many secrets (max 10)`);
         }
         const secret = new RecoverableSecretEntity();
+        secret.requestId = this.id;
+        secret.request = this;
         secret.name = name;
         secret.value = value;
         secret._toAdd = true;

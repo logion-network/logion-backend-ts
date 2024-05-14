@@ -10,6 +10,7 @@ import {
     LocType,
     LocFileDelivered,
     RecoverableSecretEntity,
+    LocRequestStatus,
 } from "../../../src/logion/model/locrequest.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
@@ -294,6 +295,17 @@ describe('LocRequestRepository - read accesses', () => {
         );
         expect(request).not.toBeDefined();
     })
+
+    it("finds secrets", async () => {
+        const loc = await repository.findById(collectionLocId);
+        expect(loc).not.toBeNull();
+        const secrets = loc?.getSecrets(ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"));
+        expect(secrets?.length).toBe(1);
+        if(secrets) {
+            expect(secrets[0].name).toBe("Key");
+            expect(secrets[0].value).toBe("Encrypted content");
+        }
+    })
 })
 
 describe('LocRequestRepository.save()', () => {
@@ -388,6 +400,26 @@ describe('LocRequestRepository.save()', () => {
         expect(updatedRequest?.voidInfo?.reason).toBeNull()
 
     })
+
+    it("adds then removes secret", async() => {
+        const id = uuid();
+        const locRequest = givenLoc(id, "Identity", "CLOSED");
+        await service.addNewRequest(locRequest);
+        const name = "Key";
+        const value = "Encrypted content";
+        await service.update(id, async request => {
+            request.addSecret(name, value);
+        });
+        let updatedRequest = await repository.findById(id);
+        expect(updatedRequest?.secrets?.length).toBe(1);
+
+        await service.update(id, async request => {
+            request.removeSecret(name);
+        });
+        updatedRequest = await repository.findById(id);
+        expect(updatedRequest?.secrets?.length).toBe(0);
+
+    })
 })
 
 describe('LocRequestRepository - LOC correctly ordered', () => {
@@ -427,7 +459,7 @@ describe('LocRequestRepository - LOC correctly ordered', () => {
     });
 });
 
-function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRequestAggregateRoot {
+function givenLoc(id: string, locType: LocType, status: LocRequestStatus): LocRequestAggregateRoot {
     const locRequest = new LocRequestAggregateRoot();
     locRequest.id = id;
     locRequest.requester = EmbeddableNullableAccountId.from(requester)
@@ -435,7 +467,7 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
     locRequest.description = "I want to open a case"
     locRequest.locType = locType
     locRequest.createdOn = moment().toISOString()
-    locRequest.status = status
+    locRequest.status = "DRAFT";
     locRequest.fees = new EmbeddableLocFees()
     locRequest.fees.legalFee = "42"
     if(locType === "Collection") {
@@ -466,7 +498,10 @@ function givenLoc(id: string, locType: LocType, status: "OPEN" | "DRAFT"): LocRe
         name: "itemName",
         value: "something valuable",
         submitter: SUBMITTER,
-    }, "MANUAL_BY_USER")
+    }, "MANUAL_BY_USER");
+
+    locRequest.status = status;
+
     return locRequest;
 }
 
