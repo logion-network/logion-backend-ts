@@ -17,7 +17,6 @@ import { OpenAPIV3 } from "express-oas-generator";
 import moment from "moment";
 import {
     LocRequestRepository,
-    FileDescription,
     LocRequestAggregateRoot,
     LocFileDelivered
 } from "../model/locrequest.model.js";
@@ -49,6 +48,7 @@ import { OwnershipCheckService } from "../services/ownershipcheck.service.js";
 import { RestrictedDeliveryService } from "../services/restricteddelivery.service.js";
 import { downloadAndClean } from "../lib/http.js";
 import { LocRequestService } from "../services/locrequest.service.js";
+import { FileDescription } from "../model/loc_items.js";
 
 type CollectionItemView = components["schemas"]["CollectionItemView"];
 type CollectionItemsView = components["schemas"]["CollectionItemsView"];

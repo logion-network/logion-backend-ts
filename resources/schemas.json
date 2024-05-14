@@ -7,6 +7,19 @@
     "paths": {},
     "components": {
         "schemas": {
+            "AddSecretView": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "description": "Recoverable secret's name"
+                    },
+                    "value": {
+                        "type": "string",
+                        "description": "Recoverable secret"
+                    }
+                }
+            },
             "Submittable": {
                 "type": "object",
                 "properties": {
@@ -1036,6 +1049,13 @@
                     },
                     "collectionParams": {
                         "$ref": "#/components/schemas/CollectionParamsView"
+                    },
+                    "secrets": {
+                        "type": "array",
+                        "description": "The recoverable secrets attached to this LOC",
+                        "items": {
+                            "$ref": "#/components/schemas/AddSecretView"
+                        }
                     }
                 },
                 "title": "LocRequestView",

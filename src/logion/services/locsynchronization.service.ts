@@ -1,9 +1,9 @@
 import { injectable } from 'inversify';
 import { UUID, Adapters, Fees, Hash, Lgnt, ValidAccountId } from "@logion/node-api";
-import { Log, PolkadotService, requireDefined } from "@logion/rest-api-core";
+import { Log, requireDefined } from "@logion/rest-api-core";
 import { Moment } from "moment";
 
-import { EMPTY_ITEMS, LocItems, LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../model/locrequest.model.js';
 import { JsonExtrinsic, toString, extractUuid } from "./types/responses/Extrinsic.js";
 import { LocRequestService } from './locrequest.service.js';
 import { CollectionService } from './collection.service.js';
@@ -12,6 +12,7 @@ import { NotificationService } from './notification.service.js';
 import { DirectoryService } from './directory.service.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
+import { EMPTY_ITEMS, LocItems } from '../model/loc_items.js';
 
 const { logger } = Log;
 
@@ -24,7 +25,6 @@ export class LocSynchronizer {
         private collectionService: CollectionService,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
-        private polkadotService: PolkadotService,
         private verifiedIssuerSelectionService: VerifiedIssuerSelectionService,
         private tokensRecordService: TokensRecordService,
     ) {}

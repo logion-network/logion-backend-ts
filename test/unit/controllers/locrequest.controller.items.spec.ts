@@ -9,8 +9,6 @@ import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { Mock, It, Times } from "moq.ts";
 import {
     LocRequestAggregateRoot,
-    LinkDescription,
-    MetadataItemDescription, FileDescription, SubmissionType,
 } from "../../../src/logion/model/locrequest.model.js";
 import { fileExists } from "../../helpers/filehelper.js";
 import {
@@ -30,6 +28,8 @@ import {
 } from "./locrequest.controller.shared.js";
 import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/dist/TestApp.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
+import { SubmissionType } from "../../../src/logion/model/loc_lifecycle.js";
+import { FileDescription, LinkDescription, MetadataItemDescription } from "../../../src/logion/model/loc_items.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 

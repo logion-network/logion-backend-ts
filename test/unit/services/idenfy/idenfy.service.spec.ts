@@ -1,6 +1,6 @@
 import { AxiosInstance, AxiosRequestConfig, AxiosResponse, AxiosResponseHeaders, CreateAxiosDefaults } from "axios";
 import { It, Mock, PlayTimes, Times } from "moq.ts";
-import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository, FileDescription } from "src/logion/model/locrequest.model.js";
+import { LocRequestAggregateRoot, LocRequestRepository } from "src/logion/model/locrequest.model.js";
 import { AxiosFactory } from "src/logion/services/axiosfactory.service.js";
 import { FileStorageService } from "src/logion/services/file.storage.service.js";
 import { LocRequestService } from "src/logion/services/locrequest.service.js";
@@ -15,6 +15,8 @@ import { NonTransactionalLocRequestService } from "../../../../src/logion/servic
 import { Readable } from "stream";
 import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
 import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
+import { FileDescription } from "src/logion/model/loc_items.js";
+import { LocRequestDescription } from "src/logion/model/loc_vos.js";
 
 describe("DisabledIdenfyService", () => {
 

@@ -9,17 +9,18 @@ import {
     LocLink,
     LocType,
     LocFileDelivered,
-    EmbeddableLocFees,
+    RecoverableSecretEntity,
 } from "../../../src/logion/model/locrequest.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { v4 as uuid } from "uuid";
 import { LocRequestService, TransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { Hash, UUID, ValidAccountId } from "@logion/node-api";
 import { EmbeddableNullableAccountId, DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
+import { EmbeddableLocFees } from "../../../src/logion/model/loc_fees.js";
 
 const SUBMITTER = ValidAccountId.polkadot("129ZYz7x64MKMrW3SQsTBUCRMLCAmRaYeXEzkRmd9qoGbqQi");
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
-const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered ];
+const ENTITIES = [ LocRequestAggregateRoot, LocFile, LocMetadataItem, LocLink, LocFileDelivered, RecoverableSecretEntity ];
 const hash = Hash.fromHex("0x1307990e6ba5ca145eb35e99182a9bec46531bc54ddf656a602c780fa0240dee");
 const anotherHash = Hash.fromHex("0x5a60f0a435fa1c508ccc7a7dd0a0fe8f924ba911b815b10c9ef0ddea0c49052e");
 const collectionLocId = "15ed922d-5960-4147-a73f-97d362cb7c46";

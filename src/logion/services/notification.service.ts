@@ -36,6 +36,7 @@ export const templateValues = [
     "sof-requested",
     "review-requested",
     "data-reviewed",
+    "recoverable-secret-added",
 ] as const;
 
 export type Template = typeof templateValues[number];

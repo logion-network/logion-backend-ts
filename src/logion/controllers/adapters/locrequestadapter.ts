@@ -4,9 +4,6 @@ import { IdenfyService } from "../../services/idenfy/idenfy.service.js";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
-    ItemLifecycle,
-    LocFees,
-    CollectionParams
 } from "../../model/locrequest.model.js";
 import { PostalAddress } from "../../model/postaladdress.js";
 import { UserIdentity } from "../../model/useridentity.js";
@@ -14,6 +11,9 @@ import { components } from "../components.js";
 import { VoteRepository, VoteAggregateRoot } from "../../model/vote.model.js";
 import { VerifiedIssuerAggregateRoot, VerifiedIssuerSelectionRepository } from "../../model/verifiedissuerselection.model.js";
 import { Fees, ValidAccountId, AccountId } from "@logion/node-api";
+import { ItemLifecycle } from "src/logion/model/loc_lifecycle.js";
+import { LocFees } from "src/logion/model/loc_fees.js";
+import { CollectionParams } from "src/logion/model/loc_vos.js";
 
 export type UserPrivateData = {
     identityLocId: string | undefined,
@@ -122,6 +122,7 @@ export class LocRequestAdapter {
             sponsorshipId: locDescription.sponsorshipId?.toString(),
             fees: this.toLocFeesView(locDescription.fees),
             collectionParams: this.toCollectionParamsView(locDescription.collectionParams),
+            secrets: request.getSecrets(viewer),
         };
         const voidInfo = request.getVoidInfo();
         if(voidInfo !== null) {

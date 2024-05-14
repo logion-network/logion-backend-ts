@@ -3,7 +3,7 @@ const { connect, disconnect, queryRunner, runAllMigrations, revertAllMigrations 
 
 describe('Migration', () => {
 
-    const NUM_OF_TABLES = 22;
+    const NUM_OF_TABLES = 23;
     jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
 
     beforeEach(async () => {

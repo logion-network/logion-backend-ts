@@ -7,7 +7,6 @@ import { LocRequestService } from "../locrequest.service.js";
 import {
     LocRequestAggregateRoot,
     LocRequestRepository,
-    FileParams
 } from "../../model/locrequest.model.js";
 import { IdenfyCallbackPayload, IdenfyCallbackPayloadFileTypes, IdenfyVerificationSession } from "./idenfy.types.js";
 import { createWriteStream } from "fs";
@@ -18,6 +17,7 @@ import crypto from "crypto";
 import { sha256File } from '../../lib/crypto/hashing.js';
 import { FileStorageService } from "../file.storage.service.js";
 import { AxiosFactory } from "../axiosfactory.service.js";
+import { FileParams } from "src/logion/model/loc_items.js";
 
 const { logger } = Log;
 
