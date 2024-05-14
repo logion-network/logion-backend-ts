@@ -18,7 +18,7 @@ import {
     LocRequestRepository,
     LocRequestAggregateRoot,
     LocFile,
-    LocFileDelivered, EmbeddableLifecycle
+    LocFileDelivered,
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import {
@@ -41,6 +41,7 @@ import {
     EmbeddableNullableAccountId
 } from "../../../src/logion/model/supportedaccountid.model.js";
 import { ItIsHash } from "../../helpers/Mock.js";
+import { EmbeddableLifecycle } from "../../../src/logion/model/loc_lifecycle.js";
 
 const collectionLocId = "d61e2e12-6c06-4425-aeee-2a0e969ac14e";
 const collectionLocOwner = ALICE_ACCOUNT;

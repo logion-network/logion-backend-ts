@@ -4,9 +4,9 @@ import {
 } from "../../../src/logion/model/protectionrequest.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
-import { LocRequestDescription, LocRequestDecision } from "../../../src/logion/model/locrequest.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
+import { LocRequestDecision, LocRequestDescription } from "src/logion/model/loc_vos.js";
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     requesterAddress: ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"),

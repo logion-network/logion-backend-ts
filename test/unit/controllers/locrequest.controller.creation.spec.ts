@@ -291,7 +291,7 @@ function mockModelForCreationWithLogionIdentityLoc(container: Container): void {
     mockLogionIdentityLoc(repository, true);
     mockPolkadotIdentityLoc(repository, false);
 
-    const request = mockRequest("REVIEW_PENDING", { ...testDataWithLogionIdentity, requesterIdentityLocId: testDataWithLogionIdentity.requesterIdentityLoc });
+    const request = mockRequest("REVIEW_PENDING", testDataWithLogionIdentity);
     factory.setup(instance => instance.newLOLocRequest(It.Is<NewLocRequestParameters>(params =>
         params.description.requesterIdentityLoc === userIdentities["Logion"].identityLocId &&
         params.description.ownerAddress.equals(ALICE_ACCOUNT)

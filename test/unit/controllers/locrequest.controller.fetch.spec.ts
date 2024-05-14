@@ -4,11 +4,7 @@ import { Container } from "inversify";
 import request from "supertest";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import {
-    FileDescription,
-    LinkDescription,
-    MetadataItemDescription,
     LocType,
-    LocRequestDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import moment from "moment";
 import {
@@ -34,6 +30,8 @@ import { mockAuthenticationForUserOrLegalOfficer } from "@logion/rest-api-core/d
 import { UserPrivateData } from "src/logion/controllers/adapters/locrequestadapter.js";
 import { Fees, Hash, Lgnt } from "@logion/node-api";
 import { ValidAccountId } from "@logion/node-api";
+import { LocRequestDescription } from "src/logion/model/loc_vos.js";
+import { FileDescription, LinkDescription, MetadataItemDescription } from "src/logion/model/loc_items.js";
 
 const { mockAuthenticationWithCondition, setupApp } = TestApp;
 

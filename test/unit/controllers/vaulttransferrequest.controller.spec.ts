@@ -25,9 +25,10 @@ import {
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
-import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
 import { LogionNodeApiClass, ValidAccountId } from '@logion/node-api';
 import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
+import { LocRequestDescription } from 'src/logion/model/loc_vos.js';
 
 const { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser, mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode } = TestApp;
 

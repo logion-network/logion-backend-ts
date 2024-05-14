@@ -22,10 +22,11 @@ import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalProtectionRequestService, ProtectionRequestService } from '../../../src/logion/services/protectionrequest.service.js';
-import { LocRequestAggregateRoot, LocRequestDescription, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
 import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locrequestadapter.js";
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
+import { LocRequestDescription } from 'src/logion/model/loc_vos.js';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;

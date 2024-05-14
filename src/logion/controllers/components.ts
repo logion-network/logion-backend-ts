@@ -13,6 +13,12 @@ export type webhooks = Record<string, never>;
 
 export interface components {
   schemas: {
+    AddSecretView: {
+      /** @description Recoverable secret's name */
+      name?: string;
+      /** @description Recoverable secret */
+      value?: string;
+    };
     Submittable: {
       /** @description The address of the submitter */
       submitter?: components["schemas"]["SupportedAccountId"];
@@ -555,6 +561,8 @@ export interface components {
       sponsorshipId?: string;
       fees?: components["schemas"]["LocFeesView"];
       collectionParams?: components["schemas"]["CollectionParamsView"];
+      /** @description The recoverable secrets attached to this LOC */
+      secrets?: components["schemas"]["AddSecretView"][];
     };
     /**
      * LocPublicView

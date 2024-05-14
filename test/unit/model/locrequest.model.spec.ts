@@ -2,20 +2,11 @@ import { v4 as uuid } from "uuid";
 import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import moment, { Moment } from "moment";
 import {
-    LocRequestDescription,
     LocRequestFactory,
     LocRequestAggregateRoot,
     LocRequestStatus,
-    FileDescription,
-    MetadataItemDescription,
-    LinkDescription,
-    VoidInfo,
     LocType,
     LocRequestRepository,
-    MetadataItemParams,
-    ItemStatus,
-    FileParams,
-    LinkParams, SubmissionType, EMPTY_ITEMS
 } from "../../../src/logion/model/locrequest.model.js";
 import { UserIdentity } from "../../../src/logion/model/useridentity.js";
 import { Mock, It } from "moq.ts";
@@ -31,6 +22,10 @@ import { IdenfyVerificationSession, IdenfyVerificationStatus } from "src/logion/
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { POLKADOT_REQUESTER } from "../controllers/locrequest.controller.shared.js";
 import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
+import { ItemStatus, SubmissionType } from "../../../src/logion/model/loc_lifecycle.js";
+import { EMPTY_ITEMS, FileDescription, FileParams, LinkDescription, LinkParams, MetadataItemDescription, MetadataItemParams } from "../../../src/logion/model/loc_items.js";
+import { LocRequestDescription } from "../../../src/logion/model/loc_vos.js";
+import { VoidInfo } from "../../../src/logion/model/loc_void.js";
 
 const SUBMITTER = ValidAccountId.polkadot("vQtS4iX2RGv5ERHZVg7Xsi54Qw5wXkQkK4tuNt7nTVVn8F6AN");
 
@@ -2023,7 +2018,66 @@ const ACCEPTED_ON = moment().add(1, "minute");
 const VOID_REASON = "Some good reason";
 const VOIDED_ON = moment();
 
-function givenPreVoidedRequest(status: LocRequestStatus) {
+describe("LocRequestAggregateRoot (secrets)", () => {
+
+    it("adds and exposes secret", () => {
+        givenRequestWithStatus('CLOSED', "Identity");
+
+        request.addSecret("name", "value");
+
+        expect(request.getSecretOrThrow("name")).toBe("value");
+        expect(request.hasSecret("name")).toBe(true);
+        const secrets = request.getSecrets(SUBMITTER);
+        expect(secrets.length).toBe(1);
+        expect(secrets[0].name).toBe("name");
+        expect(secrets[0].value).toBe("value");
+    });
+
+    it("does not accept several secrets with same name", () => {
+        givenRequestWithStatus('CLOSED', "Identity");
+
+        request.addSecret("name", "value1");
+
+        expect(() => request.addSecret("name", "value2")).toThrowError("A secret with name 'name' already exists");
+    });
+
+    it("removes secret", () => {
+        givenRequestWithStatus('CLOSED', "Identity");
+        request.addSecret("name", "value");
+
+        request.removeSecret("name");
+
+        expect(() => request.getSecretOrThrow("name")).toThrowError("There is no secret with name 'name'");
+        expect(request.hasSecret("name")).toBe(false);
+    });
+
+    it("cannot add secret to open LOC", () => {
+        givenRequestWithStatus('OPEN', "Identity");
+        expect(() => request.addSecret("name", "value")).toThrowError("Secrets can only be added to a valid Identity LOC");
+    });
+
+    it("cannot add secret to closed Collection LOC", () => {
+        givenRequestWithStatus('CLOSED', "Collection");
+        expect(() => request.addSecret("name", "value")).toThrowError("Secrets can only be added to a valid Identity LOC");
+    });
+
+    it("cannot add secret to closed Transaction LOC", () => {
+        givenRequestWithStatus('CLOSED', "Transaction");
+        expect(() => request.addSecret("name", "value")).toThrowError("Secrets can only be added to a valid Identity LOC");
+    });
+
+    it("cannot add secret to void LOC", () => {
+        givenPreVoidedRequest('CLOSED', "Identity");
+        expect(() => request.addSecret("name", "value")).toThrowError("Secrets can only be added to a valid Identity LOC");
+    });
+
+    it("fails when trying to remove unknown secret", () => {
+        givenPreVoidedRequest('CLOSED', "Identity");
+        expect(() => request.removeSecret("name")).toThrowError("There is no secret with name 'name'");
+    });
+})
+
+function givenPreVoidedRequest(status: LocRequestStatus, locType?: LocType) {
     givenRequestWithStatus(status);
     request.voidInfo = {
         reason: VOID_REASON
@@ -2035,14 +2089,19 @@ function givenVoidedRequest(status: LocRequestStatus) {
     request.voidInfo!.voidedOn = VOIDED_ON.toISOString();
 }
 
-function givenRequestWithStatus(status: LocRequestStatus) {
+function givenRequestWithStatus(status: LocRequestStatus, locType?: LocType) {
     request = new LocRequestAggregateRoot();
     request.status = status;
     request.files = [];
     request.metadata = [];
     request.links = [];
+    request.secrets = [];
     request.ownerAddress = OWNER;
     request.requester = EmbeddableNullableAccountId.from(SUBMITTER)
+
+    if(locType) {
+        request.locType = locType;
+    }
 }
 
 const OWNER_ACCOUNT = ALICE_ACCOUNT;

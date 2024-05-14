@@ -8,12 +8,8 @@ import {
     LocRequestFactory,
     LocRequestAggregateRoot,
     LocRequestStatus,
-    FileDescription,
-    LinkDescription,
-    MetadataItemDescription,
     LocType,
     FetchLocRequestsSpecification,
-    LocRequestDescription,
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
@@ -34,6 +30,8 @@ import { VerifiedIssuerSelectionRepository } from "../../../src/logion/model/ver
 import { LocAuthorizationService } from "../../../src/logion/services/locauthorization.service.js";
 import { EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { SponsorshipService } from "../../../src/logion/services/sponsorship.service.js";
+import { LocRequestDescription, RecoverableSecret } from "src/logion/model/loc_vos.js";
+import { FileDescription, LinkDescription, MetadataItemDescription } from "../../../src/logion/model/loc_items.js";
 
 export type IdentityLocation = "Logion" | "Polkadot" | 'EmbeddedInLoc';
 export const POLKADOT_REQUESTER = ValidAccountId.polkadot("5CXLTF2PFBE89tTYsrofGPkSfGTdmW4ciw4vAfgcKhjggRgZ");
@@ -258,12 +256,14 @@ function mockOtherDependencies(container: Container, existingMocks?: {
 
 export function mockRequest(
     status: LocRequestStatus,
-    data: any,
+    description: Partial<LocRequestDescription>,
     files: FileDescription[] = [],
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
+    secrets: RecoverableSecret[] = [],
+    locType: LocType | undefined = undefined,
 ): Mock<LocRequestAggregateRoot> {
-    return mockRequestWithId(REQUEST_ID, undefined, status, data, files, metadataItems, links)
+    return mockRequestWithId(REQUEST_ID, locType, status, description, files, metadataItems, links, secrets)
 }
 
 export const REQUEST_ID = "3e67427a-d80f-41d7-9c86-75a63b8563a1";
@@ -276,9 +276,10 @@ export function mockRequestWithId(
     files: FileDescription[] = [],
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
+    secrets: RecoverableSecret[] = [],
 ): Mock<LocRequestAggregateRoot> {
     const request = new Mock<LocRequestAggregateRoot>();
-    setupRequest(request, id, locType, status, description, files, metadataItems, links);
+    setupRequest(request, id, locType, status, description, files, metadataItems, links, secrets);
     return request;
 }
 
@@ -291,6 +292,7 @@ export function setupRequest(
     files: FileDescription[] = [],
     metadataItems: MetadataItemDescription[] = [],
     links: LinkDescription[] = [],
+    secrets: RecoverableSecret[] = [],
 ) {
     if (locType) {
         request.setup(instance => instance.locType)
@@ -317,6 +319,7 @@ export function setupRequest(
     request.setup(instance => instance.getLinks(It.IsAny())).returns(links);
     request.setup(instance => instance.getLinks()).returns(links);
     request.setup(instance => instance.getVoidInfo()).returns(null);
+    request.setup(instance => instance.getSecrets(It.IsAny())).returns(secrets);
     mockOwner(request, description.ownerAddress || ALICE_ACCOUNT)
     if (description.requesterAddress) {
         mockRequester(request, description.requesterAddress);

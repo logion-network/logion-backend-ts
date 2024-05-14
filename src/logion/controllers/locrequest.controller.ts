@@ -8,18 +8,8 @@ import { components } from "./components.js";
 import {
     LocRequestRepository,
     LocRequestFactory,
-    LocRequestDescription,
     LocRequestAggregateRoot,
     FetchLocRequestsSpecification,
-    LocRequestDecision,
-    FileDescription,
-    MetadataItemParams,
-    FileParams,
-    StoredFile,
-    LinkParams,
-    SubmissionType,
-    LocFees,
-    CollectionParams
 } from "../model/locrequest.model.js";
 import {
     getRequestBody,
@@ -56,6 +46,10 @@ import { SponsorshipService } from "../services/sponsorship.service.js";
 import { Hash } from "../lib/crypto/hashing.js";
 import { toBigInt } from "../lib/convert.js";
 import { LocalsObject } from "pug";
+import { SubmissionType } from "../model/loc_lifecycle.js";
+import { CollectionParams, LocRequestDecision, LocRequestDescription } from "../model/loc_vos.js";
+import { LocFees } from "../model/loc_fees.js";
+import { FileDescription, FileParams, LinkParams, MetadataItemParams, StoredFile } from "../model/loc_items.js";
 
 const { logger } = Log;
 
@@ -110,6 +104,8 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     LocRequestController.submitLocRequest(spec);
     LocRequestController.cancelLocRequest(spec);
     LocRequestController.reworkLocRequest(spec);
+    LocRequestController.addSecret(spec);
+    LocRequestController.removeSecret(spec);
 }
 
 type CreateLocRequestView = components["schemas"]["CreateLocRequestView"];
@@ -131,6 +127,7 @@ type CloseView = components["schemas"]["CloseView"];
 type OpenView = components["schemas"]["OpenView"];
 type LocFeesView = components["schemas"]["LocFeesView"];
 type CollectionParamsView = components["schemas"]["CollectionParamsView"];
+type AddSecretView = components["schemas"]["AddSecretView"];
 
 @injectable()
 @Controller('/loc-request')
@@ -1566,5 +1563,90 @@ export class LocRequestController extends ApiController {
                 walletUser: userIdentity,
             }
         }
+    }
+
+    static addSecret(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/secrets"].post!;
+        operationObject.summary = "Creates a new recoverable secret";
+        operationObject.description = "The authenticated user must be the LOC requester";
+        operationObject.requestBody = getRequestBody({
+            description: "Secret creation data",
+            view: "AddSecretView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+        });
+    }
+
+    @Async()
+    @HttpPost('/:requestId/secrets')
+    @SendsResponse()
+    async addSecret(body: AddSecretView, requestId: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+
+        const name = requireDefined(body.name, () => badRequest("Missing recoverable secret name"));
+        const value = requireDefined(body.value, () => badRequest("Missing recoverable secret value"));
+        const request = await this.locRequestService.update(requestId, async request => {
+            if(!request.isRequester(authenticatedUser.validAccountId)) {
+                throw unauthorized("Only requester can add recoverable secrets");
+            }
+            try {
+                request.addSecret(name, value);
+            } catch(e) {
+                if(e instanceof Error) {
+                    throw badRequest(e.message);
+                } else {
+                    throw e;
+                }
+            }
+        });
+
+        const description = request.getDescription();
+        const userIdentity = requireDefined(description.userIdentity);
+        this.getNotificationInfo(description, userIdentity)
+            .then(info => this.notificationService.notify(info.legalOfficerEMail, "recoverable-secret-added", {
+                ...info.data,
+                secretName: name,
+            }))
+            .catch(error => logger.error(error));
+
+        this.response.sendStatus(204);
+    }
+
+    static removeSecret(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/loc-request/{requestId}/secrets/{secretName}"].delete!;
+        operationObject.summary = "Removes an existing recoverable secret";
+        operationObject.description = "The authenticated user must be the LOC requester";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, {
+            'requestId': "The ID of the LOC",
+            'secretName': "The secret's name"
+        });
+    }
+
+    @Async()
+    @HttpDelete('/:requestId/secrets/:secretName')
+    @SendsResponse()
+    async removeSecret(_body: never, requestId: string, secretName: string) {
+        const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
+
+        const decodedSecretName = decodeURIComponent(secretName);
+        await this.locRequestService.update(requestId, async request => {
+            if(!request.isRequester(authenticatedUser.validAccountId)) {
+                throw unauthorized("Only requester can add recoverable secrets");
+            }
+            try {
+                request.removeSecret(decodedSecretName);
+            } catch(e) {
+                if(e instanceof Error) {
+                    throw badRequest(e.message);
+                } else {
+                    throw e;
+                }
+            }
+        });
+
+        this.response.sendStatus(204);
     }
 }

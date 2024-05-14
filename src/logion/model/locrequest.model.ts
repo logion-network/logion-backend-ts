@@ -8,15 +8,14 @@ import { appDataSource, Log, requireDefined, badRequest } from "@logion/rest-api
 
 import { components } from "../controllers/components.js";
 import { EmbeddableUserIdentity, toUserIdentity, UserIdentity } from "./useridentity.js";
-import { orderAndMap, HasIndex, isTruthy } from "../lib/db/collections.js";
-import { deleteIndexedChild, Child, saveIndexedChildren, saveChildren } from "./child.js";
+import { orderAndMap, HasIndex } from "../lib/db/collections.js";
+import { deleteIndexedChild, Child, saveIndexedChildren, saveChildren, deleteChild } from "./child.js";
 import { EmbeddablePostalAddress, PostalAddress } from "./postaladdress.js";
-import { LATEST_SEAL_VERSION, PersonalInfoSealService, PublicSeal, Seal } from "../services/seal.service.js";
+import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal } from "../services/seal.service.js";
 import { PersonalInfo } from "./personalinfo.model.js";
 import {
     IdenfyCallbackPayload,
     IdenfyVerificationSession,
-    IdenfyVerificationStatus
 } from "../services/idenfy/idenfy.types.js";
 import { AMOUNT_PRECISION, EmbeddableStorageFees } from "./fees.js";
 import {
@@ -26,394 +25,15 @@ import {
 } from "./supportedaccountid.model.js";
 import { SelectQueryBuilder } from "typeorm/query-builder/SelectQueryBuilder.js";
 import { Hash, HashTransformer } from "../lib/crypto/hashing.js";
-import { toBigInt } from "../lib/convert.js";
+import { EmbeddableLifecycle, ItemStatus, SubmissionType } from "./loc_lifecycle.js";
+import { LocRequestDecision, LocRequestDescription, RecoverableSecret } from "./loc_vos.js";
+import { EmbeddableSeal, toPublicSeal } from "./loc_seal.js";
+import { EmbeddableLocFees } from "./loc_fees.js";
+import { EmbeddableVoidInfo, VoidInfo } from "./loc_void.js";
+import { FileDescription, FileParams, LinkDescription, LinkParams, LocItems, MetadataItemDescription, MetadataItemParams, StoredFile, Submitted } from "./loc_items.js";
+import { EmbeddableIdenfyVerification } from "./idenfy.js";
 
 const { logger } = Log;
-
-export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
-export type LocType = components["schemas"]["LocType"];
-export type IdentityLocType = components["schemas"]["IdentityLocType"];
-export type ItemStatus = components["schemas"]["ItemStatus"];
-
-export interface LocFees {
-    readonly valueFee?: bigint;
-    readonly legalFee?: bigint;
-    readonly collectionItemFee?: bigint;
-    readonly tokensRecordFee?: bigint;
-}
-
-export interface CollectionParams {
-    lastBlockSubmission: bigint | undefined;
-    maxSize: number | undefined;
-    canUpload: boolean;
-}
-
-export interface LocRequestDescription {
-    readonly requesterAddress?: ValidAccountId;
-    readonly requesterIdentityLoc?: string;
-    readonly ownerAddress: ValidAccountId;
-    readonly description: string;
-    readonly createdOn: string;
-    readonly userIdentity: UserIdentity | undefined;
-    readonly userPostalAddress: PostalAddress | undefined;
-    readonly locType: LocType;
-    readonly seal?: PublicSeal;
-    readonly company?: string;
-    readonly template?: string;
-    readonly sponsorshipId?: UUID;
-    readonly fees: LocFees;
-    readonly collectionParams?: CollectionParams;
-}
-
-export interface LocRequestDecision {
-    readonly decisionOn: string;
-    readonly rejectReason?: string;
-}
-
-interface FileDescriptionMandatoryFields {
-    readonly name: string;
-    readonly hash: Hash;
-    readonly submitter: ValidAccountId;
-    readonly restrictedDelivery: boolean;
-    readonly size: number;
-}
-
-export interface FileParams extends FileDescriptionMandatoryFields {
-    readonly cid?: string;
-    readonly contentType?: string;
-    readonly nature: string;
-}
-
-export interface StoredFile {
-    readonly name: string;
-    readonly size: number;
-    readonly cid?: string;
-    readonly contentType?: string;
-}
-
-export interface FileDescription extends FileDescriptionMandatoryFields, ItemLifecycle {
-    readonly oid?: number;
-    readonly cid?: string;
-    readonly contentType?: string;
-    readonly nature?: string;
-    readonly fees?: Fees;
-    readonly storageFeePaidBy?: string;
-}
-
-interface MetadataItemDescriptionMandatoryFields {
-    readonly submitter: ValidAccountId;
-}
-
-export interface MetadataItemParams extends MetadataItemDescriptionMandatoryFields {
-    readonly name: string;
-    readonly value: string;
-}
-
-export interface MetadataItemDescription extends MetadataItemDescriptionMandatoryFields, ItemLifecycle {
-    readonly name?: string;
-    readonly nameHash: Hash;
-    readonly value?: string;
-    readonly fees?: Fees;
-}
-
-export interface ItemLifecycle {
-    readonly status: ItemStatus;
-    readonly rejectReason?: string;
-    readonly reviewedOn?: Moment;
-    readonly addedOn?: Moment;
-    readonly acknowledgedByOwnerOn?: Moment;
-    readonly acknowledgedByVerifiedIssuerOn?: Moment;
-}
-
-export interface LinkParams {
-    readonly target: string;
-    readonly nature: string;
-    readonly submitter: ValidAccountId;
-}
-
-export interface LinkDescription extends LinkParams, ItemLifecycle {
-    readonly fees?: Fees;
-}
-
-export interface VoidInfo {
-    readonly reason: string;
-    readonly voidedOn: Moment | null;
-}
-
-export type SubmissionType = "MANUAL_BY_USER" | "MANUAL_BY_OWNER" | "DIRECT_BY_REQUESTER"; // "USER" can be Requester or VI.
-
-export class EmbeddableLifecycle {
-
-    @Column("varchar", { length: 255 })
-    status?: ItemStatus
-
-    @Column("varchar", { length: 255, name: "reject_reason", nullable: true })
-    rejectReason?: string | null;
-
-    @Column("timestamp without time zone", { name: "reviewed_on", nullable: true })
-    reviewedOn?: Date;
-
-    @Column("timestamp without time zone", { name: "added_on", nullable: true })
-    addedOn?: Date;
-
-    @Column("timestamp without time zone", { name: "acknowledged_by_owner_on", nullable: true })
-    acknowledgedByOwnerOn?: Date;
-
-    @Column("boolean", { name: "acknowledged_by_owner", default: false })
-    acknowledgedByOwner?: boolean;
-
-    @Column("timestamp without time zone", { name: "acknowledged_by_verified_issuer_on", nullable: true })
-    acknowledgedByVerifiedIssuerOn?: Date;
-
-    @Column("boolean", { name: "acknowledged_by_verified_issuer", default: false })
-    acknowledgedByVerifiedIssuer?: boolean;
-
-    requestReview() {
-        if (this.status !== "DRAFT") {
-            throw badRequest(`Cannot request a review on item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_PENDING";
-    }
-
-    accept() {
-        if (this.status !== "REVIEW_PENDING") {
-            throw badRequest(`Cannot accept an item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_ACCEPTED";
-        this.reviewedOn = moment().toDate();
-    }
-
-    reject(reason: string) {
-        if (this.status !== "REVIEW_PENDING") {
-            throw badRequest(`Cannot reject an item with status ${ this.status }`);
-        }
-        this.status = "REVIEW_REJECTED";
-        this.rejectReason = reason;
-        this.reviewedOn = moment().toDate();
-    }
-
-    prePublishOrAcknowledge(isAcknowledged: boolean, addedOn?: Moment) {
-        const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
-        if (this.status !== "REVIEW_ACCEPTED" && this.status !== acknowledgedOrPublished) {
-            throw badRequest(`Cannot pre-publish/-acknowledge item with status ${ this.status }`);
-        }
-        this.status = acknowledgedOrPublished;
-        this.addedOn = addedOn?.toDate();
-    }
-
-    cancelPrePublishOrAcknowledge(isAcknowledged: boolean) {
-        const acknowledgedOrPublished = isAcknowledged ? "ACKNOWLEDGED" : "PUBLISHED";
-        if (this.status !== acknowledgedOrPublished) {
-            throw badRequest(`Cannot cancel pre-publish/-acknowledge of item with status ${ this.status }`);
-        }
-        if(this.addedOn) {
-            throw badRequest(`Cannot cancel, published/acknowledged`);
-        }
-        this.status = "REVIEW_ACCEPTED";
-    }
-
-    preAcknowledge(expectVerifiedIssuer: boolean, byVerifiedIssuer: boolean, acknowledgedOn?: Moment) {
-        if (this.status !== "PUBLISHED" && this.status !== "ACKNOWLEDGED") {
-            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
-        }
-        if(byVerifiedIssuer) {
-            this.acknowledgedByVerifiedIssuer = true;
-            this.acknowledgedByVerifiedIssuerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
-        } else {
-            this.acknowledgedByOwner = true;
-            this.acknowledgedByOwnerOn = acknowledgedOn ? acknowledgedOn.toDate() : undefined;
-        }
-        if(
-            (this.acknowledgedByOwner && this.acknowledgedByVerifiedIssuer)
-            || (!expectVerifiedIssuer && this.acknowledgedByOwner)
-        ) {
-            this.status = "ACKNOWLEDGED";
-        }
-    }
-
-    cancelPreAcknowledge(byVerifiedIssuer: boolean) {
-        if (this.status !== "ACKNOWLEDGED") {
-            throw badRequest(`Cannot confirm-acknowledge item with status ${ this.status }`);
-        }
-        if(this.acknowledgedByVerifiedIssuerOn || this.acknowledgedByOwnerOn) {
-            throw badRequest(`Cannot cancel, acknowledged`);
-        }
-        if(byVerifiedIssuer) {
-            this.acknowledgedByVerifiedIssuer = false;
-        } else {
-            this.acknowledgedByOwner = false;
-        }
-        if(this.status === "ACKNOWLEDGED") {
-            this.status = "PUBLISHED";
-        }
-    }
-
-    isAcknowledged(): boolean {
-        return this.status === "ACKNOWLEDGED";
-    }
-
-    isAcknowledgedOnChain(expectVerifiedIssuer: boolean): boolean {
-        return this.isAcknowledged() && (
-            (expectVerifiedIssuer && isTruthy(this.acknowledgedByOwnerOn) && isTruthy(this.acknowledgedByVerifiedIssuerOn))
-            || (!expectVerifiedIssuer && isTruthy(this.acknowledgedByOwnerOn))
-        );
-    }
-
-    isPublished(): boolean {
-        return this.status === "PUBLISHED";
-    }
-
-    isPublishedOnChain(): boolean {
-        return this.isPublished() && isTruthy(this.addedOn);
-    }
-
-    setAddedOn(addedOn: Moment) {
-        if (this.addedOn) {
-            logger.warn("Item added on date is already set");
-        }
-        this.addedOn = addedOn.toDate();
-        if(this.status === "REVIEW_ACCEPTED") {
-            this.status = "PUBLISHED";
-        }
-    }
-
-    getDescription(): ItemLifecycle {
-        return {
-            status: this.status!,
-            rejectReason: this.status === "REVIEW_REJECTED" ? this.rejectReason! : undefined,
-            reviewedOn: this.reviewedOn ? moment(this.reviewedOn) : undefined,
-            addedOn: this.addedOn ? moment(this.addedOn) : undefined,
-            acknowledgedByOwnerOn: this.acknowledgedByOwnerOn ? moment(this.acknowledgedByOwnerOn) : undefined,
-            acknowledgedByVerifiedIssuerOn: this.acknowledgedByVerifiedIssuerOn ? moment(this.acknowledgedByVerifiedIssuerOn) : undefined,
-        }
-    }
-
-    static fromSubmissionType(submissionType: SubmissionType) {
-        const lifecycle = new EmbeddableLifecycle();
-        lifecycle.status =
-            submissionType === "DIRECT_BY_REQUESTER" ? "PUBLISHED" :
-                submissionType === "MANUAL_BY_OWNER" ? "REVIEW_ACCEPTED" : "DRAFT";
-        lifecycle.acknowledgedByOwner = submissionType === "MANUAL_BY_OWNER";
-        lifecycle.acknowledgedByOwnerOn = submissionType === "MANUAL_BY_OWNER" ? moment().toDate() : undefined;
-        lifecycle.acknowledgedByVerifiedIssuer = false;
-        return lifecycle;
-    }
-
-    static default(status: ItemStatus  | undefined) {
-        const lifecycle = new EmbeddableLifecycle();
-        lifecycle.status = status;
-        lifecycle.acknowledgedByOwner = false;
-        lifecycle.acknowledgedByVerifiedIssuer = false;
-        return lifecycle;
-    }
-}
-
-class EmbeddableVoidInfo {
-
-    @Column("text", { name: "void_reason", nullable: true })
-    reason?: string | null;
-
-    @Column("timestamp without time zone", { name: "voided_on", nullable: true })
-    voidedOn?: string | null;
-}
-
-class EmbeddableSeal {
-    @Column({ name: "seal_salt", type: "uuid", nullable: true })
-    salt?: string | null;
-
-    @Column({ name: "seal_hash", type: "varchar", length: 255, nullable: true })
-    hash?: string | null;
-
-    @Column({ name: "seal_version", type: "integer", default: 0 })
-    version?: number | null;
-
-    static from(seal: Seal | undefined): EmbeddableSeal | undefined {
-        if (!seal) {
-            return undefined;
-        }
-        const result = new EmbeddableSeal();
-        result.hash = seal.hash.toHex();
-        result.salt = seal.salt;
-        result.version = seal.version;
-        return result;
-    }
-}
-
-function toPublicSeal(embedded: EmbeddableSeal | undefined): PublicSeal | undefined {
-    return embedded && embedded.hash && embedded.version !== undefined && embedded.version !== null
-        ?
-        {
-            hash: Hash.fromHex(embedded.hash),
-            version: embedded.version
-        }
-        : undefined;
-}
-
-type EmbeddableIdenfyVerificationStatus = 'PENDING' | IdenfyVerificationStatus;
-
-class EmbeddableIdenfyVerification {
-
-    @Column("varchar", { name: "idenfy_auth_token", length: 40, nullable: true })
-    authToken?: string | null;
-
-    @Column("varchar", { name: "idenfy_scan_ref", length: 40, nullable: true })
-    scanRef?: string | null;
-
-    @Column("varchar", { name: "idenfy_status", length: 255, nullable: true })
-    status?: EmbeddableIdenfyVerificationStatus | null;
-
-    @Column("text", { name: "idenfy_callback_payload", nullable: true })
-    callbackPayload?: string | null;
-}
-
-export interface LocItems {
-    metadataNameHashes: Hash[];
-    fileHashes: Hash[];
-    linkTargets: UUID[];
-}
-
-export const EMPTY_ITEMS: LocItems = {
-    fileHashes: [],
-    linkTargets: [],
-    metadataNameHashes: [],
-};
-
-export class EmbeddableLocFees {
-
-    @Column("numeric", { name: "value_fee", precision: AMOUNT_PRECISION, nullable: true })
-    valueFee?: string | null;
-
-    @Column("numeric", { name: "legal_fee", precision: AMOUNT_PRECISION, nullable: true })
-    legalFee?: string | null;
-
-    @Column("numeric", { name: "collection_item_fee", precision: AMOUNT_PRECISION, nullable: true })
-    collectionItemFee?: string | null;
-
-    @Column("numeric", { name: "tokens_record_fee", precision: AMOUNT_PRECISION, nullable: true })
-    tokensRecordFee?: string | null;
-
-    static from(fees: LocFees | undefined): EmbeddableLocFees | undefined {
-        if(fees) {
-            const embeddable = new EmbeddableLocFees();
-            embeddable.valueFee = fees.valueFee?.toString();
-            embeddable.legalFee = fees.legalFee?.toString();
-            embeddable.collectionItemFee = fees.collectionItemFee?.toString();
-            embeddable.tokensRecordFee = fees.tokensRecordFee?.toString();
-            return embeddable;
-        } else {
-            return undefined;
-        }
-    }
-
-    to(): LocFees {
-        return {
-            valueFee: toBigInt(this.valueFee),
-            legalFee: toBigInt(this.legalFee),
-            collectionItemFee: toBigInt(this.collectionItemFee),
-            tokensRecordFee: toBigInt(this.tokensRecordFee),
-        }
-    }
-}
 
 @Entity("loc_request")
 export class LocRequestAggregateRoot {
@@ -1370,14 +990,75 @@ export class LocRequestAggregateRoot {
 
     isValidPolkadotIdentityLocOrThrow(requesterAddress: ValidAccountId, ownerAddress: ValidAccountId) {
         const requester = this.getRequester();
-        const valid = this.locType === "Identity"
+        const valid = this.isValidIdentityLoc()
             && requester !== undefined
             && requesterAddress.equals(requester)
-            && ownerAddress.equals(this.getOwner())
-            && this.status === "CLOSED"
-            && !this.isVoid();
+            && ownerAddress.equals(this.getOwner());
         if (!valid) {
             throw badRequest("Identity LOC not valid")
+        }
+    }
+
+    isValidIdentityLoc() {
+        return this.locType === "Identity"
+            && this.status === "CLOSED"
+            && !this.isVoid();
+    }
+
+    getSecretOrThrow(name: string) {
+        return requireDefined(
+            this.secret(name),
+            () => new Error(`There is no secret with name '${ name }'`)
+        );
+    }
+
+    hasSecret(name: string): boolean {
+        return this.secret(name) !== undefined;
+    }
+
+    secret(name: string): string | undefined {
+        return this.secrets?.find(secret => secret.name === name)?.value;
+    }
+
+    addSecret(name: string, value: string) {
+        if(!this.isValidIdentityLoc()) {
+            throw new Error(`Secrets can only be added to a valid Identity LOC`);
+        }
+        if(this.hasSecret(name)) {
+            throw new Error(`A secret with name '${ name }' already exists`);
+        }
+        if(name.length > 255) {
+            throw new Error(`Name is too long (max 255 characters)`);
+        }
+        if(value.length > 4096) {
+            throw new Error(`Value is too long (max 4096 characters)`);
+        }
+        if((this.secrets?.length || 0) > 10) {
+            throw new Error(`Too many secrets (max 10)`);
+        }
+        const secret = new RecoverableSecretEntity();
+        secret.name = name;
+        secret.value = value;
+        secret._toAdd = true;
+        this.secrets?.push(secret);
+    }
+
+    removeSecret(name: string) {
+        const index = this.secrets?.findIndex(secret => secret.name === name);
+        if(index === undefined || index === -1) {
+            throw new Error(`There is no secret with name '${ name }'`);
+        }
+        deleteChild(index, this.secrets!, this._secretsToDelete);
+    }
+
+    getSecrets(viewer?: ValidAccountId): RecoverableSecret[] {
+        if(this.getRequester()?.equals(viewer)) {
+            return (this.secrets || []).map(entity => ({
+                name: entity.name || "",
+                value: entity.value || "",
+            }));
+        } else {
+            return [];
         }
     }
 
@@ -1490,10 +1171,22 @@ export class LocRequestAggregateRoot {
     @Column({ type: "boolean", name: "collection_can_upload", nullable: true })
     collectionCanUpload?: boolean;
 
+    @OneToMany(() => RecoverableSecretEntity, item => item.request, {
+        eager: true,
+        cascade: false,
+        persistence: false
+    })
+    secrets?: RecoverableSecretEntity[];
+
     _filesToDelete: LocFile[] = [];
     _linksToDelete: LocLink[] = [];
     _metadataToDelete: LocMetadataItem[] = [];
+    _secretsToDelete: RecoverableSecretEntity[] = [];
 }
+
+export type LocRequestStatus = components["schemas"]["LocRequestStatus"];
+export type LocType = components["schemas"]["LocType"];
+export type IdentityLocType = components["schemas"]["IdentityLocType"];
 
 @Entity("loc_request_file")
 @Unique([ "requestId", "index" ])
@@ -1679,11 +1372,6 @@ export class LocMetadataItem extends Child implements HasIndex, Submitted {
     }
 }
 
-interface Submitted {
-    submitter?: EmbeddableAccountId;
-    lifecycle?: EmbeddableLifecycle;
-}
-
 @Entity("loc_link")
 @Unique([ "requestId", "index" ])
 export class LocLink extends Child implements HasIndex, Submitted {
@@ -1732,6 +1420,24 @@ export class LocLink extends Child implements HasIndex, Submitted {
     }
 }
 
+@Entity("loc_secret")
+@Unique([ "requestId", "name" ])
+export class RecoverableSecretEntity extends Child {
+
+    @PrimaryColumn({ type: "uuid", name: "request_id" })
+    requestId?: string;
+
+    @PrimaryColumn({ length: 255 })
+    name?: string;
+
+    @Column({ length: 4096 })
+    value?: string;
+
+    @ManyToOne(() => LocRequestAggregateRoot, request => request.secrets)
+    @JoinColumn({ name: "request_id" })
+    request?: LocRequestAggregateRoot;
+}
+
 export interface FetchLocRequestsSpecification {
 
     readonly expectedRequesterAddress?: ValidAccountId;
@@ -1762,6 +1468,7 @@ export class LocRequestRepository {
         await this.saveFiles(this.repository.manager, root)
         await this.saveMetadata(this.repository.manager, root)
         await this.saveLinks(this.repository.manager, root)
+        await this.saveSecrets(this.repository.manager, root)
     }
 
     private async saveFiles(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
@@ -1822,12 +1529,26 @@ export class LocRequestRepository {
         })
     }
 
+    private async saveSecrets(entityManager: EntityManager, root: LocRequestAggregateRoot): Promise<void> {
+        const whereExpression: <E extends WhereExpressionBuilder>(sql: E, item: RecoverableSecretEntity) => E = (sql, item) => sql
+            .where("request_id = :id", { id: root.id })
+            .andWhere("name = :name", { name: item.name });
+        await saveChildren({
+            children: root.secrets!,
+            entityManager,
+            entityClass: RecoverableSecretEntity,
+            whereExpression,
+            childrenToDelete: root._secretsToDelete
+        });
+    }
+
     public async findBy(specification: FetchLocRequestsSpecification): Promise<LocRequestAggregateRoot[]> {
         const builder = this.createQueryBuilder(specification)
             .leftJoinAndSelect("request.files", "file")
             .leftJoinAndSelect("file.delivered", "delivered")
             .leftJoinAndSelect("request.metadata", "metadata_item")
-            .leftJoinAndSelect("request.links", "link");
+            .leftJoinAndSelect("request.links", "link")
+            .leftJoinAndSelect("request.secrets", "secret");
 
         builder
             .orderBy("request.voided_on", "DESC", "NULLS FIRST")
@@ -1908,6 +1629,7 @@ export class LocRequestRepository {
         await this.repository.manager.delete(LocFile, { requestId: request.id });
         await this.repository.manager.delete(LocMetadataItem, { requestId: request.id });
         await this.repository.manager.delete(LocLink, { requestId: request.id });
+        await this.repository.manager.delete(RecoverableSecretEntity, { requestId: request.id });
         await this.repository.manager.delete(LocRequestAggregateRoot, request.id);
     }
 
@@ -2080,15 +1802,19 @@ export class LocRequestFactory {
         request.description = description.description;
         request.locType = description.locType;
         request.createdOn = description.createdOn;
+
         if (request.locType === 'Identity') {
             this.ensureUserIdentityPresent(description)
             this.populateIdentity(request, description);
         }
+
         request.files = [];
         request.metadata = [];
         request.links = [];
+
         request.template = description.template;
         request.sponsorshipId = description.sponsorshipId?.toString();
+
         if(request.locType === "Collection") {
             requireDefined(description.fees.valueFee, () => new Error("Collection LOC must have a value fee"));
             requireDefined(description.fees.collectionItemFee, () => new Error("Collection LOC must have a collection item fee"));
@@ -2098,6 +1824,9 @@ export class LocRequestFactory {
         request.collectionLastBlockSubmission = description.collectionParams?.lastBlockSubmission?.toString();
         request.collectionMaxSize = description.collectionParams?.maxSize;
         request.collectionCanUpload = description.collectionParams?.canUpload;
+
+        request.secrets = [];
+
         return request;
     }
 

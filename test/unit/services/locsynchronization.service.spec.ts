@@ -1,9 +1,8 @@
 import { UUID, TypesJsonObject, Fees } from "@logion/node-api";
-import { PolkadotService } from "@logion/rest-api-core";
 import moment, { Moment } from 'moment';
 import { It, Mock } from 'moq.ts';
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
-import { EMPTY_ITEMS, LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
+import { LocRequestAggregateRoot, LocRequestRepository } from '../../../src/logion/model/locrequest.model.js';
 import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extrinsic.js';
 import {
     CollectionRepository,
@@ -19,6 +18,7 @@ import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.m
 import { ALICE_ACCOUNT } from "../../helpers/addresses.js";
 import { Hash } from "../../../src/logion/lib/crypto/hashing.js";
 import { ItIsAccount, ItIsHash } from "../../helpers/Mock.js";
+import { EMPTY_ITEMS } from "../../../src/logion/model/loc_items.js";
 
 describe("LocSynchronizer", () => {
 
@@ -27,7 +27,6 @@ describe("LocSynchronizer", () => {
         collectionRepository = new Mock<CollectionRepository>();
         notificationService = new Mock();
         directoryService = new Mock();
-        polkadotService = new Mock();
         verifiedIssuerSelectionService = new Mock();
         tokensRecordRepository = new Mock();
     });
@@ -259,7 +258,6 @@ function locSynchronizer(): LocSynchronizer {
         new NonTransactionalCollectionService(collectionRepository.object()),
         notificationService.object(),
         directoryService.object(),
-        polkadotService.object(),
         verifiedIssuerSelectionService.object(),
         new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
     );
@@ -267,7 +265,6 @@ function locSynchronizer(): LocSynchronizer {
 
 let notificationService: Mock<NotificationService>;
 let directoryService: Mock<DirectoryService>;
-let polkadotService: Mock<PolkadotService>;
 let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 
