@@ -286,6 +286,7 @@ async function _testGet(url: string, app: ReturnType<typeof setupApp>, expectedU
         .expect('Content-Type', /application\/json/)
         .then(response => {
             expect(response.body.id).toBe(REQUEST_ID);
+            expect(response.body.status).toBeDefined();
 
             const file = response.body.files[0]
             const link = response.body.links[0]

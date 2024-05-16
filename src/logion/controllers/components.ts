@@ -652,6 +652,7 @@ export interface components {
       /** @description The LOC's template or undefined */
       template?: string;
       collectionParams?: components["schemas"]["CollectionParamsView"];
+      status?: components["schemas"]["LocRequestStatus"];
     };
     /**
      * FetchLocRequestsSpecificationView

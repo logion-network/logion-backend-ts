@@ -471,6 +471,7 @@ export class LocRequestController extends ApiController {
             requesterAddress: this.locRequestAdapter.toSupportedAccountId(locDescription.requesterAddress),
             ownerAddress: locDescription.ownerAddress.address,
             createdOn: locDescription.createdOn || undefined,
+            status: request.status,
             closedOn: request.closedOn || undefined,
             files: request.getFiles().map(file => ({
                 hash: file.hash.toHex(),
