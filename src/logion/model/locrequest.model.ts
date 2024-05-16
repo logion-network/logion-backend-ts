@@ -1423,7 +1423,6 @@ export class LocLink extends Child implements HasIndex, Submitted {
 }
 
 @Entity("loc_secret")
-@Unique([ "requestId", "name" ])
 export class RecoverableSecretEntity extends Child {
 
     @PrimaryColumn({ type: "uuid", name: "request_id" })
