@@ -1038,6 +1038,19 @@ export interface components {
         [key: string]: number;
       };
     };
+    CreateSecretRecoveryRequestView: {
+      /**
+       * @description The id of the identity loc
+       * @example 5e4ef4bb-8657-444c-9880-d89e9403fc85
+       */
+      requesterIdentityLocId: string;
+      /** @description Recoverable secret's name */
+      secretName: string;
+      /** @description The challenge */
+      challenge: string;
+      userIdentity: components["schemas"]["UserIdentityView"];
+      userPostalAddress: components["schemas"]["PostalAddressView"];
+    };
   };
   responses: never;
   parameters: never;

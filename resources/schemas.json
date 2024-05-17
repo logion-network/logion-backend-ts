@@ -1921,6 +1921,37 @@
                         }
                     }
                 }
+            },
+            "CreateSecretRecoveryRequestView": {
+                "type": "object",
+                "properties": {
+                    "requesterIdentityLocId": {
+                        "type": "string",
+                        "description": "The id of the identity loc",
+                        "example": "5e4ef4bb-8657-444c-9880-d89e9403fc85"
+                    },
+                    "secretName": {
+                        "type": "string",
+                        "description": "Recoverable secret's name"
+                    },
+                    "challenge": {
+                        "type": "string",
+                        "description": "The challenge"
+                    },
+                    "userIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "$ref": "#/components/schemas/PostalAddressView"
+                    }
+                },
+                "required": [
+                    "requesterIdentityLocId",
+                    "secretName",
+                    "challenge",
+                    "userIdentity",
+                    "userPostalAddress"
+                ]
             }
         }
     }
