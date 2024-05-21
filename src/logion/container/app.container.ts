@@ -63,6 +63,9 @@ import { MultiversxService } from "../services/ownership/multiversx.service.js";
 import { AstarService, ConnectedAstarService } from "../services/ownership/astar.service.js";
 import { WorkloadService } from "../services/workload.service.js";
 import { WorkloadController } from "../controllers/workload.controller.js";
+import { SecretRecoveryController } from "../controllers/secret_recovery.controller.js";
+import { SecretRecoveryRequestRepository } from "../model/secret_recovery.model.js";
+import { SecretRecoveryRequestService } from "../services/secret_recovery.service.js";
 
 const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -151,6 +154,8 @@ container.bind(SponsorshipService).toSelf();
 container.bind(ConnectedAstarService).toSelf();
 container.bind(AstarService).toService(ConnectedAstarService);
 container.bind(WorkloadService).toSelf();
+container.bind(SecretRecoveryRequestRepository).toSelf();
+container.bind(SecretRecoveryRequestService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
@@ -164,5 +169,6 @@ container.bind(IdenfyController).toSelf().inTransientScope();
 container.bind(VoteController).toSelf().inTransientScope();
 container.bind(TokensRecordController).toSelf().inTransientScope();
 container.bind(WorkloadController).toSelf().inTransientScope();
+container.bind(SecretRecoveryController).toSelf().inTransientScope();
 
 export { container as AppContainer };

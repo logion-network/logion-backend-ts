@@ -24,6 +24,7 @@ import { fillInSpec as fillInSpecIdenfy, IdenfyController } from "./controllers/
 import { fillInSpec as fillInSpecVote, VoteController } from "./controllers/vote.controller.js";
 import { fillInSpec as fillInSpecTokensRecord, TokensRecordController } from "./controllers/records.controller.js";
 import { fillInSpec as fillInSpecWorkload, WorkloadController } from "./controllers/workload.controller.js";
+import { fillInSpec as fillInSpecSecretRecovery, SecretRecoveryController } from "./controllers/secret_recovery.controller.js";
 
 const { logger } = Log;
 
@@ -62,6 +63,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
     fillInSpecVote(spec);
     fillInSpecTokensRecord(spec);
     fillInSpecWorkload(spec);
+    fillInSpecSecretRecovery(spec);
 
     return spec;
 }
@@ -81,7 +83,7 @@ export function buildExpress(expressConfig?: ExpressConfig): Express {
             predefinedSpec,
             specOutputFileBehavior: SPEC_OUTPUT_FILE_BEHAVIOR.RECREATE,
             swaggerDocumentOptions: {
-        
+
             },
             alwaysServeDocs: true,
         });
@@ -124,6 +126,7 @@ export function setupApp(expressConfig?: ExpressConfig): Express {
     dino.registerController(VoteController);
     dino.registerController(TokensRecordController);
     dino.registerController(WorkloadController);
+    dino.registerController(SecretRecoveryController);
 
     dino.dependencyResolver<Container>(AppContainer,
         (injector, type) => {
