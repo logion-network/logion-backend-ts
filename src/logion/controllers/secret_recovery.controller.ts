@@ -5,7 +5,7 @@ import {
     requireDefined,
     badRequest,
     getRequestBody,
-    getDefaultResponses,
+    getDefaultResponsesNoContent,
     Log
 } from "@logion/rest-api-core";
 import { injectable } from "inversify";
@@ -56,9 +56,9 @@ export class SecretRecoveryController extends ApiController {
         operationObject.description = "This is publicly available";
         operationObject.requestBody = getRequestBody({
             description: "Secret recovery request creation data",
-            view: "secret-recovery",
+            view: "CreateSecretRecoveryRequestView",
         });
-        operationObject.responses = getDefaultResponses("ProtectionRequestView");
+        operationObject.responses = getDefaultResponsesNoContent();
     }
 
     @Async()

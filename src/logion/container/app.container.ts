@@ -64,8 +64,11 @@ import { AstarService, ConnectedAstarService } from "../services/ownership/astar
 import { WorkloadService } from "../services/workload.service.js";
 import { WorkloadController } from "../controllers/workload.controller.js";
 import { SecretRecoveryController } from "../controllers/secret_recovery.controller.js";
-import { SecretRecoveryRequestRepository } from "../model/secret_recovery.model.js";
-import { SecretRecoveryRequestService } from "../services/secret_recovery.service.js";
+import { SecretRecoveryRequestRepository, SecretRecoveryRequestFactory } from "../model/secret_recovery.model.js";
+import {
+    SecretRecoveryRequestService,
+    TransactionalSecretRecoveryRequestService
+} from "../services/secret_recovery.service.js";
 
 const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -155,7 +158,9 @@ container.bind(ConnectedAstarService).toSelf();
 container.bind(AstarService).toService(ConnectedAstarService);
 container.bind(WorkloadService).toSelf();
 container.bind(SecretRecoveryRequestRepository).toSelf();
-container.bind(SecretRecoveryRequestService).toSelf();
+container.bind(SecretRecoveryRequestFactory).toSelf();
+container.bind(SecretRecoveryRequestService).toService(TransactionalSecretRecoveryRequestService);
+container.bind(TransactionalSecretRecoveryRequestService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
