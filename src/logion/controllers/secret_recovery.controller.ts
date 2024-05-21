@@ -65,15 +65,15 @@ export class SecretRecoveryController extends ApiController {
     @HttpPost('')
     @SendsResponse()
     async createSecretRecoveryRequest(body: CreateSecretRecoveryRequestView) {
+        const { requesterIdentityLocId, challenge, secretName } = body;
         const requesterIdentityLoc = requireDefined(
-            await this.locRequestRepository.findById(body.requesterIdentityLocId),
+            await this.locRequestRepository.findById(requesterIdentityLocId),
             () => badRequest("Identity LOC not found")
         );
         requireDefined(
-            requesterIdentityLoc.secrets?.find(secret => secret.name === body.secretName),
+            requesterIdentityLoc.secrets?.find(secret => secret.name === secretName),
             () => badRequest("Secret not found")
         )
-        const { requesterIdentityLocId, challenge, secretName } = body;
         const userIdentity = {
             firstName: body.userIdentity.firstName || "",
             lastName: body.userIdentity.lastName || "",
@@ -92,8 +92,8 @@ export class SecretRecoveryController extends ApiController {
             legalOfficerAddress: requesterIdentityLoc.getOwner(),
             challenge,
             secretName,
-            userIdentity: userIdentity,
-            userPostalAddress: userPostalAddress,
+            userIdentity,
+            userPostalAddress,
             createdOn: moment()
         })
         await this.secretRecoveryRequestService.add(recoveryRequest);
