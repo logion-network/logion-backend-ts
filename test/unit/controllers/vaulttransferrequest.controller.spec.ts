@@ -347,6 +347,8 @@ const POSTAL_ADDRESS: PostalAddress = {
 const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
 
 const protectionRequestDescription: ProtectionRequestDescription = {
+    id: "a7ff4ab6-5bef-4310-9c28-bcbd653565c3",
+    status: "ACTIVATED",
     addressToRecover: null,
     requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
     legalOfficerAddress: ALICE_ACCOUNT,

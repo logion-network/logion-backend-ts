@@ -7,8 +7,12 @@ import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
 import { LocRequestDecision, LocRequestDescription } from "src/logion/model/loc_vos.js";
+import { SecretRecoveryRequestDescription } from "src/logion/model/secret_recovery.model.js";
+import moment from "moment";
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
+    id: "a7ff4ab6-5bef-4310-9c28-bcbd653565c3",
+    status: "PENDING",
     requesterAddress: ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"),
     requesterIdentityLocId: "7a6ca6b7-87ca-4e55-9c5f-422c9f799b74",
     legalOfficerAddress: ALICE_ACCOUNT,
@@ -80,6 +84,28 @@ const vaultTransfer: VaultTransferRequestDescription = {
     },
 };
 
+const secret: SecretRecoveryRequestDescription = {
+    id: "id",
+    challenge: "00475b3e-cf23-4fdc-a057-80372dc44f9e",
+    createdOn: moment("2021-06-10T16:25:23.668294"),
+    requesterIdentityLocId: "0f9ce42d-e020-4168-a5aa-e72618a8a882",
+    secretName: "Key",
+    status: "REJECTED",
+    userIdentity: {
+        firstName: "John",
+        lastName: "Doe",
+        email: "john@doe.com",
+        phoneNumber: "123465",
+    },
+    userPostalAddress: {
+        line1: "Rue de la Paix",
+        line2: "",
+        postalCode: "4000",
+        city: "Liège",
+        country: "Belgium"
+    }
+};
+
 export function notificationData() {
     const lo = notifiedLegalOfficer(ALICE_ACCOUNT.address);
     const otherLo = notifiedLegalOfficer(BOB_ACCOUNT.address);
@@ -107,7 +133,13 @@ export function notificationData() {
                 decisionOn: "2021-06-10T16:25:23.668294",
                 rejectReason: "Failed to provide some data",
             }
+        },
+        secret: {
+            ...secret,
+            decision: {
+                decisionOn: "2021-06-10T16:25:23.668294",
+                rejectReason: "Failed to provide some data",
+            }
         }
     }
 }
-

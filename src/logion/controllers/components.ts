@@ -236,21 +236,30 @@ export interface components {
       /** @description The postal address of the requester */
       userPostalAddress?: components["schemas"]["PostalAddressView"];
     };
+    RecoveryInfoIdentityView: {
+      userIdentity?: components["schemas"]["UserIdentityView"];
+      userPostalAddress?: components["schemas"]["PostalAddressView"];
+    };
     /**
      * RecoveryInfoView
      * @description The new (recovery) and old (to recover) account data
      */
     RecoveryInfoView: {
-      /** @description The address to recover */
-      addressToRecover?: string;
-      accountToRecover?: components["schemas"]["ProtectionRequestView"];
-      recoveryAccount?: components["schemas"]["ProtectionRequestView"];
+      identity1?: components["schemas"]["RecoveryInfoIdentityView"];
+      identity2: components["schemas"]["RecoveryInfoIdentityView"];
+      type: components["schemas"]["RecoveryRequestType"];
+      accountRecovery?: {
+        /** @description The address to recover */
+        address1?: string;
+        /** @description The recovering address */
+        address2?: string;
+      };
     };
     /**
-     * RejectProtectionRequestView
-     * @description The Protection Request to reject
+     * RejectRecoveryRequestView
+     * @description The Recovery Request to reject
      */
-    RejectProtectionRequestView: {
+    RejectRecoveryRequestView: {
       /** @description The rejection reason */
       rejectReason?: string;
     };
@@ -1051,6 +1060,34 @@ export interface components {
       challenge: string;
       userIdentity: components["schemas"]["UserIdentityView"];
       userPostalAddress: components["schemas"]["PostalAddressView"];
+    };
+    /**
+     * @description The recovery request type
+     * @enum {string}
+     */
+    RecoveryRequestType: "ACCOUNT" | "SECRET";
+    RecoveryRequestView: {
+      userIdentity: components["schemas"]["UserIdentityView"];
+      userPostalAddress: components["schemas"]["PostalAddressView"];
+      /**
+       * Format: date-time
+       * @description The creation timestamp
+       */
+      createdOn: string;
+      /**
+       * @description A recovery request status
+       * @enum {string}
+       */
+      status: "ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED" | "CANCELLED" | "REJECTED_CANCELLED" | "ACCEPTED_CANCELLED";
+      type: components["schemas"]["RecoveryRequestType"];
+      /**
+       * Format: uuid
+       * @description The ID of created Protection Request
+       */
+      id: string;
+    };
+    RecoveryRequestsView: {
+      requests?: components["schemas"]["RecoveryRequestView"][];
     };
   };
   responses: never;

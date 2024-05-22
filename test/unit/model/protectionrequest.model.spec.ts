@@ -36,7 +36,6 @@ describe('ProtectionRequestFactoryTest', () => {
         const factory = new ProtectionRequestFactory(locRequestRepository.object());
         await expectAsyncToThrow(
             () => factory.newProtectionRequest({
-                id,
                 requesterIdentityLoc: "missing",
                 ...description,
             }),
@@ -140,6 +139,8 @@ const userPostalAddress = {
     country: "Belgium",
 };
 const description: ProtectionRequestDescription = {
+    id,
+    status: "PENDING",
     requesterAddress: ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW"),
     requesterIdentityLocId: "80124e8a-a7d8-456f-a7be-deb4e0983e87",
     legalOfficerAddress: ALICE_ACCOUNT,
@@ -170,7 +171,6 @@ async function newProtectionRequestUsingFactory(status?: ProtectionRequestStatus
 
     const factory = new ProtectionRequestFactory(locRequestRepository.object());
     const protectionRequest = await factory.newProtectionRequest({
-        id,
         requesterIdentityLoc: identityLoc.id!,
         ...description,
     });

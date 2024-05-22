@@ -2,7 +2,7 @@ import {
     SecretRecoveryRequestRepository,
     SecretRecoveryRequestAggregateRoot
 } from "../model/secret_recovery.model.js";
-import { DefaultTransactional } from "@logion/rest-api-core";
+import { DefaultTransactional, requireDefined } from "@logion/rest-api-core";
 import { injectable } from "inversify";
 
 export abstract class SecretRecoveryRequestService {
@@ -14,6 +14,13 @@ export abstract class SecretRecoveryRequestService {
 
     async add(request: SecretRecoveryRequestAggregateRoot) {
         await this.secretRecoveryRequestRepository.save(request);
+    }
+
+    async update(id: string, mutator: (item: SecretRecoveryRequestAggregateRoot) => Promise<void>): Promise<SecretRecoveryRequestAggregateRoot> {
+        const item = requireDefined(await this.secretRecoveryRequestRepository.findById(id));
+        await mutator(item);
+        await this.secretRecoveryRequestRepository.save(item);
+        return item;
     }
 }
 
@@ -29,6 +36,11 @@ export class TransactionalSecretRecoveryRequestService extends SecretRecoveryReq
     @DefaultTransactional()
     override async add(request: SecretRecoveryRequestAggregateRoot): Promise<void> {
         return super.add(request);
+    }
+
+    @DefaultTransactional()
+    override update(id: string, mutator: (item: SecretRecoveryRequestAggregateRoot) => Promise<void>): Promise<SecretRecoveryRequestAggregateRoot> {
+        return super.update(id, mutator);
     }
 }
 

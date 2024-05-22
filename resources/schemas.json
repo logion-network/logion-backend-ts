@@ -412,24 +412,51 @@
                 "title": "ProtectionRequestView",
                 "description": "Information about the created Protection Request"
             },
+            "RecoveryInfoIdentityView": {
+                "type": "object",
+                "properties": {
+                    "userIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "$ref": "#/components/schemas/PostalAddressView"
+                    }
+                }
+            },
             "RecoveryInfoView": {
                 "type": "object",
                 "properties": {
-                    "addressToRecover": {
-                        "type": "string",
-                        "description": "The address to recover"
+                    "identity1": {
+                        "$ref": "#/components/schemas/RecoveryInfoIdentityView"
                     },
-                    "accountToRecover": {
-                        "$ref": "#/components/schemas/ProtectionRequestView"
+                    "identity2": {
+                        "$ref": "#/components/schemas/RecoveryInfoIdentityView"
                     },
-                    "recoveryAccount": {
-                        "$ref": "#/components/schemas/ProtectionRequestView"
+                    "type": {
+                        "$ref": "#/components/schemas/RecoveryRequestType"
+                    },
+                    "accountRecovery": {
+                        "type": "object",
+                        "properties": {
+                            "address1": {
+                                "type": "string",
+                                "description": "The address to recover"
+                            },
+                            "address2": {
+                                "type": "string",
+                                "description": "The recovering address"
+                            }
+                        }
                     }
                 },
                 "title": "RecoveryInfoView",
-                "description": "The new (recovery) and old (to recover) account data"
+                "description": "The new (recovery) and old (to recover) account data",
+                "required": [
+                    "identity2",
+                    "type"
+                ]
             },
-            "RejectProtectionRequestView": {
+            "RejectRecoveryRequestView": {
                 "type": "object",
                 "properties": {
                     "rejectReason": {
@@ -437,8 +464,8 @@
                         "description": "The rejection reason"
                     }
                 },
-                "title": "RejectProtectionRequestView",
-                "description": "The Protection Request to reject"
+                "title": "RejectRecoveryRequestView",
+                "description": "The Recovery Request to reject"
             },
             "RejectTokenRequestView": {
                 "type": "object",
@@ -1955,6 +1982,70 @@
                     "userIdentity",
                     "userPostalAddress"
                 ]
+            },
+            "RecoveryRequestType": {
+                "type": "string",
+                "description": "The recovery request type",
+                "enum": [
+                    "ACCOUNT",
+                    "SECRET"
+                ]
+            },
+            "RecoveryRequestView": {
+                "type": "object",
+                "properties": {
+                    "userIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "userPostalAddress": {
+                        "$ref": "#/components/schemas/PostalAddressView"
+                    },
+                    "createdOn": {
+                        "type": "string",
+                        "format": "date-time",
+                        "description": "The creation timestamp"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "A recovery request status",
+                        "enum": [
+                            "ACCEPTED",
+                            "PENDING",
+                            "REJECTED",
+                            "ACTIVATED",
+                            "CANCELLED",
+                            "REJECTED_CANCELLED",
+                            "ACCEPTED_CANCELLED"
+                        ]
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/RecoveryRequestType"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "description": "The ID of created Protection Request"
+                    }
+                },
+                "required": [
+                    "id",
+                    "createdOn",
+                    "status",
+                    "type",
+                    "userIdentity",
+                    "userPostalAddress"
+                ]
+            },
+            "RecoveryRequestsView": {
+                "type": "object",
+                "properties": {
+                    "requests": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/RecoveryRequestView"
+                        }
+                    }
+                }
             }
         }
     }
