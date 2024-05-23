@@ -5,35 +5,13 @@ import { appDataSource, Log, badRequest, requireDefined } from "@logion/rest-api
 import { LocRequestRepository } from "./locrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
+import { LegalOfficerDecision } from "./decision.js";
 
 const { logger } = Log;
 
 export type ProtectionRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED' | 'CANCELLED' | 'REJECTED_CANCELLED' | 'ACCEPTED_CANCELLED';
 
 export type ProtectionRequestKind = 'RECOVERY' | 'PROTECTION_ONLY' | 'ANY';
-
-export class LegalOfficerDecision {
-
-    reject(reason: string, decisionOn: Moment): void {
-        this.decisionOn = decisionOn.toISOString();
-        this.rejectReason = reason;
-    }
-
-    accept(decisionOn: Moment): void {
-        this.decisionOn = decisionOn.toISOString();
-    }
-
-    clear() {
-        this.decisionOn = undefined;
-        this.rejectReason = undefined;
-    }
-
-    @Column("timestamp without time zone", { name: "decision_on", nullable: true })
-    decisionOn?: string;
-
-    @Column({ length: 255, name: "reject_reason", nullable: true })
-    rejectReason?: string;
-}
 
 @Entity("protection_request")
 export class ProtectionRequestAggregateRoot {
@@ -128,12 +106,14 @@ export class ProtectionRequestAggregateRoot {
 
     getDescription(): ProtectionRequestDescription {
         return {
+            id: requireDefined(this.id),
+            status: requireDefined(this.status),
             requesterAddress: ValidAccountId.polkadot(this.requesterAddress || ""),
             requesterIdentityLocId: this.requesterIdentityLocId || "",
             legalOfficerAddress: ValidAccountId.polkadot(this.legalOfficerAddress || ""),
             otherLegalOfficerAddress: ValidAccountId.polkadot(this.otherLegalOfficerAddress || ""),
-            createdOn: this.createdOn!,
-            isRecovery: this.isRecovery!,
+            createdOn: requireDefined(this.createdOn),
+            isRecovery: requireDefined(this.isRecovery),
             addressToRecover: this.addressToRecover ? ValidAccountId.polkadot(this.addressToRecover) : null,
         };
     }
@@ -249,6 +229,8 @@ export class ProtectionRequestRepository {
 }
 
 export interface ProtectionRequestDescription {
+    readonly id: string,
+    readonly status: ProtectionRequestStatus,
     readonly requesterAddress: ValidAccountId,
     readonly requesterIdentityLocId: string,
     readonly legalOfficerAddress: ValidAccountId,

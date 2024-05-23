@@ -69,6 +69,7 @@ import {
     SecretRecoveryRequestService,
     TransactionalSecretRecoveryRequestService
 } from "../services/secret_recovery.service.js";
+import { RecoveryController } from "../controllers/recovery.controller.js";
 
 const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
@@ -175,5 +176,6 @@ container.bind(VoteController).toSelf().inTransientScope();
 container.bind(TokensRecordController).toSelf().inTransientScope();
 container.bind(WorkloadController).toSelf().inTransientScope();
 container.bind(SecretRecoveryController).toSelf().inTransientScope();
+container.bind(RecoveryController).toSelf().inTransientScope();
 
 export { container as AppContainer };

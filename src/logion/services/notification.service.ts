@@ -39,6 +39,8 @@ export const templateValues = [
     "recoverable-secret-added",
     "secret-recovery-requested-legal-officer",
     "secret-recovery-requested-user",
+    "secret-recovery-rejected",
+    "secret-recovery-accepted",
 ] as const;
 
 export type Template = typeof templateValues[number];

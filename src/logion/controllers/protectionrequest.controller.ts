@@ -13,6 +13,7 @@ import {
     requireDefined,
     Log,
     AuthenticationService,
+    badRequest,
 } from '@logion/rest-api-core';
 
 import {
@@ -36,9 +37,10 @@ type CreateProtectionRequestView = components["schemas"]["CreateProtectionReques
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];
 type FetchProtectionRequestsSpecificationView = components["schemas"]["FetchProtectionRequestsSpecificationView"];
 type FetchProtectionRequestsResponseView = components["schemas"]["FetchProtectionRequestsResponseView"];
-type RejectProtectionRequestView = components["schemas"]["RejectProtectionRequestView"];
+type RejectRecoveryRequestView = components["schemas"]["RejectRecoveryRequestView"];
 type UpdateProtectionRequestView = components["schemas"]["UpdateProtectionRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
+type RecoveryInfoIdentityView = components["schemas"]["RecoveryInfoIdentityView"];
 
 const { logger } = Log;
 
@@ -195,7 +197,7 @@ export class ProtectionRequestController extends ApiController {
         operationObject.description = "The authenticated user must be one of the legal officers of the protection request";
         operationObject.requestBody = getRequestBody({
             description: "Protection Request rejection data",
-            view: "RejectProtectionRequestView",
+            view: "RejectRecoveryRequestView",
         });
         operationObject.responses = getDefaultResponses("ProtectionRequestView");
         setPathParameters(operationObject, { 'id': "The ID of the request to reject" });
@@ -203,7 +205,7 @@ export class ProtectionRequestController extends ApiController {
 
     @Async()
     @HttpPost('/:id/reject')
-    async rejectProtectionRequest(body: RejectProtectionRequestView, id: string): Promise<ProtectionRequestView> {
+    async rejectProtectionRequest(body: RejectRecoveryRequestView, id: string): Promise<ProtectionRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
         const request = await this.protectionRequestService.update(id, async request => {
             authenticatedUser.require(user => user.is(request.getLegalOfficer()))
@@ -243,8 +245,8 @@ export class ProtectionRequestController extends ApiController {
 
     static fetchRecoveryInfo(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/protection-request/{id}/recovery-info"].put!;
-        operationObject.summary = "Fetch all info necessary for the legal officer to accept or reject recovery.";
-        operationObject.description = "The authentication user must be either the protection requester, the recovery requester, or one of the legal officers";
+        operationObject.summary = "Fetch all info necessary for the legal officer to accept or reject account recovery request.";
+        operationObject.description = "The authentication user must be a legal officers on current node";
         operationObject.responses = getDefaultResponses("RecoveryInfoView");
         setPathParameters(operationObject, { 'id': "The ID of the recovery request" });
     }
@@ -254,45 +256,40 @@ export class ProtectionRequestController extends ApiController {
     async fetchRecoveryInfo(_body: never, id: string): Promise<RecoveryInfoView> {
         const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
 
-        const recovery = await this.protectionRequestRepository.findById(id);
-        authenticatedUser.require(user => user.is(recovery?.getLegalOfficer()));
-        if(recovery === null
-            || !recovery.isRecovery
-            || recovery.status !== 'PENDING'
-            || recovery.addressToRecover === null) {
-            throw new Error("Pending recovery request with address to recover not found");
+        const accountRecoveryRequest = await this.protectionRequestRepository.findById(id);
+        if(accountRecoveryRequest === null
+            || !accountRecoveryRequest.isRecovery
+            || accountRecoveryRequest.status !== 'PENDING'
+            || !accountRecoveryRequest.addressToRecover) {
+            throw badRequest("Pending recovery request with address to recover not found");
         }
+        authenticatedUser.require(user => user.is(accountRecoveryRequest.getLegalOfficer()));
 
-        const addressToRecover = recovery.getDescription().addressToRecover!;
-        const recoveryUserPrivateData = await this.locRequestAdapter.getUserPrivateData(recovery.requesterIdentityLocId!)
-        const identityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(
+        const addressToRecover = requireDefined(accountRecoveryRequest.getDescription().addressToRecover);
+        const identity1Loc = await this.locRequestRepository.getValidPolkadotIdentityLoc(
             addressToRecover,
-            recovery.getLegalOfficer()
+            accountRecoveryRequest.getLegalOfficer()
         );
-        let accountToRecoverUserPrivateData: UserPrivateData | undefined;
-        if(identityLoc) {
-            const description = identityLoc.getDescription();
-            accountToRecoverUserPrivateData = {
-                identityLocId: identityLoc?.id,
+        let identity1: RecoveryInfoIdentityView | undefined;
+        if(identity1Loc) {
+            const description = identity1Loc.getDescription();
+            identity1 = {
                 userIdentity: description.userIdentity,
                 userPostalAddress: description.userPostalAddress,
             };
         }
+        const identity2PrivateData = await this.locRequestAdapter.getUserPrivateData(accountRecoveryRequest.requesterIdentityLocId!);
         return {
-            addressToRecover: addressToRecover.address,
-            recoveryAccount: this.adapt(recovery, recoveryUserPrivateData),
-            accountToRecover: accountToRecoverUserPrivateData ? this.adapt({
-                getAddressToRecover: () => null,
-                id: "dummy",
-                getLegalOfficer: () => recovery.getLegalOfficer(),
-                getOtherLegalOfficer: () => recovery.getOtherLegalOfficer(),
-                getRequester: () => addressToRecover,
-                requesterIdentityLocId: accountToRecoverUserPrivateData.identityLocId,
-                status: 'ACCEPTED',
-                decision: {
-
-                }
-            }, accountToRecoverUserPrivateData) : undefined,
+            identity1,
+            identity2: {
+                userIdentity: identity2PrivateData.userIdentity,
+                userPostalAddress: identity2PrivateData.userPostalAddress,
+            },
+            type: "ACCOUNT",
+            accountRecovery: {
+                address1: identity1Loc?.getRequester()?.address,
+                address2: accountRecoveryRequest.getRequester().address,
+            },
         };
     }
 

@@ -1,4 +1,5 @@
 import { OpenAPIV3 } from "express-oas-generator";
+import { v4 as uuid } from "uuid";
 import {
     addTag,
     setControllerTag,
@@ -6,14 +7,17 @@ import {
     badRequest,
     getRequestBody,
     getDefaultResponsesNoContent,
-    Log
+    Log,
+    AuthenticationService,
+    getDefaultResponses,
+    setPathParameters
 } from "@logion/rest-api-core";
 import { injectable } from "inversify";
-import { Controller, HttpPost, ApiController, Async, SendsResponse } from "dinoloop";
+import { Controller, HttpPost, ApiController, Async, SendsResponse, HttpPut } from "dinoloop";
 import { components } from "./components.js";
-import { SecretRecoveryRequestFactory, SecretRecoveryRequestDescription } from "../model/secret_recovery.model.js";
+import { SecretRecoveryRequestFactory, SecretRecoveryRequestDescription, SecretRecoveryRequestRepository } from "../model/secret_recovery.model.js";
 import { SecretRecoveryRequestService } from "../services/secret_recovery.service.js";
-import { LocRequestRepository } from "../model/locrequest.model.js";
+import { LocRequestAggregateRoot, LocRequestRepository } from "../model/locrequest.model.js";
 import moment from "moment";
 import { NotificationRecipient, Template, NotificationService } from "../services/notification.service.js";
 import { UserPrivateData } from "./adapters/locrequestadapter.js";
@@ -22,6 +26,9 @@ import { DirectoryService } from "../services/directory.service.js";
 import { ValidAccountId } from "@logion/node-api";
 
 type CreateSecretRecoveryRequestView = components["schemas"]["CreateSecretRecoveryRequestView"];
+type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
+type RecoveryInfoIdentityView = components["schemas"]["RecoveryInfoIdentityView"];
+type RejectRecoveryRequestView = components["schemas"]["RejectRecoveryRequestView"];
 
 const { logger } = Log;
 
@@ -34,6 +41,9 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     setControllerTag(spec, /^\/api\/secret-recovery.*/, tagName);
 
     SecretRecoveryController.createSecretRecoveryRequest(spec);
+    SecretRecoveryController.fetchRecoveryInfo(spec);
+    SecretRecoveryController.rejectRequest(spec);
+    SecretRecoveryController.acceptRequest(spec);
 }
 
 @injectable()
@@ -43,9 +53,11 @@ export class SecretRecoveryController extends ApiController {
     constructor(
         private secretRecoveryRequestFactory: SecretRecoveryRequestFactory,
         private secretRecoveryRequestService: SecretRecoveryRequestService,
+        private secretRecoveryRequestRepository: SecretRecoveryRequestRepository,
         private locRequestRepository: LocRequestRepository,
         private directoryService: DirectoryService,
         private notificationService: NotificationService,
+        private authenticationService: AuthenticationService,
     ) {
         super();
     }
@@ -87,7 +99,9 @@ export class SecretRecoveryController extends ApiController {
             city: body.userPostalAddress.city || "",
             country: body.userPostalAddress.country || "",
         };
+        const id = uuid();
         const recoveryRequest = this.secretRecoveryRequestFactory.newSecretRecoveryRequest({
+            id,
             requesterIdentityLocId,
             legalOfficerAddress: requesterIdentityLoc.getOwner(),
             challenge,
@@ -128,11 +142,111 @@ export class SecretRecoveryController extends ApiController {
             legalOfficerEMail: legalOfficer.userIdentity.email,
             userEmail: userIdentity?.email,
             data: {
-                secretName: secretRecoveryRequest.secretName,
                 legalOfficer,
                 walletUser: userIdentity,
-                walletUserPostalAddress: userPostalAddress
+                walletUserPostalAddress: userPostalAddress,
+                secret: secretRecoveryRequest,
             }
         }
+    }
+
+    static fetchRecoveryInfo(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/secret-recovery/{id}/recovery-info"].put!;
+        operationObject.summary = "Fetch all info necessary for the legal officer to accept or reject secret recovery request.";
+        operationObject.description = "The authentication user must be a legal officers on current node";
+        operationObject.responses = getDefaultResponses("RecoveryInfoView");
+        setPathParameters(operationObject, { 'id': "The ID of the recovery request" });
+    }
+
+    @Async()
+    @HttpPut('/:id/recovery-info')
+    async fetchRecoveryInfo(_body: never, id: string): Promise<RecoveryInfoView> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+
+        const secretRecoveryRequest = await this.secretRecoveryRequestRepository.findById(id);
+        if(secretRecoveryRequest === null) {
+            throw badRequest("Pending secret recovery request not found");
+        }
+
+        const secretRecoveryRequestDescription = secretRecoveryRequest.getDescription();
+        const identity1Loc = await this.locRequestRepository.findById(secretRecoveryRequestDescription.requesterIdentityLocId);
+        let identity1: RecoveryInfoIdentityView | undefined;
+        if(identity1Loc && identity1Loc.getOwner().equals(authenticatedUser.validAccountId)) {
+            const description = identity1Loc.getDescription();
+            identity1 = {
+                userIdentity: description.userIdentity,
+                userPostalAddress: description.userPostalAddress,
+            };
+        }
+        return {
+            identity1,
+            identity2: {
+                userIdentity: secretRecoveryRequestDescription.userIdentity,
+                userPostalAddress: secretRecoveryRequestDescription.userPostalAddress,
+            },
+            type: "SECRET",
+        };
+    }
+
+    static rejectRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/secret-recovery/{id}/reject"].post!;
+        operationObject.summary = "Rejects a Protection Request";
+        operationObject.description = "The authenticated user must be one of the legal officers of the protection request";
+        operationObject.requestBody = getRequestBody({
+            description: "Protection Request rejection data",
+            view: "RejectRecoveryRequestView",
+        });
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'id': "The ID of the request to reject" });
+    }
+
+    @Async()
+    @HttpPost('/:id/reject')
+    @SendsResponse()
+    async rejectRequest(body: RejectRecoveryRequestView, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        let requesterIdentityLoc: LocRequestAggregateRoot | null = null;
+        const recoveryRequest = await this.secretRecoveryRequestService.update(id, async request => {
+            requesterIdentityLoc = await this.locRequestRepository.findById(request.getDescription().requesterIdentityLocId);
+            authenticatedUser.require(user => user.is(requesterIdentityLoc?.getOwner()));
+            request.reject(body.rejectReason!, moment());
+        });
+        const description = recoveryRequest.getDescription();
+        const userPrivateData: UserPrivateData = {
+            identityLocId: description.requesterIdentityLocId,
+            userIdentity: description.userIdentity,
+            userPostalAddress: description.userPostalAddress,
+        };
+        this.notify("WalletUser", "secret-recovery-rejected", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData);
+        this.response.sendStatus(204);
+    }
+
+    static acceptRequest(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/secret-recovery/{id}/accept"].post!;
+        operationObject.summary = "Accepts a Protection Request";
+        operationObject.description = "The authenticated user must be one of the legal officers of the protection request";
+        operationObject.responses = getDefaultResponsesNoContent();
+        setPathParameters(operationObject, { 'id': "The ID of the request to accept" });
+    }
+
+    @Async()
+    @HttpPost('/:id/accept')
+    @SendsResponse()
+    async acceptRequest(_body: never, id: string): Promise<void> {
+        const authenticatedUser = await this.authenticationService.authenticatedUserIsLegalOfficerOnNode(this.request);
+        let requesterIdentityLoc: LocRequestAggregateRoot | null = null;
+        const recoveryRequest = await this.secretRecoveryRequestService.update(id, async request => {
+            requesterIdentityLoc = await this.locRequestRepository.findById(request.getDescription().requesterIdentityLocId);
+            authenticatedUser.require(user => user.is(requesterIdentityLoc?.getOwner()));
+            request.accept(moment());
+        });
+        const description = recoveryRequest.getDescription();
+        const userPrivateData: UserPrivateData = {
+            identityLocId: description.requesterIdentityLocId,
+            userIdentity: description.userIdentity,
+            userPostalAddress: description.userPostalAddress,
+        };
+        this.notify("WalletUser", "secret-recovery-accepted", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData);
+        this.response.sendStatus(204);
     }
 }
