@@ -21,7 +21,6 @@ import {
     FetchProtectionRequestsSpecification,
     ProtectionRequestFactory,
     ProtectionRequestDescription,
-    LegalOfficerDecisionDescription,
     ProtectionRequestStatus,
 } from '../model/protectionrequest.model.js';
 import { components } from './components.js';
@@ -32,6 +31,7 @@ import { LocalsObject } from 'pug';
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
 import { LocRequestRepository } from '../model/locrequest.model.js';
 import { ValidAccountId } from "@logion/node-api";
+import { LegalOfficerDecisionDescription } from '../model/decision.js';
 
 type CreateProtectionRequestView = components["schemas"]["CreateProtectionRequestView"];
 type ProtectionRequestView = components["schemas"]["ProtectionRequestView"];

@@ -45,9 +45,10 @@ describe('RecoveryController', () => {
                 expect(response.body.requests[1].userIdentity).toEqual(IDENTITY);
                 expect(response.body.requests[1].userPostalAddress).toEqual(POSTAL_ADDRESS);
                 expect(response.body.requests[1].createdOn).toBe(SECRET_CREATED_ON.toISOString());
-                expect(response.body.requests[1].status).toBe("ACCEPTED");
+                expect(response.body.requests[1].status).toBe("REJECTED");
                 expect(response.body.requests[1].id).toBe(SECRET_RECOVERY_REQUEST_ID);
                 expect(response.body.requests[1].type).toBe("SECRET");
+                expect(response.body.requests[1].rejectReason).toBe(REJECT_REASON);
             });
     });
 });
@@ -83,13 +84,14 @@ function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
         createdOn: ACCOUNT_CREATED_ON,
         addressToRecover: null,
     }
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>()
-    protectionRequest.setup(instance => instance.getDescription()).returns(description)
-    protectionRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT)
-    protectionRequest.setup(instance => instance.getOtherLegalOfficer()).returns(BOB_ACCOUNT)
-    protectionRequest.setup(instance => instance.getRequester()).returns(REQUESTER)
-    protectionRequest.setup(instance => instance.getAddressToRecover()).returns(null)
-    return protectionRequest
+    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
+    protectionRequest.setup(instance => instance.getDescription()).returns(description);
+    protectionRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT);
+    protectionRequest.setup(instance => instance.getOtherLegalOfficer()).returns(BOB_ACCOUNT);
+    protectionRequest.setup(instance => instance.getRequester()).returns(REQUESTER);
+    protectionRequest.setup(instance => instance.getAddressToRecover()).returns(null);
+    protectionRequest.setup(instance => instance.getDecision()).returns(undefined);
+    return protectionRequest;
 }
 
 const REQUESTER = ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
@@ -129,7 +131,7 @@ function mockLocRequestAdapter(): LocRequestAdapter {
 function mockSecretRecoveryRequest(): Mock<SecretRecoveryRequestAggregateRoot> {
     const description: SecretRecoveryRequestDescription = {
         id: SECRET_RECOVERY_REQUEST_ID,
-        status: "ACCEPTED",
+        status: "REJECTED",
         requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
         createdOn: SECRET_CREATED_ON,
         challenge: "Challenge",
@@ -137,10 +139,16 @@ function mockSecretRecoveryRequest(): Mock<SecretRecoveryRequestAggregateRoot> {
         userIdentity: IDENTITY,
         userPostalAddress: POSTAL_ADDRESS,
     }
-    const protectionRequest = new Mock<SecretRecoveryRequestAggregateRoot>()
-    protectionRequest.setup(instance => instance.getDescription()).returns(description)
-    return protectionRequest
+    const protectionRequest = new Mock<SecretRecoveryRequestAggregateRoot>();
+    protectionRequest.setup(instance => instance.getDescription()).returns(description);
+    protectionRequest.setup(instance => instance.getDecision()).returns({
+        decisionOn: DECISION_ON.toISOString(),
+        rejectReason: REJECT_REASON,
+    });
+    return protectionRequest;
 }
 
 const SECRET_RECOVERY_REQUEST_ID = "f293127e-8356-47a7-a6b7-480cdd1daabd";
 const SECRET_CREATED_ON = moment();
+const DECISION_ON = moment();
+const REJECT_REASON = "Because.";

@@ -5,7 +5,7 @@ import { appDataSource, Log, badRequest, requireDefined } from "@logion/rest-api
 import { LocRequestRepository } from "./locrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
-import { LegalOfficerDecision } from "./decision.js";
+import { LegalOfficerDecision, LegalOfficerDecisionDescription } from "./decision.js";
 
 const { logger } = Log;
 
@@ -238,11 +238,6 @@ export interface ProtectionRequestDescription {
     readonly createdOn: string,
     readonly isRecovery: boolean,
     readonly addressToRecover: ValidAccountId | null,
-}
-
-export interface LegalOfficerDecisionDescription {
-    readonly decisionOn: string;
-    readonly rejectReason?: string;
 }
 
 export interface NewProtectionRequestParameters {

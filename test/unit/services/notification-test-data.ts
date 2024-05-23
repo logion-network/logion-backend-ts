@@ -1,6 +1,5 @@
 import {
     ProtectionRequestDescription,
-    LegalOfficerDecisionDescription
 } from "../../../src/logion/model/protectionrequest.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
@@ -9,6 +8,7 @@ import { ValidAccountId } from "@logion/node-api";
 import { LocRequestDecision, LocRequestDescription } from "src/logion/model/loc_vos.js";
 import { SecretRecoveryRequestDescription } from "src/logion/model/secret_recovery.model.js";
 import moment from "moment";
+import { LegalOfficerDecisionDescription } from "src/logion/model/decision.js";
 
 export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     id: "a7ff4ab6-5bef-4310-9c28-bcbd653565c3",

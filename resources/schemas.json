@@ -2025,6 +2025,10 @@
                         "type": "string",
                         "format": "uuid",
                         "description": "The ID of created Protection Request"
+                    },
+                    "rejectReason": {
+                        "type": "string",
+                        "description": "If REJECTED, the reason motivating the rejection."
                     }
                 },
                 "required": [

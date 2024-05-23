@@ -7,7 +7,7 @@ import { Moment } from "moment";
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX } from "./supportedaccountid.model.js";
 import moment from "moment";
-import { LegalOfficerDecision } from "./decision.js";
+import { LegalOfficerDecision, LegalOfficerDecisionDescription } from "./decision.js";
 
 export type SecretRecoveryRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED';
 
@@ -71,6 +71,17 @@ export class SecretRecoveryRequestAggregateRoot {
         }
         this.status = 'ACCEPTED';
         this.decision!.accept(decisionOn);
+    }
+
+    getDecision(): LegalOfficerDecisionDescription | undefined {
+        if (!this.decision || this.decision.decisionOn === undefined) {
+            return undefined
+        }
+        const { decisionOn, rejectReason } = this.decision
+        return {
+            decisionOn,
+            rejectReason,
+        }
     }
 }
 

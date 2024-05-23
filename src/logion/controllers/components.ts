@@ -1085,6 +1085,8 @@ export interface components {
        * @description The ID of created Protection Request
        */
       id: string;
+      /** @description If REJECTED, the reason motivating the rejection. */
+      rejectReason?: string;
     };
     RecoveryRequestsView: {
       requests?: components["schemas"]["RecoveryRequestView"][];

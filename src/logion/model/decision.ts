@@ -23,3 +23,8 @@ export class LegalOfficerDecision {
     @Column({ length: 255, name: "reject_reason", nullable: true })
     rejectReason?: string;
 }
+
+export interface LegalOfficerDecisionDescription {
+    readonly decisionOn: string;
+    readonly rejectReason?: string;
+}

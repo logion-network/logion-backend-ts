@@ -10,7 +10,6 @@ import {
     ProtectionRequestAggregateRoot,
     NewProtectionRequestParameters,
     ProtectionRequestDescription,
-    LegalOfficerDecisionDescription,
 } from '../../../src/logion/model/protectionrequest.model.js';
 import { ALICE, BOB, CHARLY, BOB_ACCOUNT, ALICE_ACCOUNT, CHARLY_ACCOUNT } from '../../helpers/addresses.js';
 import { ProtectionRequestController } from '../../../src/logion/controllers/protectionrequest.controller.js';
@@ -26,7 +25,7 @@ import { LocRequestAdapter } from "../../../src/logion/controllers/adapters/locr
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX, EmbeddableNullableAccountId } from "../../../src/logion/model/supportedaccountid.model.js";
 import { LocRequestDescription } from 'src/logion/model/loc_vos.js';
-import { LegalOfficerDecision } from 'src/logion/model/decision.js';
+import { LegalOfficerDecision, LegalOfficerDecisionDescription } from 'src/logion/model/decision.js';
 
 const DECISION_TIMESTAMP = "2021-06-10T16:25:23.668294";
 const { mockAuthenticationWithCondition, setupApp, mockLegalOfficerOnNode, mockAuthenticationWithAuthenticatedUser, mockAuthenticatedUser } = TestApp;

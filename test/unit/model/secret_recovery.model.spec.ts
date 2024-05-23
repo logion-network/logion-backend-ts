@@ -65,7 +65,7 @@ describe("SecretRecoveryRequestAggregateRoot", () => {
         request.reject("Because.", moment());
 
         expect(request.status).toBe("REJECTED");
-        const decision = request.decision;
+        const decision = request.getDecision();
         expect(decision?.decisionOn).toBeDefined();
         expect(decision?.rejectReason).toBe("Because.");
     })

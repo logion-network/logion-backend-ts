@@ -83,6 +83,7 @@ export class RecoveryController extends ApiController {
             type: "ACCOUNT",
             userIdentity: requireDefined(userIdentity),
             userPostalAddress: requireDefined(userPostalAddress),
+            rejectReason: accountRecoveryRequest.getDecision()?.rejectReason,
         };
     }
 
@@ -95,6 +96,7 @@ export class RecoveryController extends ApiController {
             type: "SECRET",
             userIdentity: description.userIdentity,
             userPostalAddress: description.userPostalAddress,
+            rejectReason: secretRecoveryRequest.getDecision()?.rejectReason,
         };
     }
 }
