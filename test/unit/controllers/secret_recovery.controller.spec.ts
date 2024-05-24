@@ -235,6 +235,9 @@ function mockForUpdate(container: Container) {
         });
     secretRecoveryRequest.setup(instance => instance.accept(It.IsAny())).returns();
     secretRecoveryRequest.setup(instance => instance.reject(It.IsAny(), It.IsAny())).returns();
+    secretRecoveryRequest.setup(instance => instance.getDecision()).returns({
+        decisionOn: moment().toISOString(),
+    });
 
     secretRecoveryRequestRepository.setup(instance => instance.findById(REQUEST_ID))
         .returns(Promise.resolve(secretRecoveryRequest.object()));

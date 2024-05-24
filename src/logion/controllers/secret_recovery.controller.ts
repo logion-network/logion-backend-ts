@@ -23,7 +23,7 @@ import { NotificationRecipient, Template, NotificationService } from "../service
 import { UserPrivateData } from "./adapters/locrequestadapter.js";
 import { LocalsObject } from "pug";
 import { DirectoryService } from "../services/directory.service.js";
-import { ValidAccountId } from "@logion/node-api";
+import { UUID, ValidAccountId } from "@logion/node-api";
 import { LegalOfficerDecisionDescription } from "../model/decision.js";
 
 type CreateSecretRecoveryRequestView = components["schemas"]["CreateSecretRecoveryRequestView"];
@@ -146,7 +146,7 @@ export class SecretRecoveryController extends ApiController {
                 legalOfficer,
                 walletUser: userIdentity,
                 walletUserPostalAddress: userPostalAddress,
-                secret: { ...secretRecoveryRequest, decision },
+                secret: toNotificationModel(secretRecoveryRequest, decision),
             }
         }
     }
@@ -250,4 +250,14 @@ export class SecretRecoveryController extends ApiController {
         this.notify("WalletUser", "secret-recovery-accepted", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData, recoveryRequest.getDecision());
         this.response.sendStatus(204);
     }
+}
+
+export function toNotificationModel(secret: SecretRecoveryRequestDescription, decision?: LegalOfficerDecisionDescription):
+    SecretRecoveryRequestDescription & { decision?: LegalOfficerDecisionDescription }
+{
+    return {
+        ...secret,
+        requesterIdentityLocId: new UUID(secret.requesterIdentityLocId).toDecimalString(),
+        decision
+    };
 }

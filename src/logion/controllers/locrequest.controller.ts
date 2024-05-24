@@ -1608,7 +1608,7 @@ export class LocRequestController extends ApiController {
         this.getNotificationInfo(description, userIdentity)
             .then(info => this.notificationService.notify(info.legalOfficerEMail, "recoverable-secret-added", {
                 ...info.data,
-                secret: request,
+                secretName: name,
             }))
             .catch(error => logger.error(error));
 
