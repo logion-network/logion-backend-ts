@@ -1606,7 +1606,7 @@ export class LocRequestController extends ApiController {
         const description = request.getDescription();
         const userIdentity = requireDefined(description.userIdentity);
         this.getNotificationInfo(description, userIdentity)
-            .then(info => this.notificationService.notify(info.legalOfficerEMail, "recoverable-secret-added", {
+            .then(info => this.notificationService.notify(userIdentity.email, "recoverable-secret-added", {
                 ...info.data,
                 secretName: name,
             }))
