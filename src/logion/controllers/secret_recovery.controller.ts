@@ -24,6 +24,7 @@ import { UserPrivateData } from "./adapters/locrequestadapter.js";
 import { LocalsObject } from "pug";
 import { DirectoryService } from "../services/directory.service.js";
 import { ValidAccountId } from "@logion/node-api";
+import { LegalOfficerDecisionDescription } from "../model/decision.js";
 
 type CreateSecretRecoveryRequestView = components["schemas"]["CreateSecretRecoveryRequestView"];
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
@@ -121,8 +122,8 @@ export class SecretRecoveryController extends ApiController {
         this.response.sendStatus(204);
     }
 
-    private notify(recipient: NotificationRecipient, templateId: Template, secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData): void {
-        this.getNotificationInfo(secretRecoveryRequest, legalOfficerAccount, userPrivateData)
+    private notify(recipient: NotificationRecipient, templateId: Template, secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData, decision?: LegalOfficerDecisionDescription): void {
+        this.getNotificationInfo(secretRecoveryRequest, legalOfficerAccount, userPrivateData, decision)
             .then(info => {
                 const to = recipient === "WalletUser" ? info.userEmail : info.legalOfficerEMail
                 return this.notificationService.notify(to, templateId, info.data)
@@ -133,7 +134,7 @@ export class SecretRecoveryController extends ApiController {
             )
     }
 
-    private async getNotificationInfo(secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData):
+    private async getNotificationInfo(secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(legalOfficerAccount)
@@ -145,7 +146,7 @@ export class SecretRecoveryController extends ApiController {
                 legalOfficer,
                 walletUser: userIdentity,
                 walletUserPostalAddress: userPostalAddress,
-                secret: secretRecoveryRequest,
+                secret: { ...secretRecoveryRequest, decision },
             }
         }
     }
@@ -217,7 +218,7 @@ export class SecretRecoveryController extends ApiController {
             userIdentity: description.userIdentity,
             userPostalAddress: description.userPostalAddress,
         };
-        this.notify("WalletUser", "secret-recovery-rejected", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData);
+        this.notify("WalletUser", "secret-recovery-rejected", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData, recoveryRequest.getDecision());
         this.response.sendStatus(204);
     }
 
@@ -246,7 +247,7 @@ export class SecretRecoveryController extends ApiController {
             userIdentity: description.userIdentity,
             userPostalAddress: description.userPostalAddress,
         };
-        this.notify("WalletUser", "secret-recovery-accepted", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData);
+        this.notify("WalletUser", "secret-recovery-accepted", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData, recoveryRequest.getDecision());
         this.response.sendStatus(204);
     }
 }
