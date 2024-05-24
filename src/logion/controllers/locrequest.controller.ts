@@ -1609,6 +1609,7 @@ export class LocRequestController extends ApiController {
             .then(info => this.notificationService.notify(userIdentity.email, "recoverable-secret-added", {
                 ...info.data,
                 secretName: name,
+                locId: new UUID(requestId).toDecimalString(),
             }))
             .catch(error => logger.error(error));
 
