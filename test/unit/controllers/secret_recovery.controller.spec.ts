@@ -111,6 +111,19 @@ describe("SecretRecoveryController", () => {
                 expect(response.body.type).toBe("SECRET");
             });
     })
+
+    it("downloads secret value", async () => {
+        const app = setupApp(SecretRecoveryController, mockForDownload);
+        await request(app)
+            .put(`/api/secret-recovery/${ REQUEST_ID }/download-secret`)
+            .send({ challenge: CHALLENGE })
+            .expect(200)
+            .then(response => {
+                expect(response.body.value).toBe(SECRET_VALUE);
+            });
+        secretRecoveryRequest.verify(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true));
+        secretRecoveryRequestRepository.verify(instance => instance.save(secretRecoveryRequest.object()));
+    })
 })
 
 function mockForCreate(container: Container) {
@@ -195,6 +208,7 @@ const recoveryRequest = {
     challenge: CHALLENGE,
     userIdentity: USER_IDENTITY,
     userPostalAddress: USER_POSTAL_ADDRESS,
+    downloaded: false,
 }
 
 let identityLoc: Mock<LocRequestAggregateRoot>;
@@ -271,3 +285,25 @@ function mockForFetch(container: Container) {
         userPostalAddress: USER_POSTAL_ADDRESS,
     });
 }
+
+function mockForDownload(container: Container) {
+    mockForAll(container);
+
+    secretRecoveryRequest = new Mock<SecretRecoveryRequestAggregateRoot>();
+    secretRecoveryRequest.setup(instance => instance.getDescription())
+        .returns({
+            ...recoveryRequest,
+            requesterIdentityLocId: IDENTITY_LOC_ID,
+            secretName: SECRET_NAME,
+            createdOn: moment(),
+            id: REQUEST_ID,
+            status: "ACCEPTED",
+        });
+    secretRecoveryRequest.setup(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true)).returns();
+    secretRecoveryRequestRepository.setup(instance => instance.findById(REQUEST_ID))
+        .returns(Promise.resolve(secretRecoveryRequest.object()));
+
+    identityLoc.setup(instance => instance.getSecretOrThrow(SECRET_NAME)).returns(SECRET_VALUE);
+}
+
+const SECRET_VALUE = "Secret value";

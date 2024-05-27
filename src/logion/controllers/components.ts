@@ -1091,6 +1091,14 @@ export interface components {
     RecoveryRequestsView: {
       requests?: components["schemas"]["RecoveryRequestView"][];
     };
+    DownloadSecretRequestView: {
+      /** @description The challenge of the secret recovery request */
+      challenge?: string;
+    };
+    DownloadSecretResponseView: {
+      /** @description The secret's value */
+      value?: string;
+    };
   };
   responses: never;
   parameters: never;

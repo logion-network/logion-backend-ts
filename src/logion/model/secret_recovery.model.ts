@@ -11,6 +11,8 @@ import { LegalOfficerDecision, LegalOfficerDecisionDescription } from "./decisio
 
 export type SecretRecoveryRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED';
 
+export const SECRET_EXPIRATION_DAYS = 7;
+
 @Entity("secret_recovery_request")
 export class SecretRecoveryRequestAggregateRoot {
 
@@ -44,6 +46,9 @@ export class SecretRecoveryRequestAggregateRoot {
     @Column(() => LegalOfficerDecision, {prefix: ""})
     decision?: LegalOfficerDecision;
 
+    @Column()
+    downloaded?: boolean;
+
     getDescription(): SecretRecoveryRequestDescription {
         return {
             id: requireDefined(this.id),
@@ -54,6 +59,7 @@ export class SecretRecoveryRequestAggregateRoot {
             userIdentity: toUserIdentity(this.userIdentity)!,
             userPostalAddress: toPostalAddress(this.userPostalAddress)!,
             status: requireDefined(this.status),
+            downloaded: this.downloaded || false,
         }
     }
 
@@ -83,6 +89,22 @@ export class SecretRecoveryRequestAggregateRoot {
             rejectReason,
         }
     }
+
+    canDownload(now: Moment, challenge: string) {
+        return this.status === "ACCEPTED"
+            && this.challenge === challenge
+            && !this.downloaded
+            && this.decision
+            && this.decision.decisionOn
+            && now.diff(this.decision.decisionOn, "days") <= SECRET_EXPIRATION_DAYS;
+    }
+
+    markDownloaded(now: Moment, challenge: string, downloaded: boolean) {
+        if(!this.canDownload(now, challenge)) {
+            throw new Error("Cannot download");
+        }
+        this.downloaded = downloaded;
+    }
 }
 
 export interface SecretRecoveryRequestDescription {
@@ -94,6 +116,7 @@ export interface SecretRecoveryRequestDescription {
     readonly userPostalAddress: PostalAddress;
     readonly createdOn: Moment;
     readonly status: SecretRecoveryRequestStatus;
+    readonly downloaded: boolean;
 }
 
 @injectable()
@@ -144,6 +167,7 @@ export class SecretRecoveryRequestFactory {
         root.createdOn = params.createdOn.toDate();
         root.status = "PENDING";
         root.decision = new LegalOfficerDecision();
+        root.downloaded = false;
         return root;
     }
 }

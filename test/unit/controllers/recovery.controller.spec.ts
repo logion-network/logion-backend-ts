@@ -138,6 +138,7 @@ function mockSecretRecoveryRequest(): Mock<SecretRecoveryRequestAggregateRoot> {
         secretName: "Key",
         userIdentity: IDENTITY,
         userPostalAddress: POSTAL_ADDRESS,
+        downloaded: false,
     }
     const protectionRequest = new Mock<SecretRecoveryRequestAggregateRoot>();
     protectionRequest.setup(instance => instance.getDescription()).returns(description);
