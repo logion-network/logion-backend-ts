@@ -30,6 +30,8 @@ type CreateSecretRecoveryRequestView = components["schemas"]["CreateSecretRecove
 type RecoveryInfoView = components["schemas"]["RecoveryInfoView"];
 type RecoveryInfoIdentityView = components["schemas"]["RecoveryInfoIdentityView"];
 type RejectRecoveryRequestView = components["schemas"]["RejectRecoveryRequestView"];
+type DownloadSecretRequestView = components["schemas"]["DownloadSecretRequestView"];
+type DownloadSecretResponseView = components["schemas"]["DownloadSecretResponseView"];
 
 const { logger } = Log;
 
@@ -45,6 +47,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
     SecretRecoveryController.fetchRecoveryInfo(spec);
     SecretRecoveryController.rejectRequest(spec);
     SecretRecoveryController.acceptRequest(spec);
+    SecretRecoveryController.downloadSecret(spec);
 }
 
 @injectable()
@@ -249,6 +252,44 @@ export class SecretRecoveryController extends ApiController {
         };
         this.notify("WalletUser", "secret-recovery-accepted", recoveryRequest.getDescription(), requesterIdentityLoc!.getOwner(), userPrivateData, recoveryRequest.getDecision());
         this.response.sendStatus(204);
+    }
+
+    static downloadSecret(spec: OpenAPIV3.Document) {
+        const operationObject = spec.paths["/api/secret-recovery/{id}/download-secret"].put!;
+        operationObject.summary = "Returns the secret value associated to this request if it was accepted";
+        operationObject.description = "This is publicly available";
+        operationObject.responses = getDefaultResponses("DownloadSecretResponseView");
+        setPathParameters(operationObject, { 'id': "The ID of the request" });
+    }
+
+    @Async()
+    @HttpPut('/:id/download-secret')
+    async downloadSecret(body: DownloadSecretRequestView, id: string): Promise<DownloadSecretResponseView> {
+        const challenge = requireDefined(body.challenge, () => badRequest("Missing challenge"));
+        const request = await this.secretRecoveryRequestRepository.findById(id);
+        if(request === null) {
+            throw badRequest(`No request with ID ${id}`);
+        }
+        const requesterIdentityLoc = await this.locRequestRepository.findById(request.getDescription().requesterIdentityLocId);
+        if(!requesterIdentityLoc) {
+            throw new Error("Identity LOC not found");
+        }
+
+        const now = moment();
+        try {
+            await this.secretRecoveryRequestService.update(id, async request => {
+                request.markDownloaded(now, challenge, true);
+            });
+        } catch(e) {
+            if(e instanceof Error) {
+                throw badRequest(e.message);
+            } else {
+                throw e;
+            }
+        }
+        return {
+            value: requesterIdentityLoc.getSecretOrThrow(request.getDescription().secretName),
+        }
     }
 }
 

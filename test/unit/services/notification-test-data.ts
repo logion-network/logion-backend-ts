@@ -103,7 +103,8 @@ const secret: SecretRecoveryRequestDescription = {
         postalCode: "4000",
         city: "Liège",
         country: "Belgium"
-    }
+    },
+    downloaded: false,
 };
 
 export function notificationData() {

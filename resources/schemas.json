@@ -2050,6 +2050,24 @@
                         }
                     }
                 }
+            },
+            "DownloadSecretRequestView": {
+                "type": "object",
+                "properties": {
+                    "challenge": {
+                        "type": "string",
+                        "description": "The challenge of the secret recovery request"
+                    }
+                }
+            },
+            "DownloadSecretResponseView": {
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "type": "string",
+                        "description": "The secret's value"
+                    }
+                }
             }
         }
     }
