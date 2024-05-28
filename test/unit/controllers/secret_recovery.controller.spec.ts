@@ -39,7 +39,10 @@ describe("SecretRecoveryController", () => {
                 requesterIdentityLocId: IDENTITY_LOC_ID,
                 secretName: SECRET_NAME,
             })
-            .expect(204);
+            .expect(200)
+            .then(response => {
+                expect(response.body.id).toBeDefined();
+            });
         secretRecoveryRequestRepository.verify(instance => instance.save(secretRecoveryRequest.object()));
     })
 

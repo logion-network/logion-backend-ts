@@ -32,6 +32,7 @@ type RecoveryInfoIdentityView = components["schemas"]["RecoveryInfoIdentityView"
 type RejectRecoveryRequestView = components["schemas"]["RejectRecoveryRequestView"];
 type DownloadSecretRequestView = components["schemas"]["DownloadSecretRequestView"];
 type DownloadSecretResponseView = components["schemas"]["DownloadSecretResponseView"];
+type SecretRecoveryView = components["schemas"]["SecretRecoveryView"];
 
 const { logger } = Log;
 
@@ -74,13 +75,12 @@ export class SecretRecoveryController extends ApiController {
             description: "Secret recovery request creation data",
             view: "CreateSecretRecoveryRequestView",
         });
-        operationObject.responses = getDefaultResponsesNoContent();
+        operationObject.responses = getDefaultResponses("SecretRecoveryView");
     }
 
     @Async()
     @HttpPost('')
-    @SendsResponse()
-    async createSecretRecoveryRequest(body: CreateSecretRecoveryRequestView) {
+    async createSecretRecoveryRequest(body: CreateSecretRecoveryRequestView): Promise<SecretRecoveryView> {
         const { requesterIdentityLocId, challenge, secretName } = body;
         const requesterIdentityLoc = requireDefined(
             await this.locRequestRepository.findById(requesterIdentityLocId),
@@ -122,7 +122,7 @@ export class SecretRecoveryController extends ApiController {
         }
         this.notify("WalletUser", "secret-recovery-requested-user", recoveryRequest.getDescription(), requesterIdentityLoc.getOwner(), userPrivateData);
         this.notify("LegalOfficer", "secret-recovery-requested-legal-officer", recoveryRequest.getDescription(), requesterIdentityLoc.getOwner(), userPrivateData);
-        this.response.sendStatus(204);
+        return { id };
     }
 
     private notify(recipient: NotificationRecipient, templateId: Template, secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData, decision?: LegalOfficerDecisionDescription): void {

@@ -2068,6 +2068,15 @@
                         "description": "The secret's value"
                     }
                 }
+            },
+            "SecretRecoveryView": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "description": "The ID of the Secret Recovery"
+                    }
+                }
             }
         }
     }

@@ -1099,6 +1099,10 @@ export interface components {
       /** @description The secret's value */
       value?: string;
     };
+    SecretRecoveryView: {
+      /** @description The ID of the Secret Recovery */
+      id?: string;
+    };
   };
   responses: never;
   parameters: never;
