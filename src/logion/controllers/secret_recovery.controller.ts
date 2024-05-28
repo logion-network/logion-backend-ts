@@ -276,9 +276,17 @@ export class SecretRecoveryController extends ApiController {
         }
 
         const now = moment();
-        await this.secretRecoveryRequestService.update(id, async request => {
-            request.markDownloaded(now, challenge, true);
-        });
+        try {
+            await this.secretRecoveryRequestService.update(id, async request => {
+                request.markDownloaded(now, challenge, true);
+            });
+        } catch(e) {
+            if(e instanceof Error) {
+                throw badRequest(e.message);
+            } else {
+                throw e;
+            }
+        }
         return {
             value: requesterIdentityLoc.getSecretOrThrow(request.getDescription().secretName),
         }

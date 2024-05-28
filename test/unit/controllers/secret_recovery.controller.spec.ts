@@ -12,7 +12,7 @@ import {
     LocRequestAggregateRoot,
     RecoverableSecretEntity
 } from "../../../src/logion/model/locrequest.model.js";
-import { Mock, It } from "moq.ts";
+import { Mock, It, Times } from "moq.ts";
 import request from "supertest";
 import { ALICE_ACCOUNT, ALICE } from "../../helpers/addresses.js";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
@@ -113,7 +113,7 @@ describe("SecretRecoveryController", () => {
     })
 
     it("downloads secret value", async () => {
-        const app = setupApp(SecretRecoveryController, mockForDownload);
+        const app = setupApp(SecretRecoveryController, container => mockForDownload(container, false));
         await request(app)
             .put(`/api/secret-recovery/${ REQUEST_ID }/download-secret`)
             .send({ challenge: CHALLENGE })
@@ -123,6 +123,16 @@ describe("SecretRecoveryController", () => {
             });
         secretRecoveryRequest.verify(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true));
         secretRecoveryRequestRepository.verify(instance => instance.save(secretRecoveryRequest.object()));
+    })
+
+    it("fails downloading secret value", async () => {
+        const app = setupApp(SecretRecoveryController, container => mockForDownload(container, true));
+        await request(app)
+            .put(`/api/secret-recovery/${ REQUEST_ID }/download-secret`)
+            .send({ challenge: CHALLENGE })
+            .expect(400);
+        secretRecoveryRequest.verify(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true));
+        secretRecoveryRequestRepository.verify(instance => instance.save(secretRecoveryRequest.object()), Times.Never());
     })
 })
 
@@ -286,7 +296,7 @@ function mockForFetch(container: Container) {
     });
 }
 
-function mockForDownload(container: Container) {
+function mockForDownload(container: Container, fails: boolean) {
     mockForAll(container);
 
     secretRecoveryRequest = new Mock<SecretRecoveryRequestAggregateRoot>();
@@ -299,7 +309,11 @@ function mockForDownload(container: Container) {
             id: REQUEST_ID,
             status: "ACCEPTED",
         });
-    secretRecoveryRequest.setup(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true)).returns();
+    if(fails) {
+        secretRecoveryRequest.setup(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true)).throws(new Error("Cannot download"));
+    } else {
+        secretRecoveryRequest.setup(instance => instance.markDownloaded(It.IsAny(), CHALLENGE, true)).returns();
+    }
     secretRecoveryRequestRepository.setup(instance => instance.findById(REQUEST_ID))
         .returns(Promise.resolve(secretRecoveryRequest.object()));
 
