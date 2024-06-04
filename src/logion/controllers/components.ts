@@ -94,14 +94,12 @@ export interface components {
       };
     };
     /**
-     * CreateProtectionRequestView
-     * @description A Protection Request to create
+     * CreateAccountRecoveryRequestView
+     * @description An Account Recovery Request to create
      */
-    CreateProtectionRequestView: {
-      /** @description If this request is a recovery request, tells the address to recover */
-      addressToRecover?: string;
-      /** @description True if the protection request is also a recovery request */
-      isRecovery: boolean;
+    CreateAccountRecoveryRequestView: {
+      /** @description Tells the address to recover */
+      addressToRecover: string;
       /** @description The SS58 address of the legal officer the request was submitted to */
       legalOfficerAddress: string;
       /** @description The SS58 address of the other legal officer the request was submitted to */
@@ -113,36 +111,23 @@ export interface components {
       requesterIdentityLoc: string;
     };
     /**
-     * AcceptProtectionRequestView
-     * @description Parameters for Protection Request's acceptance
+     * FetchAccountRecoveryRequestsResponseView
+     * @description The fetched Account Recovery Requests
      */
-    UpdateProtectionRequestView: {
-      /** @description The SS58 address of the other legal officer a new request is submitted to */
-      otherLegalOfficerAddress?: string;
+    FetchAccountRecoveryRequestsResponseView: {
+      /** @description The Account Recovery Requests matching provided specification */
+      requests?: components["schemas"]["AccountRecoveryRequestView"][];
     };
     /**
-     * FetchProtectionRequestsResponseView
-     * @description The fetched Protection Requests
+     * FetchAccountRecoveryRequestsSpecificationView
+     * @description The specification for fetching Account Recovery Requests
      */
-    FetchProtectionRequestsResponseView: {
-      /** @description The Protection Requests matching provided specification */
-      requests?: components["schemas"]["ProtectionRequestView"][];
-    };
-    /**
-     * FetchProtectionRequestsSpecificationView
-     * @description The specification for fetching Protection Requests
-     */
-    FetchProtectionRequestsSpecificationView: {
-      /** @description The statuses of expected Protection Requests */
+    FetchAccountRecoveryRequestsSpecificationView: {
+      /** @description The statuses of expected Account Recovery Requests */
       statuses?: ("ACCEPTED" | "PENDING" | "REJECTED" | "ACTIVATED" | "CANCELLED" | "REJECTED_CANCELLED" | "ACCEPTED_CANCELLED")[];
-      /**
-       * @description The kind of protection request to be returned
-       * @enum {string}
-       */
-      kind?: "ANY" | "PROTECTION_ONLY" | "RECOVERY";
-      /** @description The SS58 address of the requester in expected Protection Requests */
+      /** @description The SS58 address of the requester in expected Account Recovery Requests */
       requesterAddress?: string;
-      /** @description The SS58 address of the legal officer in expected Protection Requests */
+      /** @description The SS58 address of the legal officer in expected Account Recovery Requests */
       legalOfficerAddress?: string;
     };
     /**
@@ -196,10 +181,10 @@ export interface components {
       postalCode?: string;
     };
     /**
-     * ProtectionRequestView
-     * @description Information about the created Protection Request
+     * AccountRecoveryRequestView
+     * @description Information about the created Account Recovery Request
      */
-    ProtectionRequestView: {
+    AccountRecoveryRequestView: {
       /** @description If this request is a recovery request, tells the address to recover */
       addressToRecover?: string;
       /**
@@ -210,11 +195,9 @@ export interface components {
       decision?: components["schemas"]["LegalOfficerDecisionView"];
       /**
        * Format: uuid
-       * @description The ID of created Protection Request
+       * @description The ID of created Account Recovery Request
        */
       id?: string;
-      /** @description True if the protection request is also a recovery request */
-      isRecovery?: boolean;
       /** @description The SS58 address of the legal officer the request was submitted to */
       legalOfficerAddress?: string;
       /** @description The SS58 address of the other legal officer the request was submitted to */
@@ -804,7 +787,7 @@ export interface components {
     };
     /**
      * CreateVaultTransferRequestView
-     * @description A Protection Request to create
+     * @description A Account Recovery Request to create
      */
     CreateVaultTransferRequestView: {
       /** @description The origin SS58 address of the transfer. In case of a regular vault-out transfer, this equals to requesterAddress. In case of a vault recovery, this equals to the recovered account */
@@ -822,10 +805,10 @@ export interface components {
     };
     /**
      * FetchVaultTransferRequestsResponseView
-     * @description The fetched Protection Requests
+     * @description The fetched Account Recovery Requests
      */
     FetchVaultTransferRequestsResponseView: {
-      /** @description The Protection Requests matching provided specification */
+      /** @description The Account Recovery Requests matching provided specification */
       requests?: components["schemas"]["VaultTransferRequestView"][];
     };
     /**
@@ -861,7 +844,7 @@ export interface components {
     };
     /**
      * VaultTransferRequestView
-     * @description Information about the created Protection Request
+     * @description Information about the created Account Recovery Request
      */
     VaultTransferRequestView: {
       /**
@@ -872,7 +855,7 @@ export interface components {
       decision?: components["schemas"]["VaultTransferRequestDecisionDecisionView"];
       /**
        * Format: uuid
-       * @description The ID of created Protection Request
+       * @description The ID of created Account Recovery Request
        */
       id?: string;
       /** @description The origin SS58 address of the transfer. In case of a regular vault-out transfer, this equals to requesterAddress. In case of a vault recovery, this equals to the recovered account */
@@ -891,7 +874,7 @@ export interface components {
     };
     /**
      * RejectVaultTransferRequestView
-     * @description The Protection Request to reject
+     * @description The Account Recovery Request to reject
      */
     RejectVaultTransferRequestView: {
       /** @description The rejection reason */
@@ -1082,7 +1065,7 @@ export interface components {
       type: components["schemas"]["RecoveryRequestType"];
       /**
        * Format: uuid
-       * @description The ID of created Protection Request
+       * @description The ID of created Account Recovery Request
        */
       id: string;
       /** @description If REJECTED, the reason motivating the rejection. */

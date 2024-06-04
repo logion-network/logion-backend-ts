@@ -1,6 +1,6 @@
 import { It, Mock } from "moq.ts";
 import { FetchLocRequestsSpecification, LocRequestAggregateRoot, LocRequestRepository } from "../../../src/logion/model/locrequest.model.js";
-import { FetchProtectionRequestsSpecification, ProtectionRequestAggregateRoot, ProtectionRequestRepository } from "../../../src/logion/model/protectionrequest.model.js";
+import { FetchAccountRecoveryRequestsSpecification, AccountRecoveryRequestAggregateRoot, AccountRecoveryRepository } from "../../../src/logion/model/account_recovery.model.js";
 import { FetchVaultTransferRequestsSpecification, VaultTransferRequestAggregateRoot, VaultTransferRequestRepository } from "../../../src/logion/model/vaulttransferrequest.model.js";
 import { WorkloadService } from "../../../src/logion/services/workload.service.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
@@ -15,12 +15,12 @@ describe("WorkloadService", () => {
             ALICE: {
                 locRequests: 10,
                 vaultTransferRequests: 20,
-                protectionRequests: 12,
+                accountRecoveryRequests: 12,
             },
             BOB: {
                 locRequests: 22,
                 vaultTransferRequests: 1,
-                protectionRequests: 1,
+                accountRecoveryRequests: 1,
             },
         });
 
@@ -35,12 +35,12 @@ describe("WorkloadService", () => {
             ALICE: {
                 locRequests: 0,
                 vaultTransferRequests: 0,
-                protectionRequests: 0,
+                accountRecoveryRequests: 0,
             },
             BOB: {
                 locRequests: 0,
                 vaultTransferRequests: 0,
-                protectionRequests: 0,
+                accountRecoveryRequests: 0,
             },
         });
 
@@ -54,7 +54,7 @@ describe("WorkloadService", () => {
 function buildService(args: Record<string, {
     locRequests: number,
     vaultTransferRequests: number,
-    protectionRequests: number,
+    accountRecoveryRequests: number,
 }>): WorkloadService {
     const locRequestRepository = new Mock<LocRequestRepository>();
     locRequestRepository.setup(instance => instance.findBy(
@@ -72,18 +72,18 @@ function buildService(args: Record<string, {
         )
     )).returnsAsync(pendingVaultTransferRequests(ALICE_ACCOUNT, args.ALICE.vaultTransferRequests).concat(pendingVaultTransferRequests(BOB_ACCOUNT, args.BOB.vaultTransferRequests)));
 
-    const protectionRequestRepository = new Mock<ProtectionRequestRepository>();
-    protectionRequestRepository.setup(instance => instance.findBy(
-        It.Is<FetchProtectionRequestsSpecification>(spec => spec.expectedLegalOfficerAddress !== null
+    const accountRecoveryRepository = new Mock<AccountRecoveryRepository>();
+    accountRecoveryRepository.setup(instance => instance.findBy(
+        It.Is<FetchAccountRecoveryRequestsSpecification>(spec => spec.expectedLegalOfficerAddress !== null
             && spec.expectedLegalOfficerAddress[0].equals(legalOfficers[0])
             && spec.expectedLegalOfficerAddress[1].equals(legalOfficers[1])
         )
-    )).returnsAsync(pendingProtectionRequests(ALICE_ACCOUNT, args.ALICE.protectionRequests).concat(pendingProtectionRequests(BOB_ACCOUNT, args.BOB.protectionRequests)));
+    )).returnsAsync(pendingAccountRecoveryRequests(ALICE_ACCOUNT, args.ALICE.accountRecoveryRequests).concat(pendingAccountRecoveryRequests(BOB_ACCOUNT, args.BOB.accountRecoveryRequests)));
 
     return new WorkloadService(
         locRequestRepository.object(),
         vaultTransferRequestRepository.object(),
-        protectionRequestRepository.object(),
+        accountRecoveryRepository.object(),
     );
 }
 
@@ -107,10 +107,10 @@ function pendingVaultTransferRequests(owner: ValidAccountId, length: number): Va
     return result;
 }
 
-function pendingProtectionRequests(owner: ValidAccountId, length: number): ProtectionRequestAggregateRoot[] {
+function pendingAccountRecoveryRequests(owner: ValidAccountId, length: number): AccountRecoveryRequestAggregateRoot[] {
     const result = [];
     for (let i = 0; i < length ; i++) {
-        const request = new Mock<ProtectionRequestAggregateRoot>()
+        const request = new Mock<AccountRecoveryRequestAggregateRoot>()
         request.setup(instance => instance.getLegalOfficer()).returns(owner);
         result.push(request.object());
     }

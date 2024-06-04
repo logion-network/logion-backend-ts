@@ -1,6 +1,6 @@
 import {
-    ProtectionRequestDescription,
-} from "../../../src/logion/model/protectionrequest.model.js";
+    AccountRecoveryRequestDescription,
+} from "../../../src/logion/model/account_recovery.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
@@ -10,7 +10,7 @@ import { SecretRecoveryRequestDescription } from "src/logion/model/secret_recove
 import moment from "moment";
 import { LegalOfficerDecisionDescription } from "src/logion/model/decision.js";
 
-export const notifiedProtection: ProtectionRequestDescription & { decision: LegalOfficerDecisionDescription } = {
+export const recovery: AccountRecoveryRequestDescription & { decision: LegalOfficerDecisionDescription } = {
     id: "a7ff4ab6-5bef-4310-9c28-bcbd653565c3",
     status: "PENDING",
     requesterAddress: ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY"),
@@ -19,7 +19,6 @@ export const notifiedProtection: ProtectionRequestDescription & { decision: Lega
     otherLegalOfficerAddress: BOB_ACCOUNT,
     addressToRecover: ValidAccountId.polkadot("5GEZAeYtVZPEEmCT66scGoWS4Jd7AWJdXeNyvxC3LxKP8jCn"),
     createdOn: "2021-06-10T16:25:23.668294",
-    isRecovery: false,
     decision: {
         decisionOn: "2021-06-10T16:25:23.668294",
         rejectReason: "Failed to provide some data",
@@ -111,7 +110,7 @@ export function notificationData() {
     const lo = notifiedLegalOfficer(ALICE_ACCOUNT.address);
     const otherLo = notifiedLegalOfficer(BOB_ACCOUNT.address);
     return {
-        protection: notifiedProtection,
+        recovery,
         legalOfficer: lo,
         otherLegalOfficer: otherLo,
         walletUser: {

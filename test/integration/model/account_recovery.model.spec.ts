@@ -2,12 +2,11 @@ import { TestDb } from "@logion/rest-api-core";
 import { EmbeddablePostalAddress } from "../../../src/logion/model/postaladdress.js";
 import { EmbeddableUserIdentity } from "../../../src/logion/model/useridentity.js";
 import {
-    FetchProtectionRequestsSpecification,
-    ProtectionRequestAggregateRoot,
-    ProtectionRequestRepository,
-    ProtectionRequestKind,
-    ProtectionRequestStatus,
-} from "../../../src/logion/model/protectionrequest.model.js";
+    FetchAccountRecoveryRequestsSpecification,
+    AccountRecoveryRequestAggregateRoot,
+    AccountRecoveryRepository,
+    AccountRecoveryRequestStatus,
+} from "../../../src/logion/model/account_recovery.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LocRequestAggregateRoot } from "../../../src/logion/model/locrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
@@ -15,22 +14,22 @@ import { EmbeddableNullableAccountId, DB_SS58_PREFIX } from "../../../src/logion
 
 const { connect, disconnect, checkNumOfRows, executeScript } = TestDb;
 
-describe('ProtectionRequestRepositoryTest', () => {
+describe('AccountRecoveryRepository (read)', () => {
 
     beforeAll(async () => {
-        await connect([ ProtectionRequestAggregateRoot ]);
-        await executeScript("test/integration/model/protection_requests.sql");
-        repository = new ProtectionRequestRepository();
+        await connect([ AccountRecoveryRequestAggregateRoot ]);
+        await executeScript("test/integration/model/account_recovery.sql");
+        repository = new AccountRecoveryRepository();
     });
 
-    let repository: ProtectionRequestRepository;
+    let repository: AccountRecoveryRepository;
 
     afterAll(async () => {
         await disconnect();
     });
 
     it("findByDecision", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
+        const specification = new FetchAccountRecoveryRequestsSpecification({
             expectedStatuses: [ 'ACCEPTED', 'REJECTED'],
         });
 
@@ -42,7 +41,7 @@ describe('ProtectionRequestRepositoryTest', () => {
 
     it("findByRequesterAddressOnly", async () => {
         let requesterAddress = ValidAccountId.polkadot("5Ew3MyB15VprZrjQVkpQFj8okmc9xLDSEdNhqMMS5cXsqxoW");
-        const specification = new FetchProtectionRequestsSpecification({
+        const specification = new FetchAccountRecoveryRequestsSpecification({
             expectedRequesterAddress: requesterAddress
         });
 
@@ -51,34 +50,8 @@ describe('ProtectionRequestRepositoryTest', () => {
         expect(results.length).toBe(1);
     });
 
-    it("findRecoveryOnly", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
-            expectedStatuses: ['ACCEPTED', 'REJECTED'],
-            kind: 'RECOVERY',
-        });
-
-        const results = await repository.findBy(specification);
-
-        expect(results.length).toBe(1);
-        expectAcceptedOrRejected(results);
-        expectKind(results, 'RECOVERY');
-    });
-
-    it("findProtectionOnly", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
-            expectedStatuses: ['ACCEPTED', 'REJECTED', 'ACTIVATED'],
-            kind: 'PROTECTION_ONLY',
-        });
-
-        const results = await repository.findBy(specification);
-
-        expect(results.length).toBe(3);
-        expectAcceptedRejectedActivated(results);
-        expectKind(results, 'PROTECTION_ONLY');
-    });
-
     it("findActivatedOnly", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
+        const specification = new FetchAccountRecoveryRequestsSpecification({
             expectedStatuses: [ 'ACTIVATED' ]
         });
 
@@ -89,7 +62,7 @@ describe('ProtectionRequestRepositoryTest', () => {
     });
 
     it("findPendingOnly", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
+        const specification = new FetchAccountRecoveryRequestsSpecification({
             expectedStatuses: [ 'PENDING' ],
         });
 
@@ -100,7 +73,7 @@ describe('ProtectionRequestRepositoryTest', () => {
     });
 
     it("finds workload", async () => {
-        const specification = new FetchProtectionRequestsSpecification({
+        const specification = new FetchAccountRecoveryRequestsSpecification({
             expectedLegalOfficerAddress: [ ALICE_ACCOUNT, BOB_ACCOUNT ],
             expectedStatuses: [ "PENDING" ],
         });
@@ -110,14 +83,14 @@ describe('ProtectionRequestRepositoryTest', () => {
     });
 });
 
-describe('ProtectionRequestRepositoryTest', () => {
+describe('AccountRecoveryRepository (write)', () => {
 
     beforeAll(async () => {
-        await connect([ ProtectionRequestAggregateRoot ]);
-        repository = new ProtectionRequestRepository();
+        await connect([ AccountRecoveryRequestAggregateRoot ]);
+        repository = new AccountRecoveryRepository();
     });
 
-    let repository: ProtectionRequestRepository;
+    let repository: AccountRecoveryRepository;
 
     afterAll(async () => {
         await disconnect();
@@ -141,9 +114,8 @@ describe('ProtectionRequestRepositoryTest', () => {
         identityLoc.userPostalAddress.city = 'Paris'
         identityLoc.userPostalAddress.country = 'France'
 
-        const protectionRequest = new ProtectionRequestAggregateRoot()
+        const protectionRequest = new AccountRecoveryRequestAggregateRoot()
         protectionRequest.id = '9a7df79e-9d3a-4ef8-b4e1-496bbe30a639'
-        protectionRequest.isRecovery = false
         protectionRequest.requesterAddress = identityLoc.getRequester()?.getAddress(DB_SS58_PREFIX);
         protectionRequest.requesterIdentityLocId = identityLoc.id;
 
@@ -154,29 +126,20 @@ describe('ProtectionRequestRepositoryTest', () => {
         await repository.save(protectionRequest)
         // Then
         await checkNumOfRows(`SELECT *
-                              FROM protection_request
+                              FROM account_recovery_request
                               WHERE id = '${ protectionRequest.id }'`, 1)
     })
 });
 
-function expectAcceptedOrRejected(results: ProtectionRequestAggregateRoot[]) {
+function expectAcceptedOrRejected(results: AccountRecoveryRequestAggregateRoot[]) {
     results.forEach(request => expect(request.status).toMatch(/ACCEPTED|REJECTED/));
 }
 
-function expectAcceptedRejectedActivated(results: ProtectionRequestAggregateRoot[]) {
+function expectAcceptedRejectedActivated(results: AccountRecoveryRequestAggregateRoot[]) {
     results.forEach(request => expect(request.status).toMatch(/ACCEPTED|REJECTED|ACTIVATED/));
 }
 
-function expectKind(results: ProtectionRequestAggregateRoot[], kind: ProtectionRequestKind) {
-    if(kind === 'ANY') {
-        return;
-    }
-    results.forEach(request => {
-        expect(request.isRecovery!).toBe(kind == 'RECOVERY');
-    });
-}
-
-function expectStatus(results: ProtectionRequestAggregateRoot[], status: ProtectionRequestStatus) {
+function expectStatus(results: AccountRecoveryRequestAggregateRoot[], status: AccountRecoveryRequestStatus) {
     results.forEach(request => {
         expect(request.status!).toBe(status);
     });

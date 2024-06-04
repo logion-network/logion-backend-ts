@@ -194,10 +194,10 @@ export class SecretRecoveryController extends ApiController {
 
     static rejectRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/secret-recovery/{id}/reject"].post!;
-        operationObject.summary = "Rejects a Protection Request";
-        operationObject.description = "The authenticated user must be one of the legal officers of the protection request";
+        operationObject.summary = "Rejects a request";
+        operationObject.description = "The authenticated user must be one of the legal officers of the request";
         operationObject.requestBody = getRequestBody({
-            description: "Protection Request rejection data",
+            description: "Request rejection data",
             view: "RejectRecoveryRequestView",
         });
         operationObject.responses = getDefaultResponsesNoContent();
@@ -227,8 +227,8 @@ export class SecretRecoveryController extends ApiController {
 
     static acceptRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/secret-recovery/{id}/accept"].post!;
-        operationObject.summary = "Accepts a Protection Request";
-        operationObject.description = "The authenticated user must be one of the legal officers of the protection request";
+        operationObject.summary = "Accepts a request";
+        operationObject.description = "The authenticated user must be one of the legal officers of the request";
         operationObject.responses = getDefaultResponsesNoContent();
         setPathParameters(operationObject, { 'id': "The ID of the request to accept" });
     }

@@ -9,12 +9,10 @@ import { LegalOfficerDecision, LegalOfficerDecisionDescription } from "./decisio
 
 const { logger } = Log;
 
-export type ProtectionRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED' | 'CANCELLED' | 'REJECTED_CANCELLED' | 'ACCEPTED_CANCELLED';
+export type AccountRecoveryRequestStatus = 'PENDING' | 'REJECTED' | 'ACCEPTED' | 'ACTIVATED' | 'CANCELLED' | 'REJECTED_CANCELLED' | 'ACCEPTED_CANCELLED';
 
-export type ProtectionRequestKind = 'RECOVERY' | 'PROTECTION_ONLY' | 'ANY';
-
-@Entity("protection_request")
-export class ProtectionRequestAggregateRoot {
+@Entity("account_recovery_request")
+export class AccountRecoveryRequestAggregateRoot {
 
     reject(reason: string, decisionOn: Moment): void {
         if(this.status !== 'PENDING') {
@@ -39,17 +37,9 @@ export class ProtectionRequestAggregateRoot {
         this.status = 'ACTIVATED';
     }
 
-    resubmit() {
-        if(this.status !== 'REJECTED') {
-            throw badRequest("Request is not rejected")
-        }
-        this.status = "PENDING";
-        this.decision!.clear();
-    }
-
     cancel() {
         if(this.status === 'ACTIVATED') {
-            throw badRequest("Cannot cancel an already activated protection");
+            throw badRequest("Cannot cancel when already activated");
         }
         if(this.status === 'PENDING') {
             this.status = 'CANCELLED';
@@ -60,16 +50,6 @@ export class ProtectionRequestAggregateRoot {
         }
     }
 
-    updateOtherLegalOfficer(account: ValidAccountId) {
-        if(this.status === 'ACTIVATED') {
-            throw badRequest("Cannot update the LO of an already activated protection")
-        }
-        if (this.isRecovery) {
-            throw badRequest("Cannot update the LO of a recovery request")
-        }
-        this.otherLegalOfficerAddress = account.getAddress(DB_SS58_PREFIX);
-    }
-
     @PrimaryColumn({ type: "uuid" })
     id?: string;
 
@@ -78,9 +58,6 @@ export class ProtectionRequestAggregateRoot {
 
     @Column("timestamp without time zone", { name: "created_on", nullable: true })
     createdOn?: string;
-
-    @Column("boolean", {name: "is_recovery" })
-    isRecovery?: boolean;
 
     @Column({ length: 255, name: "requester_address" })
     requesterAddress?: string;
@@ -93,7 +70,7 @@ export class ProtectionRequestAggregateRoot {
     requesterIdentityLocId?: string;
 
     @Column({ length: 255 })
-    status?: ProtectionRequestStatus;
+    status?: AccountRecoveryRequestStatus;
 
     @Column(() => LegalOfficerDecision, {prefix: ""})
     decision?: LegalOfficerDecision;
@@ -104,7 +81,7 @@ export class ProtectionRequestAggregateRoot {
     @Column({ length: 255, name: "other_legal_officer_address" })
     otherLegalOfficerAddress?: string;
 
-    getDescription(): ProtectionRequestDescription {
+    getDescription(): AccountRecoveryRequestDescription {
         return {
             id: requireDefined(this.id),
             status: requireDefined(this.status),
@@ -113,8 +90,7 @@ export class ProtectionRequestAggregateRoot {
             legalOfficerAddress: ValidAccountId.polkadot(this.legalOfficerAddress || ""),
             otherLegalOfficerAddress: ValidAccountId.polkadot(this.otherLegalOfficerAddress || ""),
             createdOn: requireDefined(this.createdOn),
-            isRecovery: requireDefined(this.isRecovery),
-            addressToRecover: this.addressToRecover ? ValidAccountId.polkadot(this.addressToRecover) : null,
+            addressToRecover: ValidAccountId.polkadot(requireDefined(this.addressToRecover)),
         };
     }
 
@@ -141,53 +117,50 @@ export class ProtectionRequestAggregateRoot {
         return ValidAccountId.polkadot(this.requesterAddress || "")
     }
 
-    getAddressToRecover(): ValidAccountId | null {
+    getAddressToRecover(): ValidAccountId {
         if (this.addressToRecover !== undefined && this.addressToRecover !== null) {
             return ValidAccountId.polkadot(this.addressToRecover)
         } else {
-            return null;
+            throw new Error("No address to recover");
         }
     }
 }
 
-export class FetchProtectionRequestsSpecification {
+export class FetchAccountRecoveryRequestsSpecification {
 
     constructor(builder: {
         expectedRequesterAddress?: ValidAccountId,
         expectedLegalOfficerAddress?: ValidAccountId[],
-        expectedStatuses?: ProtectionRequestStatus[],
-        kind?: ProtectionRequestKind,
+        expectedStatuses?: AccountRecoveryRequestStatus[],
     }) {
         this.expectedRequesterAddress = builder.expectedRequesterAddress || null;
         this.expectedLegalOfficerAddress = builder.expectedLegalOfficerAddress || null;
         this.expectedStatuses = builder.expectedStatuses || [];
-        this.kind = builder.kind || 'ANY';
     }
 
     readonly expectedRequesterAddress: ValidAccountId | null;
     readonly expectedLegalOfficerAddress: ValidAccountId[] | null;
-    readonly kind: ProtectionRequestKind;
-    readonly expectedStatuses: ProtectionRequestStatus[];
+    readonly expectedStatuses: AccountRecoveryRequestStatus[];
 }
 
 @injectable()
-export class ProtectionRequestRepository {
+export class AccountRecoveryRepository {
 
     constructor() {
-        this.repository = appDataSource.getRepository(ProtectionRequestAggregateRoot);
+        this.repository = appDataSource.getRepository(AccountRecoveryRequestAggregateRoot);
     }
 
-    readonly repository: Repository<ProtectionRequestAggregateRoot>;
+    readonly repository: Repository<AccountRecoveryRequestAggregateRoot>;
 
-    public findById(id: string): Promise<ProtectionRequestAggregateRoot | null> {
+    public findById(id: string): Promise<AccountRecoveryRequestAggregateRoot | null> {
         return this.repository.findOneBy({ id });
     }
 
-    public async save(root: ProtectionRequestAggregateRoot): Promise<void> {
+    public async save(root: AccountRecoveryRequestAggregateRoot): Promise<void> {
         await this.repository.save(root);
     }
 
-    public async findBy(specification: FetchProtectionRequestsSpecification): Promise<ProtectionRequestAggregateRoot[]> {
+    public async findBy(specification: FetchAccountRecoveryRequestsSpecification): Promise<AccountRecoveryRequestAggregateRoot[]> {
         const builder = this.repository.createQueryBuilder("request");
 
         let where = (a: string, b?: ObjectLiteral) => builder.where(a, b);
@@ -212,14 +185,6 @@ export class ProtectionRequestRepository {
             where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
         }
 
-        if(specification.kind === 'RECOVERY') {
-            where("request.is_recovery IS TRUE");
-            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
-        } else if(specification.kind === 'PROTECTION_ONLY') {
-            where("request.is_recovery IS FALSE");
-            where = (a: string, b?: ObjectLiteral) => builder.andWhere(a, b);
-        }
-
         if(specification.expectedStatuses.length > 0) {
             where("request.status IN (:...expectedStatuses)", {expectedStatuses: specification.expectedStatuses});
         }
@@ -228,31 +193,29 @@ export class ProtectionRequestRepository {
     }
 }
 
-export interface ProtectionRequestDescription {
+export interface AccountRecoveryRequestDescription {
     readonly id: string,
-    readonly status: ProtectionRequestStatus,
+    readonly status: AccountRecoveryRequestStatus,
     readonly requesterAddress: ValidAccountId,
     readonly requesterIdentityLocId: string,
     readonly legalOfficerAddress: ValidAccountId,
     readonly otherLegalOfficerAddress: ValidAccountId,
     readonly createdOn: string,
-    readonly isRecovery: boolean,
-    readonly addressToRecover: ValidAccountId | null,
+    readonly addressToRecover: ValidAccountId,
 }
 
-export interface NewProtectionRequestParameters {
+export interface NewAccountRecoveryRequestParameters {
     readonly id: string;
     readonly requesterAddress: ValidAccountId,
     readonly requesterIdentityLoc: string,
     readonly legalOfficerAddress: ValidAccountId,
     readonly otherLegalOfficerAddress: ValidAccountId,
     readonly createdOn: string,
-    readonly isRecovery: boolean,
-    readonly addressToRecover: ValidAccountId | null,
+    readonly addressToRecover: ValidAccountId,
 }
 
 @injectable()
-export class ProtectionRequestFactory {
+export class AccountRecoveryRequestFactory {
 
 
     constructor(
@@ -260,14 +223,14 @@ export class ProtectionRequestFactory {
     ) {
     }
 
-    public async newProtectionRequest(params: NewProtectionRequestParameters): Promise<ProtectionRequestAggregateRoot> {
+    public async newAccountRecoveryRequest(params: NewAccountRecoveryRequestParameters): Promise<AccountRecoveryRequestAggregateRoot> {
         const identityLoc = requireDefined(
             await this.locRequestRepository.findById(params.requesterIdentityLoc),
             () => badRequest("Identity LOC not found")
         )
         identityLoc.isValidPolkadotIdentityLocOrThrow(params.requesterAddress, params.legalOfficerAddress);
 
-        const root = new ProtectionRequestAggregateRoot();
+        const root = new AccountRecoveryRequestAggregateRoot();
         root.id = params.id;
         root.status = 'PENDING';
         root.decision = new LegalOfficerDecision();
@@ -276,13 +239,10 @@ export class ProtectionRequestFactory {
         root.legalOfficerAddress = params.legalOfficerAddress.getAddress(DB_SS58_PREFIX);
         root.otherLegalOfficerAddress = params.otherLegalOfficerAddress.getAddress(DB_SS58_PREFIX);
         root.createdOn = params.createdOn;
-        root.isRecovery = params.isRecovery;
-        if(root.isRecovery) {
-            root.addressToRecover = requireDefined(
-                params.addressToRecover?.getAddress(DB_SS58_PREFIX),
-                () => badRequest("Recovery requires an address to recover")
-            );
-        }
+        root.addressToRecover = requireDefined(
+            params.addressToRecover?.getAddress(DB_SS58_PREFIX),
+            () => badRequest("Recovery requires an address to recover")
+        );
         return root;
     }
 }

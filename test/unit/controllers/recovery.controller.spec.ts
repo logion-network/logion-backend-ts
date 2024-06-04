@@ -5,10 +5,10 @@ import request from 'supertest';
 import { TestApp } from '@logion/rest-api-core';
 
 import {
-    ProtectionRequestRepository,
-    ProtectionRequestAggregateRoot,
-    ProtectionRequestDescription,
-} from '../../../src/logion/model/protectionrequest.model.js';
+    AccountRecoveryRepository,
+    AccountRecoveryRequestAggregateRoot,
+    AccountRecoveryRequestDescription,
+} from '../../../src/logion/model/account_recovery.model.js';
 import { BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
@@ -54,14 +54,14 @@ describe('RecoveryController', () => {
 });
 
 function mockModelForFetch(container: Container): void {
-    const accountRecoveryRequestRepository = new Mock<ProtectionRequestRepository>();
+    const accountRecoveryRequestRepository = new Mock<AccountRecoveryRepository>();
 
-    const protectionRequest = mockProtectionRequest();
+    const recoveryRequest = mockRecoveryRequest();
 
-    const requests: ProtectionRequestAggregateRoot[] = [ protectionRequest.object() ];
+    const requests: AccountRecoveryRequestAggregateRoot[] = [ recoveryRequest.object() ];
     accountRecoveryRequestRepository.setup(instance => instance.findBy)
         .returns(() => Promise.resolve(requests));
-    container.bind(ProtectionRequestRepository).toConstantValue(accountRecoveryRequestRepository.object());
+    container.bind(AccountRecoveryRepository).toConstantValue(accountRecoveryRequestRepository.object());
 
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
 
@@ -72,30 +72,29 @@ function mockModelForFetch(container: Container): void {
     container.bind(SecretRecoveryRequestRepository).toConstantValue(secretRecoveryRequestRepository.object());
 }
 
-function mockProtectionRequest(): Mock<ProtectionRequestAggregateRoot> {
-    const description: ProtectionRequestDescription = {
+function mockRecoveryRequest(): Mock<AccountRecoveryRequestAggregateRoot> {
+    const description: AccountRecoveryRequestDescription = {
         id: ACCOUNT_RECOVERY_REQUEST_ID,
         status: "ACCEPTED",
         requesterAddress: REQUESTER,
         requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
         legalOfficerAddress: ALICE_ACCOUNT,
-        isRecovery: false,
         otherLegalOfficerAddress: BOB_ACCOUNT,
         createdOn: ACCOUNT_CREATED_ON,
-        addressToRecover: null,
+        addressToRecover: ACCOUNT_TO_RECOVER,
     }
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.getDescription()).returns(description);
-    protectionRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT);
-    protectionRequest.setup(instance => instance.getOtherLegalOfficer()).returns(BOB_ACCOUNT);
-    protectionRequest.setup(instance => instance.getRequester()).returns(REQUESTER);
-    protectionRequest.setup(instance => instance.getAddressToRecover()).returns(null);
-    protectionRequest.setup(instance => instance.getDecision()).returns(undefined);
-    return protectionRequest;
+    const recoveryRequest = new Mock<AccountRecoveryRequestAggregateRoot>();
+    recoveryRequest.setup(instance => instance.getDescription()).returns(description);
+    recoveryRequest.setup(instance => instance.getLegalOfficer()).returns(ALICE_ACCOUNT);
+    recoveryRequest.setup(instance => instance.getOtherLegalOfficer()).returns(BOB_ACCOUNT);
+    recoveryRequest.setup(instance => instance.getRequester()).returns(REQUESTER);
+    recoveryRequest.setup(instance => instance.getAddressToRecover()).returns(ACCOUNT_TO_RECOVER);
+    recoveryRequest.setup(instance => instance.getDecision()).returns(undefined);
+    return recoveryRequest;
 }
 
 const REQUESTER = ValidAccountId.polkadot("5H4MvAsobfZ6bBCDyj5dsrWYLrA8HrRzaqa9p61UXtxMhSCY");
-
+const ACCOUNT_TO_RECOVER = ValidAccountId.polkadot("vQvrwS6w8eXorsbsH4cp6YdNtEegZYH9CvhHZizV2p9dPGyDJ");
 const ACCOUNT_CREATED_ON = "2021-06-10T16:25:23.668294";
 
 const IDENTITY: UserIdentity = {
@@ -140,13 +139,13 @@ function mockSecretRecoveryRequest(): Mock<SecretRecoveryRequestAggregateRoot> {
         userPostalAddress: POSTAL_ADDRESS,
         downloaded: false,
     }
-    const protectionRequest = new Mock<SecretRecoveryRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.getDescription()).returns(description);
-    protectionRequest.setup(instance => instance.getDecision()).returns({
+    const request = new Mock<SecretRecoveryRequestAggregateRoot>();
+    request.setup(instance => instance.getDescription()).returns(description);
+    request.setup(instance => instance.getDecision()).returns({
         decisionOn: DECISION_ON.toISOString(),
         rejectReason: REJECT_REASON,
     });
-    return protectionRequest;
+    return request;
 }
 
 const SECRET_RECOVERY_REQUEST_ID = "f293127e-8356-47a7-a6b7-480cdd1daabd";

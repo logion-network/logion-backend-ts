@@ -17,11 +17,11 @@ import moment from "moment";
 import { DirectoryService } from "../../../src/logion/services/directory.service.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import {
-    FetchProtectionRequestsSpecification,
-    ProtectionRequestAggregateRoot,
-    ProtectionRequestDescription,
-    ProtectionRequestRepository
-} from '../../../src/logion/model/protectionrequest.model.js';
+    FetchAccountRecoveryRequestsSpecification,
+    AccountRecoveryRequestAggregateRoot,
+    AccountRecoveryRequestDescription,
+    AccountRecoveryRepository
+} from '../../../src/logion/model/account_recovery.model.js';
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
 import { NonTransactionalVaultTransferRequestService, VaultTransferRequestService } from '../../../src/logion/services/vaulttransferrequest.service.js';
@@ -256,14 +256,14 @@ function mockOtherDependencies(container: Container, repository: Mock<VaultTrans
         .returns(Promise.resolve(ALICE_ACCOUNT));
     container.bind(DirectoryService).toConstantValue(directoryService.object());
 
-    const protectionRequest = new Mock<ProtectionRequestAggregateRoot>();
-    protectionRequest.setup(instance => instance.getDescription()).returns(protectionRequestDescription);
+    const accountRecoveryRequest = new Mock<AccountRecoveryRequestAggregateRoot>();
+    accountRecoveryRequest.setup(instance => instance.getDescription()).returns(accountRecoveryRequestDescription);
 
-    const protectionRequestRepository = new Mock<ProtectionRequestRepository>();
-    protectionRequestRepository
-        .setup(instance => instance.findBy(It.IsAny<FetchProtectionRequestsSpecification>()))
-        .returns(Promise.resolve([ protectionRequest.object() ]));
-    container.bind(ProtectionRequestRepository).toConstantValue(protectionRequestRepository.object());
+    const accountRecoveryRepository = new Mock<AccountRecoveryRepository>();
+    accountRecoveryRepository
+        .setup(instance => instance.findBy(It.IsAny<FetchAccountRecoveryRequestsSpecification>()))
+        .returns(Promise.resolve([ accountRecoveryRequest.object() ]));
+    container.bind(AccountRecoveryRepository).toConstantValue(accountRecoveryRepository.object());
 
     container.bind(VaultTransferRequestService).toConstantValue(new NonTransactionalVaultTransferRequestService(repository.object()));
 
@@ -346,14 +346,15 @@ const POSTAL_ADDRESS: PostalAddress = {
 
 const REQUESTER_IDENTITY_LOC_ID = "77c2fef4-6f1d-44a1-a49d-3485c2eb06ee";
 
-const protectionRequestDescription: ProtectionRequestDescription = {
+const ACCOUNT_TO_RECOVER = ValidAccountId.polkadot("vQvrwS6w8eXorsbsH4cp6YdNtEegZYH9CvhHZizV2p9dPGyDJ");
+
+const accountRecoveryRequestDescription: AccountRecoveryRequestDescription = {
     id: "a7ff4ab6-5bef-4310-9c28-bcbd653565c3",
     status: "ACTIVATED",
-    addressToRecover: null,
+    addressToRecover: ACCOUNT_TO_RECOVER,
     requesterIdentityLocId: REQUESTER_IDENTITY_LOC_ID,
     legalOfficerAddress: ALICE_ACCOUNT,
     createdOn: TIMESTAMP,
-    isRecovery: false,
     otherLegalOfficerAddress: BOB_ACCOUNT,
     requesterAddress: REQUESTER,
 };

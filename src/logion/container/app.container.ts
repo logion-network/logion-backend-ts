@@ -1,8 +1,8 @@
 import { configureContainer, HealthService } from "@logion/rest-api-core";
 import { Container } from 'inversify';
 
-import { ProtectionRequestController } from '../controllers/protectionrequest.controller.js';
-import { ProtectionRequestRepository, ProtectionRequestFactory } from '../model/protectionrequest.model.js';
+import { AccountRecoveryController } from '../controllers/account_recovery.controller.js';
+import { AccountRecoveryRepository, AccountRecoveryRequestFactory } from '../model/account_recovery.model.js';
 import { TransactionRepository, TransactionFactory } from '../model/transaction.model.js';
 import { SyncPointRepository, SyncPointFactory } from '../model/syncpoint.model.js';
 import { BlockExtrinsicsService } from "../services/block.service.js";
@@ -15,7 +15,7 @@ import { Scheduler } from '../scheduler/scheduler.service.js';
 import { LocRequestController } from "../controllers/locrequest.controller.js";
 import { LocRequestRepository, LocRequestFactory } from "../model/locrequest.model.js";
 import { FileStorageService } from '../services/file.storage.service.js';
-import { ProtectionSynchronizer } from '../services/protectionsynchronization.service.js';
+import { AccountRecoverySynchronizer } from '../services/accountrecoverysynchronization.service.js';
 import { TransactionController } from '../controllers/transaction.controller.js';
 import { CollectionRepository, CollectionFactory } from "../model/collection.model.js";
 import { NotificationService } from "../services/notification.service.js";
@@ -40,7 +40,7 @@ import { VerifiedIssuerSelectionFactory, VerifiedIssuerSelectionRepository } fro
 import { LocRequestAdapter } from "../controllers/adapters/locrequestadapter.js";
 import { LocRequestService, TransactionalLocRequestService } from "../services/locrequest.service.js";
 import { LoFileService, TransactionalLoFileService } from "../services/lofile.service.js";
-import { ProtectionRequestService, TransactionalProtectionRequestService } from "../services/protectionrequest.service.js";
+import { AccountRecoveryRequestService, TransactionalAccountRecoveryRequestService } from "../services/accountrecoveryrequest.service.js";
 import { SettingService, TransactionalSettingService } from "../services/settings.service.js";
 import { SyncPointService, TransactionalSyncPointService } from "../services/syncpoint.service.js";
 import { TransactionalTransactionService, TransactionService } from "../services/transaction.service.js";
@@ -74,8 +74,8 @@ import { RecoveryController } from "../controllers/recovery.controller.js";
 const container = new Container({ defaultScope: "Singleton", skipBaseClassChecks: true });
 configureContainer(container);
 
-container.bind(ProtectionRequestRepository).toSelf();
-container.bind(ProtectionRequestFactory).toSelf();
+container.bind(AccountRecoveryRepository).toSelf();
+container.bind(AccountRecoveryRequestFactory).toSelf();
 container.bind(BlockExtrinsicsService).toSelf();
 container.bind(ExtrinsicDataExtractor).toSelf();
 container.bind(TransactionExtractor).toSelf();
@@ -90,7 +90,7 @@ container.bind(LocRequestFactory).toSelf();
 container.bind(FileStorageService).toSelf();
 container.bind(LocSynchronizer).toSelf();
 container.bind(BlockConsumer).toSelf();
-container.bind(ProtectionSynchronizer).toSelf();
+container.bind(AccountRecoverySynchronizer).toSelf();
 container.bind(CollectionRepository).toSelf()
 container.bind(CollectionFactory).toSelf()
 container.bind(LogionNodeCollectionService).toSelf();
@@ -123,8 +123,8 @@ container.bind(CollectionService).toService(TransactionalCollectionService);
 container.bind(TransactionalCollectionService).toSelf();
 container.bind(LoFileService).toService(TransactionalLoFileService);
 container.bind(TransactionalLoFileService).toSelf();
-container.bind(ProtectionRequestService).toService(TransactionalProtectionRequestService);
-container.bind(TransactionalProtectionRequestService).toSelf();
+container.bind(AccountRecoveryRequestService).toService(TransactionalAccountRecoveryRequestService);
+container.bind(TransactionalAccountRecoveryRequestService).toSelf();
 container.bind(SettingService).toService(TransactionalSettingService);
 container.bind(TransactionalSettingService).toSelf();
 container.bind(SyncPointService).toService(TransactionalSyncPointService);
@@ -165,7 +165,7 @@ container.bind(TransactionalSecretRecoveryRequestService).toSelf();
 
 // Controllers are stateful so they must not be injected with singleton scope
 container.bind(LocRequestController).toSelf().inTransientScope();
-container.bind(ProtectionRequestController).toSelf().inTransientScope();
+container.bind(AccountRecoveryController).toSelf().inTransientScope();
 container.bind(TransactionController).toSelf().inTransientScope();
 container.bind(VaultTransferRequestController).toSelf().inTransientScope();
 container.bind(SettingController).toSelf().inTransientScope();

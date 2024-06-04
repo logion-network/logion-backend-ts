@@ -11,7 +11,7 @@ import { Controller, HttpPut, ApiController, Async } from "dinoloop";
 import { components } from "./components.js";
 import { SecretRecoveryRequestRepository, SecretRecoveryRequestAggregateRoot } from "../model/secret_recovery.model.js";
 import { LocRequestAdapter } from "./adapters/locrequestadapter.js";
-import { FetchProtectionRequestsSpecification, ProtectionRequestAggregateRoot, ProtectionRequestRepository } from "../model/protectionrequest.model.js";
+import { FetchAccountRecoveryRequestsSpecification, AccountRecoveryRequestAggregateRoot, AccountRecoveryRepository } from "../model/account_recovery.model.js";
 
 type RecoveryRequestView = components["schemas"]["RecoveryRequestView"];
 type RecoveryRequestsView = components["schemas"]["RecoveryRequestsView"];
@@ -34,7 +34,7 @@ export class RecoveryController extends ApiController {
     constructor(
         private authenticationService: AuthenticationService,
         private secretRecoveryRequestRepository: SecretRecoveryRequestRepository,
-        private accountRecoveryRequestRepository: ProtectionRequestRepository,
+        private accountRecoveryRequestRepository: AccountRecoveryRepository,
         private locRequestAdapter: LocRequestAdapter,
     ) {
         super();
@@ -54,7 +54,7 @@ export class RecoveryController extends ApiController {
         const legalOfficer = authenticatedUser.validAccountId;
 
         const accountRecoveryRequests = await this.accountRecoveryRequestRepository.findBy(
-            new FetchProtectionRequestsSpecification({
+            new FetchAccountRecoveryRequestsSpecification({
                 expectedLegalOfficerAddress: [ legalOfficer ],
             })
         );
@@ -71,7 +71,7 @@ export class RecoveryController extends ApiController {
         return view;
     }
 
-    private async toAccountRecoveryRequestView(accountRecoveryRequest: ProtectionRequestAggregateRoot): Promise<RecoveryRequestView> {
+    private async toAccountRecoveryRequestView(accountRecoveryRequest: AccountRecoveryRequestAggregateRoot): Promise<RecoveryRequestView> {
         const description = accountRecoveryRequest.getDescription();
         const { userIdentity, userPostalAddress } = requireDefined(
             await this.locRequestAdapter.getUserPrivateData(description.requesterIdentityLocId)

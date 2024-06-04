@@ -8,7 +8,7 @@ import { SyncPointAggregateRoot, SyncPointFactory, SyncPointRepository, TRANSACT
 import { BlockExtrinsicsService } from "./block.service.js";
 import { LocSynchronizer } from "./locsynchronization.service.js";
 import { TransactionSynchronizer } from "./transactionsync.service.js";
-import { ProtectionSynchronizer } from "./protectionsynchronization.service.js";
+import { AccountRecoverySynchronizer } from "./accountrecoverysynchronization.service.js";
 import { ExtrinsicDataExtractor } from "./extrinsic.data.extractor.js";
 import { JsonExtrinsic, toStringWithoutError } from "./types/responses/Extrinsic.js";
 import { ProgressRateLogger } from "./progressratelogger.js";
@@ -33,7 +33,7 @@ export class BlockConsumer {
         private syncPointService: SyncPointService,
         private transactionSynchronizer: TransactionSynchronizer,
         private locSynchronizer: LocSynchronizer,
-        private protectionSynchronizer: ProtectionSynchronizer,
+        private accountRecoverySynchronizer: AccountRecoverySynchronizer,
         private extrinsicDataExtractor: ExtrinsicDataExtractor,
         private prometheusService: PrometheusService,
         private voteSynchronizer: VoteSynchronizer,
@@ -148,7 +148,7 @@ export class BlockConsumer {
                 if (extrinsic.call.pallet !== "timestamp") {
                     logger.info("Processing extrinsic: %s", toStringWithoutError(extrinsic))
                     await this.locSynchronizer.updateLocRequests(extrinsic, timestamp);
-                    await this.protectionSynchronizer.updateProtectionRequests(extrinsic);
+                    await this.accountRecoverySynchronizer.updateAccountRecoveryRequests(extrinsic);
                     await this.voteSynchronizer.updateVotes(extrinsic, timestamp);
                 }
             }

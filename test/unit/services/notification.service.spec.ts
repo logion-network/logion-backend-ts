@@ -1,7 +1,7 @@
 import { NotificationService, templateValues } from "../../../src/logion/services/notification.service.js";
 import { MailService, MailMessage } from "../../../src/logion/services/mail.service.js";
 import { Mock, It } from "moq.ts";
-import { notifiedProtection, notificationData } from "./notification-test-data.js";
+import { recovery, notificationData } from "./notification-test-data.js";
 import { writeFileSync, mkdtempSync } from "fs";
 import { tmpdir } from 'os';
 
@@ -22,15 +22,15 @@ describe("NotificationService", () => {
     it("renders message", () => {
 
         notificationService.templatePath = "test/resources/mail";
-        const message = notificationService.renderMessage("protection-requested", {
-            protection: notifiedProtection,
+        const message = notificationService.renderMessage("recovery-requested", {
+            recovery,
             walletUser: notificationData().walletUser,
         });
-        expect(message.subject).toEqual("Your protection is requested")
+        expect(message.subject).toEqual("Your recovery is requested")
         const actualText = message.text;
         const expectedText = [
             "Dear Legal Officer,",
-            "The following user has requested your protection:",
+            "The following user has requested your recovery:",
             "John Doe(vQxHAE33LeJYV69GCB4o4YcCgnDu8y99u5hy2751fRdxjX9kz)",
             ""
         ].join("\n")
@@ -61,8 +61,8 @@ describe("NotificationService", () => {
 
     it("notifies by mail", () => {
         notificationService.templatePath = "test/resources/mail";
-        notificationService.notify(to, "protection-requested", {
-            protection: notifiedProtection,
+        notificationService.notify(to, "recovery-requested", {
+            recovery,
             walletUser: notificationData().walletUser,
         })
         mailService
@@ -71,10 +71,10 @@ describe("NotificationService", () => {
 
     it("renders included file", () => {
         notificationService.templatePath = "test/resources/mail";
-        const message = notificationService.renderMessage("protection-accepted", { info: "footer" });
-        expect(message.subject).toEqual("Your protection is accepted.")
+        const message = notificationService.renderMessage("recovery-accepted", { info: "footer" });
+        expect(message.subject).toEqual("Your recovery is accepted.")
         expect(message.text).toEqual([
-            "Your protection is accepted.",
+            "Your recovery is accepted.",
             "This is the footer.",
             ""
         ].join("\n"))
