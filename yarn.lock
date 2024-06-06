@@ -1119,18 +1119,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/node-api@npm:^0.29.0":
-  version: 0.29.0
-  resolution: "@logion/node-api@npm:0.29.0"
+"@logion/node-api@npm:^0.31.0-2":
+  version: 0.31.0-2
+  resolution: "@logion/node-api@npm:0.31.0-2"
   dependencies:
-    "@polkadot/api": ^10.12.2
+    "@polkadot/api": ^11.0.2
     "@polkadot/util": ^12.6.2
     "@polkadot/util-crypto": ^12.6.2
     "@types/uuid": ^9.0.2
     bech32: ^2.0.0
     fast-sha256: ^1.3.0
     uuid: ^9.0.0
-  checksum: ca95167cc2ae59e4190340b16ac0ba7f478f30904a18979d3baaa8102e73aa302cce1de661b78e80c73c6c1a867423e8738ca3b6405feb1a665a5221b4c71aad
+  checksum: e69299c3fada965de1073d95cfcb9c000a10f4117a0e82b9ddcc1d350ceea0d7d906f8d21ab6ab76a25c7ef8b396974b469c1367433b24ce3f2f69cf03d4ed07
   languageName: node
   linkType: hard
 
@@ -2835,18 +2835,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"axios@npm:^1.3.2, axios@npm:^1.6.5":
-  version: 1.6.7
-  resolution: "axios@npm:1.6.7"
-  dependencies:
-    follow-redirects: ^1.15.4
-    form-data: ^4.0.0
-    proxy-from-env: ^1.1.0
-  checksum: 87d4d429927d09942771f3b3a6c13580c183e31d7be0ee12f09be6d5655304996bb033d85e54be81606f4e89684df43be7bf52d14becb73a12727bf33298a082
-  languageName: node
-  linkType: hard
-
-"axios@npm:^1.6.8":
+"axios@npm:^1.3.2, axios@npm:^1.6.5, axios@npm:^1.6.8":
   version: 1.6.8
   resolution: "axios@npm:1.6.8"
   dependencies:
@@ -4581,7 +4570,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"follow-redirects@npm:^1.15.4, follow-redirects@npm:^1.15.6":
+"follow-redirects@npm:^1.15.6":
   version: 1.15.6
   resolution: "follow-redirects@npm:1.15.6"
   peerDependenciesMeta:
@@ -5980,7 +5969,7 @@ __metadata:
     "@astar-network/astar-api": ^0.2.9
     "@astar-network/astar-sdk-core": ^0.2.9
     "@istanbuljs/nyc-config-typescript": ^1.0.2
-    "@logion/node-api": ^0.29.0
+    "@logion/node-api": ^0.31.0-2
     "@logion/node-exiftool": ^2.3.1
     "@logion/rest-api-core": ^0.5.0
     "@polkadot/api-contract": ^10.12.4
@@ -9276,21 +9265,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"web3-types@npm:^1.3.0, web3-types@npm:^1.6.0":
+"web3-types@npm:^1.3.0, web3-types@npm:^1.3.1, web3-types@npm:^1.5.0, web3-types@npm:^1.6.0":
   version: 1.6.0
   resolution: "web3-types@npm:1.6.0"
   checksum: ea7e311ff8380c81f40bd6618452bb04dc096fccebdfae6e2b0a5083c28d54707004237576aca8d303ae2528fa5f495375e8afefba876aefcdb738ccc187c622
   languageName: node
   linkType: hard
 
-"web3-types@npm:^1.3.1, web3-types@npm:^1.5.0":
-  version: 1.5.0
-  resolution: "web3-types@npm:1.5.0"
-  checksum: b309a38fddd4b3217b5a0a64abc9148f33d145bca80c118cb07353e9643af7a09414a8397f7f6a62a2a183bcfc98c2ad74014426f55e816a34307e89235a18ce
-  languageName: node
-  linkType: hard
-
-"web3-utils@npm:^4.0.7, web3-utils@npm:^4.1.0, web3-utils@npm:^4.2.2, web3-utils@npm:^4.2.3":
+"web3-utils@npm:^4.0.7, web3-utils@npm:^4.1.0, web3-utils@npm:^4.2.1, web3-utils@npm:^4.2.2, web3-utils@npm:^4.2.3":
   version: 4.2.3
   resolution: "web3-utils@npm:4.2.3"
   dependencies:
@@ -9303,20 +9285,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"web3-utils@npm:^4.2.1":
-  version: 4.2.1
-  resolution: "web3-utils@npm:4.2.1"
-  dependencies:
-    ethereum-cryptography: ^2.0.0
-    eventemitter3: ^5.0.1
-    web3-errors: ^1.1.4
-    web3-types: ^1.5.0
-    web3-validator: ^2.0.4
-  checksum: 68fcfeaf75f43a3c841998d785c6d787f14c61aeb67a45e586098b7c79411e36f11b676968721198477757443bc605ce0a71efcaac193a673b8cb9c34ac17992
-  languageName: node
-  linkType: hard
-
-"web3-validator@npm:^2.0.3, web3-validator@npm:^2.0.5":
+"web3-validator@npm:^2.0.3, web3-validator@npm:^2.0.4, web3-validator@npm:^2.0.5":
   version: 2.0.5
   resolution: "web3-validator@npm:2.0.5"
   dependencies:
@@ -9326,19 +9295,6 @@ __metadata:
     web3-types: ^1.5.0
     zod: ^3.21.4
   checksum: ab9aa85d160dd2cbe5942615558fa12106659b9afb2ea22a45ca2c73d516ddc56b07c918eb4a9e45da18fa125da823fa1a4f5d2f48a08f9473f4b7649e2b36bb
-  languageName: node
-  linkType: hard
-
-"web3-validator@npm:^2.0.4":
-  version: 2.0.4
-  resolution: "web3-validator@npm:2.0.4"
-  dependencies:
-    ethereum-cryptography: ^2.0.0
-    util: ^0.12.5
-    web3-errors: ^1.1.4
-    web3-types: ^1.3.1
-    zod: ^3.21.4
-  checksum: 9d41bfe5764343d05f045ce526715dfd1bd88dba146ba96c2d3199c3dc9bb66c01d9dac334251078542c00f82e273489700a54db365800c16e29a2c2b30f9929
   languageName: node
   linkType: hard
 
