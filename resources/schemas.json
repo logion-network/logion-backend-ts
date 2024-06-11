@@ -169,16 +169,12 @@
                     }
                 }
             },
-            "CreateProtectionRequestView": {
+            "CreateAccountRecoveryRequestView": {
                 "type": "object",
                 "properties": {
                     "addressToRecover": {
                         "type": "string",
-                        "description": "If this request is a recovery request, tells the address to recover"
-                    },
-                    "isRecovery": {
-                        "type": "boolean",
-                        "description": "True if the protection request is also a recovery request"
+                        "description": "Tells the address to recover"
                     },
                     "legalOfficerAddress": {
                         "type": "string",
@@ -195,45 +191,34 @@
                     }
                 },
                 "required": [
-                    "isRecovery",
+                    "addressToRecover",
                     "legalOfficerAddress",
                     "otherLegalOfficerAddress",
                     "requesterIdentityLoc"
                 ],
-                "title": "CreateProtectionRequestView",
-                "description": "A Protection Request to create"
+                "title": "CreateAccountRecoveryRequestView",
+                "description": "An Account Recovery Request to create"
             },
-            "UpdateProtectionRequestView": {
-                "type": "object",
-                "properties": {
-                    "otherLegalOfficerAddress": {
-                        "type": "string",
-                        "description": "The SS58 address of the other legal officer a new request is submitted to"
-                    }
-                },
-                "title": "AcceptProtectionRequestView",
-                "description": "Parameters for Protection Request's acceptance"
-            },
-            "FetchProtectionRequestsResponseView": {
+            "FetchAccountRecoveryRequestsResponseView": {
                 "type": "object",
                 "properties": {
                     "requests": {
                         "type": "array",
-                        "description": "The Protection Requests matching provided specification",
+                        "description": "The Account Recovery Requests matching provided specification",
                         "items": {
-                            "$ref": "#/components/schemas/ProtectionRequestView"
+                            "$ref": "#/components/schemas/AccountRecoveryRequestView"
                         }
                     }
                 },
-                "title": "FetchProtectionRequestsResponseView",
-                "description": "The fetched Protection Requests"
+                "title": "FetchAccountRecoveryRequestsResponseView",
+                "description": "The fetched Account Recovery Requests"
             },
-            "FetchProtectionRequestsSpecificationView": {
+            "FetchAccountRecoveryRequestsSpecificationView": {
                 "type": "object",
                 "properties": {
                     "statuses": {
                         "type": "array",
-                        "description": "The statuses of expected Protection Requests",
+                        "description": "The statuses of expected Account Recovery Requests",
                         "uniqueItems": true,
                         "items": {
                             "type": "string",
@@ -248,26 +233,17 @@
                             ]
                         }
                     },
-                    "kind": {
-                        "type": "string",
-                        "description": "The kind of protection request to be returned",
-                        "enum": [
-                            "ANY",
-                            "PROTECTION_ONLY",
-                            "RECOVERY"
-                        ]
-                    },
                     "requesterAddress": {
                         "type": "string",
-                        "description": "The SS58 address of the requester in expected Protection Requests"
+                        "description": "The SS58 address of the requester in expected Account Recovery Requests"
                     },
                     "legalOfficerAddress": {
                         "type": "string",
-                        "description": "The SS58 address of the legal officer in expected Protection Requests"
+                        "description": "The SS58 address of the legal officer in expected Account Recovery Requests"
                     }
                 },
-                "title": "FetchProtectionRequestsSpecificationView",
-                "description": "The specification for fetching Protection Requests"
+                "title": "FetchAccountRecoveryRequestsSpecificationView",
+                "description": "The specification for fetching Account Recovery Requests"
             },
             "FetchTransactionsResponseView": {
                 "type": "object",
@@ -346,7 +322,7 @@
                 "title": "PostalAddressView",
                 "description": "A postal address"
             },
-            "ProtectionRequestView": {
+            "AccountRecoveryRequestView": {
                 "type": "object",
                 "properties": {
                     "addressToRecover": {
@@ -364,11 +340,7 @@
                     "id": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of created Protection Request"
-                    },
-                    "isRecovery": {
-                        "type": "boolean",
-                        "description": "True if the protection request is also a recovery request"
+                        "description": "The ID of created Account Recovery Request"
                     },
                     "legalOfficerAddress": {
                         "type": "string",
@@ -409,8 +381,8 @@
                         "$ref": "#/components/schemas/PostalAddressView"
                     }
                 },
-                "title": "ProtectionRequestView",
-                "description": "Information about the created Protection Request"
+                "title": "AccountRecoveryRequestView",
+                "description": "Information about the created Account Recovery Request"
             },
             "RecoveryInfoIdentityView": {
                 "type": "object",
@@ -1530,21 +1502,21 @@
                     }
                 },
                 "title": "CreateVaultTransferRequestView",
-                "description": "A Protection Request to create"
+                "description": "A Account Recovery Request to create"
             },
             "FetchVaultTransferRequestsResponseView": {
                 "type": "object",
                 "properties": {
                     "requests": {
                         "type": "array",
-                        "description": "The Protection Requests matching provided specification",
+                        "description": "The Account Recovery Requests matching provided specification",
                         "items": {
                             "$ref": "#/components/schemas/VaultTransferRequestView"
                         }
                     }
                 },
                 "title": "FetchVaultTransferRequestsResponseView",
-                "description": "The fetched Protection Requests"
+                "description": "The fetched Account Recovery Requests"
             },
             "VaultTransferRequestStatusView": {
                 "title": "VaultTransferRequestStatusView",
@@ -1610,7 +1582,7 @@
                     "id": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of created Protection Request"
+                        "description": "The ID of created Account Recovery Request"
                     },
                     "origin": {
                         "type": "string",
@@ -1643,7 +1615,7 @@
                     }
                 },
                 "title": "VaultTransferRequestView",
-                "description": "Information about the created Protection Request"
+                "description": "Information about the created Account Recovery Request"
             },
             "RejectVaultTransferRequestView": {
                 "type": "object",
@@ -1654,7 +1626,7 @@
                     }
                 },
                 "title": "RejectVaultTransferRequestView",
-                "description": "The Protection Request to reject"
+                "description": "The Account Recovery Request to reject"
             },
             "CreateSofRequestView": {
                 "type": "object",
@@ -2024,7 +1996,7 @@
                     "id": {
                         "type": "string",
                         "format": "uuid",
-                        "description": "The ID of created Protection Request"
+                        "description": "The ID of created Account Recovery Request"
                     },
                     "rejectReason": {
                         "type": "string",

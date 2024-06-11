@@ -2437,16 +2437,6 @@ function expectSameLinks(item1: LinkDescription, item2: Partial<LinkDescription>
     }
 }
 
-function thenHasLink(name: string) {
-    expect(request.hasLink(name)).toBeTrue();
-}
-
-function thenHasExpectedLinkIndices() {
-    for(let i = 0; i < request.links!.length; ++i) {
-        expect(request.links![i].index).toBe(i);
-    }
-}
-
 function whenPreClosing() {
     request.preClose(false);
 }

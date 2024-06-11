@@ -24,18 +24,6 @@ This project features:
 
 ## Logion API
 
-### Protection requests
-
-Request IDs are randomly generated upon creation. Please note down the request ID you get on creation in order to use
-it as a path variable in the other queries.
-
-- Create: `curl -v http://127.0.0.1:8088/api/protection-request -H "Content-Type: application/json" -d @sample-data/create.json  | jq`
-- Fetch by requester: `curl -vX PUT http://127.0.0.1:8088/api/protection-request -H "Content-Type: application/json" -d @sample-data/fetch_pending_by_requester.json | jq`
-- Fetch by legal officer: `curl -vX PUT http://127.0.0.1:8088/api/protection-request -H "Content-Type: application/json" -d @ sample-data/fetch_pending_by_legal_officer.json | jq`
-- Reject: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/reject -H "Content-Type: application/json" -d @sample-data/reject.json  | jq`
-- Accept: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/accept -H "Content-Type: application/json" -d @sample-data/accept.json  | jq`
-- Check: `curl -v http://127.0.0.1:8088/api/protection-request/<id>/check-activation -H "Content-Type: application/json" -d @sample-data/check.json  | jq`
-
 ### Authentication
 Authentication process is described [here](doc/Authentication.md).
 

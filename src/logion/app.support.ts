@@ -1,9 +1,9 @@
 import { OpenAPIV3 } from "openapi-types";
 import expressOasGenerator, { SPEC_OUTPUT_FILE_BEHAVIOR } from 'express-oas-generator';
 import {
-    fillInSpec as fillInSpecForProtectionController,
-    ProtectionRequestController
-} from "./controllers/protectionrequest.controller.js";
+    fillInSpec as fillInSpecForAccountRecoveryController,
+    AccountRecoveryController
+} from "./controllers/account_recovery.controller.js";
 import { fillInSpec as fillInSpecForTransaction, TransactionController } from "./controllers/transaction.controller.js";
 import { configureOpenApi, configureDinoloop, setOpenApi3, loadSchemasIntoSpec, Log } from "@logion/rest-api-core";
 import { fillInSpec as fillInSpecForLoc, LocRequestController } from "./controllers/locrequest.controller.js";
@@ -51,7 +51,7 @@ export function predefinedSpec(spec: OpenAPIV3.Document): OpenAPIV3.Document {
         version: "0.1",
     };
 
-    fillInSpecForProtectionController(spec);
+    fillInSpecForAccountRecoveryController(spec);
     fillInSpecForTransaction(spec);
     fillInSpecForLoc(spec);
     fillInSpecForCollection(spec);
@@ -115,7 +115,7 @@ export function setupApp(expressConfig?: ExpressConfig): Express {
     dino.useRouter(() => express.Router());
     configureDinoloop(dino);
 
-    dino.registerController(ProtectionRequestController);
+    dino.registerController(AccountRecoveryController);
     dino.registerController(TransactionController);
     dino.registerController(LocRequestController);
     dino.registerController(CollectionController);

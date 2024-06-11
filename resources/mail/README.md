@@ -25,19 +25,19 @@ All possible variables are available (for copy/paste) in this template: [all-doc
     legalOfficer.postalAddress.city
     legalOfficer.postalAddress.country
 
-In the context of a protection (or recovery), all the variables defined above may also be prefixed with
+In the context of an account recovery, all the variables defined above may also be prefixed with
 `otherLegalOfficer` instead of `legalOfficer`. 
 
-### Protection and Recovery Request
-    protection.requesterAddress
-    protection.otherLegalOfficerAddress
-    protection.addressToRecover
-    protection.createdOn
-    protection.isRecovery
+### Recovery Request
+    recovery.requesterAddress
+    recovery.otherLegalOfficerAddress
+    recovery.addressToRecover
+    recovery.createdOn
+    recovery.isRecovery
 
-    protection.decision.decisionOn
-    protection.decision.rejectReason
-    protection.decision.locId
+    recovery.decision.decisionOn
+    recovery.decision.rejectReason
+    recovery.decision.locId
 
 ### LOC
     loc.id

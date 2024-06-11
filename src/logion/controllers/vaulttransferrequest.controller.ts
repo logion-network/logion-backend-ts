@@ -26,7 +26,7 @@ import {
 import { components } from './components.js';
 import { NotificationService } from "../services/notification.service.js";
 import { DirectoryService } from "../services/directory.service.js";
-import { ProtectionRequestDescription, ProtectionRequestRepository } from '../model/protectionrequest.model.js';
+import { AccountRecoveryRequestDescription, AccountRecoveryRepository } from '../model/account_recovery.model.js';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
 import { LocalsObject } from 'pug';
 import { UserPrivateData } from "./adapters/locrequestadapter.js";
@@ -58,7 +58,7 @@ export function fillInSpec(spec: OpenAPIV3.Document): void {
 interface UserData {
     requesterAddress: ValidAccountId;
     userPrivateData: UserPrivateData;
-    activeRecovery?: ProtectionRequestDescription;
+    activeRecovery?: AccountRecoveryRequestDescription;
     activeProtection?: TypesRecoveryConfig;
 }
 
@@ -72,7 +72,7 @@ export class VaultTransferRequestController extends ApiController {
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
         private directoryService: DirectoryService,
-        private protectionRequestRepository: ProtectionRequestRepository,
+        private accountRecoveryRepository: AccountRecoveryRepository,
         private vaultTransferRequestService: VaultTransferRequestService,
         private polkadotService: PolkadotService,
         private locRequestRepository: LocRequestRepository,
@@ -97,11 +97,11 @@ export class VaultTransferRequestController extends ApiController {
         const origin = ValidAccountId.polkadot(requireDefined(body.origin, () => badRequest("Missing origin")));
         const destination = ValidAccountId.polkadot(requireDefined(body.destination, () => badRequest("Missing destination")));
         const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
-        const protectionRequestDescription = await this.userAuthorizedAndProtected(origin, legalOfficerAddress);
+        const userData = await this.userAuthorizedAndProtected(origin, legalOfficerAddress);
 
         const request = this.vaultTransferRequestFactory.newVaultTransferRequest({
             id: uuid(),
-            requesterAddress: protectionRequestDescription.requesterAddress,
+            requesterAddress: userData.requesterAddress,
             legalOfficerAddress,
             createdOn: moment().toISOString(),
             amount: BigInt(body.amount!),
@@ -115,11 +115,11 @@ export class VaultTransferRequestController extends ApiController {
 
         await this.vaultTransferRequestService.add(request);
 
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription.userPrivateData)
+        this.getNotificationInfo(request.getDescription(), userData.userPrivateData)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription.userPrivateData);
+        return this.adapt(request, userData.userPrivateData);
     }
 
     private async userAuthorizedAndProtected(origin: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<UserData> {
@@ -134,7 +134,7 @@ export class VaultTransferRequestController extends ApiController {
     }
 
     private async getProtectionAndRecoveryData(requester: ValidAccountId, origin: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<{
-        activeRecovery?: ProtectionRequestDescription,
+        activeRecovery?: AccountRecoveryRequestDescription,
         activeProtection?: TypesRecoveryConfig,
     }> {
         const activeRecovery = await this.findActiveRecovery(requester, legalOfficerAddress);
@@ -157,7 +157,7 @@ export class VaultTransferRequestController extends ApiController {
         requester: ValidAccountId,
         origin: ValidAccountId,
         legalOfficerAddress: ValidAccountId,
-        activeRecovery?: ProtectionRequestDescription,
+        activeRecovery?: AccountRecoveryRequestDescription,
         activeProtection?: TypesRecoveryConfig,
     ): Promise<UserData> {
         if(!activeRecovery && !activeProtection) {
@@ -184,18 +184,17 @@ export class VaultTransferRequestController extends ApiController {
         };
     }
 
-    private async findActiveRecovery(requesterAddress: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<ProtectionRequestDescription | undefined> {
-        const protectionRequests = await this.protectionRequestRepository.findBy({
+    private async findActiveRecovery(requesterAddress: ValidAccountId, legalOfficerAddress: ValidAccountId): Promise<AccountRecoveryRequestDescription | undefined> {
+        const requests = await this.accountRecoveryRepository.findBy({
             expectedRequesterAddress: requesterAddress,
             expectedLegalOfficerAddress: [ legalOfficerAddress ],
             expectedStatuses: [ 'ACTIVATED' ],
-            kind: 'RECOVERY'
         });
 
-        if(protectionRequests.length === 0) {
+        if(requests.length === 0) {
             return undefined;
         } else {
-            return protectionRequests[0].getDescription();
+            return requests[0].getDescription();
         }
     }
 
@@ -244,10 +243,10 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const vaultTransferRequests = await this.vaultTransferRequestRepository.findBy(specification);
-        const protectionDescriptions: Record<string, UserData> = {};
+        const userDataMap: Record<string, UserData> = {};
         for(let i = 0; i < vaultTransferRequests.length; ++i) {
             const request = vaultTransferRequests[i].getDescription();
-            protectionDescriptions[request.requesterAddress.address] ||= await this.getUserData(
+            userDataMap[request.requesterAddress.address] ||= await this.getUserData(
                 request.requesterAddress,
                 request.origin,
                 request.legalOfficerAddress
@@ -255,8 +254,8 @@ export class VaultTransferRequestController extends ApiController {
         }
 
         const requests = vaultTransferRequests.map(request => {
-            const protectionDescription = protectionDescriptions[request.getRequester().address];
-            return this.adapt(request, protectionDescription.userPrivateData);
+            const userData = userDataMap[request.getRequester().address];
+            return this.adapt(request, userData.userPrivateData);
         });
         return { requests };
     }
@@ -303,22 +302,18 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const description = request.getDescription();
-        const protectionRequestDescription = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription.userPrivateData, request.decision)
+        const userData = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
+        this.getNotificationInfo(request.getDescription(), userData.userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-rejected", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription.userPrivateData);
+        return this.adapt(request, userData.userPrivateData);
     }
 
     static acceptVaultTransferRequest(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/vault-transfer-request/{id}/accept"].post!;
         operationObject.summary = "Accepts a Vault Transfer Request";
         operationObject.description = "The authenticated user must be a LLO operating on the current node";
-        operationObject.requestBody = getRequestBody({
-            description: "Protection Request acceptance data",
-            view: "AcceptVaultTransferRequestView",
-        });
         operationObject.responses = getDefaultResponses("VaultTransferRequestView");
         setPathParameters(operationObject, { 'id': "The ID of the request to accept" });
     }
@@ -333,12 +328,12 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const description = request.getDescription();
-        const protectionRequestDescription = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription.userPrivateData, request.decision)
+        const userData = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
+        this.getNotificationInfo(request.getDescription(), userData.userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.userEmail, "vault-transfer-accepted", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription.userPrivateData);
+        return this.adapt(request, userData.userPrivateData);
     }
 
     @Async()
@@ -352,12 +347,12 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const description = request.getDescription();
-        const protectionRequestDescription = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription.userPrivateData, request.decision)
+        const userData = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
+        this.getNotificationInfo(request.getDescription(), userData.userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-cancelled", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription.userPrivateData);
+        return this.adapt(request, userData.userPrivateData);
     }
 
     @Async()
@@ -371,11 +366,11 @@ export class VaultTransferRequestController extends ApiController {
         });
 
         const description = request.getDescription();
-        const protectionRequestDescription = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
-        this.getNotificationInfo(request.getDescription(), protectionRequestDescription.userPrivateData, request.decision)
+        const userData = await this.getUserData(description.requesterAddress, description.origin, description.legalOfficerAddress);
+        this.getNotificationInfo(request.getDescription(), userData.userPrivateData, request.decision)
             .then(info => this.notificationService.notify(info.legalOfficerEmail, "vault-transfer-requested", info.data))
             .catch(error => logger.error(error));
 
-        return this.adapt(request, protectionRequestDescription.userPrivateData);
+        return this.adapt(request, userData.userPrivateData);
     }
 }

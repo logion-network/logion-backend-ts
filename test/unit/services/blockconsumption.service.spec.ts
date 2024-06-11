@@ -12,7 +12,7 @@ import { BlockExtrinsics } from '../../../src/logion/services/types/responses/Bl
 import { BlockConsumer } from "../../../src/logion/services/blockconsumption.service.js";
 import { LocSynchronizer } from "../../../src/logion/services/locsynchronization.service.js";
 import { TransactionSynchronizer } from "../../../src/logion/services/transactionsync.service.js";
-import { ProtectionSynchronizer } from "../../../src/logion/services/protectionsynchronization.service.js";
+import { AccountRecoverySynchronizer } from "../../../src/logion/services/accountrecoverysynchronization.service.js";
 import { ExtrinsicDataExtractor } from "../../../src/logion/services/extrinsic.data.extractor.js";
 import { JsonExtrinsic } from "../../../src/logion/services/types/responses/Extrinsic.js";
 import { PrometheusService } from '../../../src/logion/services/prometheus.service.js';
@@ -29,7 +29,7 @@ describe("BlockConsumer", () => {
         syncPointFactory = new Mock<SyncPointFactory>();
         transactionSynchronizer = new Mock<TransactionSynchronizer>();
         locSynchronizer = new Mock<LocSynchronizer>();
-        protectionSynchronizer = new Mock<ProtectionSynchronizer>();
+        accountRecoverySynchronizer = new Mock<AccountRecoverySynchronizer>();
         extrinsicDataExtractor = new Mock<ExtrinsicDataExtractor>();
         prometheusService = new Mock<PrometheusService>();
         voteSynchronizer = new Mock<VoteSynchronizer>();
@@ -40,7 +40,7 @@ describe("BlockConsumer", () => {
     let syncPointFactory: Mock<SyncPointFactory>;
     let transactionSynchronizer: Mock<TransactionSynchronizer>;
     let locSynchronizer: Mock<LocSynchronizer>;
-    let protectionSynchronizer: Mock<ProtectionSynchronizer>;
+    let accountRecoverySynchronizer: Mock<AccountRecoverySynchronizer>;
     let extrinsicDataExtractor: Mock<ExtrinsicDataExtractor>;
     let prometheusService: Mock<PrometheusService>;
     let voteSynchronizer: Mock<VoteSynchronizer>;
@@ -95,7 +95,7 @@ describe("BlockConsumer", () => {
             new NonTransactionnalSyncPointService(syncPointRepository.object()),
             transactionSynchronizer.object(),
             locSynchronizer.object(),
-            protectionSynchronizer.object(),
+            accountRecoverySynchronizer.object(),
             extrinsicDataExtractor.object(),
             prometheusService.object(),
             voteSynchronizer.object(),
@@ -130,7 +130,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
-        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
+        accountRecoverySynchronizer.setup(instance => instance.updateAccountRecoveryRequests(extrinsic.object())).returns(Promise.resolve());
         voteSynchronizer.setup(instance => instance.updateVotes(extrinsic.object(), timestamp)).returns(Promise.resolve());
 
         // When
@@ -146,7 +146,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(5));
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(5));
-        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(5));
+        accountRecoverySynchronizer.verify(instance => instance.updateAccountRecoveryRequests(extrinsic.object()), Times.Exactly(5));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock);
         voteSynchronizer.verify(instance => instance.updateVotes(extrinsic.object(), timestamp), Times.Exactly(5));
     });
@@ -189,7 +189,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
-        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
+        accountRecoverySynchronizer.setup(instance => instance.updateAccountRecoveryRequests(extrinsic.object())).returns(Promise.resolve());
         voteSynchronizer.setup(instance => instance.updateVotes(extrinsic.object(), timestamp)).returns(Promise.resolve());
 
         // When
@@ -205,7 +205,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(1));
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(1));
-        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(1));
+        accountRecoverySynchronizer.verify(instance => instance.updateAccountRecoveryRequests(extrinsic.object()), Times.Exactly(1));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock, Times.Exactly(1));
         voteSynchronizer.verify(instance => instance.updateVotes(extrinsic.object(), timestamp), Times.Exactly(1));
     });
@@ -285,7 +285,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.setup(instance => instance.addTransactions(block.object())).returns(Promise.resolve());
         locSynchronizer.setup(instance => instance.updateLocRequests(extrinsic.object(), timestamp)).returns(Promise.resolve());
-        protectionSynchronizer.setup(instance => instance.updateProtectionRequests(extrinsic.object())).returns(Promise.resolve());
+        accountRecoverySynchronizer.setup(instance => instance.updateAccountRecoveryRequests(extrinsic.object())).returns(Promise.resolve());
         voteSynchronizer.setup(instance => instance.updateVotes(extrinsic.object(), timestamp)).returns(Promise.resolve());
 
         // When
@@ -301,7 +301,7 @@ describe("BlockConsumer", () => {
 
         transactionSynchronizer.verify(instance => instance.addTransactions(block.object()), Times.Exactly(5));
         locSynchronizer.verify(instance => instance.updateLocRequests(extrinsic.object(), timestamp), Times.Exactly(5));
-        protectionSynchronizer.verify(instance => instance.updateProtectionRequests(extrinsic.object()), Times.Exactly(5));
+        accountRecoverySynchronizer.verify(instance => instance.updateAccountRecoveryRequests(extrinsic.object()), Times.Exactly(5));
         prometheusService.verify(instance => instance.setLastSynchronizedBlock);
         voteSynchronizer.verify(instance => instance.updateVotes(extrinsic.object(), timestamp), Times.Exactly(5));
     });

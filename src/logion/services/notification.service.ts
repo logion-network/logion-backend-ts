@@ -10,16 +10,9 @@ const { logger } = Log;
 export type NotificationRecipient = "WalletUser" | "LegalOfficer";
 
 export const templateValues = [
-    "protection-requested",
-    "protection-accepted",
-    "protection-rejected",
-    "protection-resubmitted",
-    "protection-cancelled",
-    "protection-updated",
     "recovery-requested",
     "recovery-accepted",
     "recovery-rejected",
-    "recovery-resubmitted",
     "recovery-cancelled",
     "loc-requested",
     "loc-accepted",
