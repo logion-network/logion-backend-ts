@@ -58,3 +58,11 @@ export function toPostalAddress(embedded: EmbeddablePostalAddress | undefined): 
         }
         : undefined;
 }
+
+export const EMPTY_POSTAL_ADDRESS: PostalAddress = {
+    city: "",
+    country: "",
+    line1: "",
+    line2: "",
+    postalCode: "",
+}

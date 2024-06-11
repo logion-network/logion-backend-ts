@@ -49,3 +49,10 @@ export function toUserIdentity(embedded: EmbeddableUserIdentity | undefined): Us
         }
         : undefined;
 }
+
+export const EMPTY_USER_IDENTITY: UserIdentity = {
+    email: "",
+    firstName: "",
+    lastName: "",
+    phoneNumber: "",
+};
