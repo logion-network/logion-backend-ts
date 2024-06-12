@@ -14,7 +14,7 @@ import { ALICE, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { VaultTransferRequestController } from '../../../src/logion/controllers/vaulttransferrequest.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import {
     FetchAccountRecoveryRequestsSpecification,
@@ -247,14 +247,14 @@ function mockOtherDependencies(container: Container, repository: Mock<VaultTrans
         .returns(Promise.resolve());
     container.bind(NotificationService).toConstantValue(notificationService.object());
 
-    const directoryService = new Mock<DirectoryService>();
+    const directoryService = new Mock<LegalOfficerService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(DirectoryService).toConstantValue(directoryService.object());
+    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
 
     const accountRecoveryRequest = new Mock<AccountRecoveryRequestAggregateRoot>();
     accountRecoveryRequest.setup(instance => instance.getDescription()).returns(accountRecoveryRequestDescription);

@@ -25,7 +25,7 @@ import {
 } from '../model/vaulttransferrequest.model.js';
 import { components } from './components.js';
 import { NotificationService } from "../services/notification.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { AccountRecoveryRequestDescription, AccountRecoveryRepository } from '../model/account_recovery.model.js';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
 import { LocalsObject } from 'pug';
@@ -71,7 +71,7 @@ export class VaultTransferRequestController extends ApiController {
         private vaultTransferRequestFactory: VaultTransferRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
         private accountRecoveryRepository: AccountRecoveryRepository,
         private vaultTransferRequestService: VaultTransferRequestService,
         private polkadotService: PolkadotService,

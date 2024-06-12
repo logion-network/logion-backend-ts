@@ -33,7 +33,7 @@ import { UserIdentity } from "../model/useridentity.js";
 import { FileStorageService } from "../services/file.storage.service.js";
 import { ForbiddenException } from "dinoloop/modules/builtin/exceptions/exceptions.js";
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { CollectionRepository } from "../model/collection.model.js";
 import { getUploadedFile } from "./fileupload.js";
 import { PostalAddress } from "../model/postaladdress.js";
@@ -140,7 +140,7 @@ export class LocRequestController extends ApiController {
         private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestService: LocRequestService,
         private locAuthorizationService: LocAuthorizationService,

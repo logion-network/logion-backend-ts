@@ -25,7 +25,7 @@ import {
 } from '../model/account_recovery.model.js';
 import { components } from './components.js';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { AccountRecoveryRequestService } from '../services/accountrecoveryrequest.service.js';
 import { LocalsObject } from 'pug';
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
@@ -91,7 +91,7 @@ export class AccountRecoveryController extends ApiController {
         private accountRecoveryRequestFactory: AccountRecoveryRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
         private accountRecoveryRequestService: AccountRecoveryRequestService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestRepository: LocRequestRepository,

@@ -9,9 +9,8 @@ contain only variables, which are replaced at runtime with their respective valu
 All possible variables are available (for copy/paste) in this template: [all-documented-vars.pug](all-documented-vars.pug)
 
 ### Legal Officer
-    legalOfficer.address
+    legalOfficer.account.address
     legalOfficer.additionalDetails
-    legalOfficer.node
 
     legalOfficer.userIdentity.firstName
     legalOfficer.userIdentity.lastName

@@ -9,7 +9,7 @@ import { LocRequestService } from './locrequest.service.js';
 import { CollectionService } from './collection.service.js';
 import { UserIdentity } from '../model/useridentity.js';
 import { NotificationService } from './notification.service.js';
-import { DirectoryService } from './directory.service.js';
+import { LegalOfficerService } from './legalOfficerService.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
 import { EMPTY_ITEMS, LocItems } from '../model/loc_items.js';
@@ -24,7 +24,7 @@ export class LocSynchronizer {
         private locRequestService: LocRequestService,
         private collectionService: CollectionService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
         private verifiedIssuerSelectionService: VerifiedIssuerSelectionService,
         private tokensRecordService: TokensRecordService,
     ) {}

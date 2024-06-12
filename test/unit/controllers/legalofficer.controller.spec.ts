@@ -13,7 +13,7 @@ import {
 import { ValidAccountId } from "@logion/node-api";
 import { DB_SS58_PREFIX } from "../../../src/logion/model/supportedaccountid.model.js";
 import { LEGAL_OFFICERS } from "../../helpers/addresses.js";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 
 const AUTHENTICATED_ADDRESS = LEGAL_OFFICERS[0].account;
 const { setupApp, mockAuthenticationForUserOrLegalOfficer } = TestApp;
@@ -109,8 +109,8 @@ function mockForFetch(container: Container) {
     const factory = new Mock<LegalOfficerFactory>();
     container.bind(LegalOfficerFactory).toConstantValue(factory.object());
 
-    const directoryService = new Mock<DirectoryService>();
-    container.bind(DirectoryService).toConstantValue(directoryService.object());
+    const directoryService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
 }
 
 function mockForCreateOrUpdate(container: Container) {
@@ -130,8 +130,8 @@ function mockForCreateOrUpdate(container: Container) {
     factory.setup(instance => instance.newLegalOfficer(It.IsAny<LegalOfficerDescription>()))
         .returns(legalOfficer0);
 
-    const directoryService = new Mock<DirectoryService>();
-    container.bind(DirectoryService).toConstantValue(directoryService.object());
+    const directoryService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
     directoryService.setup(instance => instance.createOrUpdateLegalOfficer(It.IsAny<LegalOfficerAggregateRoot>()))
         .returns(Promise.resolve());
 }

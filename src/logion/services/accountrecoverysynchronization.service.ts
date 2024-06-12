@@ -5,7 +5,7 @@ import { AccountRecoveryRepository, FetchAccountRecoveryRequestsSpecification } 
 import { Adapters, ValidAccountId } from '@logion/node-api';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
 import { AccountRecoveryRequestService as AccountRecoveryService } from './accountrecoveryrequest.service.js';
-import { DirectoryService } from "./directory.service.js";
+import { LegalOfficerService } from "./legalOfficerService.js";
 
 const { logger } = Log;
 
@@ -15,7 +15,7 @@ export class AccountRecoverySynchronizer {
     constructor(
         private accountRecoveryRepository: AccountRecoveryRepository,
         private accountRecoveryService: AccountRecoveryService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
     ) {
     }
 

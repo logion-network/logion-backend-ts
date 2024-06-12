@@ -15,7 +15,7 @@ import { ALICE, BOB, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.
 import { AccountRecoveryController } from '../../../src/logion/controllers/account_recovery.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
@@ -96,7 +96,7 @@ function mockRecoveryRequestModel(container: Container, addressToRecover: ValidA
     root.setup(instance => instance.requesterIdentityLocId)
         .returns(identityLoc.id)
 
-    
+
     factory.setup(instance => instance.newAccountRecoveryRequest(
         It.Is<NewAccountRecoveryRequestParameters>(params => {
             return params.addressToRecover !== null
@@ -485,14 +485,14 @@ function mockNotificationAndDirectoryService(container: Container) {
         .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
 
-    const directoryService = new Mock<DirectoryService>();
+    const directoryService = new Mock<LegalOfficerService>();
     directoryService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
     directoryService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(DirectoryService).toConstantValue(directoryService.object())
+    container.bind(LegalOfficerService).toConstantValue(directoryService.object())
 }
 
 function mockRecoveryRequest(): Mock<AccountRecoveryRequestAggregateRoot> {

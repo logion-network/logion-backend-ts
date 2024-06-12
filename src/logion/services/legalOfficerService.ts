@@ -8,7 +8,7 @@ import { badRequest, AuthenticationSystemFactory, requireDefined, DefaultTransac
 import { AuthorityService } from "@logion/authenticator";
 import { ValidAccountId } from "@logion/node-api";
 
-export abstract class DirectoryService {
+export abstract class LegalOfficerService {
 
     private readonly authorityService: Promise<AuthorityService>;
 
@@ -51,7 +51,7 @@ export abstract class DirectoryService {
 }
 
 @injectable()
-export class TransactionalDirectoryService extends DirectoryService {
+export class TransactionalLegalOfficerService extends LegalOfficerService {
 
     constructor(
         authenticationSystemFactory: AuthenticationSystemFactory,
@@ -67,7 +67,7 @@ export class TransactionalDirectoryService extends DirectoryService {
 }
 
 @injectable()
-export class NonTransactionalDirectoryService extends DirectoryService {
+export class NonTransactionalLegalOfficerService extends LegalOfficerService {
 
     constructor(
         authenticationSystemFactory: AuthenticationSystemFactory,

@@ -11,7 +11,7 @@ import {
 import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
@@ -264,7 +264,7 @@ function locSynchronizer(): LocSynchronizer {
 }
 
 let notificationService: Mock<NotificationService>;
-let directoryService: Mock<DirectoryService>;
+let directoryService: Mock<LegalOfficerService>;
 let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 

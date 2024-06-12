@@ -9,7 +9,7 @@ import {
     LegalOfficerFactory,
 } from "../model/legalofficer.model.js";
 import { ValidAccountId } from "@logion/node-api";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 
 export function fillInSpec(spec: OpenAPIV3.Document): void {
     const tagName = 'Legal Officers';
@@ -36,7 +36,7 @@ export class LegalOfficerController extends ApiController {
         private legalOfficerRepository: LegalOfficerRepository,
         private legalOfficerFactory: LegalOfficerFactory,
         private authenticationService: AuthenticationService,
-        private directoryService: DirectoryService,
+        private directoryService: LegalOfficerService,
         ) {
         super();
     }
