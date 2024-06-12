@@ -1086,6 +1086,40 @@ export interface components {
       /** @description The ID of the Secret Recovery */
       id?: string;
     };
+    /**
+     * FetchLegalOfficersView
+     * @description The fetched Legal Officers
+     */
+    FetchLegalOfficersView: {
+      /** @description All the legal officers */
+      legalOfficers?: components["schemas"]["LegalOfficerView"][];
+    };
+    /**
+     * LegalOfficerView
+     * @description The Legal Officer
+     */
+    LegalOfficerView: {
+      /** @description The SS58 address of the legal officer */
+      address?: string;
+      userIdentity?: components["schemas"]["UserIdentityView"];
+      postalAddress?: components["schemas"]["LegalOfficerPostalAddressView"];
+      /** @description Any additional public info */
+      additionalDetails?: string;
+    };
+    /**
+     * CreateOrUpdateLegalOfficerView
+     * @description The Legal Officer info to created or updated
+     */
+    CreateOrUpdateLegalOfficerView: {
+      userIdentity?: components["schemas"]["UserIdentityView"];
+      postalAddress?: components["schemas"]["LegalOfficerPostalAddressView"];
+      /** @description Any additional public info */
+      additionalDetails?: string;
+    };
+    LegalOfficerPostalAddressView: {
+      /** @description The company of the Legal Officer */
+      company?: string;
+    } & components["schemas"]["PostalAddressView"];
   };
   responses: never;
   parameters: never;

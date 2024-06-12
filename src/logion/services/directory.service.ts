@@ -1,28 +1,35 @@
 import { injectable } from "inversify";
-import { LegalOfficer } from "../model/legalofficer.model.js";
-import axios, { AxiosInstance } from "axios";
-import { badRequest, AuthenticationSystemFactory } from "@logion/rest-api-core";
+import {
+    LegalOfficerDescription,
+    LegalOfficerRepository,
+    LegalOfficerAggregateRoot
+} from "../model/legalofficer.model.js";
+import { badRequest, AuthenticationSystemFactory, requireDefined, DefaultTransactional } from "@logion/rest-api-core";
 import { AuthorityService } from "@logion/authenticator";
 import { ValidAccountId } from "@logion/node-api";
 
-@injectable()
-export class DirectoryService {
+export abstract class DirectoryService {
 
-    private readonly axios: AxiosInstance;
     private readonly authorityService: Promise<AuthorityService>;
 
-    constructor(private authenticationSystemFactory: AuthenticationSystemFactory) {
-        if (process.env.DIRECTORY_URL === undefined) {
-            throw Error("Please set var DIRECTORY_URL");
-        }
-        this.axios = axios.create({ baseURL: process.env.DIRECTORY_URL });
+    constructor(
+        private authenticationSystemFactory: AuthenticationSystemFactory,
+        private legalOfficerRepository: LegalOfficerRepository,
+) {
         const authenticationSystem = this.authenticationSystemFactory.authenticationSystem();
         this.authorityService = authenticationSystem.then(system => system.authorityService);
     }
 
-    async get(account: ValidAccountId): Promise<LegalOfficer> {
-        return await this.axios.get(`/api/legal-officer/${ account.address }`)
-            .then(response => response.data);
+    async createOrUpdateLegalOfficer(legalOfficer: LegalOfficerAggregateRoot): Promise<void> {
+        await this.legalOfficerRepository.save(legalOfficer);
+    }
+
+    async get(account: ValidAccountId): Promise<LegalOfficerDescription> {
+        const legalOfficer = requireDefined(
+            await this.legalOfficerRepository.findByAccount(account),
+            () => new Error(`Cannot find legal officer ${ account.address } in local database`)
+        );
+        return legalOfficer.getDescription()
     }
 
     async requireLegalOfficerAddressOnNode(address: string | undefined): Promise<ValidAccountId> {
@@ -40,5 +47,32 @@ export class DirectoryService {
     async isLegalOfficerAddressOnNode(account: ValidAccountId): Promise<boolean> {
         const authorityService = await this.authorityService;
         return (await authorityService.isLegalOfficerOnNode(account))
+    }
+}
+
+@injectable()
+export class TransactionalDirectoryService extends DirectoryService {
+
+    constructor(
+        authenticationSystemFactory: AuthenticationSystemFactory,
+        legalOfficerRepository: LegalOfficerRepository
+    ) {
+        super(authenticationSystemFactory, legalOfficerRepository);
+    }
+
+    @DefaultTransactional()
+    async createOrUpdateLegalOfficer(legalOfficer: LegalOfficerAggregateRoot): Promise<void> {
+        return super.createOrUpdateLegalOfficer(legalOfficer);
+    }
+}
+
+@injectable()
+export class NonTransactionalDirectoryService extends DirectoryService {
+
+    constructor(
+        authenticationSystemFactory: AuthenticationSystemFactory,
+        legalOfficerRepository: LegalOfficerRepository
+    ) {
+        super(authenticationSystemFactory, legalOfficerRepository);
     }
 }

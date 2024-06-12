@@ -315,7 +315,6 @@ export class AccountRecoveryController extends ApiController {
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
         const legalOfficer = await this.directoryService.get(request.legalOfficerAddress)
-        const otherLegalOfficer = await this.directoryService.get(request.otherLegalOfficerAddress)
         const { userIdentity, userPostalAddress } = userPrivateData ? userPrivateData : await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
@@ -323,7 +322,6 @@ export class AccountRecoveryController extends ApiController {
             data: {
                 recovery: { ...request, decision },
                 legalOfficer,
-                otherLegalOfficer,
                 walletUser: userIdentity,
                 walletUserPostalAddress: userPostalAddress
             }
