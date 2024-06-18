@@ -1,4 +1,13 @@
-import { addTag, setControllerTag, getDefaultResponses, setPathParameters, getRequestBody, AuthenticationService, requireDefined } from "@logion/rest-api-core";
+import {
+    addTag,
+    setControllerTag,
+    getDefaultResponses,
+    setPathParameters,
+    getRequestBody,
+    AuthenticationService,
+    requireDefined,
+    badRequest
+} from "@logion/rest-api-core";
 import { OpenAPIV3 } from "openapi-types";
 import { injectable } from "inversify";
 import { Controller, ApiController, HttpGet, Async, HttpPut } from "dinoloop";
@@ -43,7 +52,7 @@ export class LegalOfficerController extends ApiController {
 
     static fetchLegalOfficers(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/legal-officer"].get!;
-        operationObject.summary = "Gets the list of all legal officers";
+        operationObject.summary = "Gets the list of all legal officers hosted on this node";
         operationObject.description = "No authentication required.";
         operationObject.responses = getDefaultResponses("FetchLegalOfficersView");
     }
@@ -73,7 +82,7 @@ export class LegalOfficerController extends ApiController {
         if (legalOfficer) {
             return this.toView(legalOfficer.getDescription());
         } else {
-            throw new Error("No legal officer with given address");
+            throw badRequest("No legal officer with given address");
         }
     }
 
@@ -103,7 +112,7 @@ export class LegalOfficerController extends ApiController {
     static createOrUpdateLegalOfficer(spec: OpenAPIV3.Document) {
         const operationObject = spec.paths["/api/legal-officer"].put!;
         operationObject.summary = "Creates or updates the details of a legal officer";
-        operationObject.description = ".";
+        operationObject.description = "The authenticated user must be Legal Officer hosted on this node";
         operationObject.requestBody = getRequestBody({
             description: "Legal Officer details to be created/updated",
             view: "CreateOrUpdateLegalOfficerView"
