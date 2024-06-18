@@ -9,7 +9,7 @@ import { LocRequestService } from './locrequest.service.js';
 import { CollectionService } from './collection.service.js';
 import { UserIdentity } from '../model/useridentity.js';
 import { NotificationService } from './notification.service.js';
-import { DirectoryService } from './directory.service.js';
+import { LegalOfficerService } from './legalOfficerService.js';
 import { VerifiedIssuerSelectionService } from './verifiedissuerselection.service.js';
 import { TokensRecordService } from './tokensrecord.service.js';
 import { EMPTY_ITEMS, LocItems } from '../model/loc_items.js';
@@ -24,7 +24,7 @@ export class LocSynchronizer {
         private locRequestService: LocRequestService,
         private collectionService: CollectionService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private legalOfficerService: LegalOfficerService,
         private verifiedIssuerSelectionService: VerifiedIssuerSelectionService,
         private tokensRecordService: TokensRecordService,
     ) {}
@@ -226,7 +226,7 @@ export class LocSynchronizer {
     private async notifyIssuerNominatedDismissed(extrinsic: JsonExtrinsic) {
         const nominated = extrinsic.call.method === "nominateIssuer";
         const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
-        if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
+        if(await this.legalOfficerService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
             const issuerAccount = ValidAccountId.polkadot(Adapters.asString(extrinsic.call.args["issuer"]));
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAccount);
             logger.info("Handling nomination/dismissal of issuer %s", issuerAccount.address);
@@ -262,7 +262,7 @@ export class LocSynchronizer {
     }) {
         const { legalOfficerAddress, nominated, issuer } = args;
         try {
-            const legalOfficer = await this.directoryService.get(legalOfficerAddress);
+            const legalOfficer = await this.legalOfficerService.get(legalOfficerAddress);
             const data = {
                 legalOfficer,
                 walletUser: issuer,
@@ -279,7 +279,7 @@ export class LocSynchronizer {
 
     private async handleIssuerSelectedUnselected(extrinsic: JsonExtrinsic) {
         const legalOfficerAddress = ValidAccountId.polkadot(requireDefined(extrinsic.signer));
-        if(await this.directoryService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
+        if(await this.legalOfficerService.isLegalOfficerAddressOnNode(legalOfficerAddress)) {
             const issuerAccount = ValidAccountId.polkadot(Adapters.asString(extrinsic.call.args["issuer"]));
             const identityLoc = await this.getIssuerIdentityLoc(legalOfficerAddress, issuerAccount);
             const selected = extrinsic.call.args["selected"] as boolean;
@@ -305,7 +305,7 @@ export class LocSynchronizer {
     }) {
         const { legalOfficerAddress, selected, locRequest, issuer } = args;
         try {
-            const legalOfficer = await this.directoryService.get(legalOfficerAddress);
+            const legalOfficer = await this.legalOfficerService.get(legalOfficerAddress);
             const data = {
                 legalOfficer,
                 walletUser: issuer,

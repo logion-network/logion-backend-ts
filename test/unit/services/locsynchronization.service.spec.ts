@@ -11,7 +11,7 @@ import {
 import { NonTransactionalLocRequestService } from "../../../src/logion/services/locrequest.service.js";
 import { NonTransactionalCollectionService } from "../../../src/logion/services/collection.service.js";
 import { NotificationService } from "../../../src/logion/services/notification.service.js";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { VerifiedIssuerSelectionService } from "src/logion/services/verifiedissuerselection.service.js";
 import { NonTransactionalTokensRecordService } from "../../../src/logion/services/tokensrecord.service.js";
 import { TokensRecordRepository } from "../../../src/logion/model/tokensrecord.model.js";
@@ -26,7 +26,7 @@ describe("LocSynchronizer", () => {
         locRequestRepository = new Mock<LocRequestRepository>();
         collectionRepository = new Mock<CollectionRepository>();
         notificationService = new Mock();
-        directoryService = new Mock();
+        legalOfficerService = new Mock();
         verifiedIssuerSelectionService = new Mock();
         tokensRecordRepository = new Mock();
     });
@@ -257,14 +257,14 @@ function locSynchronizer(): LocSynchronizer {
         new NonTransactionalLocRequestService(locRequestRepository.object()),
         new NonTransactionalCollectionService(collectionRepository.object()),
         notificationService.object(),
-        directoryService.object(),
+        legalOfficerService.object(),
         verifiedIssuerSelectionService.object(),
         new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
     );
 }
 
 let notificationService: Mock<NotificationService>;
-let directoryService: Mock<DirectoryService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 

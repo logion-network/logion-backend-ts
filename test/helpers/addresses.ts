@@ -1,4 +1,5 @@
 import { ValidAccountId } from "@logion/node-api";
+import { LegalOfficerDescription } from "../../src/logion/model/legalofficer.model";
 
 // Note to developers: Addresses are encoded
 // using a different custom prefix: 0 (= Polkadot)
@@ -14,3 +15,60 @@ export const CHARLY = "14Gjs1TD93gnwEBfDMHoCgsuf1s2TVKUP6Z1qKmAZnZ8cW5q";
 export const ALICE_ACCOUNT = ValidAccountId.polkadot(ALICE);
 export const BOB_ACCOUNT = ValidAccountId.polkadot(BOB);
 export const CHARLY_ACCOUNT = ValidAccountId.polkadot(CHARLY);
+
+export const LEGAL_OFFICERS: LegalOfficerDescription[] = [
+    {
+        account: ALICE_ACCOUNT,
+        userIdentity: {
+            firstName: "Alice",
+            lastName: "Alice",
+            email: "alice@logion.network",
+            phoneNumber: "+32 498 00 00 00",
+        },
+        postalAddress: {
+            company: "MODERO",
+            line1: "Huissier de Justice Etterbeek",
+            line2: "Rue Beckers 17",
+            postalCode: "1040",
+            city: "Etterbeek",
+            country: "Belgique"
+        },
+        additionalDetails: "",
+    },
+    {
+        account: BOB_ACCOUNT,
+        userIdentity: {
+            firstName: "Bob",
+            lastName: "Bob",
+            email: "bob@logion.network",
+            phoneNumber: "+33 4 00  00 00 00",
+        },
+        postalAddress: {
+            company: "SELARL ADRASTEE",
+            line1: "Gare des Brotteaux",
+            line2: "14, place Jules Ferry",
+            postalCode: "69006",
+            city: "Lyon",
+            country: "France"
+        },
+        additionalDetails: "",
+    },
+    {
+        account: CHARLY_ACCOUNT,
+        userIdentity: {
+            firstName: "Charlie",
+            lastName: "Charlie",
+            email: "charlie@logion.network",
+            phoneNumber: "+33 2 00 00 00 00",
+        },
+        postalAddress: {
+            company: "AUXILIA CONSEILS 18",
+            line1: "Huissiers de Justice associés",
+            line2: "7 rue Jean Francois Champollion Parc Comitec",
+            postalCode: "18000",
+            city: "Bourges",
+            country: "France"
+        },
+        additionalDetails: "",
+    }
+]

@@ -15,7 +15,7 @@ import { ALICE, BOB, BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.
 import { AccountRecoveryController } from '../../../src/logion/controllers/account_recovery.controller.js';
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { UserIdentity } from '../../../src/logion/model/useridentity.js';
 import { PostalAddress } from '../../../src/logion/model/postaladdress.js';
@@ -96,7 +96,7 @@ function mockRecoveryRequestModel(container: Container, addressToRecover: ValidA
     root.setup(instance => instance.requesterIdentityLocId)
         .returns(identityLoc.id)
 
-    
+
     factory.setup(instance => instance.newAccountRecoveryRequest(
         It.Is<NewAccountRecoveryRequestParameters>(params => {
             return params.addressToRecover !== null
@@ -105,7 +105,7 @@ function mockRecoveryRequestModel(container: Container, addressToRecover: ValidA
         })))
         .returns(Promise.resolve(root.object()));
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -253,7 +253,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndLegalOfficerService(container)
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -288,7 +288,7 @@ function mockModelForReview(container: Container): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndLegalOfficerService(container)
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -356,7 +356,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -471,28 +471,28 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
     container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
-function mockNotificationAndDirectoryService(container: Container) {
+function mockNotificationAndLegalOfficerService(container: Container) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
         .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
 
-    const directoryService = new Mock<DirectoryService>();
-    directoryService
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
-    directoryService
+    legalOfficerService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(DirectoryService).toConstantValue(directoryService.object())
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object())
 }
 
 function mockRecoveryRequest(): Mock<AccountRecoveryRequestAggregateRoot> {
@@ -537,7 +537,7 @@ function mockModelForUser(container: Container, request: Mock<AccountRecoveryReq
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());

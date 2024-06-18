@@ -25,7 +25,7 @@ import {
 } from '../model/account_recovery.model.js';
 import { components } from './components.js';
 import { NotificationService, Template, NotificationRecipient } from "../services/notification.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { AccountRecoveryRequestService } from '../services/accountrecoveryrequest.service.js';
 import { LocalsObject } from 'pug';
 import { LocRequestAdapter, UserPrivateData } from "./adapters/locrequestadapter.js";
@@ -91,7 +91,7 @@ export class AccountRecoveryController extends ApiController {
         private accountRecoveryRequestFactory: AccountRecoveryRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private legalOfficerService: LegalOfficerService,
         private accountRecoveryRequestService: AccountRecoveryRequestService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestRepository: LocRequestRepository,
@@ -114,7 +114,7 @@ export class AccountRecoveryController extends ApiController {
     @HttpPost('')
     async createRequest(body: CreateAccountRecoveryRequestView): Promise<AccountRecoveryRequestView> {
         const requester = await this.authenticationService.authenticatedUser(this.request);
-        const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
+        const legalOfficerAddress = await this.legalOfficerService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const requesterIdentityLoc = requireDefined(body.requesterIdentityLoc);
         const request = await this.accountRecoveryRequestFactory.newAccountRecoveryRequest({
             id: uuid(),
@@ -314,8 +314,7 @@ export class AccountRecoveryController extends ApiController {
     private async getNotificationInfo(request: AccountRecoveryRequestDescription, userPrivateData?: UserPrivateData, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(request.legalOfficerAddress)
-        const otherLegalOfficer = await this.directoryService.get(request.otherLegalOfficerAddress)
+        const legalOfficer = await this.legalOfficerService.get(request.legalOfficerAddress)
         const { userIdentity, userPostalAddress } = userPrivateData ? userPrivateData : await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
@@ -323,7 +322,6 @@ export class AccountRecoveryController extends ApiController {
             data: {
                 recovery: { ...request, decision },
                 legalOfficer,
-                otherLegalOfficer,
                 walletUser: userIdentity,
                 walletUserPostalAddress: userPostalAddress
             }

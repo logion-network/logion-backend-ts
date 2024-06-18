@@ -20,7 +20,9 @@ import { TransactionController } from '../controllers/transaction.controller.js'
 import { CollectionRepository, CollectionFactory } from "../model/collection.model.js";
 import { NotificationService } from "../services/notification.service.js";
 import { MailService } from "../services/mail.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService, TransactionalLegalOfficerService } from "../services/legalOfficerService.js";
+import { LegalOfficerController } from "../controllers/legalofficer.controller.js";
+import { LegalOfficerRepository, LegalOfficerFactory } from "../model/legalofficer.model.js";
 import { VaultTransferRequestController } from '../controllers/vaulttransferrequest.controller.js';
 import { VaultTransferRequestFactory, VaultTransferRequestRepository } from '../model/vaulttransferrequest.model.js';
 import { LoFileFactory, LoFileRepository } from "../model/lofile.model.js";
@@ -96,7 +98,10 @@ container.bind(CollectionFactory).toSelf()
 container.bind(LogionNodeCollectionService).toSelf();
 container.bind(NotificationService).toSelf()
 container.bind(MailService).toSelf()
-container.bind(DirectoryService).toSelf()
+container.bind(LegalOfficerService).toService(TransactionalLegalOfficerService);
+container.bind(TransactionalLegalOfficerService).toSelf();
+container.bind(LegalOfficerFactory).toSelf();
+container.bind(LegalOfficerRepository).toSelf();
 container.bind(VaultTransferRequestRepository).toSelf();
 container.bind(VaultTransferRequestFactory).toSelf();
 container.bind(LoFileFactory).toSelf();
@@ -177,5 +182,6 @@ container.bind(TokensRecordController).toSelf().inTransientScope();
 container.bind(WorkloadController).toSelf().inTransientScope();
 container.bind(SecretRecoveryController).toSelf().inTransientScope();
 container.bind(RecoveryController).toSelf().inTransientScope();
+container.bind(LegalOfficerController).toSelf().inTransientScope();
 
 export { container as AppContainer };

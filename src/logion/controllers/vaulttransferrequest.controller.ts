@@ -25,7 +25,7 @@ import {
 } from '../model/vaulttransferrequest.model.js';
 import { components } from './components.js';
 import { NotificationService } from "../services/notification.service.js";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { AccountRecoveryRequestDescription, AccountRecoveryRepository } from '../model/account_recovery.model.js';
 import { VaultTransferRequestService } from '../services/vaulttransferrequest.service.js';
 import { LocalsObject } from 'pug';
@@ -71,7 +71,7 @@ export class VaultTransferRequestController extends ApiController {
         private vaultTransferRequestFactory: VaultTransferRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: DirectoryService,
+        private legalOfficerService: LegalOfficerService,
         private accountRecoveryRepository: AccountRecoveryRepository,
         private vaultTransferRequestService: VaultTransferRequestService,
         private polkadotService: PolkadotService,
@@ -96,7 +96,7 @@ export class VaultTransferRequestController extends ApiController {
     async createVaultTransferRequest(body: CreateVaultTransferRequestView): Promise<VaultTransferRequestView> {
         const origin = ValidAccountId.polkadot(requireDefined(body.origin, () => badRequest("Missing origin")));
         const destination = ValidAccountId.polkadot(requireDefined(body.destination, () => badRequest("Missing destination")));
-        const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
+        const legalOfficerAddress = await this.legalOfficerService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const userData = await this.userAuthorizedAndProtected(origin, legalOfficerAddress);
 
         const request = this.vaultTransferRequestFactory.newVaultTransferRequest({
@@ -204,7 +204,7 @@ export class VaultTransferRequestController extends ApiController {
         decision?: VaultTransferRequestDecision
     ): Promise<{ legalOfficerEmail: string, userEmail: string | undefined, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(vaultTransfer.legalOfficerAddress);
+        const legalOfficer = await this.legalOfficerService.get(vaultTransfer.legalOfficerAddress);
         const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             legalOfficerEmail: legalOfficer.userIdentity.email,

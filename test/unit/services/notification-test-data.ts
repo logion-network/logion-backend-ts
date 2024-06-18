@@ -2,7 +2,7 @@ import {
     AccountRecoveryRequestDescription,
 } from "../../../src/logion/model/account_recovery.model.js";
 import { ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
-import { LegalOfficer } from "../../../src/logion/model/legalofficer.model.js";
+import { LegalOfficerDescription } from "../../../src/logion/model/legalofficer.model.js";
 import { VaultTransferRequestDescription } from "src/logion/model/vaulttransferrequest.model.js";
 import { ValidAccountId } from "@logion/node-api";
 import { LocRequestDecision, LocRequestDescription } from "src/logion/model/loc_vos.js";
@@ -25,11 +25,10 @@ export const recovery: AccountRecoveryRequestDescription & { decision: LegalOffi
     }
 }
 
-export function notifiedLegalOfficer(address:string): LegalOfficer {
+export function notifiedLegalOfficer(address:string): LegalOfficerDescription {
     return {
-        address,
+        account: ValidAccountId.polkadot(address),
         additionalDetails: "some details",
-        node: "http://localhost:8080",
         userIdentity: {
             firstName: address === BOB_ACCOUNT.address ? "Bob": "Alice",
             lastName: "Network",

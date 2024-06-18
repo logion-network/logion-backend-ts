@@ -8,7 +8,7 @@ import { JsonExtrinsic } from '../../../src/logion/services/types/responses/Extr
 import { AccountRecoverySynchronizer } from '../../../src/logion/services/accountrecoverysynchronization.service.js';
 import { BOB_ACCOUNT, ALICE_ACCOUNT } from '../../helpers/addresses.js';
 import { NonTransactionalAccountRecoveryRequestService } from '../../../src/logion/services/accountrecoveryrequest.service.js';
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { ValidAccountId } from "@logion/node-api";
 
 describe("AccountRecoverySynchronizer", () => {
@@ -27,7 +27,7 @@ describe("AccountRecoverySynchronizer", () => {
 });
 
 let protectionRequestRepository: Mock<AccountRecoveryRepository>;
-let directoryService: Mock<DirectoryService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 
 function givenCreateRecoveryExtrinsic() {
     locExtrinsic = new Mock<JsonExtrinsic>();
@@ -58,8 +58,8 @@ function givenProtectionRequest() {
     protectionRequestRepository.setup(instance => instance.findById(requestId)).returns(Promise.resolve(locRequest.object()));
     protectionRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 
-    directoryService = new Mock<DirectoryService>();
-    directoryService.setup(instance => instance.isLegalOfficerAddressOnNode)
+    legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService.setup(instance => instance.isLegalOfficerAddressOnNode)
         .returns(account => Promise.resolve(account.equals(ALICE_ACCOUNT)));
 }
 
@@ -75,7 +75,7 @@ function synchronizer(): AccountRecoverySynchronizer {
     return new AccountRecoverySynchronizer(
         protectionRequestRepository.object(),
         new NonTransactionalAccountRecoveryRequestService(protectionRequestRepository.object()),
-        directoryService.object(),
+        legalOfficerService.object(),
     );
 }
 

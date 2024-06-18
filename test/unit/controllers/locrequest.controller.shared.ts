@@ -13,7 +13,7 @@ import {
 } from "../../../src/logion/model/locrequest.model.js";
 import { FileStorageService } from "../../../src/logion/services/file.storage.service.js";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
 import { CollectionRepository } from "../../../src/logion/model/collection.model.js";
 import { LATEST_SEAL_VERSION, PersonalInfoSealService, Seal, } from "../../../src/logion/services/seal.service.js";
@@ -230,14 +230,14 @@ function mockOtherDependencies(container: Container, existingMocks?: {
         .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
 
-    const directoryService = new Mock<DirectoryService>();
-    directoryService
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
-    directoryService
+    legalOfficerService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(DirectoryService).toConstantValue(directoryService.object())
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object())
 
     const collectionRepository = existingMocks?.collectionRepository ? existingMocks.collectionRepository : new Mock<CollectionRepository>();
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())

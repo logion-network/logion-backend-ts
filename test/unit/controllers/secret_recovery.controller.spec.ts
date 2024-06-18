@@ -15,7 +15,7 @@ import {
 import { Mock, It, Times } from "moq.ts";
 import request from "supertest";
 import { ALICE_ACCOUNT, ALICE } from "../../helpers/addresses.js";
-import { DirectoryService } from "../../../src/logion/services/directory.service.js";
+import { LegalOfficerService } from "../../../src/logion/services/legalOfficerService.js";
 import { NotificationService, Template } from "../../../src/logion/services/notification.service.js";
 import moment from "moment";
 import { notifiedLegalOfficer } from "../services/notification-test-data.js";
@@ -190,7 +190,7 @@ function mockForAll(container: Container) {
 }
 
 function mockNotifications() {
-    directoryService.setup(instance => instance.get(It.IsAny<ValidAccountId>()))
+    legalOfficerService.setup(instance => instance.get(It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)));
     notificationService.setup(instance => instance.notify(
         It.IsAny<string>(),
@@ -228,7 +228,7 @@ let identityLoc: Mock<LocRequestAggregateRoot>;
 let secretRecoveryRequestFactory: Mock<SecretRecoveryRequestFactory>;
 let secretRecoveryRequestRepository: Mock<SecretRecoveryRequestRepository>;
 let locRequestRepository: Mock<LocRequestRepository>;
-let directoryService: Mock<DirectoryService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 let notificationService: Mock<NotificationService>;
 let secretRecoveryRequest: Mock<SecretRecoveryRequestAggregateRoot>;
 
@@ -241,8 +241,8 @@ function createAndBindMocks(container: Container) {
     container.bind(SecretRecoveryRequestService).toConstantValue(new NonTransactionalSecretRecoveryRequestService(secretRecoveryRequestRepository.object()));
     locRequestRepository = new Mock<LocRequestRepository>();
     container.bind(LocRequestRepository).toConstantValue(locRequestRepository.object());
-    directoryService = new Mock<DirectoryService>();
-    container.bind(DirectoryService).toConstantValue(directoryService.object());
+    legalOfficerService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object());
     notificationService = new Mock<NotificationService>();
     container.bind(NotificationService).toConstantValue(notificationService.object());
 }

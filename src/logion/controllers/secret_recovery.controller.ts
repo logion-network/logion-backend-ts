@@ -22,7 +22,7 @@ import moment from "moment";
 import { NotificationRecipient, Template, NotificationService } from "../services/notification.service.js";
 import { UserPrivateData } from "./adapters/locrequestadapter.js";
 import { LocalsObject } from "pug";
-import { DirectoryService } from "../services/directory.service.js";
+import { LegalOfficerService } from "../services/legalOfficerService.js";
 import { UUID, ValidAccountId } from "@logion/node-api";
 import { LegalOfficerDecisionDescription } from "../model/decision.js";
 import { EMPTY_POSTAL_ADDRESS } from "../model/postaladdress.js";
@@ -62,7 +62,7 @@ export class SecretRecoveryController extends ApiController {
         private secretRecoveryRequestService: SecretRecoveryRequestService,
         private secretRecoveryRequestRepository: SecretRecoveryRequestRepository,
         private locRequestRepository: LocRequestRepository,
-        private directoryService: DirectoryService,
+        private legalOfficerService: LegalOfficerService,
         private notificationService: NotificationService,
         private authenticationService: AuthenticationService,
     ) {
@@ -142,7 +142,7 @@ export class SecretRecoveryController extends ApiController {
     private async getNotificationInfo(secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(legalOfficerAccount)
+        const legalOfficer = await this.legalOfficerService.get(legalOfficerAccount)
         const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,

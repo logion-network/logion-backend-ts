@@ -2049,6 +2049,70 @@
                         "description": "The ID of the Secret Recovery"
                     }
                 }
+            },
+            "FetchLegalOfficersView": {
+                "type": "object",
+                "properties": {
+                    "legalOfficers": {
+                        "type": "array",
+                        "description": "All the legal officers",
+                        "items": {
+                            "$ref": "#/components/schemas/LegalOfficerView"
+                        }
+                    }
+                },
+                "title": "FetchLegalOfficersView",
+                "description": "The fetched Legal Officers"
+            },
+            "LegalOfficerView": {
+                "type": "object",
+                "properties": {
+                    "address": {
+                        "type": "string",
+                        "description": "The SS58 address of the legal officer"
+                    },
+                    "userIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "postalAddress": {
+                        "$ref": "#/components/schemas/LegalOfficerPostalAddressView"
+                    },
+                    "additionalDetails": {
+                        "type": "string",
+                        "description": "Any additional public info"
+                    }
+                },
+                "title": "LegalOfficerView",
+                "description": "The Legal Officer"
+            },
+            "CreateOrUpdateLegalOfficerView": {
+                "type": "object",
+                "properties": {
+                    "userIdentity": {
+                        "$ref": "#/components/schemas/UserIdentityView"
+                    },
+                    "postalAddress": {
+                        "$ref": "#/components/schemas/LegalOfficerPostalAddressView"
+                    },
+                    "additionalDetails": {
+                        "type": "string",
+                        "description": "Any additional public info"
+                    }
+                },
+                "title": "CreateOrUpdateLegalOfficerView",
+                "description": "The Legal Officer info to created or updated"
+            },
+            "LegalOfficerPostalAddressView": {
+                "type": "object",
+                "allOf": [{
+                    "$ref": "#/components/schemas/PostalAddressView"
+                }],
+                "properties": {
+                    "company": {
+                        "type": "string",
+                        "description": "The company of the Legal Officer"
+                    }
+                }
             }
         }
     }

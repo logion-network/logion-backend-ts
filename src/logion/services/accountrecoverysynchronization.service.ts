@@ -5,7 +5,7 @@ import { AccountRecoveryRepository, FetchAccountRecoveryRequestsSpecification } 
 import { Adapters, ValidAccountId } from '@logion/node-api';
 import { JsonExtrinsic, toString } from "./types/responses/Extrinsic.js";
 import { AccountRecoveryRequestService as AccountRecoveryService } from './accountrecoveryrequest.service.js';
-import { DirectoryService } from "./directory.service.js";
+import { LegalOfficerService } from "./legalOfficerService.js";
 
 const { logger } = Log;
 
@@ -15,7 +15,7 @@ export class AccountRecoverySynchronizer {
     constructor(
         private accountRecoveryRepository: AccountRecoveryRepository,
         private accountRecoveryService: AccountRecoveryService,
-        private directoryService: DirectoryService,
+        private legalOfficerService: LegalOfficerService,
     ) {
     }
 
@@ -30,7 +30,7 @@ export class AccountRecoverySynchronizer {
                 const legalOfficerAddresses = Adapters.asArray(extrinsic.call.args['legal_officers']).map(address => Adapters.asString(address));
                 for (const legalOfficerAddress of legalOfficerAddresses) {
                     const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
-                    if (await this.directoryService.isLegalOfficerAddressOnNode(legalOfficer)) {
+                    if (await this.legalOfficerService.isLegalOfficerAddressOnNode(legalOfficer)) {
                         const signer = extrinsic.signer!;
                         const requests = await this.accountRecoveryRepository.findBy(new FetchAccountRecoveryRequestsSpecification({
                             expectedRequesterAddress: ValidAccountId.polkadot(signer),
