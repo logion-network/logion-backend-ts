@@ -105,7 +105,7 @@ function mockRecoveryRequestModel(container: Container, addressToRecover: ValidA
         })))
         .returns(Promise.resolve(root.object()));
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -253,7 +253,7 @@ function mockModelForFetch(container: Container): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndLegalOfficerService(container)
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -288,7 +288,7 @@ function mockModelForReview(container: Container): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container)
+    mockNotificationAndLegalOfficerService(container)
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -356,7 +356,7 @@ function mockModelForAccept(container: Container, verifies: boolean): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
@@ -471,28 +471,28 @@ function mockModelForReject(container: Container, verifies: boolean): void {
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());
     container.bind(LocRequestRepository).toConstantValue(mockLocRequestRepository());
 }
 
-function mockNotificationAndDirectoryService(container: Container) {
+function mockNotificationAndLegalOfficerService(container: Container) {
     notificationService = new Mock<NotificationService>();
     notificationService
         .setup(instance => instance.notify(It.IsAny<string>(), It.IsAny<Template>(), It.IsAny<any>()))
         .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
 
-    const directoryService = new Mock<LegalOfficerService>();
-    directoryService
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
-    directoryService
+    legalOfficerService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object())
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object())
 }
 
 function mockRecoveryRequest(): Mock<AccountRecoveryRequestAggregateRoot> {
@@ -537,7 +537,7 @@ function mockModelForUser(container: Container, request: Mock<AccountRecoveryReq
 
     const factory = new Mock<AccountRecoveryRequestFactory>();
     container.bind(AccountRecoveryRequestFactory).toConstantValue(factory.object());
-    mockNotificationAndDirectoryService(container);
+    mockNotificationAndLegalOfficerService(container);
 
     container.bind(AccountRecoveryRequestService).toConstantValue(new NonTransactionalAccountRecoveryRequestService(repository.object()));
     container.bind(LocRequestAdapter).toConstantValue(mockLocRequestAdapter());

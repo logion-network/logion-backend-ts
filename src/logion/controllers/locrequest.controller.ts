@@ -140,7 +140,7 @@ export class LocRequestController extends ApiController {
         private collectionRepository: CollectionRepository,
         private fileStorageService: FileStorageService,
         private notificationService: NotificationService,
-        private directoryService: LegalOfficerService,
+        private legalOfficerService: LegalOfficerService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestService: LocRequestService,
         private locAuthorizationService: LocAuthorizationService,
@@ -164,7 +164,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async createLocRequest(createLocRequestView: CreateLocRequestView): Promise<LocRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
+        const ownerAddress = await this.legalOfficerService.requireLegalOfficerAddressOnNode(createLocRequestView.ownerAddress);
         const locType = requireDefined(createLocRequestView.locType);
         const requesterAddress = !authenticatedUser.validAccountId.equals(ownerAddress) ?
             authenticatedUser.validAccountId :
@@ -276,7 +276,7 @@ export class LocRequestController extends ApiController {
     @Async()
     async createOpenLoc(openLocView: OpenLocView): Promise<LocRequestView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const ownerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
+        const ownerAddress = await this.legalOfficerService.requireLegalOfficerAddressOnNode(openLocView.ownerAddress);
         const locType = requireDefined(openLocView.locType);
         const requesterAddress = authenticatedUser.validAccountId;
         const requesterIdentityLoc = await this.locRequestRepository.getValidPolkadotIdentityLoc(requesterAddress, ownerAddress);
@@ -1555,7 +1555,7 @@ export class LocRequestController extends ApiController {
     private async getNotificationInfo(loc: LocRequestDescription, userIdentity: UserIdentity, decision?: LocRequestDecision):
         Promise<{ legalOfficerEMail: string, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(loc.ownerAddress);
+        const legalOfficer = await this.legalOfficerService.get(loc.ownerAddress);
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,
             data: {

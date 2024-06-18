@@ -27,7 +27,7 @@ describe("AccountRecoverySynchronizer", () => {
 });
 
 let protectionRequestRepository: Mock<AccountRecoveryRepository>;
-let directoryService: Mock<LegalOfficerService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 
 function givenCreateRecoveryExtrinsic() {
     locExtrinsic = new Mock<JsonExtrinsic>();
@@ -58,8 +58,8 @@ function givenProtectionRequest() {
     protectionRequestRepository.setup(instance => instance.findById(requestId)).returns(Promise.resolve(locRequest.object()));
     protectionRequestRepository.setup(instance => instance.save(locRequest.object())).returns(Promise.resolve());
 
-    directoryService = new Mock<LegalOfficerService>();
-    directoryService.setup(instance => instance.isLegalOfficerAddressOnNode)
+    legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService.setup(instance => instance.isLegalOfficerAddressOnNode)
         .returns(account => Promise.resolve(account.equals(ALICE_ACCOUNT)));
 }
 
@@ -75,7 +75,7 @@ function synchronizer(): AccountRecoverySynchronizer {
     return new AccountRecoverySynchronizer(
         protectionRequestRepository.object(),
         new NonTransactionalAccountRecoveryRequestService(protectionRequestRepository.object()),
-        directoryService.object(),
+        legalOfficerService.object(),
     );
 }
 

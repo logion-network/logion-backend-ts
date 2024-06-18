@@ -26,7 +26,7 @@ describe("LocSynchronizer", () => {
         locRequestRepository = new Mock<LocRequestRepository>();
         collectionRepository = new Mock<CollectionRepository>();
         notificationService = new Mock();
-        directoryService = new Mock();
+        legalOfficerService = new Mock();
         verifiedIssuerSelectionService = new Mock();
         tokensRecordRepository = new Mock();
     });
@@ -257,14 +257,14 @@ function locSynchronizer(): LocSynchronizer {
         new NonTransactionalLocRequestService(locRequestRepository.object()),
         new NonTransactionalCollectionService(collectionRepository.object()),
         notificationService.object(),
-        directoryService.object(),
+        legalOfficerService.object(),
         verifiedIssuerSelectionService.object(),
         new NonTransactionalTokensRecordService(tokensRecordRepository.object()),
     );
 }
 
 let notificationService: Mock<NotificationService>;
-let directoryService: Mock<LegalOfficerService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 let verifiedIssuerSelectionService: Mock<VerifiedIssuerSelectionService>;
 let tokensRecordRepository: Mock<TokensRecordRepository>;
 

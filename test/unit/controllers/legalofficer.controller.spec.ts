@@ -109,8 +109,8 @@ function mockForFetch(container: Container) {
     const factory = new Mock<LegalOfficerFactory>();
     container.bind(LegalOfficerFactory).toConstantValue(factory.object());
 
-    const directoryService = new Mock<LegalOfficerService>();
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object());
 }
 
 function mockForCreateOrUpdate(container: Container) {
@@ -130,9 +130,9 @@ function mockForCreateOrUpdate(container: Container) {
     factory.setup(instance => instance.newLegalOfficer(It.IsAny<LegalOfficerDescription>()))
         .returns(legalOfficer0);
 
-    const directoryService = new Mock<LegalOfficerService>();
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
-    directoryService.setup(instance => instance.createOrUpdateLegalOfficer(It.IsAny<LegalOfficerAggregateRoot>()))
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object());
+    legalOfficerService.setup(instance => instance.createOrUpdateLegalOfficer(It.IsAny<LegalOfficerAggregateRoot>()))
         .returns(Promise.resolve());
 }
 

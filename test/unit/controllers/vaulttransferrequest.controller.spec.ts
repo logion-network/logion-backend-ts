@@ -247,14 +247,14 @@ function mockOtherDependencies(container: Container, repository: Mock<VaultTrans
         .returns(Promise.resolve());
     container.bind(NotificationService).toConstantValue(notificationService.object());
 
-    const directoryService = new Mock<LegalOfficerService>();
-    directoryService
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService
         .setup(instance => instance.get(It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve(ALICE_LEGAL_OFFICER));
-    directoryService
+    legalOfficerService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object());
 
     const accountRecoveryRequest = new Mock<AccountRecoveryRequestAggregateRoot>();
     accountRecoveryRequest.setup(instance => instance.getDescription()).returns(accountRecoveryRequestDescription);

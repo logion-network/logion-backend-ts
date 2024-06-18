@@ -62,7 +62,7 @@ export class SecretRecoveryController extends ApiController {
         private secretRecoveryRequestService: SecretRecoveryRequestService,
         private secretRecoveryRequestRepository: SecretRecoveryRequestRepository,
         private locRequestRepository: LocRequestRepository,
-        private directoryService: LegalOfficerService,
+        private legalOfficerService: LegalOfficerService,
         private notificationService: NotificationService,
         private authenticationService: AuthenticationService,
     ) {
@@ -142,7 +142,7 @@ export class SecretRecoveryController extends ApiController {
     private async getNotificationInfo(secretRecoveryRequest: SecretRecoveryRequestDescription, legalOfficerAccount: ValidAccountId, userPrivateData: UserPrivateData, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(legalOfficerAccount)
+        const legalOfficer = await this.legalOfficerService.get(legalOfficerAccount)
         const { userIdentity, userPostalAddress } = userPrivateData;
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,

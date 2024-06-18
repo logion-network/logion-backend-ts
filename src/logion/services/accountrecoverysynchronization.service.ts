@@ -15,7 +15,7 @@ export class AccountRecoverySynchronizer {
     constructor(
         private accountRecoveryRepository: AccountRecoveryRepository,
         private accountRecoveryService: AccountRecoveryService,
-        private directoryService: LegalOfficerService,
+        private legalOfficerService: LegalOfficerService,
     ) {
     }
 
@@ -30,7 +30,7 @@ export class AccountRecoverySynchronizer {
                 const legalOfficerAddresses = Adapters.asArray(extrinsic.call.args['legal_officers']).map(address => Adapters.asString(address));
                 for (const legalOfficerAddress of legalOfficerAddresses) {
                     const legalOfficer = ValidAccountId.polkadot(legalOfficerAddress);
-                    if (await this.directoryService.isLegalOfficerAddressOnNode(legalOfficer)) {
+                    if (await this.legalOfficerService.isLegalOfficerAddressOnNode(legalOfficer)) {
                         const signer = extrinsic.signer!;
                         const requests = await this.accountRecoveryRepository.findBy(new FetchAccountRecoveryRequestsSpecification({
                             expectedRequesterAddress: ValidAccountId.polkadot(signer),

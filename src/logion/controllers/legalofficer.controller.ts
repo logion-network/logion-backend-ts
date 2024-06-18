@@ -36,7 +36,7 @@ export class LegalOfficerController extends ApiController {
         private legalOfficerRepository: LegalOfficerRepository,
         private legalOfficerFactory: LegalOfficerFactory,
         private authenticationService: AuthenticationService,
-        private directoryService: LegalOfficerService,
+        private legalOfficerService: LegalOfficerService,
         ) {
         super();
     }
@@ -140,7 +140,7 @@ export class LegalOfficerController extends ApiController {
             additionalDetails: createOrUpdate.additionalDetails || "",
         }
         const legalOfficer = this.legalOfficerFactory.newLegalOfficer(description);
-        await this.directoryService.createOrUpdateLegalOfficer(legalOfficer);
+        await this.legalOfficerService.createOrUpdateLegalOfficer(legalOfficer);
 
         return this.toView(legalOfficer.getDescription());
     }

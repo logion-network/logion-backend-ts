@@ -230,14 +230,14 @@ function mockOtherDependencies(container: Container, existingMocks?: {
         .returns(Promise.resolve())
     container.bind(NotificationService).toConstantValue(notificationService.object())
 
-    const directoryService = new Mock<LegalOfficerService>();
-    directoryService
+    const legalOfficerService = new Mock<LegalOfficerService>();
+    legalOfficerService
         .setup(instance => instance.get(It.IsAny<string>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE_ACCOUNT.address)))
-    directoryService
+    legalOfficerService
         .setup(instance => instance.requireLegalOfficerAddressOnNode(It.IsAny<string>()))
         .returns(Promise.resolve(ALICE_ACCOUNT));
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object())
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object())
 
     const collectionRepository = existingMocks?.collectionRepository ? existingMocks.collectionRepository : new Mock<CollectionRepository>();
     container.bind(CollectionRepository).toConstantValue(collectionRepository.object())

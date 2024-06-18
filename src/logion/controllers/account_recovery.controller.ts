@@ -91,7 +91,7 @@ export class AccountRecoveryController extends ApiController {
         private accountRecoveryRequestFactory: AccountRecoveryRequestFactory,
         private authenticationService: AuthenticationService,
         private notificationService: NotificationService,
-        private directoryService: LegalOfficerService,
+        private legalOfficerService: LegalOfficerService,
         private accountRecoveryRequestService: AccountRecoveryRequestService,
         private locRequestAdapter: LocRequestAdapter,
         private locRequestRepository: LocRequestRepository,
@@ -114,7 +114,7 @@ export class AccountRecoveryController extends ApiController {
     @HttpPost('')
     async createRequest(body: CreateAccountRecoveryRequestView): Promise<AccountRecoveryRequestView> {
         const requester = await this.authenticationService.authenticatedUser(this.request);
-        const legalOfficerAddress = await this.directoryService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
+        const legalOfficerAddress = await this.legalOfficerService.requireLegalOfficerAddressOnNode(body.legalOfficerAddress);
         const requesterIdentityLoc = requireDefined(body.requesterIdentityLoc);
         const request = await this.accountRecoveryRequestFactory.newAccountRecoveryRequest({
             id: uuid(),
@@ -314,7 +314,7 @@ export class AccountRecoveryController extends ApiController {
     private async getNotificationInfo(request: AccountRecoveryRequestDescription, userPrivateData?: UserPrivateData, decision?: LegalOfficerDecisionDescription):
         Promise<{ legalOfficerEMail: string, userEmail: string | undefined, data: LocalsObject }> {
 
-        const legalOfficer = await this.directoryService.get(request.legalOfficerAddress)
+        const legalOfficer = await this.legalOfficerService.get(request.legalOfficerAddress)
         const { userIdentity, userPostalAddress } = userPrivateData ? userPrivateData : await this.locRequestAdapter.getUserPrivateData(request.requesterIdentityLocId)
         return {
             legalOfficerEMail: legalOfficer.userIdentity.email,

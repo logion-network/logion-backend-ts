@@ -190,7 +190,7 @@ function mockForAll(container: Container) {
 }
 
 function mockNotifications() {
-    directoryService.setup(instance => instance.get(It.IsAny<ValidAccountId>()))
+    legalOfficerService.setup(instance => instance.get(It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve(notifiedLegalOfficer(ALICE)));
     notificationService.setup(instance => instance.notify(
         It.IsAny<string>(),
@@ -228,7 +228,7 @@ let identityLoc: Mock<LocRequestAggregateRoot>;
 let secretRecoveryRequestFactory: Mock<SecretRecoveryRequestFactory>;
 let secretRecoveryRequestRepository: Mock<SecretRecoveryRequestRepository>;
 let locRequestRepository: Mock<LocRequestRepository>;
-let directoryService: Mock<LegalOfficerService>;
+let legalOfficerService: Mock<LegalOfficerService>;
 let notificationService: Mock<NotificationService>;
 let secretRecoveryRequest: Mock<SecretRecoveryRequestAggregateRoot>;
 
@@ -241,8 +241,8 @@ function createAndBindMocks(container: Container) {
     container.bind(SecretRecoveryRequestService).toConstantValue(new NonTransactionalSecretRecoveryRequestService(secretRecoveryRequestRepository.object()));
     locRequestRepository = new Mock<LocRequestRepository>();
     container.bind(LocRequestRepository).toConstantValue(locRequestRepository.object());
-    directoryService = new Mock<LegalOfficerService>();
-    container.bind(LegalOfficerService).toConstantValue(directoryService.object());
+    legalOfficerService = new Mock<LegalOfficerService>();
+    container.bind(LegalOfficerService).toConstantValue(legalOfficerService.object());
     notificationService = new Mock<NotificationService>();
     container.bind(NotificationService).toConstantValue(notificationService.object());
 }
