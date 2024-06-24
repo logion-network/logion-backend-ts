@@ -120,7 +120,7 @@ export class LoFileController extends ApiController {
             () => badRequest(`LO has not yet uploaded file with id ${ id }`)
         )
         const tempFilePath = "/tmp/download-" + id;
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath, legalOfficer);
 
         downloadAndClean({
             response: this.response,

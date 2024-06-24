@@ -17,6 +17,7 @@ import { mockOwner } from "../../controllers/locrequest.controller.shared.js";
 import { expectAsyncToThrow } from "../../../helpers/asynchelper.js";
 import { FileDescription } from "src/logion/model/loc_items.js";
 import { LocRequestDescription } from "src/logion/model/loc_vos.js";
+import { ValidAccountId } from "@logion/node-api";
 
 describe("DisabledIdenfyService", () => {
 
@@ -155,19 +156,19 @@ function mockEnabledIdenfyService(): {
     const fileStorageService = new Mock<FileStorageService>();
     // In reverse order of actual addition by service, otherwise CIDs won't match
     fileStorageService
-        .setup(instance => instance.importFile(It.IsAny()))
+        .setup(instance => instance.importFile(It.IsAny(), It.Is<ValidAccountId>(param => param.equals(LOC_OWNER_ACCOUNT))))
         .play(PlayTimes.Once())
         .returnsAsync(EXPECTED_FILES.FACE.cid!);
     fileStorageService
-        .setup(instance => instance.importFile(It.IsAny()))
+        .setup(instance => instance.importFile(It.IsAny(), It.Is<ValidAccountId>(param => param.equals(LOC_OWNER_ACCOUNT))))
         .play(PlayTimes.Once())
         .returnsAsync(EXPECTED_FILES.BACK.cid!);
     fileStorageService
-        .setup(instance => instance.importFile(It.IsAny()))
+        .setup(instance => instance.importFile(It.IsAny(), It.Is<ValidAccountId>(param => param.equals(LOC_OWNER_ACCOUNT))))
         .play(PlayTimes.Once())
         .returnsAsync(EXPECTED_FILES.FRONT.cid!);
     fileStorageService
-        .setup(instance => instance.importFile(It.IsAny()))
+        .setup(instance => instance.importFile(It.IsAny(), It.Is<ValidAccountId>(param => param.equals(LOC_OWNER_ACCOUNT))))
         .play(PlayTimes.Once())
         .returnsAsync(EXPECTED_FILES.PAYLOAD.cid!);
 

@@ -12,17 +12,15 @@ interface EncryptDecryptProps {
     clearFile?: string
     encryptedFile?: string
     keepSource?: boolean
+    password: string
 }
 
 export class EncryptedFileWriter {
 
-    constructor(password: string) {
-        this.password = password;
+    constructor() {
     }
 
-    private readonly password: string;
-
-    async open(fileName: string): Promise<void> {
+    async open(fileName: string, password: string): Promise<void> {
         this.file = await open(fileName, 'w');
 
         return new Promise<void>((resolve, reject) => {
@@ -30,7 +28,7 @@ export class EncryptedFileWriter {
                 if (err) {
                     reject(err);
                 }
-                scrypt(this.password, salt, KEY_LENGTH, (err, key) => {
+                scrypt(password, salt, KEY_LENGTH, (err, key) => {
                     if (err) {
                         reject(err);
                     }
@@ -82,7 +80,7 @@ export class EncryptedFileWriter {
     async encrypt(props: EncryptDecryptProps): Promise<string> {
         const clearFile = props.clearFile!
         const encryptedFile = props.encryptedFile ? props.encryptedFile : `${clearFile}.enc`;
-        await this.open(encryptedFile);
+        await this.open(encryptedFile, props.password);
         await this.writeFromFile(clearFile);
         await this.close();
         if (!props.keepSource) {
@@ -94,14 +92,11 @@ export class EncryptedFileWriter {
 
 export class EncryptedFileReader {
 
-    constructor(password: string) {
-        this.password = password;
+    constructor() {
         this.buffer = new Uint8Array(READ_BUFFER_SIZE);
     }
 
-    private readonly password: string;
-
-    async open(fileName: string): Promise<void> {
+    async open(fileName: string, password: string): Promise<void> {
         this.file = await open(fileName, 'r');
 
         const salt = new Uint8Array(SALT_LENGTH);
@@ -111,7 +106,7 @@ export class EncryptedFileReader {
         await this.file.read(iv, 0, IV_LENGTH);
 
         return new Promise<void>((resolve, reject) => {
-            scrypt(this.password, salt, KEY_LENGTH, (err, key) => {
+            scrypt(password, salt, KEY_LENGTH, (err, key) => {
                 if (err) {
                     reject(err);
                 }
@@ -167,7 +162,7 @@ export class EncryptedFileReader {
     async decrypt(props: EncryptDecryptProps): Promise<string> {
         const encryptedFile = props.encryptedFile!
         const clearFile = props.clearFile ? props.clearFile : `${encryptedFile}.clear`
-        await this.open(encryptedFile);
+        await this.open(encryptedFile, props.password);
         await this.readToFile(clearFile);
         await this.close()
         if (!props.keepSource) {

@@ -628,7 +628,7 @@ export class LocRequestController extends ApiController {
             throw new Error("File already present");
         }
         const file = await getUploadedFile(this.request, hash);
-        const cid = await this.fileStorageService.importFile(file.tempFilePath);
+        const cid = await this.fileStorageService.importFile(file.tempFilePath, request.getOwner());
         try {
             const storedFile: StoredFile = {
                 name: file.name,
@@ -697,7 +697,7 @@ export class LocRequestController extends ApiController {
             throw forbidden("Authenticated user is not allowed to download this file");
         }
         const tempFilePath = "/tmp/download-" + requestId + "-" + hash;
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath, request.getOwner());
         downloadAndClean({
             response: this.response,
             path: tempFilePath,

@@ -436,9 +436,9 @@ function mockModel(
 
     const fileStorageService = new Mock<FileStorageService>()
     const filePath = TokensRecordController.tempFilePath({ collectionLocId, recordId, hash: SOME_DATA_HASH });
-    fileStorageService.setup(instance => instance.importFile(filePath))
+    fileStorageService.setup(instance => instance.importFile(filePath, collectionLocOwner))
         .returns(Promise.resolve(CID))
-    fileStorageService.setup(instance => instance.exportFile({ cid: CID }, filePath))
+    fileStorageService.setup(instance => instance.exportFile({ cid: CID }, filePath, collectionLocOwner))
         .returns(Promise.resolve())
     container.bind(FileStorageService).toConstantValue(fileStorageService.object())
 

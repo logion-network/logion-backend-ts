@@ -299,7 +299,7 @@ export class CollectionController extends ApiController {
             throw badRequest("File is already uploaded");
         }
 
-        const cid = await this.fileStorageService.importFile(file.tempFilePath);
+        const cid = await this.fileStorageService.importFile(file.tempFilePath, collectionLoc.getOwner());
         await this.collectionService.update(collectionLocId, itemId, async item => {
             item.setFileCid({ hash, cid });
         });
@@ -351,7 +351,9 @@ export class CollectionController extends ApiController {
 
         const file = collectionItem.getFile(hash);
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`Collection ${ collectionLocId } not found`));
+        await this.fileStorageService.exportFile(file, tempFilePath, collectionLoc.getOwner());
 
         const generatedOn = moment();
         const owner = authenticated.address;
@@ -436,7 +438,9 @@ export class CollectionController extends ApiController {
             itemId,
             hash,
         });
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`Collection ${ collectionLocId } not found`));
+        await this.fileStorageService.exportFile(file, tempFilePath, collectionLoc.getOwner());
 
         const generatedOn = moment();
         const owner = authenticated.address;
@@ -768,7 +772,7 @@ export class CollectionController extends ApiController {
         const collectionItem = await this.getCollectionItemWithFile(collectionLocId, itemId, hash);
         const file = collectionItem.getFile(hash);
         const tempFilePath = CollectionController.tempFilePath({ collectionLocId, itemId, hash });
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath, collectionLoc.getOwner());
 
         downloadAndClean({
             response: this.response,

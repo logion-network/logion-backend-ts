@@ -257,7 +257,7 @@ export class TokensRecordController extends ApiController {
             throw badRequest("File is already uploaded");
         }
 
-        const cid = await this.fileStorageService.importFile(file.tempFilePath);
+        const cid = await this.fileStorageService.importFile(file.tempFilePath, collectionLoc.getOwner());
         await this.tokensRecordService.update(collectionLocId, recordId, async item => {
             item.setFileCid({ hash, cid });
         });
@@ -297,6 +297,8 @@ export class TokensRecordController extends ApiController {
     @Async()
     @SendsResponse()
     async downloadItemFile(_body: never, collectionLocId: string, recordIdHex: string, hashHex: string, itemIdHex: string): Promise<void> {
+        const collectionLoc = requireDefined(await this.locRequestRepository.findById(collectionLocId),
+            () => badRequest(`Collection ${ collectionLocId } not found`));
         const recordId = Hash.fromHex(recordIdHex);
         const hash = Hash.fromHex(hashHex);
         const itemId = Hash.fromHex(itemIdHex);
@@ -314,7 +316,7 @@ export class TokensRecordController extends ApiController {
 
         const file = collectionItem.getFile(hash);
         const tempFilePath = TokensRecordController.tempFilePath({ collectionLocId, recordId, hash });
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath, collectionLoc.getOwner());
 
         const generatedOn = moment();
         const owner = authenticated.address;
@@ -465,7 +467,7 @@ export class TokensRecordController extends ApiController {
         const tokensRecord = await this.getTokensRecordWithFile(collectionLocId, recordId, hash);
         const file = tokensRecord.getFile(hash);
         const tempFilePath = TokensRecordController.tempFilePath({ collectionLocId, recordId, hash });
-        await this.fileStorageService.exportFile(file, tempFilePath);
+        await this.fileStorageService.exportFile(file, tempFilePath, collectionLoc.getOwner());
 
         downloadAndClean({
             response: this.response,
