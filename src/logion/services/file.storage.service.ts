@@ -3,6 +3,9 @@ import { exportFile, deleteFile, importFile } from '../lib/db/large_objects.js';
 import { FileManager, DefaultFileManager, DefaultFileManagerConfiguration } from "../lib/ipfs/FileManager.js";
 import { DefaultShell } from "../lib/Shell.js";
 import { EncryptedFileWriter, EncryptedFileReader } from "../lib/crypto/EncryptedFile.js";
+import { ValidAccountId } from "@logion/node-api";
+import { DB_SS58_PREFIX } from "../model/supportedaccountid.model.js";
+import { requireDefined } from "@logion/rest-api-core";
 
 export interface FileId {
     oid?: number
@@ -22,13 +25,12 @@ export class FileStorageService {
             ipfsHost: process.env.IPFS_HOST!,
         };
         this.fileManager = new DefaultFileManager(fileManagerConfiguration)
-        const password = process.env.ENC_PASSWORD!
-        this.encryptedFileWriter = new EncryptedFileWriter(password)
-        this.encryptedFileReader = new EncryptedFileReader(password)
+        this.encryptedFileWriter = new EncryptedFileWriter()
+        this.encryptedFileReader = new EncryptedFileReader()
     }
 
-    async importFile(path: string): Promise<string> {
-        const encrypted = await this.encryptedFileWriter.encrypt({ clearFile: path })
+    async importFile(path: string, legalOfficer: ValidAccountId): Promise<string> {
+        const encrypted = await this.encryptedFileWriter.encrypt({ clearFile: path, password: this.getPassword(legalOfficer) })
         return this.fileManager.moveToIpfs(encrypted)
     }
 
@@ -36,13 +38,13 @@ export class FileStorageService {
         return await importFile(path, comment);
     }
 
-    async exportFile(id: FileId, path: string): Promise<void> {
+    async exportFile(id: FileId, path: string, legalOfficer: ValidAccountId): Promise<void> {
         if (id.oid) {
             return await exportFile(id.oid, path);
         } else if (id.cid) {
             const encryptedFile = `${path}.enc`
             await this.fileManager.downloadFromIpfs(id.cid, encryptedFile)
-            await this.encryptedFileReader.decrypt({ encryptedFile, clearFile: path })
+            await this.encryptedFileReader.decrypt({ encryptedFile, clearFile: path, password: this.getPassword(legalOfficer) })
         } else {
             throw new Error("File to download has no id")
         }
@@ -61,4 +63,13 @@ export class FileStorageService {
     private readonly fileManager: FileManager;
     private readonly encryptedFileWriter: EncryptedFileWriter;
     private readonly encryptedFileReader: EncryptedFileReader;
+
+    private getPassword(legalOfficer: ValidAccountId): string {
+        const propertyName = `ENC_PASSWORD_${ legalOfficer.getAddress(DB_SS58_PREFIX) }`;
+        const password = process.env[propertyName];
+        return requireDefined(
+            password,
+            () => new Error(`Cannot encrypt/decrypt file. Property ${ propertyName } not found.`)
+        )
+    }
 }

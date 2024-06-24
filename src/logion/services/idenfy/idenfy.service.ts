@@ -1,5 +1,5 @@
 import { Log, requireDefined } from "@logion/rest-api-core";
-import { Hash } from "@logion/node-api";
+import { Hash, ValidAccountId } from "@logion/node-api";
 import { AxiosError, AxiosInstance } from "axios";
 import { injectable } from "inversify";
 import { DateTime } from "luxon";
@@ -154,7 +154,7 @@ export class EnabledIdenfyService extends IdenfyService {
             request.updateIdenfyVerification(json, raw.toString());
             for(const file of files) {
                 request.addFile(file, "MANUAL_BY_USER");
-            }   
+            }
         });
     }
 
@@ -163,15 +163,15 @@ export class EnabledIdenfyService extends IdenfyService {
 
         const clientId = json.clientId;
         const request = requireDefined(await this.locRequestRepository.findById(clientId));
-        const submitter = request.getOwner();
+        const legalOfficer = request.getOwner();
 
         const randomPrefix = DateTime.now().toMillis().toString();
-        const { hash, cid, size } = await this.storePayload(randomPrefix, raw);
+        const { hash, cid, size } = await this.storePayload(randomPrefix, raw, legalOfficer);
         files.push({
             contentType: "application/json",
             name: "idenfy-callback-payload.json",
             nature: "iDenfy Verification Result",
-            submitter,
+            submitter: legalOfficer,
             hash,
             cid,
             restrictedDelivery: false,
@@ -181,11 +181,11 @@ export class EnabledIdenfyService extends IdenfyService {
         for(const fileType of IdenfyCallbackPayloadFileTypes) {
             const fileUrlString = json.fileUrls[fileType];
             if(fileUrlString) {
-                const { fileName, hash, cid, contentType, size } = await this.storeFile(randomPrefix, fileUrlString);
+                const { fileName, hash, cid, contentType, size } = await this.storeFile(randomPrefix, fileUrlString, legalOfficer);
                 files.push({
                     name: fileName,
                     nature: `iDenfy ${ fileType }`,
-                    submitter,
+                    submitter: legalOfficer,
                     contentType,
                     hash,
                     cid,
@@ -198,21 +198,21 @@ export class EnabledIdenfyService extends IdenfyService {
         return files;
     }
 
-    private async storePayload(tempFileNamePrefix: string, raw: Buffer): Promise<IPFSFile> {
+    private async storePayload(tempFileNamePrefix: string, raw: Buffer, legalOfficer: ValidAccountId): Promise<IPFSFile> {
         const fileName = path.join(os.tmpdir(), `${ tempFileNamePrefix }-idenfy-callback-payload.json`);
         await writeFile(fileName, raw);
-        return await this.hashAndImport(fileName);
+        return await this.hashAndImport(fileName, legalOfficer);
     }
 
-    private async hashAndImport(fileName: string): Promise<IPFSFile> {
+    private async hashAndImport(fileName: string, legalOfficer: ValidAccountId): Promise<IPFSFile> {
         const hash = await sha256File(fileName);
         const stats = await stat(fileName);
         const size = stats.size;
-        const cid = await this.fileStorageService.importFile(fileName);
+        const cid = await this.fileStorageService.importFile(fileName, legalOfficer);
         return { hash, cid, size };
     }
 
-    private async storeFile(tempFileNamePrefix: string, fileUrlString: string): Promise<IPFSFile & { fileName: string, contentType: string }> {
+    private async storeFile(tempFileNamePrefix: string, fileUrlString: string, legalOfficer: ValidAccountId): Promise<IPFSFile & { fileName: string, contentType: string }> {
         const fileUrl = new URL(fileUrlString);
         const fileUrlPath = fileUrl.pathname;
         const fileUrlPathElements = fileUrlPath.split("/");
@@ -238,7 +238,7 @@ export class EnabledIdenfyService extends IdenfyService {
                 }
             });
         });
-        const ipfsFile = await this.hashAndImport(tempFileName);
+        const ipfsFile = await this.hashAndImport(tempFileName, legalOfficer);
         return {
             ...ipfsFile,
             fileName,

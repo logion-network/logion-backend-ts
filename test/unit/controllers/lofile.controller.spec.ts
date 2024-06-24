@@ -15,7 +15,7 @@ import { LoFileService, NonTransactionalLoFileService } from "../../../src/logio
 import { ALICE, ALICE_ACCOUNT, BOB_ACCOUNT } from "../../helpers/addresses.js";
 import { LegalOfficerSettingId } from "../../../src/logion/model/legalofficer.model.js";
 import { mockAuthenticatedUser, mockAuthenticationWithAuthenticatedUser } from "@logion/rest-api-core/dist/TestApp.js";
-import { Hash } from "@logion/node-api";
+import { Hash, ValidAccountId } from "@logion/node-api";
 
 const existingFile: LoFileDescription = {
     id: 'file1',
@@ -158,7 +158,7 @@ function mockModel(container: Container): void {
         .returns(Promise.resolve(newFile.oid));
     fileStorageService.setup(instance => instance.deleteFile(It.IsAny<FileId>()))
         .returns(Promise.resolve());
-    fileStorageService.setup(instance => instance.exportFile(It.IsAny<FileId>(), It.IsAny<String>()))
+    fileStorageService.setup(instance => instance.exportFile(It.IsAny<FileId>(), It.IsAny<String>(), It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve())
 
     factory = new Mock<LoFileFactory>();

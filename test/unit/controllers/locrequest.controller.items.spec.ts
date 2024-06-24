@@ -319,7 +319,7 @@ function mockModelForAddFile(container: Container, request: Mock<LocRequestAggre
 
     setupSelectedIssuer(loc, issuerMode);
 
-    fileStorageService.setup(instance => instance.importFile(It.IsAny<string>()))
+    fileStorageService.setup(instance => instance.importFile(It.IsAny<string>(), It.IsAny<ValidAccountId>()))
         .returns(Promise.resolve("cid-42"));
 }
 
@@ -366,7 +366,7 @@ function mockModelForDownloadFile(container: Container, issuerMode: SetupIssuerM
     });
 
     const filePath = "/tmp/download-" + REQUEST_ID + "-" + hash.toHex();
-    fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath))
+    fileStorageService.setup(instance => instance.exportFile({ oid: SOME_OID }, filePath, ALICE_ACCOUNT))
         .returns(Promise.resolve());
 
     setupSelectedIssuer(loc, issuerMode);
