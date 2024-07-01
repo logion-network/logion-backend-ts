@@ -1100,9 +1100,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/authenticator@npm:^0.6.2":
-  version: 0.6.2
-  resolution: "@logion/authenticator@npm:0.6.2"
+"@logion/authenticator@npm:^0.7.0-1":
+  version: 0.7.0-1
+  resolution: "@logion/authenticator@npm:0.7.0-1"
   dependencies:
     "@ethersproject/transactions": ^5.7.0
     "@multiversx/sdk-core": ^12.19.1
@@ -1114,7 +1114,7 @@ __metadata:
     web3-utils: ^4.2.1
   peerDependencies:
     "@logion/node-api": 0.x
-  checksum: 46a5fbe4b671255c78c5bf4ff6799f0903783f2c2457023c8862e8360d9e6736cfb3a2a707325bf33f2b47f9ac92a2bdcf80b48c1f4b0fb80659e9a8e8c9d32e
+  checksum: 004f7f91d75cd7fee80886fce7dc3de6ab9d2e853f3126abb163d67c313dfd91958b8c39a2a71f0d73c1fe6b9e42057394bd90216ceaac333ac75aa100f5cb63
   languageName: node
   linkType: hard
 
@@ -1144,11 +1144,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@logion/rest-api-core@npm:^0.5.2":
-  version: 0.5.2
-  resolution: "@logion/rest-api-core@npm:0.5.2"
+"@logion/rest-api-core@npm:^0.6.0-1":
+  version: 0.6.0-1
+  resolution: "@logion/rest-api-core@npm:0.6.0-1"
   dependencies:
-    "@logion/authenticator": ^0.6.2
+    "@logion/authenticator": ^0.7.0-1
     dinoloop: ^2.4.0
     express: ^4.18.2
     express-fileupload: ^1.4.0
@@ -1158,7 +1158,7 @@ __metadata:
     swagger-ui-express: ^5.0.0
     typeorm: ^0.3.11
     typeorm-transactional: ^0.4.1
-  checksum: 7ee89dc16f2fa7a9ffe4b46453d0155554d2162150d77c5c23bf239c29d286763d4c56266287fd366620d33edf4a01f789e2f7d7c6e6ff382763063c2981fbda
+  checksum: a72ee054e031c88ec3969656e7a6019aeb6a77857c2325e82ac0bec938f20560da25b07a842dc93acc768ec1c987d7c29e54c6f9f0f0ca4f8fb223b24812d6c9
   languageName: node
   linkType: hard
 
@@ -5970,7 +5970,7 @@ __metadata:
     "@istanbuljs/nyc-config-typescript": ^1.0.2
     "@logion/node-api": ^0.31.2
     "@logion/node-exiftool": ^2.3.1
-    "@logion/rest-api-core": ^0.5.2
+    "@logion/rest-api-core": ^0.6.0-1
     "@polkadot/api-contract": ^10.12.4
     "@polkadot/wasm-crypto": ^7.3.2
     "@tsconfig/node18": ^1.0.1
