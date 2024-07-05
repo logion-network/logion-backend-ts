@@ -1215,7 +1215,10 @@
                     },
                     "requesterAddress": {
                         "type": "string",
-                        "description": "The SS58 address of the requester in expected LOC Requests"
+                        "description": "The address of the requester in expected LOC Requests"
+                    },
+                    "requesterAddressType": {
+                        "$ref": "#/components/schemas/AddressType"
                     },
                     "statuses": {
                         "type": "array",

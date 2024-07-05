@@ -389,7 +389,16 @@ export class LocRequestController extends ApiController {
     @Async()
     async fetchRequests(specificationView: FetchLocRequestsSpecificationView): Promise<FetchLocRequestsResponseView> {
         const authenticatedUser = await this.authenticationService.authenticatedUser(this.request);
-        const requester = specificationView.requesterAddress ? ValidAccountId.polkadot(specificationView.requesterAddress) : undefined;
+        let requester: ValidAccountId | undefined = undefined;
+        const address = specificationView.requesterAddress;
+        if (address) {
+            const type = specificationView.requesterAddressType;
+            if (type) {
+                requester = validAccountId({ address, type })
+            } else {
+                requester = ValidAccountId.fromUnknown(address)
+            }
+        }
         const owner = specificationView.ownerAddress ? ValidAccountId.polkadot(specificationView.ownerAddress) : undefined;
         authenticatedUser.require(authenticatedUser => authenticatedUser.isOneOf([ requester, owner ]));
         const specification: FetchLocRequestsSpecification = {
