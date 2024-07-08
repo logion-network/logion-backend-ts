@@ -653,8 +653,9 @@ export interface components {
     FetchLocRequestsSpecificationView: {
       /** @description The SS58 address of the owner in expected LOC Requests */
       ownerAddress?: string;
-      /** @description The SS58 address of the requester in expected LOC Requests */
+      /** @description The address of the requester in expected LOC Requests */
       requesterAddress?: string;
+      requesterAddressType?: components["schemas"]["AddressType"];
       /** @description The statuses of expected LOC Requests */
       statuses?: components["schemas"]["LocRequestStatus"][];
       /** @description The type of the LOC to fetch */
